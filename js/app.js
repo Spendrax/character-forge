@@ -372,23 +372,30 @@
   // ---------- appearance ----------
   function lookOf(c, dd) { return Avatar.look(c, dd.lin, dd.L); }
   function gearOf(c) { return Avatar.gear(c, D); }
-  function avatarCanvas(cls) { return '<canvas class="avatar ' + (cls || '') + '" data-avatar width="48" height="58" role="img" aria-label="Character portrait"></canvas>'; }
+  function avatarCanvas(cls, kind) {
+    kind = kind || 'figure';
+    return '<canvas class="avatar ' + kind + ' ' + (cls || '') + '" data-avatar="' + kind + '" width="' + (kind === 'face' ? 64 : 48) + '" height="' + (kind === 'face' ? 64 : 58) + '" role="img" aria-label="' + (kind === 'face' ? 'Character portrait' : 'Character figure') + '"></canvas>';
+  }
   function drawAvatars() {
     if (!window.Avatar) return;
     var look = lookOf(ch, d), gear = gearOf(ch);
-    document.querySelectorAll('canvas[data-avatar]').forEach(function (cv) { Avatar.draw(cv, look, gear); });
+    document.querySelectorAll('canvas[data-avatar]').forEach(function (cv) {
+      if (cv.getAttribute('data-avatar') === 'face') { if (Avatar.drawPortrait) Avatar.drawPortrait(cv, look, gear); }
+      else Avatar.draw(cv, look, gear);
+    });
   }
   function stepAppearance() {
-    var L = lookOf(ch, d), own = ch.look || {};
+    var L = lookOf(ch, d), own = ch.look || {}, tab = ui.lookTab === 'figure' ? 'figure' : 'face';
     function opts(k, label) {
-      return '<label class="field"><span>' + label + (own[k] != null ? ' <small class="muted">· changed</small>' : '') + '</span><select data-look="' + k + '">' + Avatar.OPTIONS[k].map(function (o) {
+      var off = tab === 'face' && Avatar.faceApplies && !Avatar.faceApplies(k, L.head);
+      return '<label class="field"><span>' + label + (own[k] != null ? ' <small class="muted">· changed</small>' : '') + '</span><select data-look="' + k + '"' + (off ? ' disabled title="Not used with this head shape"' : '') + '>' + Avatar.OPTIONS[k].map(function (o) {
         return '<option value="' + o[0] + '"' + (L[k] === o[0] ? ' selected' : '') + '>' + o[1] + '</option>';
       }).join('') + '</select></label>';
     }
-    function sw(k, label, list, none) {
-      return '<div class="field"><span>' + label + '</span><div class="swatches">' + (none ? '<button type="button" class="sw none' + (!L[k] ? ' on' : '') + '" data-act="look" data-k="' + k + '" data-v="" title="Match shirt">×</button>' : '') + list.map(function (c) {
+    function sw(k, label, list, none, noneTitle) {
+      return '<div class="field"><span>' + label + '</span><div class="swatches">' + (none ? '<button type="button" class="sw none' + (!L[k] ? ' on' : '') + '" data-act="look" data-k="' + k + '" data-v="" title="' + (noneTitle || 'Match shirt') + '">×</button>' : '') + list.map(function (c) {
         return '<button type="button" class="sw' + (L[k] === c ? ' on' : '') + '" style="background:' + c + '" data-act="look" data-k="' + k + '" data-v="' + c + '" aria-label="' + label + ' ' + c + '"></button>';
-      }).join('') + '<input type="color" data-lookcolor="' + k + '" value="' + (L[k] || '#888888') + '" aria-label="Custom ' + label.toLowerCase() + '"></div></div>';
+      }).join('') + '<input type="color" data-lookcolor="' + k + '" value="' + (L[k] || L.eyes || '#888888') + '" aria-label="Custom ' + label.toLowerCase() + '"></div></div>';
     }
     var hidden = own.hidden || {};
     var wear = ch.items.filter(function (it) {
@@ -399,21 +406,41 @@
     if (ch.armor) shown.push(ch.armor);
     if (ch.shield) shown.push('Shield');
     shown = shown.concat(ch.weapons);
-    var h = '<h2>Appearance</h2><p class="muted">Your character as a little pixel figure. Starting looks follow your lineage; anything you change here is kept even if you switch lineage. Armour, shield and weapons from the Equipment step, and wearable items from your inventory, are drawn on the body.</p>' +
-      '<div class="look-wrap"><div class="look-stage">' + avatarCanvas('big') + '<div class="toolbar" style="justify-content:center">' + btn('lookRandom', 'Randomize') + btn('lookReset', 'Match lineage') + '</div></div><div class="look-controls">' +
-      '<h3>Body</h3><div class="row">' + opts('height', 'Height') + opts('build', 'Build') + '</div>' + sw('skin', 'Skin', Avatar.SKINS) +
-      '<h3>Face</h3><div class="row">' + opts('head', 'Head') + opts('ears', 'Ears') + opts('extra', 'Extra') + '</div>' + sw('eyes', 'Eyes', Avatar.EYES) +
-      '<h3>Hair</h3><div class="row">' + opts('hair', 'Hair style') + opts('beard', 'Beard') + '</div>' + sw('hairColor', 'Hair colour', Avatar.HAIRS) +
-      '<h3>Features</h3><div class="row">' + opts('horns', 'Horns') + opts('tail', 'Tail') + opts('wings', 'Wings') + '</div>' +
-      '<h3>Clothes</h3>' + sw('shirt', 'Shirt', Avatar.CLOTH) + sw('pants', 'Trousers', Avatar.CLOTH) + sw('cloak', 'Cloak and robe', Avatar.CLOTH, true) +
-      '<h3>Scene</h3><div class="row">' + opts('base', 'Ground') + '</div>' +
-      '<h3>Worn and carried</h3>' + (shown.length ? '<p><b>From Equipment:</b> ' + esc(shown.join(', ')) + '</p>' : '<p class="muted">No armour or weapons chosen yet. Pick them in the Equipment step.</p>') +
+    var other = tab === 'face' ? 'figure' : 'face';
+    var stage = '<div class="look-stage">' + avatarCanvas('big', tab) +
+      '<div class="toolbar" style="justify-content:center">' + btn('lookRandom', 'Randomize') + btn('lookReset', 'Match lineage') + '</div>' +
+      '<button type="button" class="look-thumb" data-act="lookTab" data-v="' + other + '">' + avatarCanvas('', other) + '<span>' + (other === 'face' ? 'Portrait' : 'Full figure') + '</span></button></div>';
+    var tabs = '<div class="pills" role="tablist" style="margin-bottom:1rem">' + [['face', 'Portrait'], ['figure', 'Full figure']].map(function (t) {
+      return '<button type="button" role="tab" aria-selected="' + (tab === t[0]) + '" class="pill' + (tab === t[0] ? ' on' : '') + '" data-act="lookTab" data-v="' + t[0] + '">' + t[1] + '</button>';
+    }).join('') + '</div>';
+    var controls;
+    if (tab === 'face') {
+      var animal = L.head !== 'human' && L.head !== 'tusked';
+      controls = '<h3>Face</h3><div class="row">' + opts('head', 'Head') + opts('faceShape', 'Face shape') + opts('age', 'Age') + '</div>' + sw('skin', 'Skin', Avatar.SKINS) +
+        (animal ? '<p class="small muted">Some options are greyed out because a ' + esc(Avatar.OPTIONS.head.filter(function (o) { return o[0] === L.head; })[0][1].toLowerCase()) + ' head draws its own eyes, nose or mouth. Pick “Humanoid” under Head to use them.</p>' : '') +
+        '<h3>Eyes</h3><div class="row">' + opts('eyeShape', 'Eye shape') + opts('brows', 'Eyebrows') + '</div>' + sw('eyes', 'Eye colour', Avatar.EYES) + sw('eyes2', 'Second eye', Avatar.EYES, true, 'Same as the first eye') +
+        '<h3>Nose and mouth</h3><div class="row">' + opts('nose', 'Nose') + opts('mouth', 'Mouth') + opts('lips', 'Lips') + opts('cheeks', 'Cheeks') + '</div>' +
+        '<h3>Hair</h3><div class="row">' + opts('hair', 'Hair style') + opts('beard', 'Beard') + '</div>' + sw('hairColor', 'Hair colour', Avatar.HAIRS) +
+        '<h3>Ears and horns</h3><div class="row">' + opts('ears', 'Ears') + opts('horns', 'Horns') + '</div>' +
+        '<h3>Details</h3><div class="row">' + opts('marks', 'Markings') + opts('acc', 'Accessory') + '</div>' +
+        '<h3>Clothes and backdrop</h3>' + sw('shirt', 'Shirt', Avatar.CLOTH) + sw('cloak', 'Cloak, robe and hood', Avatar.CLOTH, true) + '<div class="row">' + opts('base', 'Backdrop (same as the ground)') + '</div>' +
+        '<p class="small muted">Armour, helms, hats, circlets, goggles, amulets, cloaks and weapons carried on the back show in the portrait too.</p>';
+    } else {
+      controls = '<h3>Body</h3><div class="row">' + opts('height', 'Height') + opts('build', 'Build') + '</div>' + sw('skin', 'Skin', Avatar.SKINS) +
+        '<h3>Face</h3><div class="row">' + opts('head', 'Head') + opts('ears', 'Ears') + opts('extra', 'Extra') + '</div>' + sw('eyes', 'Eyes', Avatar.EYES) +
+        '<p class="small muted">The full figure is small, so fine face details live in the Portrait tab.</p>' +
+        '<h3>Hair</h3><div class="row">' + opts('hair', 'Hair style') + opts('beard', 'Beard') + '</div>' + sw('hairColor', 'Hair colour', Avatar.HAIRS) +
+        '<h3>Features</h3><div class="row">' + opts('horns', 'Horns') + opts('tail', 'Tail') + opts('wings', 'Wings') + '</div>' +
+        '<h3>Clothes</h3>' + sw('shirt', 'Shirt', Avatar.CLOTH) + sw('pants', 'Trousers', Avatar.CLOTH) + sw('cloak', 'Cloak and robe', Avatar.CLOTH, true) +
+        '<h3>Scene</h3><div class="row">' + opts('base', 'Ground') + '</div>';
+    }
+    controls += '<h3>Worn and carried</h3>' + (shown.length ? '<p><b>From Equipment:</b> ' + esc(shown.join(', ')) + '</p>' : '<p class="muted">No armour or weapons chosen yet. Pick them in the Equipment step.</p>') +
       (wear.length ? '<div class="look-items">' + wear.map(function (it) {
         return '<label class="check"><input type="checkbox" data-lookhide="' + it.id + '"' + (hidden[it.id] ? '' : ' checked') + '> Show ' + esc(it.n) + '</label>';
-      }).join('') + '</div>' : '<p class="muted">No wearable items in the inventory. Cloaks, hats, helms, circlets, boots, gloves, belts, amulets, rings, goggles, orbs and magic weapons, armour and shields show up on the figure; other items are not drawn.</p>') +
-      '<p class="small muted">Magic items add a sparkle in their rarity colour. Only the first weapon is held; a second light weapon goes in the off hand, and a bow, staff or great weapon goes on the back.</p>' +
-      '</div></div>';
-    return h;
+      }).join('') + '</div>' : '<p class="muted">No wearable items in the inventory. Cloaks, hats, helms, circlets, boots, gloves, belts, amulets, rings, goggles, orbs and magic weapons, armour and shields are drawn; other items are not.</p>') +
+      (tab === 'figure' ? '<p class="small muted">Magic items add a sparkle in their rarity colour. Only the first weapon is held; a second light weapon goes in the off hand, and a bow, staff or great weapon goes on the back.</p>' : '');
+    return '<h2>Appearance</h2><p class="muted">Two views of the same character: a close-up portrait and a full figure. Starting looks follow your lineage; anything you change is kept, and both views update together.</p>' +
+      tabs + '<div class="look-wrap">' + stage + '<div class="look-controls">' + controls + '</div></div>';
   }
 
   function stepDetails() {
@@ -437,7 +464,7 @@
       }).join('') : '';
     }
     var h = '<div class="toolbar noprint">' + btn('print', 'Print or save as PDF', {}, 'btn primary') + btn('export', 'Export JSON') + (totalTodo() ? '<span class="count" style="color:var(--warn)">' + totalTodo() + ' choice(s) still open — see the badges in the step list.</span>' : '') + '</div>';
-    h += '<div class="sheet"><div class="sheet-head">' + avatarCanvas('portrait') + '<div style="flex:1"><h2>' + esc(title(ch)) + '</h2><div>' + esc(summaryLine(ch, d)) + '</div></div><div class="facts" style="margin:0">' +
+    h += '<div class="sheet"><div class="sheet-head"><div class="sheet-pics">' + avatarCanvas('sheet-pic', 'face') + avatarCanvas('sheet-pic', 'figure') + '</div><div style="flex:1"><h2>' + esc(title(ch)) + '</h2><div>' + esc(summaryLine(ch, d)) + '</div></div><div class="facts" style="margin:0">' +
       (d.bg ? '<span><b>Background</b> ' + esc(d.bg.n) + '</span>' : '') + (ch.alignment ? '<span><b>Alignment</b> ' + esc(ch.alignment) + '</span>' : '') + (ch.player ? '<span><b>Player</b> ' + esc(ch.player) + '</span>' : '') +
       '<span><b>XP</b> ' + D.xpByLevel[d.level - 1].toLocaleString('en') + '</span><span><b>Size</b> ' + esc(d.size || 'Medium') + '</span></div></div><div class="sheet-cols"><div>' +
       '<div class="abil">' + AB.map(function (a) { var x = d.abilities[a]; return '<div class="stat"><span>' + a + '</span><b>' + R.fmt(x.mod) + '</b><i>' + x.total + '</i></div>'; }).join('') + '</div>' +
@@ -510,7 +537,7 @@
       var n = d.todo[s[0]], show = ['sheet', 'details', 'equipment', 'items', 'appearance'].indexOf(s[0]) < 0;
       return '<button type="button" class="step' + (ui.step === s[0] ? ' on' : '') + '" data-act="step" data-v="' + s[0] + '"><span>' + s[1] + '</span>' + (show ? (n ? '<span class="badge" title="' + n + ' open">' + n + '</span>' : '<span class="badge done">✓</span>') : '') + '</button>';
     }).join('') + '</nav>';
-    var side = '<aside class="side">' + (ui.step !== 'appearance' ? '<div class="side-portrait" data-act="step" data-v="appearance" title="Edit appearance">' + avatarCanvas() + '</div>' : '') + '<h4>' + esc(title(ch)) + '</h4><div class="muted">' + esc(summaryLine(ch, d)) + '</div><div class="stats">' +
+    var side = '<aside class="side">' + (ui.step !== 'appearance' ? '<div class="side-portrait" data-act="step" data-v="appearance" title="Edit appearance">' + avatarCanvas('', 'face') + '</div>' : '') + '<h4>' + esc(title(ch)) + '</h4><div class="muted">' + esc(summaryLine(ch, d)) + '</div><div class="stats">' +
       [['AC', d.ac], ['HP', d.hp], ['Speed', d.speed], ['Init', R.fmt(d.init)], ['Prof', R.fmt(d.pb)], ['Passive', d.passive]].map(function (x) { return '<div class="stat"><b>' + x[1] + '</b><span>' + x[0] + '</span></div>'; }).join('') + '</div><div class="stats">' +
       AB.map(function (a) { return '<div class="stat"><b>' + d.abilities[a].total + '</b><span>' + a + ' ' + R.fmt(d.abilities[a].mod) + '</span></div>'; }).join('') + '</div>' +
       d.casters.map(function (s) { return '<div class="muted">' + (d.casters.length > 1 ? esc(s.name) + ': s' : 'S') + 'pell DC ' + s.dc + ' · attack ' + R.fmt(s.atk) + '</div>'; }).join('') +
@@ -611,6 +638,7 @@
     rmItem: function (v) { ch.items = ch.items.filter(function (i) { return i.id !== v; }); },
     eq: function (v, el) { ch.eq[el.getAttribute('data-i')] = +v; },
     look: function (v, el) { ch.look = ch.look || {}; ch.look[el.getAttribute('data-k')] = v; },
+    lookTab: function (v) { ui.lookTab = v; },
     lookRandom: function () { ch.look = Object.assign({ hidden: (ch.look || {}).hidden || {} }, Avatar.random()); },
     lookReset: function () { ch.look = { hidden: (ch.look || {}).hidden || {} }; },
     rmWeapon: function (v) { ch.weapons = ch.weapons.filter(function (w) { return w !== v; }); }

@@ -75,6 +75,9 @@ const longF = Object.values(D.featureText).reduce((t, o) => t + Object.keys(o).l
 require('../js/avatar.js'); const A = global.Avatar;
 const fake = () => { const px = {}; return { px, getContext: () => ({ clearRect() {}, fillRect(x, y) { px[x + ',' + y] = this.fillStyle; } }) }; };
 D.lineages.forEach(l => { const ch = mk({ lineage: l.id }), dd = R.derive(ch, {}); const cv = fake(); A.draw(cv, A.look(ch, dd.lin, dd.L), A.gear(ch, D)); assert(Object.keys(cv.px).length > 300, l.id); });
+require('../js/portrait.js');
+D.lineages.forEach(l => { const ch = mk({ lineage: l.id, armor: 'Plate', weapons: ['Longbow'] }), dd = R.derive(ch, {}); const cv = fake(); A.drawPortrait(cv, A.look(ch, dd.lin, dd.L), A.gear(ch, D)); assert.equal(Object.keys(cv.px).length, 64 * 64, l.id); });
+for (let i = 0; i < 300; i++) { const ch = mk({ lineage: D.lineages[i % D.lineages.length].id, look: A.random() }), dd = R.derive(ch, {}); ['head', 'ears', 'horns', 'acc', 'hair'].forEach(k => ch.look[k] = A.OPTIONS[k][i % A.OPTIONS[k].length][0]); const cv = fake(); A.drawPortrait(cv, A.look(ch, dd.lin, dd.L), A.gear(ch, D)); A.draw(fake(), A.look(ch, dd.lin, dd.L), A.gear(ch, D)); }
 let lk = (id) => { const ch = mk({ lineage: id }), dd = R.derive(ch, {}); return A.look(ch, dd.lin, dd.L); };
 assert.equal(lk('tiefling').horns, 'curled'); assert.equal(lk('dwarf').height, 'short'); assert.equal(lk('aarakocra').head, 'bird'); assert.equal(lk('harengon').ears, 'rabbit');
 let gc = mk({ armor: 'Plate', shield: true, weapons: ['Longsword', 'Longbow'], items: [

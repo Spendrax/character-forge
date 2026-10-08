@@ -163,10 +163,17 @@ tr.sel td { background: var(--soft); }
 /* ---------- appearance ---------- */
 canvas.avatar { image-rendering: pixelated; image-rendering: crisp-edges; background: radial-gradient(ellipse at 50% 40%, #2a3350, #141a2c 75%); border-radius: 10px; display: block; }
 canvas.avatar.big { width: 288px; max-width: 100%; height: auto; aspect-ratio: 48 / 58; margin: 0 auto .6rem; }
-canvas.avatar.portrait { width: 96px; height: 116px; flex: none; }
+canvas.avatar.face.big { width: 320px; aspect-ratio: 1; }
+.sheet-pics { display: flex; gap: .5rem; align-items: flex-end; flex: none; }
+canvas.avatar.face.sheet-pic { width: 116px; height: 116px; }
+canvas.avatar.figure.sheet-pic { width: 96px; height: 116px; }
+.look-thumb { display: flex; align-items: center; gap: .6rem; margin: .8rem auto 0; padding: .4rem .7rem .4rem .4rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); color: var(--ink); cursor: pointer; font: inherit; }
+.look-thumb canvas.avatar.face { width: 64px; height: 64px; }
+.look-thumb canvas.avatar.figure { width: 48px; height: 58px; }
+.look-thumb:hover { border-color: var(--accent); }
 .side-portrait { cursor: pointer; margin-bottom: .6rem; }
-.side-portrait canvas.avatar { width: 144px; height: 174px; margin: 0 auto; }
-.look-wrap { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+.side-portrait canvas.avatar { width: 160px; height: 160px; margin: 0 auto; }
+.look-wrap { display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 1fr); gap: 1.5rem; align-items: start; }
 .look-stage { position: sticky; top: 4.5rem; }
 .look-controls h3 { margin-top: 1rem; }
 .swatches { display: flex; flex-wrap: wrap; gap: .3rem; align-items: center; }

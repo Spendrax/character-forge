@@ -16,8 +16,18 @@
     build: [['slim', 'Slim'], ['average', 'Average'], ['broad', 'Broad']],
     head: [['human', 'Humanoid'], ['reptile', 'Scaled snout'], ['bird', 'Beaked'], ['feline', 'Feline'], ['construct', 'Construct'], ['tusked', 'Tusked']],
     ears: [['round', 'Round'], ['pointed', 'Pointed'], ['long', 'Long pointed'], ['cat', 'Cat'], ['rabbit', 'Rabbit'], ['none', 'Hidden']],
-    hair: [['bald', 'Bald'], ['short', 'Short'], ['messy', 'Messy'], ['long', 'Long'], ['ponytail', 'Ponytail'], ['bun', 'Bun'], ['mohawk', 'Mohawk'], ['braids', 'Braids']],
-    beard: [['none', 'None'], ['stubble', 'Stubble'], ['short', 'Short'], ['long', 'Long'], ['braided', 'Braided']],
+    hair: [['bald', 'Bald'], ['short', 'Short'], ['parted', 'Side part'], ['messy', 'Messy'], ['curly', 'Curly'], ['long', 'Long'], ['ponytail', 'Ponytail'], ['bun', 'Bun'], ['mohawk', 'Mohawk'], ['braids', 'Braids']],
+    beard: [['none', 'None'], ['stubble', 'Stubble'], ['mustache', 'Mustache'], ['short', 'Short'], ['long', 'Long'], ['braided', 'Braided']],
+    faceShape: [['oval', 'Oval'], ['round', 'Round'], ['square', 'Square'], ['heart', 'Heart'], ['long', 'Long']],
+    age: [['young', 'Young'], ['adult', 'Adult'], ['old', 'Old']],
+    eyeShape: [['round', 'Round'], ['almond', 'Almond'], ['narrow', 'Narrow'], ['wide', 'Wide'], ['sleepy', 'Heavy-lidded']],
+    brows: [['thin', 'Thin'], ['thick', 'Thick'], ['arched', 'Arched'], ['angry', 'Stern'], ['worried', 'Worried'], ['none', 'None']],
+    nose: [['small', 'Small'], ['button', 'Button'], ['long', 'Long'], ['broad', 'Broad'], ['hooked', 'Hooked']],
+    mouth: [['smile', 'Smile'], ['neutral', 'Neutral'], ['grin', 'Grin'], ['smirk', 'Smirk'], ['frown', 'Frown'], ['open', 'Open']],
+    lips: [['natural', 'Natural'], ['dark', 'Dark'], ['red', 'Red']],
+    cheeks: [['none', 'None'], ['blush', 'Blush']],
+    marks: [['none', 'None'], ['freckles', 'Freckles'], ['scar', 'Scar over eye'], ['cheekscar', 'Cheek scar'], ['tattoo', 'Tattoo'], ['warpaint', 'War paint'], ['birthmark', 'Birthmark'], ['mole', 'Beauty mark']],
+    acc: [['none', 'None'], ['earrings', 'Earrings'], ['nosering', 'Nose ring'], ['eyepatch', 'Eyepatch'], ['glasses', 'Glasses'], ['monocle', 'Monocle'], ['hood', 'Hood']],
     horns: [['none', 'None'], ['small', 'Small'], ['curled', 'Curled'], ['tall', 'Tall'], ['bull', 'Bull']],
     tail: [['none', 'None'], ['devil', 'Devil'], ['cat', 'Furry'], ['reptile', 'Scaled']],
     wings: [['none', 'None'], ['feather', 'Feathered'], ['bat', 'Leathery'], ['fairy', 'Fairy']],
@@ -51,7 +61,13 @@
     if (k('satyr')) o.horns = 'small';
     if (k('minotaur')) o.horns = 'bull';
     if (k('tortle')) o.extra = 'shell';
-    if (k('dwarf', 'duergar')) o.beard = 'short';
+    if (k('dwarf', 'duergar')) { o.beard = 'short'; o.nose = 'broad'; o.brows = 'thick'; o.faceShape = 'square'; }
+    if (k('elf', 'eladrin', 'sea-elf', 'shadar-kai', 'elf-astral', 'half-elf')) { o.eyeShape = 'almond'; o.faceShape = 'heart'; }
+    if (k('orc', 'half-orc', 'goliath', 'bugbear', 'hobgoblin')) { o.faceShape = 'square'; o.nose = 'broad'; o.brows = 'thick'; }
+    if (k('goliath')) o.marks = 'tattoo';
+    if (k('halfling', 'gnome', 'kender')) { o.faceShape = 'round'; o.cheeks = 'blush'; o.eyeShape = 'wide'; }
+    if (k('gnome')) o.nose = 'button';
+    if (k('tiefling')) o.brows = 'arched';
     // skin
     var skin = null;
     if (k('tiefling')) skin = '#c8574a';
@@ -85,11 +101,13 @@
     return o;
   };
 
-  A.defaults = { skin: '#e8b796', hairColor: '#3b2a20', eyes: '#3b6fd6', hair: 'short', beard: 'none', shirt: '#2d4f7a', pants: '#4a3a2c', cloak: '', base: 'grass', hidden: {} };
+  A.defaults = { skin: '#e8b796', hairColor: '#3b2a20', eyes: '#3b6fd6', eyes2: '', hair: 'short', beard: 'none', shirt: '#2d4f7a', pants: '#4a3a2c', cloak: '', base: 'grass', hidden: {},
+    faceShape: 'oval', age: 'adult', eyeShape: 'round', brows: 'thin', nose: 'small', mouth: 'smile', lips: 'natural', cheeks: 'none', marks: 'none', acc: 'none' };
 
   A.look = function (ch, lin, L) {
     var o = Object.assign({}, A.defaults, A.lineageLook(lin, L, ch.picks), ch.look || {});
     if (!o.hairColor) o.hairColor = A.defaults.hairColor;
+    if (!(ch.look && ch.look.marks) && /^(freckles|scar|tattoo)$/.test(o.extra)) o.marks = o.extra;
     return o;
   };
 
@@ -342,7 +360,8 @@
     // beard
     if (L.beard !== 'none') {
       var bc = hair;
-      if (L.beard === 'stubble') { for (var bx2 = 2; bx2 < 8; bx2++) if (bx2 % 2) g.set(hx + bx2, headTop + 8, shade(skin, -0.25)); }
+      if (L.beard === 'mustache') { g.rect(hx + 2, eyeY + 3, 6, 1, bc); g.set(hx + 2, eyeY + 4, bc); g.set(hx + 7, eyeY + 4, bc); }
+      else if (L.beard === 'stubble') { for (var bx2 = 2; bx2 < 8; bx2++) if (bx2 % 2) g.set(hx + bx2, headTop + 8, shade(skin, -0.25)); }
       else {
         g.rect(hx + 1, headTop + 7, 8, 3, bc); g.rect(hx + 4, eyeY + 3, 2, 1, shade(skin, -0.35)); g.set(hx + 1, headTop + 6, bc); g.set(hx + 8, headTop + 6, bc);
         if (L.beard === 'long' || L.beard === 'braided') g.rect(hx + 2, headTop + 10, 6, L.beard === 'long' ? 5 : 3, bc);
@@ -407,9 +426,16 @@
   A.random = function () {
     var pick = function (a) { return a[Math.floor(Math.random() * a.length)]; };
     var ids = function (k) { return A.OPTIONS[k].map(function (x) { return x[0]; }); };
-    return { skin: pick(A.SKINS.slice(0, 7)), hairColor: pick(A.HAIRS), eyes: pick(A.EYES), hair: pick(ids('hair')), beard: Math.random() < 0.6 ? 'none' : pick(ids('beard')),
+    var o = { skin: pick(A.SKINS.slice(0, 7)), hairColor: pick(A.HAIRS), eyes: pick(A.EYES), hair: pick(ids('hair')), beard: Math.random() < 0.6 ? 'none' : pick(ids('beard')),
       shirt: pick(A.CLOTH), pants: pick(A.CLOTH), base: pick(ids('base')) };
+    ['faceShape', 'eyeShape', 'brows', 'nose', 'mouth'].forEach(function (k) { o[k] = pick(ids(k)); });
+    o.age = Math.random() < 0.7 ? 'adult' : pick(ids('age'));
+    o.cheeks = Math.random() < 0.3 ? 'blush' : 'none';
+    o.marks = Math.random() < 0.6 ? 'none' : pick(ids('marks'));
+    o.acc = Math.random() < 0.6 ? 'none' : pick(ids('acc'));
+    return o;
   };
 
+  A._shade = shade;
   root.Avatar = A;
 })(typeof window !== 'undefined' ? window : globalThis);
