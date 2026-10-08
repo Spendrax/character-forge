@@ -197,10 +197,18 @@ canvas.avatar.figure.sheet-pic { width: 96px; height: 116px; }
 .pic-wrap { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 1.2rem; align-items: start; }
 .pic-frame { width: 240px; aspect-ratio: 1; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); background: var(--soft); display: flex; align-items: center; justify-content: center; }
 .pic-frame.empty { border-style: dashed; color: var(--muted); }
-.char-pic { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 25%; }
-.char-pic.whole { object-fit: contain; background: var(--soft); }
-.char-pic.side { width: 160px; height: 160px; margin: 0 auto; border-radius: 10px; border: 1px solid var(--line); }
-.char-pic.sheet-pic { width: 116px; height: 116px; border-radius: 10px; border: 1px solid var(--line); flex: none; }
+.pic-box { position: relative; overflow: hidden; background: var(--soft); }
+.pic-box.big { width: 100%; height: 100%; }
+.pic-box.in-side { width: 160px; height: 160px; margin: 0 auto; border-radius: 10px; border: 1px solid var(--line); }
+.pic-box.sheet-pic { width: 116px; height: 116px; border-radius: 10px; border: 1px solid var(--line); flex: none; }
+.char-pic { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 25%; transform-origin: center; user-select: none; -webkit-user-drag: none; }
+.char-pic.whole { object-fit: contain; }
+.pic-frame.editing { cursor: grab; touch-action: none; outline: 3px solid var(--accent); outline-offset: 2px; }
+.pic-frame.editing:active { cursor: grabbing; }
+.pic-frame.editing::after { content: ''; position: absolute; inset: 0; pointer-events: none; background-image: linear-gradient(to right, rgba(255,255,255,.35) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,.35) 1px, transparent 1px); background-size: 33.33% 33.33%; }
+.pic-frame { position: relative; }
+.pic-tools { width: 240px; max-width: 100%; margin-top: .5rem; }
+.pic-tools input[type=range] { width: 100%; }
 .check-line { display: flex; gap: .5rem; align-items: center; margin: .6rem 0; }
 @media (max-width: 640px) { .pic-wrap { grid-template-columns: 1fr; } .pic-frame { width: 100%; max-width: 320px; } }
 @media print { .char-pic { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }

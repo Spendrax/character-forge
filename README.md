@@ -77,7 +77,7 @@ Magic items carry name, rarity, type and attunement only; each links to its wiki
 ### Appearance
 
 The Appearance step has two parts.
-**Character picture:** add your own image of the character (a drawing, a token, anything). It is shrunk to at most 640 px, saved in the browser with the character, included in exports, and shown in the side panel and on the sheet. It can be cropped to a square or shown whole.
+**Character picture:** add your own image of the character (a drawing, a token, anything). It is shrunk to at most 640 px, saved in the browser with the character, included in exports, and shown in the side panel and on the sheet. **Move, zoom and turn** fits it in its square frame (drag, pinch or mouse wheel, slider, 90° turns); the same framing is used everywhere. It can also be shown whole, without cropping.
 **Pixel figure:** an original pixel-art figure on a terrain base, drawn in code by `js/avatar.js`.
 Height, build, head shape, ears, horns, tail and wings start from the lineage; skin, eyes, hair, beard, clothes and ground can be changed, and the changes are kept.
 Armour (none, light, medium, heavy), shield and weapons from the Equipment step are drawn on the body, and wearable inventory items are matched by name

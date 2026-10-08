@@ -279,7 +279,7 @@
     spells: { label: 'spells', short: 'Spells', what: 'spells', spellbook: true },
     equipment: { label: 'armour and weapons', short: 'Armour and weapons', what: 'worn armour, shield and weapons' },
     items: { label: 'items and coins', short: 'Items and coins', what: 'inventory and coins' },
-    appearance: { label: 'picture', short: 'Picture', what: 'the character picture' },
+    appearance: { label: 'picture', short: 'Picture', what: 'character picture' },
     details: { label: 'details', short: 'Details and notes', what: 'alignment, personality, backstory and notes' }
   };
   function partImportHtml(step) {
@@ -551,8 +551,14 @@
   function avatarCanvas(cls) {
     return '<canvas class="avatar figure ' + (cls || '') + '" data-avatar="figure" width="48" height="58" role="img" aria-label="Character figure"></canvas>';
   }
+  // The picture sits in a square box; its framing (move, zoom, rotate) is the same everywhere it shows
+  function picTransform(v) {
+    v = v || {};
+    return 'translate(' + ((+v.x || 0) * 100).toFixed(2) + '%,' + ((+v.y || 0) * 100).toFixed(2) + '%) scale(' + (+v.zoom || 1) + ') rotate(' + (+v.rot || 0) + 'deg)';
+  }
   function pictureHtml(cls) {
-    return ch.picture ? '<img class="char-pic ' + (cls || '') + (ch.pictureFit === 'contain' ? ' whole' : '') + '" src="' + ch.picture + '" alt="Picture of ' + esc(title(ch)) + '">' : '';
+    if (!ch.picture) return '';
+    return '<div class="pic-box ' + (cls || '') + '"><img class="char-pic' + (ch.pictureFit === 'contain' ? ' whole' : '') + '" src="' + ch.picture + '" alt="Picture of ' + esc(title(ch)) + '" draggable="false" style="transform:' + picTransform(ch.pictureView) + '"></div>';
   }
   function drawAvatars() {
     if (!window.Avatar) return;
@@ -622,10 +628,14 @@
     if (ch.armor) shown.push(ch.armor);
     if (ch.shield) shown.push('Shield');
     shown = shown.concat(ch.weapons);
-    var pic = '<h3>Character picture</h3><div class="pic-wrap"><div class="pic-frame' + (ch.picture ? '' : ' empty') + '">' + (ch.picture ? pictureHtml('big') : '<span>No picture yet</span>') + '</div><div>' +
+    var V = ch.pictureView || {}, editing = ui.picEdit && ch.picture;
+    var pic = '<h3>Character picture</h3><div class="pic-wrap"><div><div class="pic-frame' + (ch.picture ? '' : ' empty') + (editing ? ' editing' : '') + '">' + (ch.picture ? pictureHtml('big') : '<span>No picture yet</span>') + '</div>' +
+      (editing ? '<div class="pic-tools"><label class="field"><span>Zoom</span><input type="range" min="0.5" max="4" step="0.01" data-piczoom="1" value="' + (+V.zoom || 1) + '"></label>' +
+        '<div class="toolbar">' + btn('picRotate', '⟲', { v: -90 }, 'btn') + btn('picRotate', '⟳', { v: 90 }, 'btn') + btn('picReset', 'Reset') + btn('picDone', 'Done', {}, 'btn primary') + '</div></div>' : '') + '</div><div>' +
       '<p class="muted">Add your own picture of the character: a drawing, an image you made or found, anything. It shows in the side panel and at the top of the sheet.</p>' +
-      '<div class="toolbar">' + btn('pickPicture', ch.picture ? 'Change picture' : 'Add a picture', {}, 'btn primary') + (ch.picture ? btn('removePicture', 'Remove picture', {}, 'btn danger') : '') + '</div>' +
-      (ch.picture ? '<label class="check-line"><input type="checkbox" data-check="pictureWhole"' + (ch.pictureFit === 'contain' ? ' checked' : '') + '> Show the whole picture (otherwise it is cropped to a square)</label>' : '') +
+      (editing ? '<p><b>Fit your picture:</b> drag it in the frame to move it, and zoom with the slider (or pinch with two fingers, or the mouse wheel). ⟲ ⟳ turn it. What you see in the frame is what shows in the side panel and on the sheet.</p>' :
+      '<div class="toolbar">' + btn('pickPicture', ch.picture ? 'Change picture' : 'Add a picture', {}, 'btn primary') + (ch.picture ? btn('picEdit', '✥ Move, zoom and turn', {}, 'btn') + btn('removePicture', 'Remove picture', {}, 'btn danger') : '') + '</div>') +
+      (ch.picture ? '<label class="check-line"><input type="checkbox" data-check="pictureWhole"' + (ch.pictureFit === 'contain' ? ' checked' : '') + '> Fit the whole picture in the frame (no cropping)</label>' : '') +
       (ui.pictureError ? '<p class="small" style="color:var(--warn)">' + esc(ui.pictureError) + '</p>' : '') +
       '<p class="small muted">The picture is saved in this browser with the character and included when you export it. It is never uploaded anywhere.</p>' +
       '<input type="file" id="pictureFile" accept="image/*" hidden></div></div>';
@@ -806,7 +816,7 @@
       var n = d.todo[s[0]], show = ['sheet', 'details', 'equipment', 'items', 'appearance'].indexOf(s[0]) < 0;
       return '<button type="button" class="step' + (ui.step === s[0] ? ' on' : '') + '" data-act="step" data-v="' + s[0] + '"><span>' + s[1] + '</span>' + (show ? (n ? '<span class="badge" title="' + n + ' open">' + n + '</span>' : '<span class="badge done">✓</span>') : '') + '</button>';
     }).join('') + '</nav>';
-    var side = '<aside class="side">' + (ui.step !== 'appearance' ? '<div class="side-portrait" data-act="step" data-v="appearance" title="Edit appearance">' + (ch.picture ? pictureHtml('side') : avatarCanvas('side')) + '</div>' : '') + '<h4>' + esc(title(ch)) + '</h4><div class="muted">' + esc(summaryLine(ch, d)) + '</div><div class="stats">' +
+    var side = '<aside class="side">' + (ui.step !== 'appearance' ? '<div class="side-portrait" data-act="step" data-v="appearance" title="Edit appearance">' + (ch.picture ? pictureHtml('in-side') : avatarCanvas('side')) + '</div>' : '') + '<h4>' + esc(title(ch)) + '</h4><div class="muted">' + esc(summaryLine(ch, d)) + '</div><div class="stats">' +
       [['AC', d.ac], ['HP', d.hp], ['Speed', d.speed], ['Init', R.fmt(d.init)], ['Prof', R.fmt(d.pb)], ['Passive', d.passive]].map(function (x) { return '<div class="stat"><b>' + x[1] + '</b><span>' + x[0] + '</span></div>'; }).join('') + '</div><div class="stats">' +
       AB.map(function (a) { return '<div class="stat"><b>' + d.abilities[a].total + '</b><span>' + a + ' ' + R.fmt(d.abilities[a].mod) + '</span></div>'; }).join('') + '</div>' +
       d.casters.map(function (s) { return '<div class="muted">' + (d.casters.length > 1 ? esc(s.name) + ': s' : 'S') + 'pell DC ' + s.dc + ' · attack ' + R.fmt(s.atk) + '</div>'; }).join('') +
@@ -831,7 +841,7 @@
 
   // ---------- actions ----------
   var actions = {
-    step: function (v) { ui.step = v; ui.packAdded = null; ui.editArmor = null; ui.editWeapon = null; ui.partImport = null; ui.partImportDone = null; ui.partImportError = null; ui.scrollToStep = true; },
+    step: function (v) { ui.step = v; ui.picEdit = false; ui.packAdded = null; ui.editArmor = null; ui.editWeapon = null; ui.partImport = null; ui.partImportDone = null; ui.partImportError = null; ui.scrollToStep = true; },
     'new': function () { var c = R.newChar(); store.chars.push(c); store.current = c.id; ui.step = 'lineage'; },
     dup: function () { var c = JSON.parse(JSON.stringify(ch)); c.id = R.uid(); c.name = title(ch) + ' (copy)'; store.chars.push(c); store.current = c.id; },
     askDelete: function () { ui.confirmDelete = true; },
@@ -958,8 +968,12 @@
     partImportClose: function () { ui.partImportDone = null; },
     undo: function () { return undo(); },
     redo: function () { return redo(); },
+    picEdit: function () { ui.picEdit = true; },
+    picDone: function () { ui.picEdit = false; },
+    picReset: function () { delete ch.pictureView; },
+    picRotate: function (v) { ch.pictureView = Object.assign({}, ch.pictureView); ch.pictureView.rot = (((+ch.pictureView.rot || 0) + (+v)) % 360 + 360) % 360; },
     pickPicture: function () { var f = document.getElementById('pictureFile'); if (f) f.click(); return false; },
-    removePicture: function () { delete ch.picture; delete ch.pictureFit; ui.pictureError = ''; },
+    removePicture: function () { delete ch.picture; delete ch.pictureFit; delete ch.pictureView; ui.picEdit = false; ui.pictureError = ''; },
     lookRandom: function () { ch.look = Object.assign({ hidden: (ch.look || {}).hidden || {} }, Avatar.random()); },
     lookReset: function () { ch.look = { hidden: (ch.look || {}).hidden || {} }; },
     addArmor: function () { ch.customArmor = ch.customArmor || []; var a = { id: R.uid(), n: 'My armor', kind: 'Light', ac: 11, dex: 'full', bonus: 0, str: 0, w: 0 }; ch.customArmor.push(a); ch.armor = 'custom:' + a.id; ui.editArmor = a.id; ui.editWeapon = null; },
@@ -1034,6 +1048,7 @@
   document.addEventListener('input', function (e) {
     var t = e.target, a = function (n) { return t.getAttribute(n); };
     if (a('data-q') != null) { ui.q[a('data-q')] = t.value; render(); }
+    else if (a('data-piczoom')) { ch.pictureView = Object.assign({}, ch.pictureView, { zoom: +t.value }); livePicture(); save(); }
     else if (a('data-itemtext')) { var itx = ch.items.filter(function (i) { return i.id === a('data-itemtext'); })[0]; if (itx) { itx.note = t.value; save(); } }
     else if ((a('data-carmor') || a('data-cweapon')) && t.tagName === 'INPUT' && t.type !== 'checkbox') { applyCustomField(t); save(); }
     else if (a('data-text')) { var path = a('data-text').split('.'); if (path.length > 1) ch[path[0]][path[1]] = t.value; else ch[path[0]] = t.value; save(); }
@@ -1066,6 +1081,7 @@
     else if (a('data-set')) ch[a('data-set')] = t.value;
     else if (a('data-check')) ch[a('data-check')] = t.checked;
     else if (a('data-carmor') || a('data-cweapon')) { applyCustomField(t); if (t.tagName === 'INPUT' && t.type !== 'checkbox') { save(); return; } }
+    else if (a('data-piczoom')) { ch.pictureView = Object.assign({}, ch.pictureView, { zoom: +t.value }); }
     else if (a('data-shieldbonus')) ch.shieldBonus = Math.round(+t.value) || 0;
     else if (a('data-free')) { ch.free = ch.free || {}; if (t.checked) ch.free[a('data-free')] = true; else delete ch.free[a('data-free')]; }
     else if (a('data-hpmanual')) { if (t.checked) { ch.hpMode = 'manual'; if (!ch.hpManual) ch.hpManual = d.hpAvg; } else ch.hpMode = 'avg'; }
@@ -1102,6 +1118,51 @@
     list.forEach(function (p) { addGearItem(p[0], p[1], p[2]); });
     ui.packAdded = { name: name, list: list.map(function (p) { return (p[1] > 1 ? p[1] + ' × ' : '') + p[0]; }) };
   }
+  // Moving the picture in its frame: drag with one finger or the mouse, pinch with two, or the mouse wheel
+  function livePicture() {
+    var img = document.querySelector('.pic-frame.editing img'); if (img) img.style.transform = picTransform(ch.pictureView);
+    var z = document.querySelector('[data-piczoom]'); if (z && ch.pictureView) z.value = ch.pictureView.zoom || 1;
+  }
+  var picPtrs = {}, picStart = null;
+  document.addEventListener('pointerdown', function (e) {
+    var fr = e.target.closest && e.target.closest('.pic-frame.editing');
+    if (!fr) return;
+    e.preventDefault();
+    try { fr.setPointerCapture(e.pointerId); } catch (er) { /* ignore */ }
+    picPtrs[e.pointerId] = { x: e.clientX, y: e.clientY };
+    var ids = Object.keys(picPtrs), v = ch.pictureView || {};
+    picStart = { v: { x: +v.x || 0, y: +v.y || 0, zoom: +v.zoom || 1, rot: +v.rot || 0 }, size: fr.clientWidth, pts: ids.map(function (k) { return { x: picPtrs[k].x, y: picPtrs[k].y }; }) };
+  });
+  document.addEventListener('pointermove', function (e) {
+    if (!picStart || !picPtrs[e.pointerId]) return;
+    picPtrs[e.pointerId] = { x: e.clientX, y: e.clientY };
+    var ids = Object.keys(picPtrs), now = ids.map(function (k) { return picPtrs[k]; }), s0 = picStart, v = Object.assign({}, s0.v);
+    var mid = function (pts) { return { x: pts.reduce(function (t, p) { return t + p.x; }, 0) / pts.length, y: pts.reduce(function (t, p) { return t + p.y; }, 0) / pts.length }; };
+    if (now.length !== s0.pts.length) { picStart.pts = now.map(function (p) { return { x: p.x, y: p.y }; }); picStart.v = Object.assign({}, ch.pictureView || v); return; }
+    var a = mid(s0.pts), b = mid(now);
+    v.x = s0.v.x + (b.x - a.x) / s0.size; v.y = s0.v.y + (b.y - a.y) / s0.size;
+    if (now.length === 2) {
+      var dist = function (p) { return Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y) || 1; };
+      v.zoom = Math.max(0.5, Math.min(4, s0.v.zoom * dist(now) / dist(s0.pts)));
+    }
+    ch.pictureView = v; livePicture();
+  });
+  var picEnd = function (e) {
+    if (!picPtrs[e.pointerId]) return;
+    delete picPtrs[e.pointerId];
+    if (!Object.keys(picPtrs).length) { picStart = null; save(); }
+    else { picStart.pts = Object.keys(picPtrs).map(function (k) { return { x: picPtrs[k].x, y: picPtrs[k].y }; }); picStart.v = Object.assign({}, ch.pictureView); }
+  };
+  document.addEventListener('pointerup', picEnd); document.addEventListener('pointercancel', picEnd);
+  document.addEventListener('wheel', function (e) {
+    var fr = e.target.closest && e.target.closest('.pic-frame.editing');
+    if (!fr) return;
+    e.preventDefault();
+    var v = Object.assign({ zoom: 1 }, ch.pictureView);
+    v.zoom = Math.max(0.5, Math.min(4, (+v.zoom || 1) * (e.deltaY < 0 ? 1.08 : 1 / 1.08)));
+    ch.pictureView = v; livePicture(); save();
+  }, { passive: false });
+
   function setLevel(id, value) {
     var e = entry(id);
     if (!e) return;
