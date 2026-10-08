@@ -184,3 +184,4 @@ canvas.avatar.figure.sheet-pic { width: 96px; height: 116px; }
 @media (max-width: 760px) { .look-wrap { grid-template-columns: 1fr; } .look-stage { position: static; } }
 @media print { canvas.avatar { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
 .look-items { display: flex; flex-direction: column; gap: .3rem; margin: .4rem 0; }
+.install-help { max-width: 640px; margin: 1rem auto; } .install-help ol { padding-left: 1.3rem; } .install-help li { margin: .3rem 0; }

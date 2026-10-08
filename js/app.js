@@ -530,7 +530,7 @@
       return '<option value="' + c.id + '"' + (c.id === ch.id ? ' selected' : '') + '>' + esc(title(c)) + '</option>';
     }).join('') + '</select>' + btn('new', 'New') + btn('dup', 'Duplicate') + btn('import', 'Import') + btn('export', 'Export') +
       (ui.confirmDelete ? btn('delete', 'Really delete?', {}, 'btn primary') + btn('cancelDelete', 'Cancel') : btn('askDelete', 'Delete', {}, 'btn danger')) +
-      (ui.importError ? '<span class="count" style="color:var(--warn)">That file is not a Character Forge export.</span>' : '') + (installPrompt ? btn('install', 'Install app', {}, 'btn primary') : '') + '<span class="spacer"></span><span class="filters"><b>Sources:</b>' + TAGS.map(function (t) {
+      (ui.importError ? '<span class="count" style="color:var(--warn)">That file is not a Character Forge export.</span>' : '') + (isInstalledApp() ? '' : btn('install', 'Install app', {}, installPrompt ? 'btn primary' : 'btn')) + '<span class="spacer"></span><span class="filters"><b>Sources:</b>' + TAGS.map(function (t) {
         return '<label><input type="checkbox" data-filter="' + t[0] + '"' + (store.filters[t[0]] !== false ? ' checked' : '') + '> ' + t[1] + '</label>';
       }).join('') + '<label title="Longer feature text and spell descriptions"><input type="checkbox" data-setting="detail"' + (store.detail !== false ? ' checked' : '') + '> Detailed text</label></span><input type="file" id="importFile" accept="application/json,.json" hidden></header>';
     var nav = '<nav class="steps" aria-label="Steps">' + STEPS.map(function (s) {
@@ -544,7 +544,7 @@
       (d.warnings.length ? '<ul class="warnings">' + d.warnings.map(function (w) { return '<li>' + esc(w) + '</li>'; }).join('') + '</ul>' : '') + '</aside>';
     var i = STEPS.map(function (s) { return s[0]; }).indexOf(ui.step);
     var foot = '<div class="toolbar noprint" style="margin-top:1.5rem">' + (i > 0 ? btn('step', '← ' + STEPS[i - 1][1], { v: STEPS[i - 1][0] }) : '') + (i < STEPS.length - 1 ? btn('step', STEPS[i + 1][1] + ' →', { v: STEPS[i + 1][0] }, 'btn primary') : '') + '</div>';
-    document.getElementById('app').innerHTML = top + '<div class="shell">' + nav + '<main>' + body + foot + '</main>' + side + '</div>';
+    document.getElementById('app').innerHTML = top + installHelpHtml() + '<div class="shell">' + nav + '<main>' + body + foot + '</main>' + side + '</div>';
     drawAvatars();
     if (fid) { var el = document.getElementById(fid); if (el) { el.focus(); try { if (pos != null) el.setSelectionRange(pos, pos); } catch (e) { /* not a text field */ } } }
     document.title = title(ch) + ' — Character Forge';
@@ -571,10 +571,11 @@
     'import': function () { document.getElementById('importFile').click(); return false; },
     print: function () { window.print(); return false; },
     install: function () {
-      if (!installPrompt) return false;
+      if (!installPrompt) { ui.installHelp = !ui.installHelp; return; }
       var pr = installPrompt; installPrompt = null; pr.prompt();
       if (pr.userChoice) pr.userChoice.then(function () { render(); });
     },
+    closeInstallHelp: function () { ui.installHelp = false; },
     lineage: function (v) {
       var l = R.lineage(v); ch.lineage = v; ch.sub = 0; clearPicks('lin'); ch.version = 0;
       for (var i = 0; i < l.versions.length; i++) if (ok(l.versions[i].tag || l.tag)) { ch.version = i; break; }
@@ -653,6 +654,31 @@
   // then would replace the button under the pointer and swallow the click, so the redraw waits for it.
   // The browser offers installing the site as an app; show our own button for it in the top bar.
   var installPrompt = null;
+  function isInstalledApp() {
+    try { return navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches || window.matchMedia('(display-mode: window-controls-overlay)').matches; } catch (e) { return false; }
+  }
+  // Steps for browsers that install from their own menu instead of letting the page ask.
+  function installSteps() {
+    var ua = navigator.userAgent || '', ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    var android = /Android/.test(ua), firefox = /Firefox|FxiOS/.test(ua), samsung = /SamsungBrowser/.test(ua), edge = /Edg\//.test(ua), opera = /OPR\//.test(ua);
+    var safari = /Safari/.test(ua) && !/Chrome|Chromium|CriOS|FxiOS|EdgiOS|Edg\//.test(ua);
+    if (!/^https?:$/.test(location.protocol) || window.self !== window.top) return { name: 'this page', steps: ['Open the site itself (https://spendrax.github.io/character-forge/) in your browser, then press Install app there. A preview or a file opened from your computer can\'t be installed.'] };
+    if (ios) return { name: 'iPhone and iPad', steps: ['Tap the Share button (the square with an arrow). In Safari it is at the bottom or top of the screen; in Chrome, Edge or Firefox it is in the address bar or the menu.', 'Scroll down and tap Add to Home Screen.', 'Make sure Open as Web App is on, if you see it, then tap Add.'] };
+    if (samsung) return { name: 'Samsung Internet', steps: ['Tap the menu (☰) at the bottom.', 'Tap Add page to, then Home screen.'] };
+    if (android && firefox) return { name: 'Firefox for Android', steps: ['Tap the menu (⋮).', 'Tap Add app to Home screen (on some versions: Install, or Add to Home screen).'] };
+    if (android) return { name: 'your Android browser', steps: ['Open the browser menu (⋮).', 'Tap Install app or Add to Home screen.'] };
+    if (safari) return { name: 'Safari on Mac', steps: ['In the menu bar, choose File, then Add to Dock (needs macOS Sonoma or newer).', 'On older macOS, open the site in Chrome or Edge to install it.'] };
+    if (firefox) return { name: 'Firefox on a computer', steps: ['Firefox on computers usually can\'t install websites as apps (newer versions on Windows may show an install or taskbar icon in the address bar). Otherwise open the site in Chrome or Edge to install it, or bookmark it here: it works the same in a tab, including offline after the first visit.'] };
+    if (edge) return { name: 'Edge', steps: ['Open the menu (…), then Apps, then Install this site as an app.', 'If Install is missing, the app may already be installed: look for it in edge://apps.'] };
+    if (opera) return { name: 'Opera', steps: ['Opera on computers can\'t install websites as apps. Open the site in Chrome or Edge to install it.'] };
+    return { name: 'Chrome', steps: ['Click the install icon at the right end of the address bar, or open the menu (⋮), then Cast, save and share, then Install page as app.', 'If Install is missing, the app may already be installed: look for it in chrome://apps.'] };
+  }
+  function installHelpHtml() {
+    if (!ui.installHelp) return '';
+    var s = installSteps();
+    return '<div class="panel install-help noprint" role="dialog" aria-label="How to install"><h3>Install Character Forge on ' + esc(s.name) + '</h3><ol>' + s.steps.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol>' +
+      '<p class="small muted">Once installed it opens in its own window with the Character Forge icon, works offline, and updates itself when you are online.</p>' + btn('closeInstallHelp', 'Close') + '</div>';
+  }
   window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); installPrompt = e; requestRender(); });
   window.addEventListener('appinstalled', function () { installPrompt = null; requestRender(); });
 
