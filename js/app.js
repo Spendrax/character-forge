@@ -149,7 +149,7 @@
     var list = D.lineages.filter(function (l) {
       return (ok(l.tag) || l.versions.some(function (v) { return v.tag && ok(v.tag); })) && match(q, l.name) && (!ui.group || l.group === ui.group);
     });
-    var h = '<h2>Lineage</h2><p class="muted">Your character\'s people: size, speed, ability bonuses and inborn traits.</p>' +
+    var h = '<h2>Lineage</h2>' + partImportHtml('lineage') + '<p class="muted">Your character\'s people: size, speed, ability bonuses and inborn traits.</p>' +
       '<div class="toolbar">' + search('lineage', 'Search lineages…') + '<select data-ui="group"><option value="">All groups</option>' +
       groups.map(function (g) { return '<option' + (ui.group === g ? ' selected' : '') + '>' + esc(g) + '</option>'; }).join('') + '</select><span class="muted small">' + list.length + ' shown</span></div>' +
       '<div class="grid scroll">' + list.map(function (l) {
@@ -179,7 +179,7 @@
 
   function stepClass() {
     var E = d.classes, total = d.level, used = E.map(function (e) { return e.id; });
-    var h = '<h2>Class</h2><p class="muted">Your character\'s calling. Take every level in one class, or split up to 20 levels across several.</p>';
+    var h = '<h2>Class</h2>' + partImportHtml('class') + '<p class="muted">Your character\'s calling. Take every level in one class, or split up to 20 levels across several.</p>';
     if (E.length <= 1) h += '<div class="grid">' + D.classes.filter(function (c) { return ok(c.tag) || used.indexOf(c.id) >= 0; }).map(function (c) {
       return '<button type="button" class="card' + (used[0] === c.id ? ' on' : '') + '" data-act="cls" data-v="' + c.id + '"><b>' + esc(c.name) + '</b><small>d' + c.hitDie + ' · ' + c.saves.join(' & ') + ' saves' + tag(c.tag) + '</small></button>';
     }).join('') + '</div>';
@@ -232,7 +232,7 @@
 
   function stepAbilities() {
     var m = ch.method;
-    var h = '<h2>Ability scores</h2><div class="pills" style="margin:.75rem 0">' +
+    var h = '<h2>Ability scores</h2>' + partImportHtml('abilities') + '<div class="pills" style="margin:.75rem 0">' +
       [['array', 'Standard array'], ['pointbuy', 'Point buy'], ['manual', 'Manual / rolled']].map(function (x) { return btn('method', x[1], { v: x[0] }, 'pill' + (m === x[0] ? ' on' : '')); }).join('') + '</div>';
     if (m === 'pointbuy') h += '<p class="' + (d.pointsSpent === 27 ? 'muted' : 'count') + '">Points spent: <b>' + (d.pointsSpent > 90 ? '—' : d.pointsSpent) + ' / 27</b>. Scores run from 8 to 15 before bonuses.</p>';
     if (m === 'array') h += '<p class="muted">Assign 15, 14, 13, 12, 10 and 8. Choosing a value swaps it with the ability that had it.</p>';
@@ -241,7 +241,7 @@
       var x = d.abilities[a], input;
       if (m === 'array') input = '<select data-base="' + a + '">' + D.standardArray.map(function (v) { return '<option' + (ch.base[a] === v ? ' selected' : '') + '>' + v + '</option>'; }).join('') + (D.standardArray.indexOf(ch.base[a]) < 0 ? '<option selected>' + ch.base[a] + '</option>' : '') + '</select>';
       else if (m === 'pointbuy') input = btn('pb', '−', { a: a, v: -1 }, 'btn tiny') + ' <b style="display:inline-block;width:1.6rem;text-align:center">' + ch.base[a] + '</b> ' + btn('pb', '+', { a: a, v: 1 }, 'btn tiny');
-      else input = '<input type="number" min="1" max="20" id="base-' + a + '" data-base="' + a + '" value="' + ch.base[a] + '">';
+      else input = '<input type="number" min="1" max="' + (ch.free && ch.free.abilityCap ? 30 : 20) + '" id="base-' + a + '" data-base="' + a + '" value="' + ch.base[a] + '">';
       return '<tr><td><b>' + D.abilityNames[a] + '</b></td><td>' + input + '</td><td class="num">' + (x.bonus ? R.fmt(x.bonus) : '') + '</td><td class="num"><b>' + x.total + '</b></td><td class="num">' + R.fmt(x.mod) + '</td></tr>';
     }).join('') + '</table></div>';
     var slots = d.featSlots.filter(function (s) { return s.step === 'abilities'; });
@@ -255,7 +255,7 @@
 
   function stepBackground() {
     var list = D.backgrounds.filter(function (b) { return (ok(b.tag) || b.n === ch.background) && match(ui.q.background || '', b.n); });
-    var h = '<h2>Background</h2><p class="muted">Where your character came from: skills, tools, languages and a story feature.</p><div class="toolbar">' + search('background', 'Search backgrounds…') + '<span class="muted small">' + list.length + ' shown</span></div>' +
+    var h = '<h2>Background</h2>' + partImportHtml('background') + '<p class="muted">Where your character came from: skills, tools, languages and a story feature.</p><div class="toolbar">' + search('background', 'Search backgrounds…') + '<span class="muted small">' + list.length + ' shown</span></div>' +
       '<div class="grid scroll">' + list.map(function (b) {
         return '<button type="button" class="card' + (ch.background === b.n ? ' on' : '') + '" data-act="background" data-v="' + esc(b.n) + '"><b>' + esc(b.n) + '</b><small>' + esc(b.s) + tag(b.tag) + '</small></button>';
       }).join('') + '</div>';
@@ -270,51 +270,96 @@
   function spellMeta(s) {
     return (s.level ? 'Level ' + s.level : 'Cantrip') + ' ' + s.school.toLowerCase() + ' · ' + s.time + ' · ' + s.range + ' · ' + s.duration + (s.ritual ? ' · ritual' : '');
   }
-  // "Import spells" on the Spells step: only ever changes the current character's spells.
-  function spellImportHtml() {
-    var I = ui.spellImport, done = ui.spellImportDone;
-    var bar = '<div class="spell-import noprint"><div class="toolbar">' + btn('importSpells', '⇩ Import spells (5th Spellbook or 5e Companion)') +
-      '<span class="small muted">Only changes the spells of ' + esc(title(ch)) + '. Everything else stays.</span></div><input type="file" id="spellImportFile" hidden>';
-    if (ui.spellImportError) bar += '<p class="small" style="color:var(--warn)">' + esc(ui.spellImportError) + '</p>';
-    if (done) bar += '<div class="panel"><b>Spells imported from ' + esc(done.from) + ' (' + esc(done.source) + ').</b> ' + done.added + ' spell' + (done.added === 1 ? '' : 's') + ' added' +
-      (done.skipped ? '; ' + done.skipped + ' didn\'t fit and are listed in Details → Other notes' : '') + '. Not right? Press Undo at the top. ' + btn('spellImportClose', 'OK', {}, 'btn tiny') + '</div>';
-    if (I) bar += '<div class="panel"><b>Whose spells?</b> <span class="muted">The file has ' + I.entries.length + ' characters. Pick the one to take spells from.</span><div class="imp-list">' +
+  // "Import" on each step: brings in only that part of a character from another app's file.
+  var PARTS = {
+    lineage: { label: 'lineage', what: 'lineage, subrace and lineage choices', spellbook: true },
+    'class': { label: 'classes', what: 'classes, levels, subclasses and class choices (skills, fighting styles…)', spellbook: true },
+    abilities: { label: 'ability scores', what: 'ability scores (the exact totals), ability improvements and feats' },
+    background: { label: 'background', what: 'background and its choices' },
+    spells: { label: 'spells', what: 'spells', spellbook: true },
+    equipment: { label: 'armour and weapons', what: 'worn armour, shield and weapons' },
+    items: { label: 'items and coins', what: 'inventory and coins' },
+    appearance: { label: 'picture', what: 'the character picture' },
+    details: { label: 'details', what: 'alignment, personality, backstory and notes' }
+  };
+  function partImportHtml(step) {
+    var P = PARTS[step], I = ui.partImport && ui.partImport.step === step ? ui.partImport : null, done = ui.partImportDone && ui.partImportDone.step === step ? ui.partImportDone : null;
+    var bar = '<div class="spell-import noprint"><div class="toolbar">' + btn('importPart', '⇩ Import ' + P.label, { step: step }) +
+      '<span class="small muted">From a 5e Companion character' + (P.spellbook ? ' or a 5th Spellbook backup' : '') + '. Only changes the ' + esc(P.what) + ' of ' + esc(title(ch)) + '; everything else stays.</span></div>';
+    if (ui.partImportError && ui.partImportError.step === step) bar += '<p class="small" style="color:var(--warn)">' + esc(ui.partImportError.msg) + '</p>';
+    if (done) bar += '<div class="panel"><b>' + esc(done.msg) + '</b> Not right? Press Undo at the top. ' + btn('partImportClose', 'OK', {}, 'btn tiny') + '</div>';
+    if (I) bar += '<div class="panel"><b>Which character?</b> <span class="muted">The file has ' + I.entries.length + ' characters. Pick the one to take the ' + esc(P.label) + ' from.</span><div class="imp-list">' +
       I.entries.map(function (e) {
-        var n = e.classes.reduce(function (t, c) { return t + c.spells.length; }, e.loose.length);
-        return '<label class="imp-row"><input type="radio" name="spellsFrom" data-spellsfrom="' + e.id + '"' + (I.choose === e.id ? ' checked' : '') + '><span><b>' + esc(e.name) + '</b><br><span class="small muted">' + esc(importerOf(e).summary(e)) + ' · ' + n + ' spells</span></span></label>';
-      }).join('') + '</div><div class="toolbar">' + btn('spellImportGo', 'Use these spells', {}, 'btn primary') + btn('spellImportCancel', 'Cancel') + '</div></div>';
+        return '<label class="imp-row"><input type="radio" name="partFrom" data-partfrom="' + e.id + '"' + (I.choose === e.id ? ' checked' : '') + '><span><b>' + esc(e.name) + '</b><br><span class="small muted">' + esc(importerOf(e).summary(e)) + '</span></span></label>';
+      }).join('') + '</div><div class="toolbar">' + btn('partImportGo', 'Import from this character', {}, 'btn primary') + btn('partImportCancel', 'Cancel') + '</div></div>';
     return bar + '</div>';
   }
-  function applySpellImport(entry) {
-    var u = Import5e.spellsInto(entry, ch, R, D), c2 = normalize(u.ch);
-    store.chars[store.chars.indexOf(ch)] = c2; store.current = c2.id;
-    ui.spellImport = null; ui.spellImportError = ''; ui.spellImportDone = { from: entry.name, source: sourceName(entry), added: u.added, skipped: u.skipped.length };
+  function swapIn(c2) { store.chars[store.chars.indexOf(ch)] = c2; store.current = c2.id; ch = c2; }
+  function applyPartImport(step, entry) {
+    var src = sourceName(entry), P = PARTS[step], msg;
+    ui.partImport = null; ui.partImportError = null;
+    if (step === 'spells') {
+      var u = Import5e.spellsInto(entry, ch, R, D); swapIn(normalize(u.ch));
+      msg = 'Spells imported from ' + entry.name + ' (' + src + '): ' + u.added + ' added' + (u.skipped.length ? ', ' + u.skipped.length + ' didn’t fit and are listed in Details → Other notes' : '') + '.';
+      ui.partImportDone = { step: step, msg: msg }; return;
+    }
+    var full = importerOf(entry).toCharacter(entry, R, D), f = full.ch, c = JSON.parse(JSON.stringify(ch));
+    var takePicks = function (prefixes) {
+      Object.keys(c.picks).forEach(function (k) { if (prefixes.some(function (p) { return k.indexOf(p) === 0; })) delete c.picks[k]; });
+      Object.keys(f.picks).forEach(function (k) { if (prefixes.some(function (p) { return k.indexOf(p) === 0; })) c.picks[k] = f.picks[k].slice(); });
+    };
+    if (step === 'lineage') { c.lineage = f.lineage; c.version = f.version; c.sub = f.sub; takePicks(['lin']); }
+    else if (step === 'class') { c.classes = f.classes; takePicks(['cls.', 'sc.']); }
+    else if (step === 'abilities') {
+      c.asi = f.asi; takePicks(['asi.']);
+      var want = R.derive(f, store.filters).abilities, cur = R.derive(c, store.filters).abilities;
+      c.method = 'manual';
+      AB.forEach(function (a) { c.base[a] = Math.max(1, Math.min(30, want[a].total - (cur[a].total - c.base[a]))); });
+    }
+    else if (step === 'background') { c.background = f.background; takePicks(['bg']); }
+    else if (step === 'equipment') { c.armor = f.armor; c.shield = f.shield; c.weapons = f.weapons.slice(); }
+    else if (step === 'items') { c.items = f.items; c.money = f.money; }
+    else if (step === 'details') {
+      if (f.alignment) c.alignment = f.alignment;
+      if (f.player) c.player = f.player;
+      if (!String(c.name || '').trim()) c.name = f.name;
+      ['traits', 'ideals', 'bonds', 'flaws', 'appearance', 'backstory'].forEach(function (k) { if (f.notes[k]) c.notes[k] = f.notes[k]; });
+      var extra = String(f.notes.other || '').split('Notes from ' + src + ':')[1];
+      if (extra && extra.trim()) c.notes.other = (c.notes.other ? c.notes.other + '\n\n' : '') + 'Notes from ' + src + ' (' + entry.name + '):' + extra;
+    }
+    else if (step === 'appearance') {
+      if (!full.picture) throw new Error('That character has no picture in the file.');
+      shrinkPicture(full.picture, function (data) { var me = byId(c.id); if (me && data) { me.picture = data; render(); } });
+    }
+    swapIn(normalize(c));
+    ui.partImportDone = { step: step, msg: 'Imported the ' + P.label + ' of ' + entry.name + ' (' + src + ').' + (step === 'abilities' ? ' Scores match the file exactly, with your own lineage and feats counted.' : '') };
   }
-  function loadSpellImport(input) {
-    var file = input.files && input.files[0];
+  function loadPartImport(input) {
+    var file = input.files && input.files[0], step = input.getAttribute('data-step') || ui.step;
     input.value = '';
     if (!file) return;
     var reader = new FileReader();
     reader.onload = function () {
-      ui.spellImportError = ''; ui.spellImportDone = null; ui.spellImport = null;
+      ui.partImportError = null; ui.partImportDone = null; ui.partImport = null;
       try {
         var entries = readImportFile(reader.result);
-        if (!entries || entries.json) throw new Error('That file is not a 5th Spellbook backup or a 5e Companion character.');
-        if (!entries.length) throw new Error('That 5th Spellbook backup has no characters.');
+        if (!entries || entries.json) throw new Error('That file is not a 5e Companion character' + (PARTS[step].spellbook ? ' or a 5th Spellbook backup' : '') + '.');
+        if (!entries.length) throw new Error('That file has no characters.');
+        if (entries[0].source !== 'companion' && !PARTS[step].spellbook) throw new Error('5th Spellbook backups don’t include the ' + PARTS[step].label + '. Use a character shared from 5e Companion.');
         var nm = function (x) { return String(x || '').trim().toLowerCase(); };
         var same = entries.filter(function (e) { return nm(e.name) && nm(e.name) === nm(ch.name); });
-        if (entries.length === 1) applySpellImport(entries[0]);
-        else ui.spellImport = { entries: entries, choose: (same[0] || entries[0]).id, matched: same.length === 1 };
-      } catch (err) { ui.spellImportError = /5th Spellbook|5e Companion/.test(err.message) ? err.message : 'That file could not be read as a 5th Spellbook backup or a 5e Companion character.'; window.console.error(err); }
+        if (entries.length === 1) applyPartImport(step, entries[0]);
+        else ui.partImport = { step: step, entries: entries, choose: (same[0] || entries[0]).id };
+      } catch (err) { ui.partImportError = { step: step, msg: /5th Spellbook|5e Companion|picture|no characters/.test(err.message) ? err.message : 'That file could not be read.' }; window.console.error(err); }
       render();
     };
     reader.readAsArrayBuffer(file);
   }
 
   function stepSpells() {
-    var h = '<h2>Spells</h2>';
+    var h = '<h2>Spells</h2>' + partImportHtml('spells');
     if (!d.casters.length) return h + '<p class="notice">' + (d.cls ? 'This character has no spellcasting yet.' : 'Pick a class first.') + '</p>';
-    h += spellImportHtml();
+
     if (!d.casters.some(function (s) { return s.clsId === ui.casterTab; })) ui.casterTab = d.casters[0].clsId;
     h += slotsHtml();
     if (d.casterLevel) h += '<p class="small muted">Spell slots are shared: your classes add up to caster level ' + d.casterLevel + '. Each class still learns and prepares spells as if it were your only class.</p>';
@@ -323,12 +368,16 @@
     }).join('') + '</div>';
     var S = d.casters.filter(function (s) { return s.clsId === ui.casterTab; })[0];
     var noun = S.mode === 'known' ? 'Spells known' : S.mode === 'prepared' ? 'Prepared spells' : 'Spellbook';
+    var of = function (n, max, rule) { return n + (S.unlimited ? (rule != null ? ' <small class="muted">(rules: ' + rule + ')</small>' : '') : ' / ' + max); };
+    h += '<label class="check-line limit-toggle"><input type="checkbox" data-free="spells"' + (ch.free && ch.free.spells ? ' checked' : '') + '> No spell limits: pick any number of spells, from any class list (for spells gained from feats, items, boons or house rules)</label>';
     h += '<div class="facts"><span><b>' + esc(S.name) + '</b></span><span><b>Ability</b> ' + D.abilityNames[S.ability] + '</span><span><b>Save DC</b> ' + S.dc + '</span><span><b>Spell attack</b> ' + R.fmt(S.atk) + '</span>' +
-      (S.cantripsMax ? '<span><b>Cantrips</b> ' + S.cantrips.length + ' / ' + S.cantripsMax + '</span>' : '') + '<span><b>' + noun + '</b> ' + S.known.length + ' / ' + S.knownMax + '</span>' +
-      (S.mode === 'spellbook' ? '<span><b>Prepared</b> ' + S.prepared.length + ' / ' + S.preparedMax + '</span>' : '') + '<span><b>Highest spell level</b> ' + S.maxLevel + '</span></div>';
+      (S.cantripsMax ? '<span><b>Cantrips</b> ' + of(S.cantrips.length, S.cantripsMax, S.limits && S.limits.cantrips) + '</span>' : '') + '<span><b>' + noun + '</b> ' + of(S.known.length, S.knownMax, S.limits && S.limits.known) + '</span>' +
+      (S.mode === 'spellbook' ? '<span><b>Prepared</b> ' + of(S.prepared.length, S.preparedMax, S.limits && S.limits.prepared) + '</span>' : '') + '<span><b>Highest spell level</b> ' + S.maxLevel + '</span></div>';
+    if (S.unlimited) h += '<p class="small muted">Spell limits are off for this character: every spell is listed, including other classes\' spells and levels above your slots. Spells not on the ' + esc(S.name) + ' list are marked “other list”.</p>';
     if (S.note) h += '<p class="small muted">' + esc(S.note) + '</p>';
     if (S.always.length) h += '<p><b>Always prepared:</b> ' + S.always.map(spellLink).join(', ') + '</p>';
-    var levels = []; for (var i = S.cantripsMax ? 0 : 1; i <= S.maxLevel; i++) levels.push(i);
+    var levels = []; for (var i = S.cantripsMax ? 0 : 1; i <= (S.unlimited ? 9 : S.maxLevel); i++) levels.push(i);
+    var onClass = {}; (S.classList || S.list).forEach(function (x) { onClass[x.name] = 1; });
     if (levels.indexOf(ui.spellLevel) < 0) ui.spellLevel = levels[0];
     var q = ui.q.spells || '';
     h += '<div class="toolbar"><div class="pills">' + levels.map(function (l) {
@@ -343,7 +392,7 @@
       return '<div class="spell' + (on || auto ? ' on' : '') + '">' +
         (auto ? '<span class="small muted" style="width:1.5rem">auto</span>' : '<button type="button" class="check' + (on ? ' on' : '') + '" aria-label="' + (on ? 'Remove ' : 'Add ') + esc(s.name) + '" data-act="spell" data-c="' + S.clsId + '" data-b="' + bucket + '" data-v="' + esc(s.name) + '">' + (on ? '✓' : '') + '</button>') +
         (book ? (on && s.level ? '<button type="button" class="check' + (prep ? ' on' : '') + '" title="Prepared" aria-label="Prepare ' + esc(s.name) + '" data-act="spell" data-c="' + S.clsId + '" data-b="p" data-v="' + esc(s.name) + '">' + (prep ? '★' : '☆') + '</button>' : '<span style="width:1.5rem"></span>') : '') +
-        '<div><b>' + spellLink(s.name) + '</b>' + (s.conc ? ' <span class="tag">conc</span>' : '') + tag(s.tag) + ' <span class="small muted">' + esc(spellMeta(s)) + ' · ' + esc(s.comp) + '</span>' +
+        '<div><b>' + spellLink(s.name) + '</b>' + (s.conc ? ' <span class="tag">conc</span>' : '') + tag(s.tag) + (S.unlimited && !onClass[s.name] ? ' <span class="tag">other list</span>' : '') + ' <span class="small muted">' + esc(spellMeta(s)) + ' · ' + esc(s.comp) + '</span>' +
         (text ? '<div class="small">' + esc(text) + '</div>' : '') + '</div></div>';
     }).join('') + '</div>' + (rows.length ? '' : '<p class="muted">No spells match.</p>');
     return h + '<p class="small muted">' + (book ? '✓ in your spellbook · ★ prepared. ' : '') + 'Spell names link to the full text on the wiki.</p>';
@@ -357,7 +406,7 @@
   }
 
   function stepEquipment() {
-    var h = '<h2>Equipment</h2>';
+    var h = '<h2>Equipment</h2>' + partImportHtml('equipment');
     if (d.cls) {
       h += '<div class="panel"><h3>Starting equipment — ' + esc(d.cls.name) + '</h3>' + d.cls.equipment.map(function (line, i) {
         var o = R.parseEquip(line);
@@ -392,7 +441,7 @@
   function itemName(it) { return it.k === 'magic' && it.slug ? '<a href="' + esc(D.magicItemUrl(it.slug)) + '" target="_blank" rel="noopener">' + esc(it.n) + '</a>' : esc(it.n); }
   function stepItems() {
     var inv = d.inv, over = inv.weight > inv.capacity, m = ch.money;
-    var h = '<h2>Items</h2><p class="muted">What your character owns: magic items, adventuring gear, coins and anything of your own.</p>' +
+    var h = '<h2>Items</h2>' + partImportHtml('items') + '<p class="muted">What your character owns: magic items, adventuring gear, coins and anything of your own.</p>' +
       '<div class="slots"><div class="stat" style="padding:.3rem .8rem"><b' + (over ? ' style="color:var(--warn)"' : '') + '>' + inv.weight + ' / ' + inv.capacity + '</b><span>Carried lb / capacity</span></div>' +
       '<div class="stat" style="padding:.3rem .8rem"><b' + (inv.attuned > inv.attuneMax ? ' style="color:var(--warn)"' : '') + '>' + inv.attuned + ' / ' + inv.attuneMax + '</b><span>Attuned items</span></div>' +
       '<div class="stat" style="padding:.3rem .8rem"><b>' + inv.gpValue.toLocaleString('en') + '</b><span>Coins, in gp</span></div></div>' +
@@ -537,7 +586,7 @@
         return '<label class="check"><input type="checkbox" data-lookhide="' + it.id + '"' + (hidden[it.id] ? '' : ' checked') + '> Show ' + esc(it.n) + '</label>';
       }).join('') + '</div>' : '<p class="muted">No wearable items in the inventory. Cloaks, hats, helms, circlets, boots, gloves, belts, amulets, rings, goggles, orbs and magic weapons, armour and shields are drawn; other items are not.</p>') +
       '<p class="small muted">Magic items add a sparkle in their rarity colour. Only the first weapon is held; a second light weapon goes in the off hand, and a bow, staff or great weapon goes on the back.</p>';
-    return '<h2>Appearance</h2>' + pic +
+    return '<h2>Appearance</h2>' + partImportHtml('appearance') + pic +
       '<h3 style="margin-top:2rem">Pixel figure</h3><p class="muted">A little pixel-art figure of your character. Starting looks follow your lineage, and armour, weapons and wearable items are drawn on it.</p>' +
       '<div class="look-wrap">' + stage + '<div class="look-controls">' + controls + '</div></div>';
   }
@@ -547,9 +596,35 @@
       var v = k in ch.notes ? ch.notes[k] : ch[k], path = k in ch.notes ? 'notes.' + k : k;
       return '<label class="field"><span>' + label + '</span>' + (area ? '<textarea id="f-' + k + '" data-text="' + path + '">' + esc(v) + '</textarea>' : '<input type="text" id="f-' + k + '" data-text="' + path + '" value="' + esc(v) + '">') + '</label>';
     }
-    return '<h2>Details</h2><div class="panel"><div class="row">' + t('name', 'Character name') + t('player', 'Player') +
+    return '<h2>Details</h2>' + partImportHtml('details') + '<div class="panel"><div class="row">' + t('name', 'Character name') + t('player', 'Player') +
       '<label class="field"><span>Alignment</span><select data-set="alignment"><option value="">—</option>' + D.alignments.map(function (a) { return '<option' + (ch.alignment === a ? ' selected' : '') + '>' + a + '</option>'; }).join('') + '</select></label></div>' +
-      t('traits', 'Personality traits', 1) + t('ideals', 'Ideals', 1) + t('bonds', 'Bonds', 1) + t('flaws', 'Flaws', 1) + t('appearance', 'Appearance', 1) + t('backstory', 'Backstory', 1) + t('other', 'Other notes', 1) + '</div>';
+      t('traits', 'Personality traits', 1) + t('ideals', 'Ideals', 1) + t('bonds', 'Bonds', 1) + t('flaws', 'Flaws', 1) + t('appearance', 'Appearance', 1) + t('backstory', 'Backstory', 1) + t('other', 'Other notes', 1) + '</div>' +
+      limitsHtml();
+  }
+  // Limits that can be switched off, and extras gained outside the normal rules
+  function limitsHtml() {
+    var F = ch.free || {}, X = ch.extra || {};
+    var tog = function (k, label, hint) { return '<label class="check-line"><input type="checkbox" data-free="' + k + '"' + (F[k] ? ' checked' : '') + '> <span><b>' + label + '</b>' + (hint ? '<br><span class="small muted">' + hint + '</span>' : '') + '</span></label>'; };
+    var num = function (k, label) { return '<label class="field extra-num"><span>' + label + '</span><input type="number" step="1" id="x-' + k + '" data-extra="' + k + '" value="' + (+X[k] || 0) + '"></label>'; };
+    var txt = function (k, label, ph) { return '<label class="field"><span>' + label + '</span><input type="text" id="x-' + k + '" data-extratext="' + k + '" value="' + esc(X[k] || '') + '" placeholder="' + esc(ph) + '"></label>'; };
+    var manualHp = ch.hpMode === 'manual';
+    var xs = X.skills || {}, saves = X.saves || [];
+    return '<h3 style="margin-top:2rem">Limits and extras</h3><p class="muted">For anything your character has beyond the normal rules: a magic item, a blessing, a boon, a house rule. Everything here is for ' + esc(title(ch)) + ' only.</p>' +
+      '<div class="panel"><h4>Limits</h4>' +
+      tog('spells', 'No spell limits', 'Pick any number of cantrips and spells, from any class list and any level.') +
+      tog('abilityCap', 'Ability scores can go above 20', 'Up to 30, for items, boons or epic play.') +
+      '<label class="check-line"><input type="checkbox" data-hpmanual="1"' + (manualHp ? ' checked' : '') + '> <span><b>Set my own hit point maximum</b><br><span class="small muted">Instead of the one worked out from class and Constitution (' + d.hpAvg + ' on average).</span></span></label>' +
+      (manualHp ? '<label class="field extra-num" style="margin-left:1.8rem"><span>Hit point maximum</span><input type="number" min="1" data-num="hpManual" value="' + (ch.hpManual || d.hpAvg) + '"></label>' : '') +
+      tog('attune', 'No attunement limit', 'Attune to more than ' + (d.inv && isFinite(d.inv.attuneMax) ? d.inv.attuneMax : 3) + ' magic items without a warning.') + '</div>' +
+      '<div class="panel"><h4>Extra bonuses</h4><p class="small muted">Added on top of everything the app works out. Use negative numbers for penalties.</p><div class="extra-grid">' +
+      AB.map(function (a) { return num(a, D.abilityNames[a]); }).join('') + '</div><div class="extra-grid">' +
+      num('ac', 'Armor class') + num('hp', 'Hit points') + num('speed', 'Speed (ft)') + num('init', 'Initiative') + num('passive', 'Passive Perception') + num('spellDC', 'Spell save DC') + num('spellAtk', 'Spell attack') + '</div></div>' +
+      '<div class="panel"><h4>Extra proficiencies</h4><div class="extra-skills">' + Object.keys(D.skills).map(function (k) {
+        var v = xs[k] || '', has = d.skills[k] && d.skills[k].prof && !v;
+        return '<label class="field"><span>' + esc(k) + (has ? ' <small class="muted">· already</small>' : '') + '</span><select data-extraskill="' + esc(k) + '"><option value="">—</option><option value="prof"' + (v === 'prof' ? ' selected' : '') + '>Proficient</option><option value="exp"' + (v === 'exp' ? ' selected' : '') + '>Expertise</option></select></label>';
+      }).join('') + '</div><p class="small" style="margin:.8rem 0 .3rem"><b>Saving throws</b></p><div class="pills">' + AB.map(function (a) {
+        return '<label class="check-line" style="margin:0 .8rem 0 0"><input type="checkbox" data-extrasave="' + a + '"' + (saves.indexOf(a) >= 0 ? ' checked' : '') + '> ' + D.abilityNames[a] + '</label>';
+      }).join('') + '</div><div class="row" style="margin-top:.6rem">' + txt('languages', 'Languages', 'e.g. Sylvan, Thieves\' Cant') + txt('tools', 'Tools', 'e.g. Herbalism kit') + '</div><div class="row">' + txt('armor', 'Armor', 'e.g. Heavy armor') + txt('weapons', 'Weapons', 'e.g. Martial weapons') + '</div></div>';
   }
 
   function stepSheet() {
@@ -633,7 +708,7 @@
       (ui.confirmDelete ? btn('delete', 'Really delete?', {}, 'btn primary') + btn('cancelDelete', 'Cancel') : btn('askDelete', 'Delete', {}, 'btn danger')) +
       (ui.importError ? '<span class="count" style="color:var(--warn)">' + esc(ui.importError === true ? 'That file is not a Character Forge export, a 5th Spellbook backup or a 5e Companion character.' : ui.importError) + '</span>' : '') + (isInstalledApp() ? '' : btn('install', 'Install app', {}, installPrompt ? 'btn primary' : 'btn')) + '<span class="spacer"></span><span class="filters"><b>Sources:</b>' + TAGS.map(function (t) {
         return '<label><input type="checkbox" data-filter="' + t[0] + '"' + (store.filters[t[0]] !== false ? ' checked' : '') + '> ' + t[1] + '</label>';
-      }).join('') + '<label title="Longer feature text and spell descriptions"><input type="checkbox" data-setting="detail"' + (store.detail !== false ? ' checked' : '') + '> Detailed text</label></span><input type="file" id="importFile" hidden></header>';
+      }).join('') + '<label title="Longer feature text and spell descriptions"><input type="checkbox" data-setting="detail"' + (store.detail !== false ? ' checked' : '') + '> Detailed text</label></span><input type="file" id="importFile" hidden><input type="file" id="partImportFile" hidden></header>';
     var nav = '<nav class="steps" aria-label="Steps">' + STEPS.map(function (s) {
       var n = d.todo[s[0]], show = ['sheet', 'details', 'equipment', 'items', 'appearance'].indexOf(s[0]) < 0;
       return '<button type="button" class="step' + (ui.step === s[0] ? ' on' : '') + '" data-act="step" data-v="' + s[0] + '"><span>' + s[1] + '</span>' + (show ? (n ? '<span class="badge" title="' + n + ' open">' + n + '</span>' : '<span class="badge done">✓</span>') : '') + '</button>';
@@ -654,7 +729,7 @@
 
   // ---------- actions ----------
   var actions = {
-    step: function (v) { ui.step = v; ui.spellImport = null; ui.spellImportDone = null; ui.spellImportError = ''; window.scrollTo(0, 0); },
+    step: function (v) { ui.step = v; ui.partImport = null; ui.partImportDone = null; ui.partImportError = null; window.scrollTo(0, 0); },
     'new': function () { var c = R.newChar(); store.chars.push(c); store.current = c.id; ui.step = 'lineage'; },
     dup: function () { var c = JSON.parse(JSON.stringify(ch)); c.id = R.uid(); c.name = title(ch) + ' (copy)'; store.chars.push(c); store.current = c.id; },
     askDelete: function () { ui.confirmDelete = true; },
@@ -768,10 +843,10 @@
     rmItem: function (v) { ch.items = ch.items.filter(function (i) { return i.id !== v; }); },
     eq: function (v, el) { ch.eq[el.getAttribute('data-i')] = +v; },
     look: function (v, el) { ch.look = ch.look || {}; ch.look[el.getAttribute('data-k')] = v; },
-    importSpells: function () { var f = document.getElementById('spellImportFile'); if (f) f.click(); return false; },
-    spellImportGo: function () { var I = ui.spellImport; if (!I) return false; var e = I.entries.filter(function (x) { return x.id === I.choose; })[0]; if (e) applySpellImport(e); },
-    spellImportCancel: function () { ui.spellImport = null; },
-    spellImportClose: function () { ui.spellImportDone = null; },
+    importPart: function (v, el) { var f = document.getElementById('partImportFile'); if (f) { f.setAttribute('data-step', el.getAttribute('data-step')); f.click(); } return false; },
+    partImportGo: function () { var I = ui.partImport; if (!I) return false; var e = I.entries.filter(function (x) { return x.id === I.choose; })[0]; if (!e) return false; try { applyPartImport(I.step, e); } catch (err) { ui.partImportError = { step: I.step, msg: err.message }; } },
+    partImportCancel: function () { ui.partImport = null; },
+    partImportClose: function () { ui.partImportDone = null; },
     undo: function () { return undo(); },
     redo: function () { return redo(); },
     pickPicture: function () { var f = document.getElementById('pictureFile'); if (f) f.click(); return false; },
@@ -850,11 +925,11 @@
     var t = e.target, a = function (n) { return t.getAttribute(n); };
     if (t.id === 'importFile') return importFile(t);
     if (t.id === 'pictureFile') return loadPicture(t);
-    if (t.id === 'spellImportFile') return loadSpellImport(t);
-    if (a('data-spellsfrom')) { if (ui.spellImport) ui.spellImport.choose = +a('data-spellsfrom'); return; }
+    if (t.id === 'partImportFile') return loadPartImport(t);
+    if (a('data-partfrom')) { if (ui.partImport) ui.partImport.choose = +a('data-partfrom'); return; }
     if (a('data-check') === 'pictureWhole') { ch.pictureFit = t.checked ? 'contain' : ''; return requestRender(); }
     if (a('data-text') || a('data-itemtext')) return requestRender();
-    if (a('data-ui')) { if (a('data-ui') === 'current') { store.current = t.value; ui.confirmDelete = false; ui.spellImport = null; ui.spellImportDone = null; } else ui[a('data-ui')] = t.value; }
+    if (a('data-ui')) { if (a('data-ui') === 'current') { store.current = t.value; ui.confirmDelete = false; ui.partImport = null; ui.partImportDone = null; } else ui[a('data-ui')] = t.value; }
     else if (a('data-filter')) store.filters[a('data-filter')] = t.checked;
     else if (a('data-imp5target')) { if (ui.import5e) { ui.import5e.target[a('data-imp5target')] = t.value; var idT = +a('data-imp5target'); if (ui.import5e.pick.indexOf(idT) < 0) ui.import5e.pick.push(idT); } }
     else if (a('data-imp5')) { var I5 = ui.import5e, id5 = +a('data-imp5'); if (I5) { I5.pick = I5.pick.filter(function (x) { return x !== id5; }); if (t.checked) I5.pick.push(id5); } }
@@ -871,9 +946,15 @@
     else if (a('data-pick')) ch.picks[a('data-pick')] = t.value ? [t.value] : [];
     else if (a('data-set')) ch[a('data-set')] = t.value;
     else if (a('data-check')) ch[a('data-check')] = t.checked;
+    else if (a('data-free')) { ch.free = ch.free || {}; if (t.checked) ch.free[a('data-free')] = true; else delete ch.free[a('data-free')]; }
+    else if (a('data-hpmanual')) { if (t.checked) { ch.hpMode = 'manual'; if (!ch.hpManual) ch.hpManual = d.hpAvg; } else ch.hpMode = 'avg'; }
+    else if (a('data-extra')) { ch.extra = ch.extra || {}; var xv = Math.round(+t.value) || 0; if (xv) ch.extra[a('data-extra')] = xv; else delete ch.extra[a('data-extra')]; }
+    else if (a('data-extratext')) { ch.extra = ch.extra || {}; ch.extra[a('data-extratext')] = t.value.trim(); }
+    else if (a('data-extraskill')) { ch.extra = ch.extra || {}; ch.extra.skills = ch.extra.skills || {}; if (t.value) ch.extra.skills[a('data-extraskill')] = t.value; else delete ch.extra.skills[a('data-extraskill')]; }
+    else if (a('data-extrasave')) { ch.extra = ch.extra || {}; var sv = (ch.extra.saves || []).filter(function (x) { return x !== a('data-extrasave'); }); if (t.checked) sv.push(a('data-extrasave')); ch.extra.saves = sv; }
     else if (a('data-addweapon')) { if (t.value && ch.weapons.indexOf(t.value) < 0) ch.weapons.push(t.value); }
     else if (a('data-base')) {
-      var ab = a('data-base'), v = Math.max(1, Math.min(20, Math.round(+t.value) || 8));
+      var ab = a('data-base'), v = Math.max(1, Math.min(ch.free && ch.free.abilityCap ? 30 : 20, Math.round(+t.value) || 8));
       if (ch.method === 'array') { var other = AB.filter(function (x) { return x !== ab && ch.base[x] === v; })[0]; if (other) ch.base[other] = ch.base[ab]; }
       ch.base[ab] = v;
     } else return;
@@ -889,9 +970,11 @@
     var file = input.files && input.files[0];
     if (!file) return;
     var reader = new FileReader();
-    reader.onload = function () {
-      ui.importError = false;
-      var buf = reader.result;
+    reader.onload = function () { handleImportBuffer(reader.result); input.value = ''; render(); };
+    reader.readAsArrayBuffer(file);
+  }
+  function handleImportBuffer(buf) {
+    ui.importError = false;
       try {
         var got = readImportFile(buf);
         if (got && !got.json) {
@@ -909,10 +992,6 @@
           ui.step = 'sheet';
         }
       } catch (err) { ui.importError = /5th Spellbook|5e Companion/.test(err.message) ? err.message : true; window.console.error('Import failed', err); }
-      input.value = '';
-      render();
-    };
-    reader.readAsArrayBuffer(file);
   }
   // Pick which characters to bring in from a 5th Spellbook backup, then report what came across.
   function import5eHtml() {
@@ -921,7 +1000,7 @@
       return '<li><b>' + esc(r.name) + '</b> — ' + (r.update ? 'spells updated, everything else kept: ' : 'new character, ') + r.added + ' spell' + (r.added === 1 ? '' : 's') + ' added' + (r.skipped ? ', ' + r.skipped + ' listed in Details → Other notes instead' : '') + '</li>';
     }).join('') + '</ul>' + (done.some(function (r) { return !r.update; }) ? '<p class="small muted">' + (done.source === '5e Companion' ? 'New characters come with everything 5e Companion stores. Step badges show any choice still open, and Details → Other notes lists anything that had no match here.' : 'New characters: ability scores other than the spellcasting one weren\'t in the backup, so they start at 10. Step badges show what is still open (skills, background, equipment…).') + '</p>' : '') + '<p class="small muted">Changed your mind? Press Undo at the top.</p>' + btn('import5eClose', 'Close', {}, 'btn primary') + '</div>';
     if (!I) return '';
-    return '<div class="panel import5e noprint" role="dialog" aria-label="Import from ' + esc(I.source) + '"><h3>Import from ' + esc(I.source) + '</h3><p class="muted">Found ' + I.entries.length + ' character' + (I.entries.length === 1 ? '' : 's') + '. ' + (I.source === '5e Companion' ? 'A new character comes in with everything on its sheet: race, background, classes, ability scores, skills, feats, equipment, coins, personality, notes, spells and picture.' : 'A new character comes in with its race, classes and levels, subclasses and spells.') + ' To keep a character you already made and only bring in its spells, choose “Only update the spells of” it.</p><div class="look-items">' +
+    return '<div class="panel import5e noprint" role="dialog" aria-label="Import from ' + esc(I.source) + '"><h3>Import from ' + esc(I.source) + '</h3><p class="muted">Found ' + I.entries.length + ' character' + (I.entries.length === 1 ? '' : 's') + '. ' + (I.source === '5e Companion' ? 'A new character comes in with everything on its sheet: race, background, classes, ability scores, skills, feats, equipment, coins, personality, notes, spells and picture.' : 'A new character comes in with its race, classes and levels, subclasses and spells.') + ' To keep a character you already made and only bring in its spells, choose “Only update the spells of” it.</p><div class="imp-list">' +
       I.entries.map(function (e) {
         var n = e.classes.reduce(function (t, c) { return t + c.spells.length; }, e.loose.length);
         var tg = I.target[e.id] || 'new';
@@ -932,7 +1011,22 @@
       }).join('') + '</div><div class="toolbar">' + btn('import5eGo', 'Import ' + I.pick.length + ' character' + (I.pick.length === 1 ? '' : 's'), {}, 'btn primary') + btn('import5eAll', I.pick.length === I.entries.length ? 'Select none' : 'Select all') + btn('import5eClose', 'Cancel') + '</div></div>';
   }
 
+  // Opened from the share menu: the service worker kept the shared file; import it like the Import button would.
+  function takeSharedFile() {
+    var q = window.location.search;
+    if (!/[?&]shared=/.test(q) || !window.caches) return;
+    try { window.history.replaceState(null, '', window.location.pathname); } catch (e) { /* ignore */ }
+    if (/shared=error/.test(q)) { ui.importError = 'The shared file could not be received. Save it and use Import instead.'; render(); return; }
+    caches.open('cf-share').then(function (c) {
+      return c.match('shared-file').then(function (res) {
+        if (!res) return;
+        return res.arrayBuffer().then(function (buf) { c.delete('shared-file'); handleImportBuffer(buf); render(); });
+      });
+    }).catch(function () { /* nothing shared */ });
+  }
+
   load();
   render();
+  takeSharedFile();
   window.Forge = { store: store, ui: ui, render: render, derived: function () { return d; } };
 })();

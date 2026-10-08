@@ -196,6 +196,9 @@
     var out = { level: level, pb: pb, classes: entries, cls: entries[0] ? entries[0].cls : null, lin: lin, L: L, bg: bg, choices: [], features: [], warnings: [] };
 
     var prof = { armor: [], weapons: [], tools: [], languages: [], skills: [], expertise: [], saves: [], res: [], imm: [] };
+    // Limits the player switched off, and extras gained outside the normal rules (items, boons, house rules)
+    var free = ch.free || {}, X = ch.extra || {}, xn = function (k) { return Math.round(+X[k] || 0); };
+    var xlist = function (k) { return String(X[k] || '').split(/[,;\n]/).map(function (t) { return t.trim(); }).filter(Boolean); };
     var fixedSrc = { skills: {}, tools: {}, languages: {} };
     function fixed(bucket, list, src) { arr(list).forEach(function (v) { if (fixedSrc[bucket] && !fixedSrc[bucket][v]) fixedSrc[bucket][v] = src; }); }
     var bonus = { STR: 0, DEX: 0, CON: 0, INT: 0, WIS: 0, CHA: 0 };
@@ -464,6 +467,10 @@
 
     later.forEach(function (fn) { fn(); });
     later2.forEach(function (fn) { fn(); });
+    prof.languages = prof.languages.concat(xlist('languages')); prof.tools = prof.tools.concat(xlist('tools'));
+    prof.armor = prof.armor.concat(xlist('armor')); prof.weapons = prof.weapons.concat(xlist('weapons'));
+    Object.keys(X.skills || {}).forEach(function (k) { if (!D.skills[k] || !X.skills[k]) return; prof.skills.push(k); if (X.skills[k] === 'exp') prof.expertise.push(k); });
+    (X.saves || []).forEach(function (a) { prof.saves.push(a); });
     ['armor', 'weapons', 'tools', 'languages', 'skills', 'expertise', 'saves', 'res', 'imm'].forEach(function (k) { prof[k] = uniq(prof[k]); });
     out.prof = prof;
     var has = function (id) { return entries.filter(function (e) { return e.id === id; })[0] || null; };
@@ -471,11 +478,11 @@
     // ----- ability scores -----
     out.abilities = {};
     AB.forEach(function (a) {
-      var base = +(ch.base || {})[a] || 0, total = base + bonus[a], cap = 20, extra = 0;
-      if (has('barbarian') && has('barbarian').level >= 20 && (a === 'STR' || a === 'CON')) { extra = 4; cap = 24; }
-      total = Math.min(cap, total) + extra;
-      if (base + bonus[a] > 20) out.warnings.push(D.abilityNames[a] + ' is capped at 20.');
-      out.abilities[a] = { base: base, bonus: bonus[a] + extra, total: total, mod: R.mod(total) };
+      var base = +(ch.base || {})[a] || 0, total = base + bonus[a], cap = free.abilityCap ? 30 : 20, extra = xn(a);
+      if (has('barbarian') && has('barbarian').level >= 20 && (a === 'STR' || a === 'CON')) { extra += 4; cap = Math.max(cap, 24); }
+      total = Math.max(1, Math.min(free.abilityCap ? 30 : cap, Math.min(cap, total) + extra));
+      if (!free.abilityCap && base + bonus[a] > 20) out.warnings.push(D.abilityNames[a] + ' is capped at 20 (you can switch this limit off in Details).');
+      out.abilities[a] = { base: base, bonus: total - base, total: total, mod: R.mod(total) };
     });
     var M = function (a) { return out.abilities[a].mod; };
     out.pointsSpent = AB.reduce(function (n, a) { var c = D.pointBuyCost[ch.base[a]]; return n + (c === undefined ? 99 : c); }, 0);
@@ -493,8 +500,8 @@
       var p = prof.skills.indexOf(s) >= 0, e = p && prof.expertise.indexOf(s) >= 0;
       out.skills[s] = { ability: D.skills[s], prof: p, expertise: e, total: M(D.skills[s]) + (e ? pb * 2 : p ? pb : joat) };
     });
-    out.passive = 10 + out.skills.Perception.total + hooks.passive;
-    out.init = M('DEX') + hooks.init + joat + (L && L.initProf ? pb : 0);
+    out.passive = 10 + out.skills.Perception.total + hooks.passive + xn('passive');
+    out.init = M('DEX') + hooks.init + joat + (L && L.initProf ? pb : 0) + xn('init');
 
     // ----- hit points: full die at character level 1, average for every level after -----
     var perLevel = M('CON') + hooks.hpPerLevel;
@@ -509,7 +516,7 @@
     out.hitDice = entries.length ? entries.map(function (e) { return e.level + 'd' + e.cls.hitDie; }).join(' + ') : '1d8';
     out.hpAvg = dice + level * perLevel + hooks.hpFlat;
     out.hpMax = diceMax + level * perLevel + hooks.hpFlat;
-    out.hp = Math.max(level, ch.hpMode === 'manual' && ch.hpManual > 0 ? (ch.hpManual | 0) : ch.hpMode === 'max' ? out.hpMax : out.hpAvg);
+    out.hp = Math.max(level, ch.hpMode === 'manual' && ch.hpManual > 0 ? (ch.hpManual | 0) : ch.hpMode === 'max' ? out.hpMax : out.hpAvg) + xn('hp');
 
     // ----- armor class -----
     var armor = D.armor.filter(function (a) { return a[0] === ch.armor; })[0];
@@ -540,6 +547,7 @@
       if (!prof.armor.some(function (a) { return /^Shields/.test(a); })) out.warnings.push('Not proficient with shields.');
     }
     if (L && L.acBonus) ac += L.acBonus;
+    if (xn('ac')) { ac += xn('ac'); acNote += ' · ' + (xn('ac') > 0 ? '+' : '') + xn('ac') + ' extra'; }
     out.ac = ac; out.acNote = acNote;
 
     // ----- speed and senses -----
@@ -547,6 +555,7 @@
     var heavy = armor && armor[1] === 'Heavy';
     if (has('barbarian') && has('barbarian').level >= 5 && !heavy) speed += 10;
     if (has('monk') && has('monk').level >= 2 && !armor && !ch.shield) speed += steps(has('monk').level, [[2, 10], [6, 15], [10, 20], [14, 25], [18, 30]]);
+    speed += xn('speed');
     out.speed = speed;
     out.moves = [];
     if (L) ['fly', 'swim', 'climb'].forEach(function (k) { if (L[k]) out.moves.push(k + ' ' + (L[k] === true ? speed : L[k]) + ' ft'); });
@@ -589,7 +598,7 @@
       if (cast.kind === 'half' && clv < 2) active = false;
       if (!active) return;
       var S = { clsId: cls.id, name: cast === cls.casting ? cls.name : sc.name, ability: cast.ability, kind: cast.kind, note: cast.note || '', level: clv };
-      S.dc = 8 + pb + M(cast.ability); S.atk = pb + M(cast.ability);
+      S.dc = 8 + pb + M(cast.ability) + xn('spellDC'); S.atk = pb + M(cast.ability) + xn('spellAtk');
       S.ownSlots = R.slotsFor(cast.kind, clv);
       if (cast.kind === 'pact') {
         S.pact = { n: cast.pactSlots[clv - 1], level: cast.pactLevel[clv - 1] }; S.maxLevel = S.pact.level;
@@ -624,12 +633,21 @@
       if (cast.spellbook) { S.mode = 'spellbook'; S.knownMax = 6 + 2 * (clv - 1); S.preparedMax = Math.max(1, M(cast.ability) + clv); }
       else if (cast.prepared) { S.mode = 'prepared'; S.knownMax = Math.max(1, M(cast.ability) + (half ? Math.floor(clv / 2) : clv)); }
       else { S.mode = 'known'; S.knownMax = cast.known[clv - 1]; }
+      if (free.spells) {
+        S.unlimited = true;
+        var seenAll = {}; S.list.forEach(function (s) { seenAll[s.name] = 1; });
+        S.classList = S.list.slice();
+        Object.keys(D.spells).forEach(function (k) { var s = D.spells[k]; if (s && !seenAll[s.name] && tagOk(s.tag, filters)) { seenAll[s.name] = 1; S.list.push(s); } });
+        S.list.sort(function (a, b) { return a.level - b.level || (a.name < b.name ? -1 : 1); });
+        S.limits = { cantrips: S.cantripsMax, known: S.knownMax, prepared: S.preparedMax };
+        S.cantripsMax = 999; S.knownMax = 999; if (S.preparedMax) S.preparedMax = 999;
+      }
       var inList = {}; S.list.forEach(function (s) { inList[s.name] = s; });
       var sp = (ch.spells || {})[cls.id] || {};
       S.cantrips = arr(sp.c).filter(function (n) { return inList[n] && inList[n].level === 0; }).slice(0, S.cantripsMax);
       S.known = arr(sp.k).filter(function (n) { return inList[n] && inList[n].level > 0 && S.always.indexOf(n) < 0; }).slice(0, S.knownMax);
       S.prepared = S.mode === 'spellbook' ? arr(sp.p).filter(function (n) { return S.known.indexOf(n) >= 0; }).slice(0, S.preparedMax) : [];
-      S.missing = (S.cantripsMax - S.cantrips.length) + (S.knownMax - S.known.length);
+      S.missing = S.unlimited ? 0 : (S.cantripsMax - S.cantrips.length) + (S.knownMax - S.known.length);
       E.spell = S;
       out.casters.push(S);
     });
@@ -686,6 +704,7 @@
     inv.pushDrag = inv.capacity * 2;
     inv.attuneMax = has('artificer') ? steps(has('artificer').level, [[1, 3], [10, 4], [14, 5], [18, 6]]) : 3;
     if (inv.weight > inv.capacity) out.warnings.push('Carrying ' + inv.weight + ' lb, over your capacity of ' + inv.capacity + ' lb.');
+    if (free.attune) inv.attuneMax = Infinity;
     if (inv.attuned > inv.attuneMax) out.warnings.push('Attuned to ' + inv.attuned + ' items; the limit is ' + inv.attuneMax + '.');
     out.inv = inv;
 

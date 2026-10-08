@@ -28,6 +28,23 @@ feats, worn armour and shield, weapons, inventory, coins, personality, notes, sp
 Anything with no match here (a homebrew item, a skill from a house rule) is listed in Details → Other notes.
 As with 5th Spellbook, a shared character can instead **only update the spells** of a character you already have, and the Spells step's import button accepts these files too.
 
+### Import one part at a time
+
+Every step (Lineage, Class, Abilities, Background, Spells, Equipment, Items, Appearance, Details) has its own **Import** button that changes only that part of the
+character you are editing, from a 5e Companion character (all parts) or a 5th Spellbook backup (lineage, classes, spells). Imported ability scores land on the
+file's exact totals with your own lineage and feats counted.
+
+### Share from 5e Companion
+
+Once Character Forge is installed as an app on Android, it appears in the share menu: in 5e Companion, share a character and pick Character Forge,
+and the import opens by itself (the file is handed over through the service worker, `share_target` in `manifest.webmanifest`). iPhone and iPad don't support sharing into web apps; save the file and use Import there.
+
+### Limits and extras
+
+Details → **Limits and extras**, per character: switch off spell limits (any number of spells, from any class list and level), the ability score maximum of 20 (up to 30),
+the worked-out hit points (set your own maximum) and the attunement limit; add extra bonuses (each ability score, AC, hit points, speed, initiative,
+passive Perception, spell save DC and attack) and extra proficiencies (skills with expertise, saving throws, languages, tools, armour, weapons).
+
 ### Undo
 
 **Undo** and **Redo** in the top bar (or Ctrl+Z and Ctrl+Y / Ctrl+Shift+Z outside text boxes) step back and forward through the last 40 changes, including imports and deleting a character. The history lasts until the page is closed.

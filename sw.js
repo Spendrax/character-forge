@@ -1,7 +1,7 @@
 // Service worker: keeps a copy of the app so it opens offline, and always tries the network first
 // so a new version on the site is picked up as soon as you are online.
 // Bump VERSION when files are added or removed.
-var VERSION = 'cf-9';
+var VERSION = 'cf-10';
 var FILES = [
   './',
   'index.html',
@@ -46,11 +46,24 @@ self.addEventListener('install', function (e) {
 });
 self.addEventListener('activate', function (e) {
   e.waitUntil(caches.keys().then(function (keys) {
-    return Promise.all(keys.filter(function (k) { return k !== VERSION; }).map(function (k) { return caches.delete(k); }));
+    return Promise.all(keys.filter(function (k) { return k !== VERSION && k !== 'cf-share'; }).map(function (k) { return caches.delete(k); }));
   }).then(function () { return self.clients.claim(); }));
 });
+// Sharing a file to the installed app (Android share menu): keep the file, then open the app to import it.
+var SHARE_CACHE = 'cf-share';
 self.addEventListener('fetch', function (e) {
   var req = e.request;
+  if (req.method === 'POST' && /\/share-target\/?$/.test(new URL(req.url).pathname)) {
+    e.respondWith(req.formData().then(function (form) {
+      var file = form.getAll('files').filter(function (f) { return f && f.size; })[0];
+      var text = form.get('text') || '', title = form.get('title') || '';
+      var body = file || new Blob([String(text)], { type: 'text/plain' });
+      return caches.open(SHARE_CACHE).then(function (c) {
+        return c.put('shared-file', new Response(body, { headers: { 'x-name': encodeURIComponent((file && file.name) || title || 'shared') } }));
+      });
+    }).then(function () { return Response.redirect('./?shared=1', 303); }, function () { return Response.redirect('./?shared=error', 303); }));
+    return;
+  }
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
   e.respondWith(fetch(req).then(function (res) {
     if (res && res.ok) { var copy = res.clone(); caches.open(VERSION).then(function (c) { c.put(req, copy); }); }
