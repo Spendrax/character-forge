@@ -1013,3 +1013,14 @@ DND.gear = [
 ["Torch","Usable Items","1 cp",1.0]
 ];
 DND.rarities = ["Common", "Uncommon", "Rare", "Very rare", "Legendary", "Artifact", "Unique", "Unknown"];
+
+// What each equipment pack holds: [gear name or own item, quantity, weight in lb for own items]
+DND.packContents = {
+  "Burglar's Pack": [["Backpack", 1], ["Ball Bearings (bag of 1,000)", 1], ["String (10 ft)", 1, 0], ["Bell", 1], ["Candle", 5], ["Crowbar", 1], ["Hammer", 1], ["Piton", 10], ["Lantern - Hooded", 1], ["Oil (flask)", 2], ["Rations (1 day)", 5], ["Tinderbox", 1], ["Waterskin", 1], ["Rope, Hemp (50 ft)", 1]],
+  "Diplomat's Pack": [["Chest", 1], ["Case, Map/Scroll", 2], ["Fine Clothes", 1], ["Ink (1 oz)", 1], ["Ink Pen", 1], ["Lamp", 1], ["Oil (flask)", 2], ["Paper (1 sheet)", 5], ["Perfume (vial)", 1], ["Sealing Wax", 1], ["Soap", 1, 0]],
+  "Dungeoneer's Pack": [["Backpack", 1], ["Crowbar", 1], ["Hammer", 1], ["Piton", 10], ["Torch", 10], ["Tinderbox", 1], ["Rations (1 day)", 10], ["Waterskin", 1], ["Rope, Hemp (50 ft)", 1]],
+  "Entertainer's Pack": [["Backpack", 1], ["Bedroll", 1], ["Costume", 2], ["Candle", 5], ["Rations (1 day)", 5], ["Waterskin", 1], ["Disguise Kit", 1, 3]],
+  "Explorer's Pack": [["Backpack", 1], ["Bedroll", 1], ["Mess Kit", 1], ["Tinderbox", 1], ["Torch", 10], ["Rations (1 day)", 10], ["Waterskin", 1], ["Rope, Hemp (50 ft)", 1]],
+  "Priest's Pack": [["Backpack", 1], ["Blanket", 1], ["Candle", 10], ["Tinderbox", 1], ["Alms Box", 1, 0], ["Block of Incense", 2, 0], ["Censer", 1, 0], ["Vestments", 1, 0], ["Rations (1 day)", 2], ["Waterskin", 1]],
+  "Scholar's Pack": [["Backpack", 1], ["Book (of lore)", 1, 5], ["Ink (1 oz)", 1], ["Ink Pen", 1], ["Parchment (1 sheet)", 10], ["Little Bag of Sand", 1, 0], ["Small Knife", 1, 0]]
+};

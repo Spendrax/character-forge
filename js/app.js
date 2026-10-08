@@ -419,13 +419,16 @@
   }
 
   function stepEquipment() {
-    var h = '<h2>Equipment</h2>' + partImportHtml('equipment');
+    var h = '<h2>Equipment</h2>' + partImportHtml('equipment') + packAddedHtml();
     if (d.cls) {
+      var chosenText = d.cls.equipment.map(function (line, i) { var o = R.parseEquip(line); return o.length < 2 ? line : o[ch.eq[i] | 0] || ''; }).join(' ') + ' ' + (d.bg && d.bg.eq || '');
+      var startPacks = Object.keys(D.packContents || {}).filter(function (n) { return new RegExp(n.replace(/['’]/g, ".").replace(/ Pack$/, '') + '.? pack', 'i').test(chosenText); });
       h += '<div class="panel"><h3>Starting equipment — ' + esc(d.cls.name) + '</h3>' + d.cls.equipment.map(function (line, i) {
         var o = R.parseEquip(line);
         if (o.length < 2) return '<p>' + esc(line) + '</p>';
         return '<div class="pills" style="margin:.4rem 0">' + o.map(function (t, j) { return btn('eq', esc(t), { i: i, v: j }, 'pill' + ((ch.eq[i] | 0) === j ? ' on' : '')); }).join('') + '</div>';
-      }).join('') + (d.bg ? '<h3>From ' + esc(d.bg.n) + '</h3><p>' + esc(d.bg.eq || '—') + '</p>' : '') + '</div>';
+      }).join('') + (d.bg ? '<h3>From ' + esc(d.bg.n) + '</h3><p>' + esc(d.bg.eq || '—') + '</p>' : '') +
+        (startPacks.length ? '<div class="toolbar" style="margin-top:.6rem">' + startPacks.map(function (n) { return btn('addStartPack', '⇩ Put the ' + esc(n) + ' in my items', { v: n }); }).join('') + '<span class="small muted">Adds everything the pack holds to the Items step.</span></div>' : '') + '</div>';
     }
     var CA = ch.customArmor || [], CW = ch.customWeapons || [];
     var opt = function (v, label, cur) { return '<option value="' + esc(v) + '"' + (String(cur) === String(v) ? ' selected' : '') + '>' + esc(label) + '</option>'; };
@@ -478,6 +481,11 @@
     }).join('') + '</table></div>';
   }
 
+  function packAddedHtml() {
+    var P = ui.packAdded;
+    if (!P) return '';
+    return '<div class="panel noprint"><b>Added the ' + esc(P.name) + ' to your items:</b> ' + esc(P.list.join(', ')) + '. Not right? Press Undo at the top. ' + btn('packAddedClose', 'OK', {}, 'btn tiny') + '</div>';
+  }
   function fmtLb(n) { return (Math.round(n * 100) / 100) + ' lb'; }
   function itemMeta(it) {
     if (it.k === 'magic') return (it.type || 'Magic item') + (it.r ? ', ' + it.r.toLowerCase() : '') + (it.att ? ' (requires attunement)' : '');
@@ -486,7 +494,7 @@
   function itemName(it) { return it.k === 'magic' && it.slug ? '<a href="' + esc(D.magicItemUrl(it.slug)) + '" target="_blank" rel="noopener">' + esc(it.n) + '</a>' : esc(it.n); }
   function stepItems() {
     var inv = d.inv, over = inv.weight > inv.capacity, m = ch.money;
-    var h = '<h2>Items</h2>' + partImportHtml('items') + '<p class="muted">What your character owns: magic items, adventuring gear, coins and anything of your own.</p>' +
+    var h = '<h2>Items</h2>' + partImportHtml('items') + packAddedHtml() + '<p class="muted">What your character owns: magic items, adventuring gear, coins and anything of your own.</p>' +
       '<div class="slots"><div class="stat" style="padding:.3rem .8rem"><b' + (over ? ' style="color:var(--warn)"' : '') + '>' + inv.weight + ' / ' + inv.capacity + '</b><span>Carried lb / capacity</span></div>' +
       '<div class="stat" style="padding:.3rem .8rem"' + (inv.attuned > inv.attuneMax ? ' title="Over the usual limit of ' + inv.attuneMax + '. Fine if your game allows more."' : '') + '><b' + (inv.attuned > inv.attuneMax ? ' style="color:var(--warn)"' : '') + '>' + inv.attuned + ' / ' + inv.attuneMax + '</b><span>Attuned items' + (inv.attuned > inv.attuneMax ? ' · over the usual limit' : '') + '</span></div>' +
       '<div class="stat" style="padding:.3rem .8rem"><b>' + inv.gpValue.toLocaleString('en') + '</b><span>Coins, in gp</span></div></div>' +
@@ -525,7 +533,9 @@
       D.gear.forEach(function (x) { if (cats.indexOf(x[1]) < 0) cats.push(x[1]); });
       var gl = D.gear.filter(function (x) { return match(gq, x[0]) && (!ui.gearCat || x[1] === ui.gearCat); });
       h += '<div class="toolbar">' + search('gear', 'Search gear…') + sel('gearCat', 'Any category', cats) + '</div><div class="optlist">' + gl.map(function (x) {
-        return '<div class="spell"><div><b>' + esc(x[0]) + '</b> <span class="small muted">' + esc(x[1]) + (x[2] ? ' · ' + esc(x[2]) : '') + (x[3] ? ' · ' + fmtLb(x[3]) : '') + '</span></div>' + btn('addGear', '+ Add', { v: x[0] }, 'btn tiny') + '</div>';
+        var pk = D.packContents && D.packContents[x[0]];
+        return '<div class="spell"><div><b>' + esc(x[0]) + '</b> <span class="small muted">' + esc(x[1]) + (x[2] ? ' · ' + esc(x[2]) : '') + (x[3] ? ' · ' + fmtLb(x[3]) : '') + '</span>' +
+          (pk ? '<div class="small">Holds: ' + esc(pk.map(function (p) { return (p[1] > 1 ? p[1] + ' ' : '') + p[0]; }).join(', ')) + '. Adding it puts each of these in your inventory.</div>' : '') + '</div>' + btn('addGear', pk ? '+ Add contents' : '+ Add', { v: x[0] }, 'btn tiny') + '</div>';
       }).join('') + '</div>' + (gl.length ? '' : '<p class="muted">No gear matches.</p>');
     } else {
       h += '<div class="row" style="margin-top:.75rem"><label class="field" style="flex:1;min-width:12rem"><span>Name</span><input type="text" id="custom-n" style="width:100%"></label>' +
@@ -739,6 +749,18 @@
   function totalTodo() { var n = 0; for (var k in d.todo) n += d.todo[k]; return n; }
 
   // ---------- frame ----------
+  // On a phone the steps are a row you slide sideways: keep its position across redraws, and keep the
+  // current step visible instead of jumping back to "Lineage"
+  function keepStepInView(navX) {
+    var nav = document.querySelector('.steps'), on = nav && nav.querySelector('.step.on');
+    if (!nav || nav.scrollWidth <= nav.clientWidth) return;
+    nav.scrollLeft = navX;
+    if (on) {
+      var l = on.offsetLeft - nav.offsetLeft, r = l + on.offsetWidth;
+      if (l < nav.scrollLeft) nav.scrollLeft = Math.max(0, l - 12);
+      else if (r > nav.scrollLeft + nav.clientWidth) nav.scrollLeft = r - nav.clientWidth + 12;
+    }
+  }
   function render() {
     if (!byId(store.current) && store.chars.length) store.current = store.chars[0].id;
     remember(); // record the change about to be drawn, so Undo is ready at once
@@ -765,7 +787,14 @@
       (d.warnings.length ? '<ul class="warnings">' + d.warnings.map(function (w) { return '<li>' + esc(w) + '</li>'; }).join('') + '</ul>' : '') + '</aside>';
     var i = STEPS.map(function (s) { return s[0]; }).indexOf(ui.step);
     var foot = '<div class="toolbar noprint" style="margin-top:1.5rem">' + (i > 0 ? btn('step', '← ' + STEPS[i - 1][1], { v: STEPS[i - 1][0] }) : '') + (i < STEPS.length - 1 ? btn('step', STEPS[i + 1][1] + ' →', { v: STEPS[i + 1][0] }, 'btn primary') : '') + '</div>';
+    var oldNav = document.querySelector('.steps'), navX = oldNav ? oldNav.scrollLeft : 0;
     document.getElementById('app').innerHTML = top + installHelpHtml() + import5eHtml() + '<div class="shell">' + nav + '<main>' + body + foot + '</main>' + side + '</div>';
+    keepStepInView(navX);
+    if (ui.scrollToStep) { // a new step starts at its top; on a phone the step row stays visible above it
+      ui.scrollToStep = false;
+      var row = document.querySelector('.steps'), narrow = row && row.scrollWidth > row.clientWidth;
+      window.scrollTo(0, narrow ? Math.max(0, row.getBoundingClientRect().top + window.pageYOffset - 6) : 0);
+    }
     drawAvatars();
     if (fid) { var el = document.getElementById(fid); if (el) { el.focus(); try { if (pos != null) el.setSelectionRange(pos, pos); } catch (e) { /* not a text field */ } } }
     document.title = title(ch) + ' — Character Forge';
@@ -774,7 +803,7 @@
 
   // ---------- actions ----------
   var actions = {
-    step: function (v) { ui.step = v; ui.editArmor = null; ui.editWeapon = null; ui.partImport = null; ui.partImportDone = null; ui.partImportError = null; window.scrollTo(0, 0); },
+    step: function (v) { ui.step = v; ui.packAdded = null; ui.editArmor = null; ui.editWeapon = null; ui.partImport = null; ui.partImportDone = null; ui.partImportError = null; ui.scrollToStep = true; },
     'new': function () { var c = R.newChar(); store.chars.push(c); store.current = c.id; ui.step = 'lineage'; },
     dup: function () { var c = JSON.parse(JSON.stringify(ch)); c.id = R.uid(); c.name = title(ch) + ' (copy)'; store.chars.push(c); store.current = c.id; },
     askDelete: function () { ui.confirmDelete = true; },
@@ -882,10 +911,11 @@
       if (x) ch.items.push({ id: R.uid(), k: 'magic', n: x[0], r: el.getAttribute('data-r'), type: x[2], att: !!x[3], attuned: false, slug: x[4], qty: 1, w: 0, note: '' });
     },
     addGear: function (v) {
-      var x = D.gear.filter(function (i) { return i[0] === v; })[0], have = ch.items.filter(function (i) { return i.k === 'gear' && i.n === v; })[0];
-      if (have) have.qty = (+have.qty || 0) + 1;
-      else if (x) ch.items.push({ id: R.uid(), k: 'gear', n: x[0], cat: x[1], cost: x[2], qty: 1, w: x[3], note: '' });
+      if (D.packContents && D.packContents[v]) { addPack(v); return; }
+      addGearItem(v, 1);
     },
+    addStartPack: function (v) { addPack(v); },
+    packAddedClose: function () { ui.packAdded = null; },
     addCustom: function () {
       var g = function (id) { return document.getElementById(id); }, n = g('custom-n').value.trim();
       if (!n) { g('custom-n').focus(); return false; }
@@ -1028,6 +1058,21 @@
     var aid = t.getAttribute('data-carmor'), wid = t.getAttribute('data-cweapon'), k = t.getAttribute('data-f');
     if (aid) { var ca = (ch.customArmor || []).filter(function (x) { return x.id === aid; })[0]; if (ca) ca[k] = /^(ac|bonus|str|w)$/.test(k) ? (+t.value || 0) : t.value; }
     if (wid) { var cw = (ch.customWeapons || []).filter(function (x) { return x.id === wid; })[0]; if (cw) cw[k] = k === 'prof' ? t.checked : k === 'ranged' ? !!t.value : /^(hit|dmgBonus|w)$/.test(k) ? (+t.value || 0) : t.value; }
+  }
+  // Gear goes into the inventory; the same thing twice just raises the quantity
+  function addGearItem(name, qty, ownWeight) {
+    var x = D.gear.filter(function (i) { return i[0] === name; })[0];
+    var have = ch.items.filter(function (i) { return (i.k === 'gear' || i.k === 'custom') && i.n === name; })[0];
+    if (have) { have.qty = (+have.qty || 0) + qty; return; }
+    if (x) ch.items.push({ id: R.uid(), k: 'gear', n: x[0], cat: x[1], cost: x[2], qty: qty, w: x[3], note: '' });
+    else ch.items.push({ id: R.uid(), k: 'custom', n: name, qty: qty, w: ownWeight || 0, att: false, attuned: false, note: '' });
+  }
+  // A pack is unpacked into what it holds
+  function addPack(name) {
+    var list = (D.packContents || {})[name];
+    if (!list) return;
+    list.forEach(function (p) { addGearItem(p[0], p[1], p[2]); });
+    ui.packAdded = { name: name, list: list.map(function (p) { return (p[1] > 1 ? p[1] + ' × ' : '') + p[0]; }) };
   }
   function setLevel(id, value) {
     var e = entry(id);

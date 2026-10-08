@@ -71,6 +71,7 @@ They count for AC, attacks, the pixel figure and carried weight, and the shield'
 
 The Items step holds the inventory: 902 magic items from the wiki (filter by rarity and type, attunement tracked against the limit of 3, or more for artificers),
 103 pieces of adventuring gear with cost and weight, your own custom items, and coins. Carried weight is compared with Strength × 15.
+Adding an equipment pack (Burglar's, Diplomat's, Dungeoneer's, Entertainer's, Explorer's, Priest's, Scholar's) puts everything it holds in the inventory, and the Equipment step offers a button to unpack the pack from your starting equipment.
 Magic items carry name, rarity, type and attunement only; each links to its wiki page for the description.
 
 ### Appearance
