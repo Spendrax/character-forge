@@ -443,7 +443,7 @@
     var inv = d.inv, over = inv.weight > inv.capacity, m = ch.money;
     var h = '<h2>Items</h2>' + partImportHtml('items') + '<p class="muted">What your character owns: magic items, adventuring gear, coins and anything of your own.</p>' +
       '<div class="slots"><div class="stat" style="padding:.3rem .8rem"><b' + (over ? ' style="color:var(--warn)"' : '') + '>' + inv.weight + ' / ' + inv.capacity + '</b><span>Carried lb / capacity</span></div>' +
-      '<div class="stat" style="padding:.3rem .8rem"><b' + (inv.attuned > inv.attuneMax ? ' style="color:var(--warn)"' : '') + '>' + inv.attuned + ' / ' + inv.attuneMax + '</b><span>Attuned items</span></div>' +
+      '<div class="stat" style="padding:.3rem .8rem"' + (inv.attuned > inv.attuneMax ? ' title="Over the usual limit of ' + inv.attuneMax + '. Fine if your game allows more."' : '') + '><b' + (inv.attuned > inv.attuneMax ? ' style="color:var(--warn)"' : '') + '>' + inv.attuned + ' / ' + inv.attuneMax + '</b><span>Attuned items' + (inv.attuned > inv.attuneMax ? ' · over the usual limit' : '') + '</span></div>' +
       '<div class="stat" style="padding:.3rem .8rem"><b>' + inv.gpValue.toLocaleString('en') + '</b><span>Coins, in gp</span></div></div>' +
       '<p class="small muted">Capacity is Strength × 15 (push, drag or lift ' + inv.pushDrag + ' lb). The total counts these items, coins (50 to a pound), and the armor, shield and weapons chosen on the Equipment step; starting-equipment packs are not counted unless you add them here.</p>';
     h += '<div class="panel"><h3>Coins</h3><div class="row">' + [['pp', 'Platinum'], ['gp', 'Gold'], ['ep', 'Electrum'], ['sp', 'Silver'], ['cp', 'Copper']].map(function (c) {
@@ -615,7 +615,7 @@
       tog('abilityCap', 'Ability scores can go above 20', 'Up to 30, for items, boons or epic play.') +
       '<label class="check-line"><input type="checkbox" data-hpmanual="1"' + (manualHp ? ' checked' : '') + '> <span><b>Set my own hit point maximum</b><br><span class="small muted">Instead of the one worked out from class and Constitution (' + d.hpAvg + ' on average).</span></span></label>' +
       (manualHp ? '<label class="field extra-num" style="margin-left:1.8rem"><span>Hit point maximum</span><input type="number" min="1" data-num="hpManual" value="' + (ch.hpManual || d.hpAvg) + '"></label>' : '') +
-      tog('attune', 'No attunement limit', 'Attune to more than ' + (d.inv && isFinite(d.inv.attuneMax) ? d.inv.attuneMax : 3) + ' magic items without a warning.') + '</div>' +
+      '<p class="small muted" style="margin:.6rem 0 0">Attunement has no switch: you can attune to as many items as you like, and the app only reminds you when you go past the usual limit.</p>' + '</div>' +
       '<div class="panel"><h4>Extra bonuses</h4><p class="small muted">Added on top of everything the app works out. Use negative numbers for penalties.</p><div class="extra-grid">' +
       AB.map(function (a) { return num(a, D.abilityNames[a]); }).join('') + '</div><div class="extra-grid">' +
       num('ac', 'Armor class') + num('hp', 'Hit points') + num('speed', 'Speed (ft)') + num('init', 'Initiative') + num('passive', 'Passive Perception') + num('spellDC', 'Spell save DC') + num('spellAtk', 'Spell attack') + '</div></div>' +

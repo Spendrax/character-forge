@@ -704,8 +704,7 @@
     inv.pushDrag = inv.capacity * 2;
     inv.attuneMax = has('artificer') ? steps(has('artificer').level, [[1, 3], [10, 4], [14, 5], [18, 6]]) : 3;
     if (inv.weight > inv.capacity) out.warnings.push('Carrying ' + inv.weight + ' lb, over your capacity of ' + inv.capacity + ' lb.');
-    if (free.attune) inv.attuneMax = Infinity;
-    if (inv.attuned > inv.attuneMax) out.warnings.push('Attuned to ' + inv.attuned + ' items; the limit is ' + inv.attuneMax + '.');
+    if (inv.attuned > inv.attuneMax) out.warnings.push('Attuned to ' + inv.attuned + ' items; the usual limit is ' + inv.attuneMax + '. Fine if your game allows more.');
     out.inv = inv;
 
     // ----- completeness per step -----
