@@ -64,6 +64,10 @@
   R.feat = function (n) { return D.feats.filter(function (f) { return f.n === n; })[0] || null; };
   R.allTools = function () { var o = []; for (var k in D.tools) o = o.concat(D.tools[k]); return o; };
   R.allLanguages = function () { return D.languages.standard.concat(D.languages.exotic, D.languages.other); };
+  // What a player can pick when a rule says "a language of your choice": the standard and exotic tables only.
+  // The other list (setting languages, Druidic, Thieves' Cant) is only granted by specific traits.
+  R.choosableLanguages = function () { return D.languages.standard.concat(D.languages.exotic); };
+  R.languageGroup = function (l) { return D.languages.standard.indexOf(l) >= 0 ? 'Standard' : D.languages.exotic.indexOf(l) >= 0 ? 'Exotic' : ''; };
 
   function arr(x) { return x == null ? [] : (Array.isArray(x) ? x : [x]); }
   function uniq(a) { var s = {}, o = []; a.forEach(function (x) { if (!s[x]) { s[x] = 1; o.push(x); } }); return o; }
@@ -222,7 +226,7 @@
       var options = list.map(function (v) {
         var by = cl[v] && cl[v].key !== key ? cl[v] : null, from = fx[v];
         var dis = known.indexOf(v) >= 0 || !!by || !!from;
-        return { v: v, label: v, disabled: dis, why: !dis ? '' : from ? 'from ' + from : by ? 'picked in ' + by.label : 'you already have it' };
+        return { v: v, label: v, group: bucket === 'languages' ? R.languageGroup(v) : '', disabled: dis, why: !dis ? '' : from ? 'from ' + from : by ? 'picked in ' + by.label : 'you already have it' };
       });
       var c = choice(key, step, label, count, options, Object.assign({ bucket: bucket }, extra || {}));
       if (claimed) arr(picks[key]).forEach(function (v) {
@@ -242,7 +246,7 @@
       return function () {
         pending.forEach(function (x) {
           var p = x[0];
-          var from = p.orLanguage ? p.from.concat(R.allLanguages().filter(function (l) { return prof.languages.indexOf(l) < 0; })) : p.from;
+          var from = p.orLanguage ? p.from.concat(R.choosableLanguages().filter(function (l) { return prof.languages.indexOf(l) < 0; })) : p.from;
           var c = freshChoice(keyBase + '.tool' + x[1], step, labelPrefix + ': ' + p.label, p.count, from, 'tools', extra);
           if (p.orLanguage) c.picked.forEach(function (v) {
             if (R.allLanguages().indexOf(v) >= 0) { prof.languages.push(v); prof.tools.splice(prof.tools.indexOf(v), 1); }
@@ -270,7 +274,7 @@
           opts(AB, Object.keys(L.a).filter(function (k) { return L.a[k] >= 2; }))).picked.forEach(function (a) { bonus[a] += 1; });
       }
       L.pick.forEach(function (p, i) { choice('lin.pick' + i, 'lineage', p.label, 1, opts(p.from)); });
-      prof.languages = prof.languages.concat(L.lang);
+      prof.languages = prof.languages.concat(L.lang); fixed('languages', L.lang, 'your lineage (' + L.name + ')');
       prof.skills = prof.skills.concat(L.sk); fixed('skills', L.sk, 'your lineage (' + L.name + ')');
       prof.saves = prof.saves.concat(L.saves);
       prof.armor = prof.armor.concat(L.prof.armor); prof.weapons = prof.weapons.concat(L.prof.weapons);
@@ -281,7 +285,7 @@
       later.push(function () {
         L.skc.forEach(function (s, i) { freshChoice('lin.skill' + i, 'lineage', 'Lineage skill proficienc' + (s.n > 1 ? 'ies' : 'y'), s.n, skillList(s.from), 'skills'); });
         linTools();
-        if (L.lc) freshChoice('lin.lang', 'lineage', 'Lineage language' + (L.lc > 1 ? 's' : ''), L.lc, R.allLanguages(), 'languages');
+        if (L.lc) freshChoice('lin.lang', 'lineage', 'Lineage language' + (L.lc > 1 ? 's' : ''), L.lc, R.choosableLanguages(), 'languages');
       });
       L.tr.forEach(function (t) { out.features.push({ src: L.name, kind: 'lineage', n: t[0], t: t[1] }); });
       for (var fi = 0; fi < (L.feat || 0); fi++) feats.push({ slot: 'linfeat' + fi, step: 'lineage', label: 'Lineage feat' });
@@ -307,7 +311,7 @@
       } else {
         prof.armor = prof.armor.concat(mc.armor || []); prof.weapons = prof.weapons.concat(mc.weapons || []);
       }
-      prof.languages = prof.languages.concat(cls.languages || []);
+      prof.languages = prof.languages.concat(cls.languages || []); fixed('languages', cls.languages, 'your class (' + cls.name + ')');
       var clsTools = addTools(E.first ? cls.tools : (mc.tools || []), 'cls.' + cls.id, 'class', cls.name + ' tool', X);
       later.push(function () {
         if (E.first) freshChoice(K + 'skills', 'class', cls.name + ' skills', cls.skillChoose, skillList(cls.skillList), 'skills', X);
@@ -372,10 +376,10 @@
             if (c.l && clv < c.l) return;
             if (!n) return;
             if (c.type === 'skill') freshChoice(key, 'class', sc.name + ' skill' + (n > 1 ? 's' : ''), n, skillList(c.from), 'skills', X);
-            else if (c.type === 'language') freshChoice(key, 'class', sc.name + ' language' + (n > 1 ? 's' : ''), n, R.allLanguages(), 'languages', X);
+            else if (c.type === 'language') freshChoice(key, 'class', sc.name + ' language' + (n > 1 ? 's' : ''), n, R.choosableLanguages(), 'languages', X);
             else if (c.type === 'tool') freshChoice(key, 'class', sc.name + ' tool', n, c.from === 'artisan' ? D.tools["Artisan's tools"] : (Array.isArray(c.from) ? c.from : R.allTools()), 'tools', X);
             else if (c.type === 'skillOrLanguage') {
-              var mine = own(key), langs = R.allLanguages().filter(function (l) { return prof.languages.indexOf(l) < 0 || mine.indexOf(l) >= 0; });
+              var mine = own(key), langs = R.choosableLanguages().filter(function (l) { return prof.languages.indexOf(l) < 0 || mine.indexOf(l) >= 0; });
               var sk = skillList(c.from).filter(function (s) { return prof.skills.indexOf(s) < 0 || mine.indexOf(s) >= 0; });
               choice(key, 'class', sc.name + ': a skill or a language', n, opts(sk.concat(langs)), X).picked.forEach(function (v) {
                 (D.skills[v] ? prof.skills : prof.languages).push(v);
@@ -404,12 +408,12 @@
     // ----- background -----
     if (bg) {
       prof.skills = prof.skills.concat(bg.sk || []); fixed('skills', bg.sk, 'your background (' + bg.n + ')');
-      prof.languages = prof.languages.concat(bg.lang || []);
+      prof.languages = prof.languages.concat(bg.lang || []); fixed('languages', bg.lang, 'your background (' + bg.n + ')');
       var bgTools = addTools(bg.tools, 'bg', 'background', 'Background tool');
       later.push(function () {
         if (bg.skc) freshChoice('bg.skills', 'background', 'Background skill' + (bg.skc.n > 1 ? 's' : ''), bg.skc.n, skillList(bg.skc.from), 'skills');
         bgTools();
-        if (bg.lc) freshChoice('bg.lang', 'background', 'Background language' + (bg.lc > 1 ? 's' : ''), bg.lc, R.allLanguages(), 'languages');
+        if (bg.lc) freshChoice('bg.lang', 'background', 'Background language' + (bg.lc > 1 ? 's' : ''), bg.lc, R.choosableLanguages(), 'languages');
       });
       if (bg.f) out.features.push({ src: bg.n, kind: 'background', n: bg.f[0], t: bg.f[1] });
       (bg.feat || []).forEach(function (n, i) { feats.push({ slot: 'bgfeat' + i, step: 'background', label: 'Background feat', fixed: n }); });
@@ -452,7 +456,7 @@
       prof.armor = prof.armor.concat(f.armor || []); prof.languages = prof.languages.concat(f.lang || []);
       later.push(function () {
         if (f.skc) freshChoice(slot.slot + '.fsk', slot.step, f.n + ': skill' + (f.skc > 1 ? 's' : ''), f.skc, Object.keys(D.skills), 'skills', { asiSlot: slot.slot });
-        if (f.lc) freshChoice(slot.slot + '.flang', slot.step, f.n + ': language' + (f.lc > 1 ? 's' : ''), f.lc, R.allLanguages(), 'languages', { asiSlot: slot.slot });
+        if (f.lc) freshChoice(slot.slot + '.flang', slot.step, f.n + ': language' + (f.lc > 1 ? 's' : ''), f.lc, R.choosableLanguages(), 'languages', { asiSlot: slot.slot });
         if (f.expertise) later2.push(function () { freshChoice(slot.slot + '.fex', slot.step, f.n + ': expertise', f.expertise, prof.skills.slice(), 'expertise', { asiSlot: slot.slot }); });
       });
     });

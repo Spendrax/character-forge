@@ -71,9 +71,12 @@
     var body;
     var rich = c.options.some(function (o) { return o.t; });
     if (c.select || (c.count === 1 && c.options.length > 12 && !rich)) {
+      var lastG = null;
       body = '<select data-pick="' + esc(c.key) + '"><option value="">— choose —</option>' + c.options.map(function (o) {
-        return '<option value="' + esc(o.v) + '"' + (c.picked[0] === o.v ? ' selected' : '') + (o.disabled ? ' disabled' : '') + '>' + esc(o.label) + (o.disabled && o.why ? ' — ' + esc(o.why) : '') + '</option>';
-      }).join('') + '</select>';
+        var pre = '';
+        if (o.group && o.group !== lastG) { pre = (lastG ? '</optgroup>' : '') + '<optgroup label="' + esc(o.group) + '">'; lastG = o.group; }
+        return pre + '<option value="' + esc(o.v) + '"' + (c.picked[0] === o.v ? ' selected' : '') + (o.disabled ? ' disabled' : '') + '>' + esc(o.label) + (o.disabled && o.why ? ' — ' + esc(o.why) : '') + '</option>';
+      }).join('') + (lastG ? '</optgroup>' : '') + '</select>';
       var sel = c.options.filter(function (o) { return o.v === c.picked[0]; })[0];
       if (sel && sel.t) body += '<p class="small">' + esc(sel.t) + '</p>';
     } else if (rich) {
@@ -85,9 +88,11 @@
       }).join('');
       body = (c.options.length > 12 ? '<div class="toolbar">' + search(c.key, 'Filter…') + '</div>' : '') + '<div class="optlist">' + rows + '</div>';
     } else {
+      var lastPG = null;
       body = '<div class="pills">' + c.options.map(function (o) {
-        var on = c.picked.indexOf(o.v) >= 0;
-        return '<button type="button" class="pill' + (on ? ' on' : '') + '" data-act="pick" data-key="' + esc(c.key) + '" data-v="' + esc(o.v) + '"' + (o.disabled && !on ? ' disabled title="' + esc(o.why ? 'Already have it: ' + o.why : 'Not available') + '"' : '') + '>' + esc(o.label) + '</button>';
+        var on = c.picked.indexOf(o.v) >= 0, pre = '';
+        if (o.group && o.group !== lastPG) { pre = '<span class="pill-group">' + esc(o.group) + '</span>'; lastPG = o.group; }
+        return pre + '<button type="button" class="pill' + (on ? ' on' : '') + '" data-act="pick" data-key="' + esc(c.key) + '" data-v="' + esc(o.v) + '"' + (o.disabled && !on ? ' disabled title="' + esc(o.why ? 'Already have it: ' + o.why : 'Not available') + '"' : '') + '>' + esc(o.label) + '</button>';
       }).join('') + '</div>';
     }
     var greyed = {};
