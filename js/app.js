@@ -72,7 +72,7 @@
     var rich = c.options.some(function (o) { return o.t; });
     if (c.select || (c.count === 1 && c.options.length > 12 && !rich)) {
       body = '<select data-pick="' + esc(c.key) + '"><option value="">— choose —</option>' + c.options.map(function (o) {
-        return '<option value="' + esc(o.v) + '"' + (c.picked[0] === o.v ? ' selected' : '') + (o.disabled ? ' disabled' : '') + '>' + esc(o.label) + '</option>';
+        return '<option value="' + esc(o.v) + '"' + (c.picked[0] === o.v ? ' selected' : '') + (o.disabled ? ' disabled' : '') + '>' + esc(o.label) + (o.disabled && o.why ? ' — ' + esc(o.why) : '') + '</option>';
       }).join('') + '</select>';
       var sel = c.options.filter(function (o) { return o.v === c.picked[0]; })[0];
       if (sel && sel.t) body += '<p class="small">' + esc(sel.t) + '</p>';
@@ -80,16 +80,20 @@
       var q = ui.q[c.key] || '';
       var rows = c.options.filter(function (o) { return c.picked.indexOf(o.v) >= 0 || match(q, o.label + ' ' + o.t); }).map(function (o) {
         var on = c.picked.indexOf(o.v) >= 0;
-        return '<button type="button" class="opt' + (on ? ' on' : '') + '" data-act="pick" data-key="' + esc(c.key) + '" data-v="' + esc(o.v) + '"' + (o.disabled && !on ? ' disabled' : '') + '><b>' + esc(o.label) + '</b>' +
+        return '<button type="button" class="opt' + (on ? ' on' : '') + '" data-act="pick" data-key="' + esc(c.key) + '" data-v="' + esc(o.v) + '"' + (o.disabled && !on ? ' disabled' : '') + '><b>' + esc(o.label) + '</b>' + (o.disabled && !on && o.why ? ' <small class="muted">— ' + esc(o.why) + '</small>' : '') +
           (o.pre ? ' <small class="muted">— requires ' + esc(o.pre) + '</small>' : '') + '<span>' + esc(o.t) + '</span></button>';
       }).join('');
       body = (c.options.length > 12 ? '<div class="toolbar">' + search(c.key, 'Filter…') + '</div>' : '') + '<div class="optlist">' + rows + '</div>';
     } else {
       body = '<div class="pills">' + c.options.map(function (o) {
         var on = c.picked.indexOf(o.v) >= 0;
-        return '<button type="button" class="pill' + (on ? ' on' : '') + '" data-act="pick" data-key="' + esc(c.key) + '" data-v="' + esc(o.v) + '"' + (o.disabled && !on ? ' disabled title="Already have this"' : '') + '>' + esc(o.label) + '</button>';
+        return '<button type="button" class="pill' + (on ? ' on' : '') + '" data-act="pick" data-key="' + esc(c.key) + '" data-v="' + esc(o.v) + '"' + (o.disabled && !on ? ' disabled title="' + esc(o.why ? 'Already have it: ' + o.why : 'Not available') + '"' : '') + '>' + esc(o.label) + '</button>';
       }).join('') + '</div>';
     }
+    var greyed = {};
+    c.options.forEach(function (o) { if (o.disabled && o.why && c.picked.indexOf(o.v) < 0) (greyed[o.why] = greyed[o.why] || []).push(o.label); });
+    var why = Object.keys(greyed).map(function (w) { return '<b>' + esc(greyed[w].join(', ')) + '</b> ' + esc(w); });
+    if (why.length) body += '<p class="small muted greyed">Greyed out: ' + why.join('; ') + '.</p>';
     return '<div class="choice' + (c.missing ? ' todo' : '') + '">' + head + body + '</div>';
   }
   function choicesFor(step, filter) {

@@ -170,7 +170,18 @@
   };
 
   // ---------- the main derivation ----------
+  // Skills, tools, languages and expertise picked in one step are greyed out everywhere else.
+  // A first pass finds who picked what (the earlier step keeps a duplicate); the second pass uses that.
   R.derive = function (ch, filters) {
+    var first = deriveOnce(ch, filters, null), claimed = {};
+    first.choices.forEach(function (c) {
+      if (!c.bucket) return;
+      var b = claimed[c.bucket] = claimed[c.bucket] || {};
+      c.picked.forEach(function (v) { if (!b[v]) b[v] = { key: c.key, label: c.label }; });
+    });
+    return deriveOnce(ch, filters, claimed);
+  };
+  function deriveOnce(ch, filters, claimed) {
     var entries = R.classEntries(ch);
     var level = entries.reduce(function (n, e) { return n + e.level; }, 0) || 1;
     var pb = R.pb(level);
@@ -181,6 +192,8 @@
     var out = { level: level, pb: pb, classes: entries, cls: entries[0] ? entries[0].cls : null, lin: lin, L: L, bg: bg, choices: [], features: [], warnings: [] };
 
     var prof = { armor: [], weapons: [], tools: [], languages: [], skills: [], expertise: [], saves: [], res: [], imm: [] };
+    var fixedSrc = { skills: {}, tools: {}, languages: {} };
+    function fixed(bucket, list, src) { arr(list).forEach(function (v) { if (fixedSrc[bucket] && !fixedSrc[bucket][v]) fixedSrc[bucket][v] = src; }); }
     var bonus = { STR: 0, DEX: 0, CON: 0, INT: 0, WIS: 0, CHA: 0 };
     var hooks = { init: 0, speed: 0, hpPerLevel: 0, hpFlat: 0, passive: 0, unarmoredAC: 0 };
     var senses = { dv: 0 };
@@ -205,7 +218,17 @@
     function freshChoice(key, step, label, count, list, bucket, extra) {
       var mine = own(key);
       var known = prof[bucket].filter(function (v) { return mine.indexOf(v) < 0; });
-      var c = choice(key, step, label, count, opts(list, known), extra);
+      var cl = (claimed && claimed[bucket]) || {}, fx = fixedSrc[bucket] || {};
+      var options = list.map(function (v) {
+        var by = cl[v] && cl[v].key !== key ? cl[v] : null, from = fx[v];
+        var dis = known.indexOf(v) >= 0 || !!by || !!from;
+        return { v: v, label: v, disabled: dis, why: !dis ? '' : from ? 'from ' + from : by ? 'picked in ' + by.label : 'you already have it' };
+      });
+      var c = choice(key, step, label, count, options, Object.assign({ bucket: bucket }, extra || {}));
+      if (claimed) arr(picks[key]).forEach(function (v) {
+        var o = options.filter(function (x) { return x.v === v; })[0];
+        if (o && o.disabled && c.picked.indexOf(v) < 0) out.warnings.push(label + ': ' + v + ' was dropped because it is already ' + (o.why === 'you already have it' ? 'yours from elsewhere' : o.why.replace(/^from /, 'from ').replace(/^picked in /, 'picked in ')) + '. Pick another one.');
+      });
       prof[bucket] = uniq(prof[bucket].concat(c.picked));
       return c;
     }
@@ -214,7 +237,7 @@
       var pending = [];
       arr(list).forEach(function (t, i) {
         var p = R.parseTool(t);
-        if (p.fixed) prof.tools.push(p.fixed); else pending.push([p, i]);
+        if (p.fixed) { prof.tools.push(p.fixed); fixed('tools', [p.fixed], 'your ' + (step === 'background' && bg ? 'background (' + bg.n + ')' : step === 'lineage' && L ? 'lineage (' + L.name + ')' : step)); } else pending.push([p, i]);
       });
       return function () {
         pending.forEach(function (x) {
@@ -248,7 +271,7 @@
       }
       L.pick.forEach(function (p, i) { choice('lin.pick' + i, 'lineage', p.label, 1, opts(p.from)); });
       prof.languages = prof.languages.concat(L.lang);
-      prof.skills = prof.skills.concat(L.sk);
+      prof.skills = prof.skills.concat(L.sk); fixed('skills', L.sk, 'your lineage (' + L.name + ')');
       prof.saves = prof.saves.concat(L.saves);
       prof.armor = prof.armor.concat(L.prof.armor); prof.weapons = prof.weapons.concat(L.prof.weapons);
       prof.res = prof.res.concat(L.res); prof.imm = prof.imm.concat(L.imm);
@@ -332,7 +355,7 @@
         var SK = 'sc.' + cls.id + '.', g = sc.grants || {};
         prof.armor = prof.armor.concat(g.armor || []); prof.weapons = prof.weapons.concat(g.weapons || []);
         prof.languages = prof.languages.concat(g.languages || []);
-        if (clv >= (g.skillsAt || 0)) { prof.skills = prof.skills.concat(g.skills || []); prof.expertise = prof.expertise.concat(g.expertise || []); }
+        if (clv >= (g.skillsAt || 0)) { prof.skills = prof.skills.concat(g.skills || []); fixed('skills', g.skills, 'your ' + (sc ? sc.name : cls.name)); prof.expertise = prof.expertise.concat(g.expertise || []); }
         if (clv >= (g.savesAt || 0)) prof.saves = prof.saves.concat(g.saves || []);
         if (g.darkvision) senses.dv = Math.max(senses.dv, g.darkvision);
         if (g.darkvisionBonus) senses.dv = senses.dv ? senses.dv + g.darkvisionBonus : g.darkvisionBonus;
@@ -380,7 +403,7 @@
 
     // ----- background -----
     if (bg) {
-      prof.skills = prof.skills.concat(bg.sk || []);
+      prof.skills = prof.skills.concat(bg.sk || []); fixed('skills', bg.sk, 'your background (' + bg.n + ')');
       prof.languages = prof.languages.concat(bg.lang || []);
       var bgTools = addTools(bg.tools, 'bg', 'background', 'Background tool');
       later.push(function () {
@@ -673,7 +696,7 @@
     if (ch.method === 'pointbuy' && out.pointsSpent !== 27) out.todo.abilities++;
     if (ch.method === 'array' && AB.map(function (a) { return ch.base[a]; }).sort().join() !== D.standardArray.slice().sort().join()) out.todo.abilities++;
     return out;
-  };
+  }
 
   // "(a) X or (b) Y" -> ["X", "Y"]
   R.parseEquip = function (line) {

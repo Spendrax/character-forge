@@ -87,6 +87,17 @@ let gg = A.gear(gc, D);
 assert.equal(gg.armor, 'heavy'); assert(gg.shield); assert.equal(gg.main.kind, 'sword'); assert.equal(gg.back.kind, 'bow');
 assert(gg.slots.cloak && gg.slots.ring && gg.slots.neck && !gg.slots.boots, 'slots ' + Object.keys(gg.slots));
 assert.equal(A.gear(mk({ weapons: ['Rapier', 'Dagger'] }), D).off.kind, 'dagger');
+// a skill picked in one step is greyed out in the others, with the reason
+let gx = mk({ lineage: 'half-elf', classes: [C('rogue', 1)], background: 'Sailor', picks: { 'cls.rogue.skills': ['Stealth', 'Insight', 'Deception', 'Acrobatics'] } });
+let gd = R.derive(gx, {}), linSk = gd.choices.find(c => c.key === 'lin.skill0');
+assert(linSk.options.find(o => o.v === 'Stealth').disabled && /Rogue/.test(linSk.options.find(o => o.v === 'Stealth').why));
+assert(/Sailor/.test(linSk.options.find(o => o.v === 'Perception').why));
+gx.picks['lin.skill0'] = ['History', 'Investigation']; gd = R.derive(gx, {});
+assert.deepEqual(gd.choices.find(c => c.key === 'lin.skill0').picked, ['History', 'Investigation']);
+assert(gd.choices.find(c => c.key === 'cls.rogue.skills').options.find(o => o.v === 'Investigation').disabled);
+gx.background = 'Urchin'; gx.picks['cls.rogue.skills'] = ['Stealth', 'Insight', 'Deception', 'Acrobatics']; gd = R.derive(gx, {}); // Urchin gives Stealth
+assert(!gd.choices.find(c => c.key === 'cls.rogue.skills').picked.includes('Stealth') && gd.warnings.some(w => /Stealth was dropped/.test(w)));
+
 // offline copy: every file the page loads must be in the service worker's list
 const sw = fs.readFileSync(path.join(__dirname, '../sw.js'), 'utf8');
 [...html.matchAll(/(?:src|href)="((?:data|js|css|icons)\/[^"]+)"/g)].forEach(m => assert(sw.includes("'" + m[1] + "'"), 'sw.js is missing ' + m[1]));
