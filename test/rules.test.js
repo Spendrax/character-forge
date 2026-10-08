@@ -123,6 +123,28 @@ const again = I5.spellsInto(I5.read(db5)[0], up, R, D).ch; // re-importing repla
 assert.equal(again.notes.other.split('Spells imported from 5th Spellbook').length, 2);
 assert.throws(() => new SqliteFile(new TextEncoder().encode('not a database at all').buffer));
 
+// 5e Companion import: a made-up shared character in test/fixtures
+const IC = require('../js/import-companion.js');
+const cj = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures/5e-companion-sample.json'), 'utf8'));
+assert(IC.detect(cj) && !IC.detect({ classes: [] }));
+const ce = IC.read(cj)[0], cr = IC.toCharacter(ce, R, D), cc = cr.ch, cd = R.derive(cc, {});
+assert.equal(cc.lineage, 'dhampir'); assert.equal(cc.background, 'Haunted One'); assert.equal(cc.alignment, 'Lawful Good');
+assert.deepEqual(cc.classes, [{ cls: 'cleric', level: 4, subclass: 'cleric:peace' }]);
+assert.deepEqual(AB_TOTALS(cd), { STR: 8, DEX: 12, CON: 14, INT: 10, WIS: 17, CHA: 13 }); // exact totals, feat and lineage bonuses included
+function AB_TOTALS(x) { const o = {}; Object.keys(x.abilities).forEach(k => o[k] = x.abilities[k].total); return o; }
+['Insight', 'Medicine', 'Persuasion', 'Religion', 'Survival'].forEach(k => assert(cd.skills[k].prof, k));
+assert(!cd.skills.Arcana.prof); assert(cd.prof.languages.includes('Abyssal'));
+assert.equal(cc.picks['asi.cleric.4.feat'][0], 'Observant');
+assert.equal(cc.armor, 'Scale Mail'); assert(cc.shield); assert(cc.weapons.includes('Mace'));
+const inames = cc.items.map(i => i.n);
+assert(inames.includes('Oil (flask)') && inames.includes('Steel Mirror') && inames.includes('Torch') && inames.includes('Lucky pebble') && inames.includes('Odd stick'));
+assert.deepEqual(cc.money, { pp: 1, gp: 12, ep: 0, sp: 3, cp: 0 });
+assert.equal(cc.notes.traits, 'Calm.'); assert(/Remember the bridge/.test(cc.notes.other) && !/\bold\b/.test(cc.notes.other.split('Notes from 5e Companion')[1]));
+const cs = cd.casters[0]; assert(cs.cantrips.includes('Guidance') && cs.known.includes('Bless') && cs.always.includes('Heroism'));
+assert(cr.skipped.some(x => x[0] === 'Fireball')); assert(/^data:image\/jpeg;base64,/.test(cr.picture));
+const cu = I5.spellsInto(ce, mk({ name: 'Other', classes: [C('cleric', 4, 'cleric:life')], background: 'Acolyte' }), R, D).ch;
+assert.equal(cu.background, 'Acolyte'); assert.equal(cu.classes[0].subclass, 'cleric:life'); assert(cu.spells.cleric.c.includes('Guidance') && !cu.spells.cleric.k.includes('Bless')); // Bless is already a Life Domain spell assert(/from 5e Companion/.test(cu.notes.other));
+
 // offline copy: every file the page loads must be in the service worker's list
 const sw = fs.readFileSync(path.join(__dirname, '../sw.js'), 'utf8');
 [...html.matchAll(/(?:src|href)="((?:data|js|css|icons)\/[^"]+)"/g)].forEach(m => assert(sw.includes("'" + m[1] + "'"), 'sw.js is missing ' + m[1]));

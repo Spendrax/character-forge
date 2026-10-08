@@ -273,22 +273,22 @@
   // "Import spells" on the Spells step: only ever changes the current character's spells.
   function spellImportHtml() {
     var I = ui.spellImport, done = ui.spellImportDone;
-    var bar = '<div class="spell-import noprint"><div class="toolbar">' + btn('importSpells', '⇩ Import spells from 5th Spellbook') +
+    var bar = '<div class="spell-import noprint"><div class="toolbar">' + btn('importSpells', '⇩ Import spells (5th Spellbook or 5e Companion)') +
       '<span class="small muted">Only changes the spells of ' + esc(title(ch)) + '. Everything else stays.</span></div><input type="file" id="spellImportFile" hidden>';
     if (ui.spellImportError) bar += '<p class="small" style="color:var(--warn)">' + esc(ui.spellImportError) + '</p>';
-    if (done) bar += '<div class="panel"><b>Spells imported from ' + esc(done.from) + '.</b> ' + done.added + ' spell' + (done.added === 1 ? '' : 's') + ' added' +
+    if (done) bar += '<div class="panel"><b>Spells imported from ' + esc(done.from) + ' (' + esc(done.source) + ').</b> ' + done.added + ' spell' + (done.added === 1 ? '' : 's') + ' added' +
       (done.skipped ? '; ' + done.skipped + ' didn\'t fit and are listed in Details → Other notes' : '') + '. Not right? Press Undo at the top. ' + btn('spellImportClose', 'OK', {}, 'btn tiny') + '</div>';
-    if (I) bar += '<div class="panel"><b>Whose spells?</b> <span class="muted">The backup has ' + I.entries.length + ' characters. Pick the one to take spells from.</span><div class="imp-list">' +
+    if (I) bar += '<div class="panel"><b>Whose spells?</b> <span class="muted">The file has ' + I.entries.length + ' characters. Pick the one to take spells from.</span><div class="imp-list">' +
       I.entries.map(function (e) {
         var n = e.classes.reduce(function (t, c) { return t + c.spells.length; }, e.loose.length);
-        return '<label class="imp-row"><input type="radio" name="spellsFrom" data-spellsfrom="' + e.id + '"' + (I.choose === e.id ? ' checked' : '') + '><span><b>' + esc(e.name) + '</b><br><span class="small muted">' + esc(Import5e.summary(e)) + ' · ' + n + ' spells</span></span></label>';
+        return '<label class="imp-row"><input type="radio" name="spellsFrom" data-spellsfrom="' + e.id + '"' + (I.choose === e.id ? ' checked' : '') + '><span><b>' + esc(e.name) + '</b><br><span class="small muted">' + esc(importerOf(e).summary(e)) + ' · ' + n + ' spells</span></span></label>';
       }).join('') + '</div><div class="toolbar">' + btn('spellImportGo', 'Use these spells', {}, 'btn primary') + btn('spellImportCancel', 'Cancel') + '</div></div>';
     return bar + '</div>';
   }
   function applySpellImport(entry) {
     var u = Import5e.spellsInto(entry, ch, R, D), c2 = normalize(u.ch);
     store.chars[store.chars.indexOf(ch)] = c2; store.current = c2.id;
-    ui.spellImport = null; ui.spellImportError = ''; ui.spellImportDone = { from: entry.name, added: u.added, skipped: u.skipped.length };
+    ui.spellImport = null; ui.spellImportError = ''; ui.spellImportDone = { from: entry.name, source: sourceName(entry), added: u.added, skipped: u.skipped.length };
   }
   function loadSpellImport(input) {
     var file = input.files && input.files[0];
@@ -298,14 +298,14 @@
     reader.onload = function () {
       ui.spellImportError = ''; ui.spellImportDone = null; ui.spellImport = null;
       try {
-        if (!window.SqliteFile || !SqliteFile.isSqlite(reader.result)) throw new Error('That file is not a 5th Spellbook backup.');
-        var entries = Import5e.read(new SqliteFile(reader.result));
+        var entries = readImportFile(reader.result);
+        if (!entries || entries.json) throw new Error('That file is not a 5th Spellbook backup or a 5e Companion character.');
         if (!entries.length) throw new Error('That 5th Spellbook backup has no characters.');
         var nm = function (x) { return String(x || '').trim().toLowerCase(); };
         var same = entries.filter(function (e) { return nm(e.name) && nm(e.name) === nm(ch.name); });
         if (entries.length === 1) applySpellImport(entries[0]);
         else ui.spellImport = { entries: entries, choose: (same[0] || entries[0]).id, matched: same.length === 1 };
-      } catch (err) { ui.spellImportError = /5th Spellbook/.test(err.message) ? err.message : 'That file could not be read as a 5th Spellbook backup.'; window.console.error(err); }
+      } catch (err) { ui.spellImportError = /5th Spellbook|5e Companion/.test(err.message) ? err.message : 'That file could not be read as a 5th Spellbook backup or a 5e Companion character.'; window.console.error(err); }
       render();
     };
     reader.readAsArrayBuffer(file);
@@ -464,25 +464,38 @@
     if (!/^image\//.test(file.type)) { ui.pictureError = 'That file is not a picture.'; render(); return; }
     var reader = new FileReader();
     reader.onload = function () {
-      var img = new Image();
-      img.onload = function () {
-        var max = 640, k = Math.min(1, max / Math.max(img.width, img.height)), cv = document.createElement('canvas');
-        cv.width = Math.max(1, Math.round(img.width * k)); cv.height = Math.max(1, Math.round(img.height * k));
-        var x = cv.getContext('2d'); x.imageSmoothingQuality = 'high';
-        var data = '';
-        x.drawImage(img, 0, 0, cv.width, cv.height);
-        data = cv.toDataURL('image/webp', 0.85);
-        if (data.indexOf('data:image/webp') !== 0) { x.globalCompositeOperation = 'destination-over'; x.fillStyle = '#ffffff'; x.fillRect(0, 0, cv.width, cv.height); data = cv.toDataURL('image/jpeg', 0.85); }
+      shrinkPicture(reader.result, function (data) {
+        if (!data) { ui.pictureError = 'That picture could not be opened.'; render(); return; }
         var before = ch.picture;
         ch.picture = data;
         try { window.localStorage.setItem(KEY, JSON.stringify(store)); }
         catch (e) { ch.picture = before; ui.pictureError = 'There is not enough room left in this browser to save that picture. Try a smaller one, or remove pictures from other characters.'; }
         render();
-      };
-      img.onerror = function () { ui.pictureError = 'That picture could not be opened.'; render(); };
-      img.src = reader.result;
+      });
     };
     reader.readAsDataURL(file);
+  }
+  function importerOf(e) { return e && e.source === 'companion' ? window.ImportCompanion : window.Import5e; }
+  function sourceName(e) { return e && e.source === 'companion' ? '5e Companion' : '5th Spellbook'; }
+  // Read any import file: a 5th Spellbook backup (SQLite) or a 5e Companion character (JSON). Returns entries or null.
+  function readImportFile(buf) {
+    if (window.SqliteFile && SqliteFile.isSqlite(buf)) return Import5e.read(new SqliteFile(buf));
+    var o; try { o = JSON.parse(new TextDecoder('utf-8').decode(buf)); } catch (e) { return null; }
+    if (window.ImportCompanion && ImportCompanion.detect(o)) return ImportCompanion.read(o);
+    return { json: o };
+  }
+  function shrinkPicture(src, done) {
+    var img = new Image();
+    img.onload = function () {
+      var max = 640, k = Math.min(1, max / Math.max(img.width, img.height)), cv = document.createElement('canvas');
+      cv.width = Math.max(1, Math.round(img.width * k)); cv.height = Math.max(1, Math.round(img.height * k));
+      var x = cv.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(img, 0, 0, cv.width, cv.height);
+      var data = cv.toDataURL('image/webp', 0.85);
+      if (data.indexOf('data:image/webp') !== 0) { x.globalCompositeOperation = 'destination-over'; x.fillStyle = '#ffffff'; x.fillRect(0, 0, cv.width, cv.height); data = cv.toDataURL('image/jpeg', 0.85); }
+      done(data);
+    };
+    img.onerror = function () { done(null); };
+    img.src = src;
   }
   function stepAppearance() {
     var L = lookOf(ch, d), own = ch.look || {};
@@ -618,7 +631,7 @@
       return '<option value="' + c.id + '"' + (c.id === ch.id ? ' selected' : '') + '>' + esc(title(c)) + '</option>';
     }).join('') + '</select>' + '<button type="button" class="btn" data-act="undo" title="Undo (Ctrl+Z)"' + (undoStack.length ? '' : ' disabled') + '>↶ Undo</button><button type="button" class="btn" data-act="redo" title="Redo (Ctrl+Y)"' + (redoStack.length ? '' : ' disabled') + '>↷ Redo</button>' + btn('new', 'New') + btn('dup', 'Duplicate') + btn('import', 'Import') + btn('export', 'Export') +
       (ui.confirmDelete ? btn('delete', 'Really delete?', {}, 'btn primary') + btn('cancelDelete', 'Cancel') : btn('askDelete', 'Delete', {}, 'btn danger')) +
-      (ui.importError ? '<span class="count" style="color:var(--warn)">' + esc(ui.importError === true ? 'That file is not a Character Forge export or a 5th Spellbook backup.' : ui.importError) + '</span>' : '') + (isInstalledApp() ? '' : btn('install', 'Install app', {}, installPrompt ? 'btn primary' : 'btn')) + '<span class="spacer"></span><span class="filters"><b>Sources:</b>' + TAGS.map(function (t) {
+      (ui.importError ? '<span class="count" style="color:var(--warn)">' + esc(ui.importError === true ? 'That file is not a Character Forge export, a 5th Spellbook backup or a 5e Companion character.' : ui.importError) + '</span>' : '') + (isInstalledApp() ? '' : btn('install', 'Install app', {}, installPrompt ? 'btn primary' : 'btn')) + '<span class="spacer"></span><span class="filters"><b>Sources:</b>' + TAGS.map(function (t) {
         return '<label><input type="checkbox" data-filter="' + t[0] + '"' + (store.filters[t[0]] !== false ? ' checked' : '') + '> ' + t[1] + '</label>';
       }).join('') + '<label title="Longer feature text and spell descriptions"><input type="checkbox" data-setting="detail"' + (store.detail !== false ? ' checked' : '') + '> Detailed text</label></span><input type="file" id="importFile" hidden></header>';
     var nav = '<nav class="steps" aria-label="Steps">' + STEPS.map(function (s) {
@@ -668,7 +681,7 @@
     import5eAll: function () { var I = ui.import5e; if (I) I.pick = I.pick.length === I.entries.length ? [] : I.entries.map(function (e) { return e.id; }); },
     import5eGo: function () {
       var I = ui.import5e; if (!I || !I.pick.length) return false;
-      var done = [], first = null;
+      var done = [], first = null, pics = [];
       I.entries.filter(function (e) { return I.pick.indexOf(e.id) >= 0; }).forEach(function (e) {
         var tg = I.target[e.id] || 'new', old = tg !== 'new' && byId(tg);
         if (old) {
@@ -676,12 +689,16 @@
           store.chars[store.chars.indexOf(old)] = c2; if (!first) first = c2.id;
           done.push({ name: title(c2), added: u.added, skipped: u.skipped.length, update: true });
         } else {
-          var r = Import5e.toCharacter(e, R, D), c = normalize(r.ch); c.id = R.uid();
+          var r = importerOf(e).toCharacter(e, R, D), c = normalize(r.ch); c.id = R.uid();
           store.chars.push(c); if (!first) first = c.id;
+          if (r.picture) pics.push([c.id, r.picture]);
           done.push({ name: c.name, added: r.added, skipped: r.skipped.length });
         }
       });
+      done.source = I.source;
       store.current = first; ui.step = done.length === 1 && done[0].update ? 'spells' : 'sheet'; ui.import5e = null; ui.import5eDone = done; window.scrollTo(0, 0);
+      // pictures from 5e Companion: shrink them like any added picture, then show them
+      pics.forEach(function (p) { shrinkPicture(p[1], function (data) { var c = byId(p[0]); if (c && data) { c.picture = data; render(); } }); });
     },
     lineage: function (v) {
       var l = R.lineage(v); ch.lineage = v; ch.sub = 0; clearPicks('lin'); ch.version = 0;
@@ -876,20 +893,22 @@
       ui.importError = false;
       var buf = reader.result;
       try {
-        if (window.SqliteFile && SqliteFile.isSqlite(buf)) {
-          var entries = Import5e.read(new SqliteFile(buf));
-          if (!entries.length) throw new Error('That 5th Spellbook backup has no characters.');
+        var got = readImportFile(buf);
+        if (got && !got.json) {
+          var entries = got;
+          if (!entries.length) throw new Error('That file has no characters (5th Spellbook or 5e Companion).');
           var nm = function (x) { return String(x || '').trim().toLowerCase(); }, target = {};
           entries.forEach(function (e) { var same = store.chars.filter(function (c) { return nm(c.name) && nm(c.name) === nm(e.name); })[0]; target[e.id] = same ? same.id : 'new'; });
           var anyMatch = entries.some(function (e) { return target[e.id] !== 'new'; });
           // with a matching character, start with just those ticked: the rest are probably not wanted again
-          ui.import5e = { entries: entries, target: target, pick: entries.filter(function (e) { return !anyMatch || target[e.id] !== 'new'; }).map(function (e) { return e.id; }) }; ui.import5eDone = null;
+          ui.import5e = { source: sourceName(entries[0]), entries: entries, target: target, pick: entries.filter(function (e) { return !anyMatch || target[e.id] !== 'new'; }).map(function (e) { return e.id; }) }; ui.import5eDone = null;
         } else {
-          var o = JSON.parse(new TextDecoder('utf-8').decode(buf)), list = Array.isArray(o) ? o : (o && Array.isArray(o.chars) ? o.chars : [o]);
+          if (!got) throw new Error('not json');
+          var o = got.json, list = Array.isArray(o) ? o : (o && Array.isArray(o.chars) ? o.chars : [o]);
           list.forEach(function (c) { if (!c || typeof c !== 'object' || !(('classes' in c) || ('level' in c)) || !c.base) throw new Error('not a character'); c = normalize(c); c.id = R.uid(); store.chars.push(c); store.current = c.id; });
           ui.step = 'sheet';
         }
-      } catch (err) { ui.importError = /5th Spellbook/.test(err.message) ? err.message : true; window.console.error('Import failed', err); }
+      } catch (err) { ui.importError = /5th Spellbook|5e Companion/.test(err.message) ? err.message : true; window.console.error('Import failed', err); }
       input.value = '';
       render();
     };
@@ -898,15 +917,15 @@
   // Pick which characters to bring in from a 5th Spellbook backup, then report what came across.
   function import5eHtml() {
     var I = ui.import5e, done = ui.import5eDone;
-    if (done) return '<div class="panel import5e noprint"><h3>Imported from 5th Spellbook</h3><ul>' + done.map(function (r) {
+    if (done) return '<div class="panel import5e noprint"><h3>Imported from ' + esc(done.source || '5th Spellbook') + '</h3><ul>' + done.map(function (r) {
       return '<li><b>' + esc(r.name) + '</b> — ' + (r.update ? 'spells updated, everything else kept: ' : 'new character, ') + r.added + ' spell' + (r.added === 1 ? '' : 's') + ' added' + (r.skipped ? ', ' + r.skipped + ' listed in Details → Other notes instead' : '') + '</li>';
-    }).join('') + '</ul>' + (done.some(function (r) { return !r.update; }) ? '<p class="small muted">New characters: ability scores other than the spellcasting one weren\'t in the backup, so they start at 10. Step badges show what is still open (skills, background, equipment…).</p>' : '') + '<p class="small muted">Changed your mind? Press Undo at the top.</p>' + btn('import5eClose', 'Close', {}, 'btn primary') + '</div>';
+    }).join('') + '</ul>' + (done.some(function (r) { return !r.update; }) ? '<p class="small muted">' + (done.source === '5e Companion' ? 'New characters come with everything 5e Companion stores. Step badges show any choice still open, and Details → Other notes lists anything that had no match here.' : 'New characters: ability scores other than the spellcasting one weren\'t in the backup, so they start at 10. Step badges show what is still open (skills, background, equipment…).') + '</p>' : '') + '<p class="small muted">Changed your mind? Press Undo at the top.</p>' + btn('import5eClose', 'Close', {}, 'btn primary') + '</div>';
     if (!I) return '';
-    return '<div class="panel import5e noprint" role="dialog" aria-label="Import from 5th Spellbook"><h3>Import from 5th Spellbook</h3><p class="muted">Found ' + I.entries.length + ' character' + (I.entries.length === 1 ? '' : 's') + '. A new character comes in with its race, classes and levels, subclasses and spells. To keep a character you already made and only bring in its spells, choose “Only update the spells of” it.</p><div class="look-items">' +
+    return '<div class="panel import5e noprint" role="dialog" aria-label="Import from ' + esc(I.source) + '"><h3>Import from ' + esc(I.source) + '</h3><p class="muted">Found ' + I.entries.length + ' character' + (I.entries.length === 1 ? '' : 's') + '. ' + (I.source === '5e Companion' ? 'A new character comes in with everything on its sheet: race, background, classes, ability scores, skills, feats, equipment, coins, personality, notes, spells and picture.' : 'A new character comes in with its race, classes and levels, subclasses and spells.') + ' To keep a character you already made and only bring in its spells, choose “Only update the spells of” it.</p><div class="look-items">' +
       I.entries.map(function (e) {
         var n = e.classes.reduce(function (t, c) { return t + c.spells.length; }, e.loose.length);
         var tg = I.target[e.id] || 'new';
-        return '<div class="imp-row"><input type="checkbox" id="imp5-' + e.id + '" data-imp5="' + e.id + '"' + (I.pick.indexOf(e.id) >= 0 ? ' checked' : '') + '><div class="imp-main"><label for="imp5-' + e.id + '"><b>' + esc(e.name) + '</b><br><span class="small muted">' + esc(Import5e.summary(e)) + ' · ' + n + ' spells</span></label>' +
+        return '<div class="imp-row"><input type="checkbox" id="imp5-' + e.id + '" data-imp5="' + e.id + '"' + (I.pick.indexOf(e.id) >= 0 ? ' checked' : '') + '><div class="imp-main"><label for="imp5-' + e.id + '"><b>' + esc(e.name) + '</b><br><span class="small muted">' + esc(importerOf(e).summary(e)) + ' · ' + n + ' spells</span></label>' +
           '<select data-imp5target="' + e.id + '" aria-label="Where to import ' + esc(e.name) + '"><option value="new"' + (tg === 'new' ? ' selected' : '') + '>Add as a new character</option>' +
           store.chars.map(function (c) { return '<option value="' + c.id + '"' + (tg === c.id ? ' selected' : '') + '>Only update the spells of: ' + esc(title(c)) + '</option>'; }).join('') + '</select>' +
           (tg !== 'new' ? '<div class="small muted">Keeps everything else on ' + esc(title(byId(tg) || {})) + ' as it is: race, classes, abilities, items, notes, picture.</div>' : '') + '</div></div>';

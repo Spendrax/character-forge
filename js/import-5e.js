@@ -157,7 +157,7 @@
   function spellsInto(entry, existing, R, D) {
     var ch = JSON.parse(JSON.stringify(existing));
     var r = placeSpells(entry, ch, R, D);
-    var stamp = 'Spells imported from 5th Spellbook (' + entry.name + ').';
+    var stamp = 'Spells imported from ' + (entry.source === 'companion' ? '5e Companion' : '5th Spellbook') + ' (' + entry.name + ').';
     var add = [stamp];
     if (r.skipped.length) add.push('Spells not added: ' + r.skipped.map(function (s) { return s[0] + ' (' + s[1] + ')'; }).join('; ') + '.');
     ch.notes = ch.notes || {};

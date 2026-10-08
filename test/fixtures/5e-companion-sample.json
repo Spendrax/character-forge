@@ -1,0 +1,217 @@
+{
+ "jsonType": "character",
+ "name": "Test Cleric",
+ "player": "",
+ "alignmentName": "LAWFUL_GOOD",
+ "about": "A made-up character for tests.",
+ "personalityTraits": "Calm.",
+ "ideals": "Hope.",
+ "bonds": "My temple.",
+ "flaws": "Stubborn.",
+ "strength": {
+  "save": false,
+  "saveModifier": 0,
+  "score": 8,
+  "scoreModifier": 0
+ },
+ "dexterity": {
+  "save": false,
+  "saveModifier": 0,
+  "score": 12,
+  "scoreModifier": 0
+ },
+ "constitution": {
+  "save": false,
+  "saveModifier": 0,
+  "score": 14,
+  "scoreModifier": 0
+ },
+ "intelligence": {
+  "save": false,
+  "saveModifier": 0,
+  "score": 10,
+  "scoreModifier": 0
+ },
+ "wisdom": {
+  "save": true,
+  "saveModifier": 0,
+  "score": 17,
+  "scoreModifier": 0
+ },
+ "charisma": {
+  "save": true,
+  "saveModifier": 0,
+  "score": 13,
+  "scoreModifier": 0
+ },
+ "race": {
+  "raceId": "dhampir_[vrgr]",
+  "languageProficiencies": [
+   {
+    "proficiency": "Common"
+   }
+  ],
+  "toolProficiencies": []
+ },
+ "requiredRace": "{\"id\": \"dhampir_[vrgr]\", \"name\": \"Dhampir [VRGR]\", \"subraces\": []}",
+ "background": {
+  "backgroundId": "haunted_one_[vrgr]",
+  "languageProficiencies": [
+   {
+    "name": "Abyssal",
+    "typeName": "LANGUAGE"
+   }
+  ],
+  "skillProficiencies": [],
+  "toolProficiencies": []
+ },
+ "requiredBackground": "{\"name\": \"Haunted One [VRGR]\"}",
+ "jobs": [
+  {
+   "jobId": "cleric",
+   "archetypeId": "cleric_peace_domain_[tce]",
+   "level": 4
+  }
+ ],
+ "allRequiredClasses": {
+  "jobs": [
+   "{\"id\": \"cleric\", \"name\": \"Cleric\", \"archetypes\": [{\"id\": \"cleric_peace_domain_[tce]\", \"name\": \"Peace Domain\"}]}"
+  ]
+ },
+ "skills": [
+  {
+   "proficiencyName": "FULL",
+   "typeName": "INSIGHT"
+  },
+  {
+   "proficiencyName": "FULL",
+   "typeName": "MEDICINE"
+  },
+  {
+   "proficiencyName": "FULL",
+   "typeName": "PERSUASION"
+  },
+  {
+   "proficiencyName": "FULL",
+   "typeName": "RELIGION"
+  },
+  {
+   "proficiencyName": "FULL",
+   "typeName": "SURVIVAL"
+  },
+  {
+   "proficiencyName": "NONE",
+   "typeName": "ARCANA"
+  }
+ ],
+ "proficiencies": [
+  {
+   "name": "Common",
+   "typeName": "LANGUAGE"
+  },
+  {
+   "name": "Abyssal",
+   "typeName": "LANGUAGE"
+  }
+ ],
+ "feats": [
+  {
+   "name": "Observant",
+   "jsonType": "feat"
+  }
+ ],
+ "armors": [
+  {
+   "name": "Shield",
+   "category": "Shields",
+   "equipped": true
+  },
+  {
+   "name": "Scale mail",
+   "category": "Medium Armor",
+   "equipped": true
+  }
+ ],
+ "weapons": [
+  {
+   "name": "Odd stick",
+   "isCustom": true,
+   "damageDiceAmount": 1,
+   "damageDiceName": "d4",
+   "damageTypeName": "Bludgeoning"
+  }
+ ],
+ "equipment": [
+  {
+   "name": "Mace",
+   "amount": 1
+  },
+  {
+   "name": "Flask of Oil",
+   "amount": 2
+  },
+  {
+   "name": "Steel Mirror",
+   "amount": 1
+  },
+  {
+   "name": "",
+   "amount": 3,
+   "item": {
+    "name": "Torch"
+   }
+  },
+  {
+   "name": "Lucky pebble",
+   "amount": 1
+  }
+ ],
+ "gold": 12,
+ "silver": 3,
+ "copper": 0,
+ "electrum": 0,
+ "platinum": 1,
+ "notes": [
+  {
+   "text": "Remember the bridge.",
+   "archivedString": null
+  },
+  {
+   "text": "old",
+   "archivedString": "2025-01-01T00:00:00Z"
+  }
+ ],
+ "spells": [
+  {
+   "name": "Guidance",
+   "level": 0,
+   "prepared": false
+  },
+  {
+   "name": "Sacred Flame",
+   "level": 0,
+   "prepared": false
+  },
+  {
+   "name": "Bless",
+   "level": 1,
+   "prepared": false
+  },
+  {
+   "name": "Cure Wounds",
+   "level": 1,
+   "prepared": false
+  },
+  {
+   "name": "Heroism",
+   "level": 1,
+   "prepared": false
+  },
+  {
+   "name": "Fireball",
+   "level": 3,
+   "prepared": false
+  }
+ ],
+ "image": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+}

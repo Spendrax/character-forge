@@ -19,6 +19,15 @@ Spells that aren't on that class's list in this app, or go past the class's limi
 On the **Spells** step, **Import spells from 5th Spellbook** does the same for the character you are editing only: pick the backup (and, if it has several characters, whose spells to use) and only that character's spells change.
 The backup is read in the browser by `js/sqlite-read.js` (a small read-only SQLite reader), so nothing is uploaded anywhere.
 
+### Import from 5e Companion
+
+**Import** also accepts a character shared from the *5e Companion App* (its "share character" file, plain JSON).
+It comes in complete: race, background, alignment, classes with levels and subclasses, ability scores (the exact totals), skills, languages, tools,
+feats, worn armour and shield, weapons, inventory, coins, personality, notes, spells and the character's picture.
+5e Companion only stores final ability scores, so ability improvement choices are filled in to match those totals.
+Anything with no match here (a homebrew item, a skill from a house rule) is listed in Details → Other notes.
+As with 5th Spellbook, a shared character can instead **only update the spells** of a character you already have, and the Spells step's import button accepts these files too.
+
 ### Undo
 
 **Undo** and **Redo** in the top bar (or Ctrl+Z and Ctrl+Y / Ctrl+Shift+Z outside text boxes) step back and forward through the last 40 changes, including imports and deleting a character. The history lasts until the page is closed.
@@ -77,6 +86,7 @@ spells known or prepared per class; Unarmored Defense only from whichever class 
     js/avatar.js      pixel-art figure for the Appearance step
     js/sqlite-read.js read-only SQLite reader (for app backups)
     js/import-5e.js   5th Spellbook backup → characters
+    js/import-companion.js  5e Companion shared character → character
     data/*.js         game data, plain scripts that fill window.DND
     data/items.js     magic item index and adventuring gear
     data/text-*.js    longer feature text and spell descriptions (optional: delete the two script tags to drop them)
