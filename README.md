@@ -38,13 +38,13 @@ Magic items carry name, rarity, type and attunement only; each links to its wiki
 
 ### Appearance
 
-The Appearance step has two views of the same character, both original pixel art drawn in code: a close-up **Portrait** (`js/portrait.js`) and a **Full figure** on a terrain base (`js/avatar.js`).
-The portrait adds face shape, age, eye shape, a second eye colour, eyebrows, nose, mouth, lips, cheeks, markings (freckles, scars, tattoos, war paint and more) and accessories (earrings, nose ring, eyepatch, glasses, monocle, hood).
-Beaked, scaled, feline and construct heads draw their own eyes, nose and mouth, so those options are greyed out for them.
+The Appearance step has two parts.
+**Character picture:** add your own image of the character (a drawing, a token, anything). It is shrunk to at most 640 px, saved in the browser with the character, included in exports, and shown in the side panel and on the sheet. It can be cropped to a square or shown whole.
+**Pixel figure:** an original pixel-art figure on a terrain base, drawn in code by `js/avatar.js`.
 Height, build, head shape, ears, horns, tail and wings start from the lineage; skin, eyes, hair, beard, clothes and ground can be changed, and the changes are kept.
 Armour (none, light, medium, heavy), shield and weapons from the Equipment step are drawn on the body, and wearable inventory items are matched by name
 (cloaks, robes, hats, helms, circlets, boots, gloves, belts, amulets, rings, goggles, orbs, magic weapons, armour and shields). Each one can be hidden.
-Magic items add a sparkle in their rarity colour. The portrait appears in the side panel, and both views appear at the top of the sheet.
+Magic items add a sparkle in their rarity colour. The figure shows in the side panel when there is no picture, and both appear at the top of the sheet.
 
 ### Multiclassing
 
@@ -69,8 +69,7 @@ spells known or prepared per class; Unarmored Defense only from whichever class 
     css/style.css     styles (light, dark, print)
     js/rules.js       rules engine (no DOM; runs in Node)
     js/app.js         user interface
-    js/avatar.js      pixel-art full figure and the shared look options
-    js/portrait.js    pixel-art close-up portrait
+    js/avatar.js      pixel-art figure for the Appearance step
     js/sqlite-read.js read-only SQLite reader (for app backups)
     js/import-5e.js   5th Spellbook backup → characters
     data/*.js         game data, plain scripts that fill window.DND

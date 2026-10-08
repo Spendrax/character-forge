@@ -2,7 +2,7 @@
   "id": "./?app=character-forge",
   "name": "Character Forge",
   "short_name": "Char Forge",
-  "description": "D&D 5e character builder: lineage, class, spells, items and a pixel-art portrait.",
+  "description": "D&D 5e character builder: lineage, class, spells, items, character pictures and a pixel-art figure.",
   "start_url": "./?app=character-forge",
   "scope": "./",
   "display": "standalone",
