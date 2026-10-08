@@ -12,7 +12,7 @@ Characters are saved in the browser's localStorage. Use **Export** / **Import** 
 
 ## What it does
 
-Lineage → Class and subclass (levels 1–20, single class or multiclass) → Ability scores (standard array, point buy, manual/rolled; ASIs or feats) → Background → Spells → Equipment → Items → Details → printable Sheet.
+Lineage → Class and subclass (levels 1–20, single class or multiclass) → Ability scores (standard array, point buy, manual/rolled; ASIs or feats) → Background → Spells → Equipment → Items → Appearance → Details → printable Sheet.
 It computes HP, AC, saves, skills, initiative, passive Perception, attacks, spell slots, save DC and spell attack, and tracks unfilled choices per step.
 The **Sources** checkboxes hide or show Official, Setting, Unearthed Arcana and Homebrew content. **Detailed text** switches between short and long feature text and shows or hides spell descriptions.
 
@@ -21,6 +21,14 @@ The **Sources** checkboxes hide or show Official, Setting, Unearthed Arcana and 
 The Items step holds the inventory: 902 magic items from the wiki (filter by rarity and type, attunement tracked against the limit of 3, or more for artificers),
 103 pieces of adventuring gear with cost and weight, your own custom items, and coins. Carried weight is compared with Strength × 15.
 Magic items carry name, rarity, type and attunement only; each links to its wiki page for the description.
+
+### Appearance
+
+The Appearance step draws the character as a small pixel-art figure on a terrain base (original art, drawn in code by `js/avatar.js`).
+Height, build, head shape, ears, horns, tail and wings start from the lineage; skin, eyes, hair, beard, clothes and ground can be changed, and the changes are kept.
+Armour (none, light, medium, heavy), shield and weapons from the Equipment step are drawn on the body, and wearable inventory items are matched by name
+(cloaks, robes, hats, helms, circlets, boots, gloves, belts, amulets, rings, goggles, orbs, magic weapons, armour and shields). Each one can be hidden.
+Magic items add a sparkle in their rarity colour. The portrait also appears in the side panel and on the sheet.
 
 ### Multiclassing
 
@@ -35,6 +43,7 @@ spells known or prepared per class; Unarmored Defense only from whichever class 
 - Feat and multiclass prerequisites are shown but not enforced.
 - Rules text is paraphrased, not the books' wording. Spells link to the wiki for the full text.
 - Homebrew subclasses and the UA spell *Icingdeath's Frost* only have the short text.
+- The figure has one front-facing pose. Items use a generic shape per kind (all cloaks look alike); items that don't match a kind are not drawn.
 - Archived / superseded Unearthed Arcana from the wiki is not included.
 - Spell grants from lineages and feats are described in their text, not added to the spell picker.
 
@@ -44,6 +53,7 @@ spells known or prepared per class; Unarmored Defense only from whichever class 
     css/style.css     styles (light, dark, print)
     js/rules.js       rules engine (no DOM; runs in Node)
     js/app.js         user interface
+    js/avatar.js      pixel-art figure for the Appearance step
     data/*.js         game data, plain scripts that fill window.DND
     data/items.js     magic item index and adventuring gear
     data/text-*.js    longer feature text and spell descriptions (optional: delete the two script tags to drop them)

@@ -70,4 +70,18 @@ for (const cl of D.classes) for (const s of [null, ...R.subclassesOf(cl.id)]) fo
 for (const a of D.classes) for (const b of D.classes) if (a !== b) { R.derive(mk({ classes: [C(a.id, 7, (R.subclassesOf(a.id)[0] || {}).id), C(b.id, 6, (R.subclassesOf(b.id)[0] || {}).id)] })); n++; }
 for (const l of D.lineages) l.versions.forEach((v, vi) => (v.subs || [0]).forEach((_, si) => { R.derive(mk({ lineage: l.id, version: vi, sub: si })); n++; }));
 const longF = Object.values(D.featureText).reduce((t, o) => t + Object.keys(o).length, 0);
+
+// appearance: every lineage gets a look and draws without errors; gear lands in the right slots
+require('../js/avatar.js'); const A = global.Avatar;
+const fake = () => { const px = {}; return { px, getContext: () => ({ clearRect() {}, fillRect(x, y) { px[x + ',' + y] = this.fillStyle; } }) }; };
+D.lineages.forEach(l => { const ch = mk({ lineage: l.id }), dd = R.derive(ch, {}); const cv = fake(); A.draw(cv, A.look(ch, dd.lin, dd.L), A.gear(ch, D)); assert(Object.keys(cv.px).length > 300, l.id); });
+let lk = (id) => { const ch = mk({ lineage: id }), dd = R.derive(ch, {}); return A.look(ch, dd.lin, dd.L); };
+assert.equal(lk('tiefling').horns, 'curled'); assert.equal(lk('dwarf').height, 'short'); assert.equal(lk('aarakocra').head, 'bird'); assert.equal(lk('harengon').ears, 'rabbit');
+let gc = mk({ armor: 'Plate', shield: true, weapons: ['Longsword', 'Longbow'], items: [
+  { id: 'x1', k: 'magic', n: 'Cloak of Protection', r: 'Uncommon' }, { id: 'x2', k: 'magic', n: 'Boots of Speed', r: 'Rare' }, { id: 'x3', k: 'magic', n: 'Ring of Protection', r: 'Rare' },
+  { id: 'x4', k: 'magic', n: 'Amulet of Health', r: 'Rare' }, { id: 'x5', k: 'gear', n: 'Rope, hempen (50 feet)' }], look: { hidden: { x2: 1 } } });
+let gg = A.gear(gc, D);
+assert.equal(gg.armor, 'heavy'); assert(gg.shield); assert.equal(gg.main.kind, 'sword'); assert.equal(gg.back.kind, 'bow');
+assert(gg.slots.cloak && gg.slots.ring && gg.slots.neck && !gg.slots.boots, 'slots ' + Object.keys(gg.slots));
+assert.equal(A.gear(mk({ weapons: ['Rapier', 'Dagger'] }), D).off.kind, 'dagger');
 console.log('ok —', n, 'builds derived;', D.classes.length, 'classes,', D.subclasses.length, 'subclasses,', D.lineages.length, 'lineages,', D.backgrounds.length, 'backgrounds,', D.feats.length, 'feats,', Object.keys(D.spells).length, 'spells (' + Object.keys(D.spellText).length + ' described),', longF, 'detailed features');

@@ -3,7 +3,7 @@
   'use strict';
   var D = window.DND, R = window.Rules, AB = D.abilities;
   var KEY = 'character-forge.v1';
-  var STEPS = [['lineage', 'Lineage'], ['class', 'Class'], ['abilities', 'Abilities'], ['background', 'Background'], ['spells', 'Spells'], ['equipment', 'Equipment'], ['items', 'Items'], ['details', 'Details'], ['sheet', 'Sheet']];
+  var STEPS = [['lineage', 'Lineage'], ['class', 'Class'], ['abilities', 'Abilities'], ['background', 'Background'], ['spells', 'Spells'], ['equipment', 'Equipment'], ['items', 'Items'], ['appearance', 'Appearance'], ['details', 'Details'], ['sheet', 'Sheet']];
   var TAGS = [['official', 'Official'], ['setting', 'Setting books'], ['ua', 'Unearthed Arcana'], ['homebrew', 'Homebrew']];
 
   var store = { chars: [], current: '', detail: true, filters: { official: true, setting: true, ua: true, homebrew: true } };
@@ -369,6 +369,53 @@
     return h + '</div>';
   }
 
+  // ---------- appearance ----------
+  function lookOf(c, dd) { return Avatar.look(c, dd.lin, dd.L); }
+  function gearOf(c) { return Avatar.gear(c, D); }
+  function avatarCanvas(cls) { return '<canvas class="avatar ' + (cls || '') + '" data-avatar width="48" height="58" role="img" aria-label="Character portrait"></canvas>'; }
+  function drawAvatars() {
+    if (!window.Avatar) return;
+    var look = lookOf(ch, d), gear = gearOf(ch);
+    document.querySelectorAll('canvas[data-avatar]').forEach(function (cv) { Avatar.draw(cv, look, gear); });
+  }
+  function stepAppearance() {
+    var L = lookOf(ch, d), own = ch.look || {};
+    function opts(k, label) {
+      return '<label class="field"><span>' + label + (own[k] != null ? ' <small class="muted">· changed</small>' : '') + '</span><select data-look="' + k + '">' + Avatar.OPTIONS[k].map(function (o) {
+        return '<option value="' + o[0] + '"' + (L[k] === o[0] ? ' selected' : '') + '>' + o[1] + '</option>';
+      }).join('') + '</select></label>';
+    }
+    function sw(k, label, list, none) {
+      return '<div class="field"><span>' + label + '</span><div class="swatches">' + (none ? '<button type="button" class="sw none' + (!L[k] ? ' on' : '') + '" data-act="look" data-k="' + k + '" data-v="" title="Match shirt">×</button>' : '') + list.map(function (c) {
+        return '<button type="button" class="sw' + (L[k] === c ? ' on' : '') + '" style="background:' + c + '" data-act="look" data-k="' + k + '" data-v="' + c + '" aria-label="' + label + ' ' + c + '"></button>';
+      }).join('') + '<input type="color" data-lookcolor="' + k + '" value="' + (L[k] || '#888888') + '" aria-label="Custom ' + label.toLowerCase() + '"></div></div>';
+    }
+    var hidden = own.hidden || {};
+    var wear = ch.items.filter(function (it) {
+      var g = Avatar.gear({ items: [Object.assign({}, it)], weapons: [], armor: '', look: {} }, D);
+      return Object.keys(g.slots).length || g.main || g.shield || g.armorGlow;
+    });
+    var shown = [];
+    if (ch.armor) shown.push(ch.armor);
+    if (ch.shield) shown.push('Shield');
+    shown = shown.concat(ch.weapons);
+    var h = '<h2>Appearance</h2><p class="muted">Your character as a little pixel figure. Starting looks follow your lineage; anything you change here is kept even if you switch lineage. Armour, shield and weapons from the Equipment step, and wearable items from your inventory, are drawn on the body.</p>' +
+      '<div class="look-wrap"><div class="look-stage">' + avatarCanvas('big') + '<div class="toolbar" style="justify-content:center">' + btn('lookRandom', 'Randomize') + btn('lookReset', 'Match lineage') + '</div></div><div class="look-controls">' +
+      '<h3>Body</h3><div class="row">' + opts('height', 'Height') + opts('build', 'Build') + '</div>' + sw('skin', 'Skin', Avatar.SKINS) +
+      '<h3>Face</h3><div class="row">' + opts('head', 'Head') + opts('ears', 'Ears') + opts('extra', 'Extra') + '</div>' + sw('eyes', 'Eyes', Avatar.EYES) +
+      '<h3>Hair</h3><div class="row">' + opts('hair', 'Hair style') + opts('beard', 'Beard') + '</div>' + sw('hairColor', 'Hair colour', Avatar.HAIRS) +
+      '<h3>Features</h3><div class="row">' + opts('horns', 'Horns') + opts('tail', 'Tail') + opts('wings', 'Wings') + '</div>' +
+      '<h3>Clothes</h3>' + sw('shirt', 'Shirt', Avatar.CLOTH) + sw('pants', 'Trousers', Avatar.CLOTH) + sw('cloak', 'Cloak and robe', Avatar.CLOTH, true) +
+      '<h3>Scene</h3><div class="row">' + opts('base', 'Ground') + '</div>' +
+      '<h3>Worn and carried</h3>' + (shown.length ? '<p><b>From Equipment:</b> ' + esc(shown.join(', ')) + '</p>' : '<p class="muted">No armour or weapons chosen yet. Pick them in the Equipment step.</p>') +
+      (wear.length ? '<div class="look-items">' + wear.map(function (it) {
+        return '<label class="check"><input type="checkbox" data-lookhide="' + it.id + '"' + (hidden[it.id] ? '' : ' checked') + '> Show ' + esc(it.n) + '</label>';
+      }).join('') + '</div>' : '<p class="muted">No wearable items in the inventory. Cloaks, hats, helms, circlets, boots, gloves, belts, amulets, rings, goggles, orbs and magic weapons, armour and shields show up on the figure; other items are not drawn.</p>') +
+      '<p class="small muted">Magic items add a sparkle in their rarity colour. Only the first weapon is held; a second light weapon goes in the off hand, and a bow, staff or great weapon goes on the back.</p>' +
+      '</div></div>';
+    return h;
+  }
+
   function stepDetails() {
     function t(k, label, area) {
       var v = k in ch.notes ? ch.notes[k] : ch[k], path = k in ch.notes ? 'notes.' + k : k;
@@ -390,7 +437,7 @@
       }).join('') : '';
     }
     var h = '<div class="toolbar noprint">' + btn('print', 'Print or save as PDF', {}, 'btn primary') + btn('export', 'Export JSON') + (totalTodo() ? '<span class="count" style="color:var(--warn)">' + totalTodo() + ' choice(s) still open — see the badges in the step list.</span>' : '') + '</div>';
-    h += '<div class="sheet"><div class="sheet-head"><div><h2>' + esc(title(ch)) + '</h2><div>' + esc(summaryLine(ch, d)) + '</div></div><div class="facts" style="margin:0">' +
+    h += '<div class="sheet"><div class="sheet-head">' + avatarCanvas('portrait') + '<div style="flex:1"><h2>' + esc(title(ch)) + '</h2><div>' + esc(summaryLine(ch, d)) + '</div></div><div class="facts" style="margin:0">' +
       (d.bg ? '<span><b>Background</b> ' + esc(d.bg.n) + '</span>' : '') + (ch.alignment ? '<span><b>Alignment</b> ' + esc(ch.alignment) + '</span>' : '') + (ch.player ? '<span><b>Player</b> ' + esc(ch.player) + '</span>' : '') +
       '<span><b>XP</b> ' + D.xpByLevel[d.level - 1].toLocaleString('en') + '</span><span><b>Size</b> ' + esc(d.size || 'Medium') + '</span></div></div><div class="sheet-cols"><div>' +
       '<div class="abil">' + AB.map(function (a) { var x = d.abilities[a]; return '<div class="stat"><span>' + a + '</span><b>' + R.fmt(x.mod) + '</b><i>' + x.total + '</i></div>'; }).join('') + '</div>' +
@@ -451,7 +498,7 @@
     d = R.derive(ch, store.filters);
     var active = document.activeElement, fid = active && active.id, pos = null;
     try { pos = active && active.selectionStart; } catch (e) { pos = null; }
-    var body = { lineage: stepLineage, 'class': stepClass, abilities: stepAbilities, background: stepBackground, spells: stepSpells, equipment: stepEquipment, items: stepItems, details: stepDetails, sheet: stepSheet }[ui.step]();
+    var body = { lineage: stepLineage, 'class': stepClass, abilities: stepAbilities, background: stepBackground, spells: stepSpells, equipment: stepEquipment, items: stepItems, appearance: stepAppearance, details: stepDetails, sheet: stepSheet }[ui.step]();
     var top = '<header class="top"><span class="brand">Character Forge</span><select data-ui="current" aria-label="Character">' + store.chars.map(function (c) {
       return '<option value="' + c.id + '"' + (c.id === ch.id ? ' selected' : '') + '>' + esc(title(c)) + '</option>';
     }).join('') + '</select>' + btn('new', 'New') + btn('dup', 'Duplicate') + btn('import', 'Import') + btn('export', 'Export') +
@@ -460,10 +507,10 @@
         return '<label><input type="checkbox" data-filter="' + t[0] + '"' + (store.filters[t[0]] !== false ? ' checked' : '') + '> ' + t[1] + '</label>';
       }).join('') + '<label title="Longer feature text and spell descriptions"><input type="checkbox" data-setting="detail"' + (store.detail !== false ? ' checked' : '') + '> Detailed text</label></span><input type="file" id="importFile" accept="application/json,.json" hidden></header>';
     var nav = '<nav class="steps" aria-label="Steps">' + STEPS.map(function (s) {
-      var n = d.todo[s[0]], show = ['sheet', 'details', 'equipment', 'items'].indexOf(s[0]) < 0;
+      var n = d.todo[s[0]], show = ['sheet', 'details', 'equipment', 'items', 'appearance'].indexOf(s[0]) < 0;
       return '<button type="button" class="step' + (ui.step === s[0] ? ' on' : '') + '" data-act="step" data-v="' + s[0] + '"><span>' + s[1] + '</span>' + (show ? (n ? '<span class="badge" title="' + n + ' open">' + n + '</span>' : '<span class="badge done">✓</span>') : '') + '</button>';
     }).join('') + '</nav>';
-    var side = '<aside class="side"><h4>' + esc(title(ch)) + '</h4><div class="muted">' + esc(summaryLine(ch, d)) + '</div><div class="stats">' +
+    var side = '<aside class="side">' + (ui.step !== 'appearance' ? '<div class="side-portrait" data-act="step" data-v="appearance" title="Edit appearance">' + avatarCanvas() + '</div>' : '') + '<h4>' + esc(title(ch)) + '</h4><div class="muted">' + esc(summaryLine(ch, d)) + '</div><div class="stats">' +
       [['AC', d.ac], ['HP', d.hp], ['Speed', d.speed], ['Init', R.fmt(d.init)], ['Prof', R.fmt(d.pb)], ['Passive', d.passive]].map(function (x) { return '<div class="stat"><b>' + x[1] + '</b><span>' + x[0] + '</span></div>'; }).join('') + '</div><div class="stats">' +
       AB.map(function (a) { return '<div class="stat"><b>' + d.abilities[a].total + '</b><span>' + a + ' ' + R.fmt(d.abilities[a].mod) + '</span></div>'; }).join('') + '</div>' +
       d.casters.map(function (s) { return '<div class="muted">' + (d.casters.length > 1 ? esc(s.name) + ': s' : 'S') + 'pell DC ' + s.dc + ' · attack ' + R.fmt(s.atk) + '</div>'; }).join('') +
@@ -471,6 +518,7 @@
     var i = STEPS.map(function (s) { return s[0]; }).indexOf(ui.step);
     var foot = '<div class="toolbar noprint" style="margin-top:1.5rem">' + (i > 0 ? btn('step', '← ' + STEPS[i - 1][1], { v: STEPS[i - 1][0] }) : '') + (i < STEPS.length - 1 ? btn('step', STEPS[i + 1][1] + ' →', { v: STEPS[i + 1][0] }, 'btn primary') : '') + '</div>';
     document.getElementById('app').innerHTML = top + '<div class="shell">' + nav + '<main>' + body + foot + '</main>' + side + '</div>';
+    drawAvatars();
     if (fid) { var el = document.getElementById(fid); if (el) { el.focus(); try { if (pos != null) el.setSelectionRange(pos, pos); } catch (e) { /* not a text field */ } } }
     document.title = title(ch) + ' — Character Forge';
     saveNow();
@@ -562,6 +610,9 @@
     },
     rmItem: function (v) { ch.items = ch.items.filter(function (i) { return i.id !== v; }); },
     eq: function (v, el) { ch.eq[el.getAttribute('data-i')] = +v; },
+    look: function (v, el) { ch.look = ch.look || {}; ch.look[el.getAttribute('data-k')] = v; },
+    lookRandom: function () { ch.look = Object.assign({ hidden: (ch.look || {}).hidden || {} }, Avatar.random()); },
+    lookReset: function () { ch.look = { hidden: (ch.look || {}).hidden || {} }; },
     rmWeapon: function (v) { ch.weapons = ch.weapons.filter(function (w) { return w !== v; }); }
   };
 
@@ -596,6 +647,9 @@
     if (a('data-text') || a('data-itemtext')) return requestRender();
     if (a('data-ui')) { if (a('data-ui') === 'current') { store.current = t.value; ui.confirmDelete = false; } else ui[a('data-ui')] = t.value; }
     else if (a('data-filter')) store.filters[a('data-filter')] = t.checked;
+    else if (a('data-look')) { ch.look = ch.look || {}; ch.look[a('data-look')] = t.value; }
+    else if (a('data-lookcolor')) { ch.look = ch.look || {}; ch.look[a('data-lookcolor')] = t.value; }
+    else if (a('data-lookhide')) { ch.look = ch.look || {}; ch.look.hidden = ch.look.hidden || {}; if (t.checked) delete ch.look.hidden[a('data-lookhide')]; else ch.look.hidden[a('data-lookhide')] = 1; }
     else if (a('data-setting')) store[a('data-setting')] = t.checked;
     else if (a('data-money')) ch.money[a('data-money')] = Math.max(0, Math.round(+t.value) || 0);
     else if (a('data-item')) { var it = ch.items.filter(function (i) { return i.id === a('data-item'); })[0]; if (it) it[a('data-f')] = Math.max(0, +t.value || 0); }
