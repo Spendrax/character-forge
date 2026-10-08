@@ -1,0 +1,7 @@
+{
+  "name": "character-forge",
+  "version": "1.0.0",
+  "description": "Self-hosted D&D 5e character builder (static site, no build step)",
+  "private": true,
+  "scripts": { "start": "node server.js", "test": "node test/rules.test.js" }
+}

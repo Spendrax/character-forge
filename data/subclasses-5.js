@@ -1,0 +1,158 @@
+// Warlock, Wizard and Blood Hunter subclasses, summarised from https://dnd5e.wikidot.com (CC BY-SA 3.0).
+// Warlock "spells" are expanded spell-list options keyed by SPELL level (expanded:true), not always-prepared spells.
+window.DND = window.DND || {};
+DND.subclasses = DND.subclasses || [];
+(function(){
+function savant(school){return {"n":school+" Savant","l":2,"t":"Copying "+school.toLowerCase()+" spells into your spellbook costs half the gold and time."};}
+DND.subclasses.push(
+{"c":"warlock","id":"warlock:archfey","name":"The Archfey","source":"Player's Handbook","tag":"official","expanded":true,"spells":{"1":["Faerie Fire","Sleep"],"2":["Calm Emotions","Phantasmal Force"],"3":["Blink","Plant Growth"],"4":["Dominate Beast","Greater Invisibility"],"5":["Dominate Person","Seeming"]},"features":[
+{"n":"Fey Presence","l":1,"t":"Action: creatures in a 10-ft cube make a Wisdom save or are charmed or frightened until the end of your next turn. Once per short or long rest."},
+{"n":"Misty Escape","l":6,"t":"Reaction when damaged: turn invisible and teleport 60 ft. Once per short or long rest."},
+{"n":"Beguiling Defenses","l":10,"t":"Immune to being charmed. Reaction: turn a charm attempt back on its source (Wisdom save)."},
+{"n":"Dark Delirium","l":14,"t":"Action: a creature within 60 ft makes a Wisdom save or is charmed or frightened for 1 minute, lost in an illusory realm. Once per short or long rest."}]},
+{"c":"warlock","id":"warlock:celestial","name":"The Celestial","source":"Xanathar's Guide to Everything","tag":"official","expanded":true,"spells":{"1":["Cure Wounds","Guiding Bolt"],"2":["Flaming Sphere","Lesser Restoration"],"3":["Daylight","Revivify"],"4":["Guardian of Faith","Wall of Fire"],"5":["Flame Strike","Greater Restoration"]},"bonusCantrips":["Light","Sacred Flame"],"features":[
+{"n":"Bonus Cantrips","l":1,"t":"Learn Light and Sacred Flame; they don't count against cantrips known."},
+{"n":"Healing Light","l":1,"t":"Pool of 1 + warlock level d6s per long rest. Bonus action: spend up to CHA mod dice to heal a creature within 60 ft."},
+{"n":"Radiant Soul","l":6,"t":"Resistance to radiant damage. Add your CHA mod to one radiant or fire damage roll of your spells."},
+{"n":"Celestial Resilience","l":10,"t":"After a rest, gain warlock level + CHA mod temp HP, and five allies gain half warlock level + CHA mod."},
+{"n":"Searing Vengeance","l":14,"t":"Instead of a death save, regain half your HP, stand, and deal 2d8 + CHA mod radiant and blind creatures within 30 ft. Once per long rest."}]},
+{"c":"warlock","id":"warlock:fathomless","name":"The Fathomless","source":"Tasha's Cauldron of Everything","tag":"official","expanded":true,"spells":{"1":["Create or Destroy Water","Thunderwave"],"2":["Gust of Wind","Silence"],"3":["Lightning Bolt","Sleet Storm"],"4":["Control Water","Summon Elemental"],"5":["Bigby's Hand","Cone of Cold"]},"grants":{"swim":40},"features":[
+{"n":"Tentacle of the Deep","l":1,"t":"Bonus action: summon a tentacle within 60 ft for 1 minute. It attacks for 1d8 cold (2d8 at 10th) and slows by 10 ft. Proficiency bonus uses per long rest."},
+{"n":"Gift of the Sea","l":1,"t":"Swimming speed 40 ft and you can breathe underwater."},
+{"n":"Oceanic Soul","l":6,"t":"Resistance to cold damage, and you can speak with creatures while submerged."},
+{"n":"Guardian Coil","l":6,"t":"Reaction: reduce damage to a creature within 10 ft of your tentacle by 1d8 (2d8 at 10th)."},
+{"n":"Grasping Tentacles","l":10,"t":"Know Evard's Black Tentacles; cast it once per long rest without a slot, gaining temp HP equal to your warlock level and unbreakable concentration."},
+{"n":"Fathomless Plunge","l":14,"t":"Action: teleport yourself and five creatures to a body of water within 1 mile. Once per short or long rest."}]},
+{"c":"warlock","id":"warlock:fiend","name":"The Fiend","source":"Player's Handbook","tag":"official","expanded":true,"spells":{"1":["Burning Hands","Command"],"2":["Blindness/Deafness","Scorching Ray"],"3":["Fireball","Stinking Cloud"],"4":["Fire Shield","Wall of Fire"],"5":["Flame Strike","Hallow"]},"features":[
+{"n":"Dark One's Blessing","l":1,"t":"When you reduce a hostile creature to 0 HP, gain CHA mod + warlock level temp HP."},
+{"n":"Dark One's Own Luck","l":6,"t":"Add d10 to an ability check or save. Once per short or long rest."},
+{"n":"Fiendish Resilience","l":10,"t":"After a rest, choose a damage type to resist (bypassed by magical and silvered weapons)."},
+{"n":"Hurl Through Hell","l":14,"t":"When you hit a creature, banish it through the lower planes until the end of your next turn for 10d10 psychic. Once per long rest."}]},
+{"c":"warlock","id":"warlock:the-genie","name":"The Genie","source":"Tasha's Cauldron of Everything","tag":"official","expanded":true,"spells":{"1":["Detect Evil and Good"],"2":["Phantasmal Force"],"3":["Create Food and Water"],"4":["Phantasmal Killer"],"5":["Creation"],"9":["Wish"]},"variantLabel":"Genie Kind","variants":{"Dao (bludgeoning)":{"1":["Sanctuary"],"2":["Spike Growth"],"3":["Meld into Stone"],"4":["Stone Shape"],"5":["Wall of Stone"]},"Djinni (thunder)":{"1":["Thunderwave"],"2":["Gust of Wind"],"3":["Wind Wall"],"4":["Greater Invisibility"],"5":["Seeming"]},"Efreeti (fire)":{"1":["Burning Hands"],"2":["Scorching Ray"],"3":["Fireball"],"4":["Fire Shield"],"5":["Flame Strike"]},"Marid (cold)":{"1":["Fog Cloud"],"2":["Blur"],"3":["Sleet Storm"],"4":["Control Water"],"5":["Cone of Cold"]}},"features":[
+{"n":"Genie's Vessel","l":1,"t":"A Tiny vessel that is your focus. Bottled Respite: action to enter it for up to twice your proficiency bonus in hours, once per long rest. Genie's Wrath: once per turn add your proficiency bonus in your genie's damage type to a hit."},
+{"n":"Elemental Gift","l":6,"t":"Resistance to your genie's damage type. Bonus action: 30 ft flying speed for 10 minutes, proficiency bonus times per long rest."},
+{"n":"Sanctuary Vessel","l":10,"t":"Bring up to five creatures into your vessel; 10 minutes inside grants a short rest with bonus healing."},
+{"n":"Limited Wish","l":14,"t":"Action: duplicate any spell of 6th level or lower with a 1-action casting time. Once per 1d4 long rests."}]},
+{"c":"warlock","id":"warlock:great-old-one","name":"The Great Old One","source":"Player's Handbook","tag":"official","expanded":true,"spells":{"1":["Dissonant Whispers","Tasha's Hideous Laughter"],"2":["Detect Thoughts","Phantasmal Force"],"3":["Clairvoyance","Sending"],"4":["Dominate Beast","Evard's Black Tentacles"],"5":["Dominate Person","Telekinesis"]},"features":[
+{"n":"Awakened Mind","l":1,"t":"Speak telepathically to any creature you can see within 30 ft."},
+{"n":"Entropic Ward","l":6,"t":"Reaction: impose disadvantage on an attack against you; if it misses, you have advantage on your next attack against the attacker. Once per short or long rest."},
+{"n":"Thought Shield","l":10,"t":"Your thoughts can't be read, you resist psychic damage, and creatures that deal it to you take the same amount."},
+{"n":"Create Thrall","l":14,"t":"Action: charm an incapacitated humanoid indefinitely and communicate with it telepathically."}]},
+{"c":"warlock","id":"warlock:hexblade","name":"The Hexblade","source":"Xanathar's Guide to Everything","tag":"official","expanded":true,"spells":{"1":["Shield","Wrathful Smite"],"2":["Blur","Branding Smite"],"3":["Blink","Elemental Weapon"],"4":["Phantasmal Killer","Staggering Smite"],"5":["Banishing Smite","Cone of Cold"]},"grants":{"armor":["Medium armor","Shields"],"weapons":["Martial weapons"]},"features":[
+{"n":"Hexblade's Curse","l":1,"t":"Bonus action: curse a creature within 30 ft for 1 minute: add your proficiency bonus to damage against it, crit on 19 to 20, and regain warlock level + CHA mod HP if it dies. Once per short or long rest."},
+{"n":"Hex Warrior","l":1,"t":"Proficiency with medium armor, shields and martial weapons. Use Charisma for attack and damage with one touched weapon (and any pact weapon)."},
+{"n":"Accursed Specter","l":6,"t":"When you slay a humanoid, raise it as a specter until your next long rest. Once per long rest."},
+{"n":"Armor of Hexes","l":10,"t":"When your cursed target hits you, roll d6: on 4 or more it misses."},
+{"n":"Master of Hexes","l":14,"t":"When your cursed target dies, move the curse to another creature within 30 ft."}]},
+{"c":"warlock","id":"warlock:undead","name":"The Undead","source":"Van Richten's Guide to Ravenloft","tag":"official","expanded":true,"spells":{"1":["Bane","False Life"],"2":["Blindness/Deafness","Phantasmal Force"],"3":["Phantom Steed","Speak with Dead"],"4":["Death Ward","Greater Invisibility"],"5":["Antilife Shell","Cloudkill"]},"features":[
+{"n":"Form of Dread","l":1,"t":"Bonus action: for 1 minute gain 1d10 + warlock level temp HP and immunity to fear; once per turn a hit frightens the target (Wisdom save). Proficiency bonus uses per long rest."},
+{"n":"Grave Touched","l":6,"t":"You don't need to eat, drink or breathe. Once per turn change a hit's damage to necrotic, with an extra die in Form of Dread."},
+{"n":"Necrotic Husk","l":10,"t":"Resistance to necrotic (immunity in Form of Dread). Reaction at 0 HP: drop to 1 HP and deal 2d10 + warlock level necrotic within 30 ft. Once per 1d4 long rests."},
+{"n":"Spirit Projection","l":14,"t":"Action: project your spirit for 1 hour with flight, resistance to weapon damage and movement through objects. Once per long rest."}]},
+{"c":"warlock","id":"warlock:undying","name":"The Undying","source":"Sword Coast Adventurer's Guide","tag":"official","expanded":true,"spells":{"1":["False Life","Ray of Sickness"],"2":["Blindness/Deafness","Silence"],"3":["Feign Death","Speak with Dead"],"4":["Aura of Life","Death Ward"],"5":["Contagion","Legend Lore"]},"bonusCantrips":["Spare the Dying"],"features":[
+{"n":"Among the Dead","l":1,"t":"Learn Spare the Dying, gain advantage on saves against disease, and undead must pass a Wisdom save to attack you."},
+{"n":"Defy Death","l":6,"t":"Regain 1d8 + CON mod HP when you succeed on a death save or stabilise a creature with Spare the Dying. Once per long rest."},
+{"n":"Undying Nature","l":10,"t":"You don't need to breathe, eat, drink or sleep, and age ten times more slowly."},
+{"n":"Indestructible Life","l":14,"t":"Bonus action: regain 1d8 + warlock level HP and reattach severed limbs. Once per short or long rest."}]},
+
+{"c":"wizard","id":"wizard:abjuration","name":"School of Abjuration","source":"Player's Handbook","tag":"official","features":[savant("Abjuration"),
+{"n":"Arcane Ward","l":2,"t":"Casting an abjuration spell creates a ward with HP equal to twice your wizard level + INT mod that absorbs damage. Later abjuration spells restore twice their level."},
+{"n":"Projected Ward","l":6,"t":"Reaction: your ward absorbs damage dealt to a creature within 30 ft."},
+{"n":"Improved Abjuration","l":10,"t":"Add your proficiency bonus to ability checks made as part of abjuration spells, such as Counterspell."},
+{"n":"Spell Resistance","l":14,"t":"Advantage on saves against spells and resistance to spell damage."}]},
+{"c":"wizard","id":"wizard:bladesinging","name":"Bladesinging","source":"Tasha's Cauldron of Everything","tag":"official","grants":{"armor":["Light armor"],"skills":["Performance"],"weapons":["One one-handed melee weapon"]},"features":[
+{"n":"Training in War and Song","l":2,"t":"Proficiency with light armor, one one-handed melee weapon, and Performance."},
+{"n":"Bladesong","l":2,"t":"Bonus action: for 1 minute, add your INT mod to AC and concentration saves, +10 ft speed, and advantage on Acrobatics. Not in medium or heavy armor or with a shield. Proficiency bonus uses per long rest."},
+{"n":"Extra Attack","l":6,"t":"Attack twice with the Attack action, and you can replace one attack with a cantrip."},
+{"n":"Song of Defense","l":10,"t":"Reaction during Bladesong: expend a spell slot to reduce damage by five times its level."},
+{"n":"Song of Victory","l":14,"t":"During Bladesong, add your INT mod to melee weapon damage."}]},
+{"c":"wizard","id":"wizard:chronurgy","name":"Chronurgy Magic","source":"Explorer's Guide to Wildemount","tag":"setting","features":[
+{"n":"Chronal Shift","l":2,"t":"Reaction: force a reroll of an attack, check or save within 30 ft. Twice per long rest."},
+{"n":"Temporal Awareness","l":2,"t":"Add your INT mod to initiative."},
+{"n":"Momentary Stasis","l":6,"t":"Action: a Large or smaller creature within 60 ft makes a Constitution save or is incapacitated with speed 0 until the end of your next turn. INT mod uses per long rest."},
+{"n":"Arcane Abeyance","l":10,"t":"Store a spell of 4th level or lower in a bead for 1 hour for another creature to release. Once per short or long rest."},
+{"n":"Convergent Future","l":14,"t":"Reaction: decide whether an attack, check or save within 60 ft succeeds or fails. Each use gives you one level of exhaustion."}]},
+{"c":"wizard","id":"wizard:conjuration","name":"School of Conjuration","source":"Player's Handbook","tag":"official","features":[savant("Conjuration"),
+{"n":"Minor Conjuration","l":2,"t":"Action: conjure a nonmagical object up to 3 ft and 10 lb for 1 hour."},
+{"n":"Benign Transposition","l":6,"t":"Action: teleport 30 ft or swap places with a willing creature. Once per long rest or until you cast a conjuration spell."},
+{"n":"Focused Conjuration","l":10,"t":"Damage can't break your concentration on conjuration spells."},
+{"n":"Durable Summons","l":14,"t":"Creatures you conjure gain 30 temp HP."}]},
+{"c":"wizard","id":"wizard:divination","name":"School of Divination","source":"Player's Handbook","tag":"official","features":[savant("Divination"),
+{"n":"Portent","l":2,"t":"After a long rest roll two d20s; replace any attack, save or check you can see with one of them, once per turn."},
+{"n":"Expert Divination","l":6,"t":"Casting a divination spell of 2nd level or higher restores a lower-level slot (max 5th)."},
+{"n":"The Third Eye","l":10,"t":"Action: gain darkvision, ethereal sight, comprehension of any language, or see invisibility until your next rest."},
+{"n":"Greater Portent","l":14,"t":"Roll three d20s for Portent."}]},
+{"c":"wizard","id":"wizard:enchantment","name":"School of Enchantment","source":"Player's Handbook","tag":"official","features":[savant("Enchantment"),
+{"n":"Hypnotic Gaze","l":2,"t":"Action: a creature within 5 ft makes a Wisdom save or is charmed and incapacitated while you maintain it. Once per long rest per creature."},
+{"n":"Instinctive Charm","l":6,"t":"Reaction: divert an attack against you to another creature (Wisdom save). Refreshes on a long rest after a success."},
+{"n":"Split Enchantment","l":10,"t":"Single-target enchantment spells can target a second creature."},
+{"n":"Alter Memories","l":14,"t":"A creature you charm doesn't know it was charmed, and you can make it forget up to 1 + CHA mod hours."}]},
+{"c":"wizard","id":"wizard:evocation","name":"School of Evocation","source":"Player's Handbook","tag":"official","features":[savant("Evocation"),
+{"n":"Sculpt Spells","l":2,"t":"Choose 1 + spell level creatures to automatically succeed on saves against your evocation spell and take no damage."},
+{"n":"Potent Cantrip","l":6,"t":"Creatures that save against your damaging cantrips still take half damage."},
+{"n":"Empowered Evocation","l":10,"t":"Add your INT mod to one damage roll of wizard evocation spells."},
+{"n":"Overchannel","l":14,"t":"Maximise the damage of a wizard spell of 5th level or lower. After the first use per long rest you take 2d12 necrotic per spell level, increasing each time."}]},
+{"c":"wizard","id":"wizard:graviturgy","name":"Graviturgy Magic","source":"Explorer's Guide to Wildemount","tag":"setting","features":[
+{"n":"Adjust Density","l":2,"t":"Action (concentration, 1 minute): halve or double a Large or smaller target's weight, changing its speed by 10 ft and giving advantage or disadvantage on Strength checks and saves."},
+{"n":"Gravity Well","l":6,"t":"When a spell of yours hits or a creature fails its save, move it 5 ft."},
+{"n":"Violent Attraction","l":10,"t":"Reaction: add 1d10 to a weapon hit within 60 ft, or 2d10 to falling damage. INT mod uses per long rest."},
+{"n":"Event Horizon","l":14,"t":"Action (concentration, 1 minute): hostile creatures starting within 30 ft take 2d10 force and have speed 0 (Strength save for half). Once per long rest or a 3rd-level slot."}]},
+{"c":"wizard","id":"wizard:illusion","name":"School of Illusion","source":"Player's Handbook","tag":"official","features":[savant("Illusion"),
+{"n":"Improved Minor Illusion","l":2,"t":"Learn Minor Illusion for free; it creates both sound and image."},
+{"n":"Malleable Illusions","l":6,"t":"Action: change the nature of an ongoing illusion you cast."},
+{"n":"Illusory Self","l":10,"t":"Reaction: an attack against you automatically misses. Once per short or long rest."},
+{"n":"Illusory Reality","l":14,"t":"Bonus action: make one inanimate object in your illusion real for 1 minute."}]},
+{"c":"wizard","id":"wizard:necromancy","name":"School of Necromancy","source":"Player's Handbook","tag":"official","features":[savant("Necromancy"),
+{"n":"Grim Harvest","l":2,"t":"Once per turn when a spell of yours kills a creature, regain HP equal to twice the spell's level (three times for necromancy)."},
+{"n":"Undead Thralls","l":6,"t":"Learn Animate Dead; it raises one extra undead, and your undead gain your wizard level in HP and your proficiency bonus to damage."},
+{"n":"Inured to Undeath","l":10,"t":"Resistance to necrotic damage, and your HP maximum can't be reduced."},
+{"n":"Command Undead","l":14,"t":"Action: an undead within 60 ft makes a Charisma save or obeys you."}]},
+{"c":"wizard","id":"wizard:order-of-scribes","name":"Order of Scribes","source":"Tasha's Cauldron of Everything","tag":"official","features":[
+{"n":"Wizardly Quill","l":2,"t":"Bonus action: create a magic quill that needs no ink, copies spells in 2 minutes per spell level, and erases its writing."},
+{"n":"Awakened Spellbook","l":2,"t":"Your spellbook is a focus. Swap a spell's damage type for that of another spell of the same level in the book, and once per long rest cast a ritual at normal casting time."},
+{"n":"Manifest Mind","l":6,"t":"Bonus action: manifest your spellbook's mind within 60 ft and cast spells from it proficiency bonus times per day. Once per long rest or a spell slot."},
+{"n":"Master Scrivener","l":10,"t":"After a long rest, create a scroll of a 1st- or 2nd-level spell from your book, cast one level higher."},
+{"n":"One with the Word","l":14,"t":"Advantage on Arcana checks. Reaction: negate damage by dismissing the manifest mind and temporarily losing 3d6 levels of spells. Once per long rest."}]},
+{"c":"wizard","id":"wizard:transmutation","name":"School of Transmutation","source":"Player's Handbook","tag":"official","features":[savant("Transmutation"),
+{"n":"Minor Alchemy","l":2,"t":"Transform one object of wood, stone, iron, copper or silver into another of those materials for 1 hour."},
+{"n":"Transmuter's Stone","l":6,"t":"Create a stone granting darkvision, +10 ft speed, proficiency in Constitution saves, or an elemental resistance."},
+{"n":"Shapechanger","l":10,"t":"Cast Polymorph on yourself without a slot to become a beast of CR 1 or lower. Once per short or long rest."},
+{"n":"Master Transmuter","l":14,"t":"Action: consume your stone to transmute an object, cure all ailments, cast Raise Dead, or restore youth."}]},
+{"c":"wizard","id":"wizard:war-magic","name":"War Magic","source":"Xanathar's Guide to Everything","tag":"official","features":[
+{"n":"Arcane Deflection","l":2,"t":"Reaction: +2 AC against a hit or +4 to a failed save; you can only cast cantrips until the end of your next turn."},
+{"n":"Tactical Wit","l":2,"t":"Add your INT mod to initiative."},
+{"n":"Power Surge","l":6,"t":"Store power surges (max INT mod) gained from Dispel Magic, Counterspell and rests; spend one per turn to deal half your wizard level in force damage."},
+{"n":"Durable Magic","l":10,"t":"+2 to AC and all saves while concentrating on a spell."},
+{"n":"Deflecting Shroud","l":14,"t":"Arcane Deflection deals half your wizard level in force damage to up to three creatures within 60 ft."}]},
+
+{"c":"blood-hunter","id":"blood-hunter:ghostslayer","name":"Order of the Ghostslayer","source":"Blood Hunter (D&D Beyond)","tag":"homebrew","features":[
+{"n":"Rite of the Dawn","l":3,"t":"A radiant rite: your weapon sheds bright light, you resist necrotic damage, and undead take an extra hemocraft die."},
+{"n":"Curse Specialist","l":3,"t":"One extra Blood Maledict use, and your curses can target creatures without blood."},
+{"n":"Ethereal Step","l":7,"t":"At the start of your turn, step into the Ethereal Plane for Hemocraft modifier rounds. Once per short or long rest (twice at 15th)."},
+{"n":"Brand of Sundering","l":11,"t":"Rite hits deal an extra hemocraft die, and branded creatures can't move through creatures or objects."},
+{"n":"Blood Curse of the Exorcist","l":15,"t":"Gain this blood curse; it doesn't count against curses known."},
+{"n":"Rite Revival","l":18,"t":"When reduced to 0 HP, end your active rites to drop to 1 HP instead."}]},
+{"c":"blood-hunter","id":"blood-hunter:lycan","name":"Order of the Lycan","source":"Blood Hunter (D&D Beyond)","tag":"homebrew","features":[
+{"n":"Heightened Senses","l":3,"t":"Advantage on Perception checks that rely on hearing or smell."},
+{"n":"Hybrid Transformation","l":3,"t":"Bonus action: hybrid form for 1 hour, once per short or long rest (twice at 11th, unlimited at 18th). Advantage on Strength checks and saves, +1 melee damage, resistance to nonmagical weapon damage, +1 AC, and 1d6 unarmed strikes with a bonus-action strike. Bloodlust: below half HP, DC 8 Wisdom save or attack the nearest creature."},
+{"n":"Stalker's Prowess","l":7,"t":"Speed +10 ft and longer jumps. Hybrid unarmed strikes gain +1 to hit (more later) and are magical with a rite."},
+{"n":"Advanced Transformation","l":11,"t":"Two transformations per rest, and regenerate 1 + CON mod HP each turn while below half HP in hybrid form."},
+{"n":"Brand of the Voracious","l":15,"t":"In hybrid form, advantage on bloodlust saves and on attacks against your branded creature."},
+{"n":"Hybrid Transformation Mastery","l":18,"t":"Transform at will with no time limit, and gain the Blood Curse of the Howl."}]},
+{"c":"blood-hunter","id":"blood-hunter:mutant","name":"Order of the Mutant","source":"Blood Hunter (D&D Beyond)","tag":"homebrew","features":[
+{"n":"Mutagencraft","l":3,"t":"Know four mutagen formulas (up to eight) and brew one mutagen per rest (two at 7th, three at 15th). Bonus action to drink one; it lasts until your next rest."},
+{"n":"Strange Metabolism","l":7,"t":"Immunity to poison. Bonus action: ignore one mutagen's side effect for 1 minute, once per long rest."},
+{"n":"Brand of Axiom","l":11,"t":"Branded creatures lose invisibility and illusions, and shapechangers must pass a Wisdom save or revert and be stunned."},
+{"n":"Blood Curse of Corrosion","l":15,"t":"Gain this blood curse; it doesn't count against curses known."},
+{"n":"Exalted Mutation","l":18,"t":"Bonus action: swap an active mutagen for another you know. Hemocraft modifier uses per long rest."}]},
+{"c":"blood-hunter","id":"blood-hunter:profane-soul","name":"Order of the Profane Soul","source":"Blood Hunter (D&D Beyond)","tag":"homebrew","casting":{"ability":"INT","kind":"pact","list":"warlock","prepared":false,"cantrips":[0,0,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3],"known":[0,0,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,11],"pactSlots":[0,0,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],"pactLevel":[0,0,1,1,1,1,2,2,2,2,2,2,3,3,3,3,3,3,4,4]},"variantLabel":"Patron","variantList":["Archfey","Celestial","Fathomless","Fiend","Genie","Great Old One","Hexblade","Undead","Undying"],"features":[
+{"n":"Otherworldly Patron","l":3,"t":"Choose a warlock patron, which shapes your Rite Focus and arcana features."},
+{"n":"Pact Magic","l":3,"t":"Cast warlock spells with your Hemocraft ability, using slots that return on a short or long rest."},
+{"n":"Rite Focus","l":3,"t":"A weapon with an active rite is your spellcasting focus and gains a benefit from your patron."},
+{"n":"Mystic Frenzy","l":7,"t":"When you cast a cantrip with your action, make one weapon attack as a bonus action."},
+{"n":"Revealed Arcana","l":7,"t":"Cast a 2nd-level spell tied to your patron once per long rest using a pact slot."},
+{"n":"Brand of the Sapping Scar","l":11,"t":"Your branded creature has disadvantage on saves against your warlock spells."},
+{"n":"Unsealed Arcana","l":15,"t":"Cast a 3rd-level spell tied to your patron once per long rest without a slot."},
+{"n":"Blood Curse of the Souleater","l":18,"t":"Gain this blood curse; it doesn't count against curses known."}]}
+);
+})();
