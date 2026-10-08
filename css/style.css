@@ -222,3 +222,10 @@ canvas.avatar.figure.sheet-pic { width: 96px; height: 116px; }
 .custom-card.on { border-color: var(--accent); }
 .custom-card .row { flex-wrap: wrap; }
 .custom-card .field { min-width: 120px; flex: 1 1 140px; }
+.custom-line { display: flex; justify-content: space-between; align-items: center; gap: .6rem; flex-wrap: wrap; padding: .45rem .7rem; margin: .35rem 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg); }
+.custom-line.on { border-color: var(--accent); }
+.custom-line .toolbar { margin: 0; }
+.row-actions { white-space: nowrap; }
+.row-actions .btn + .btn { margin-left: .3rem; }
+.custom-card .toolbar .btn.primary { min-width: 6rem; }
+.panel select, .panel .field { max-width: 100%; } .panel .row > .field { min-width: 0; }

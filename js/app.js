@@ -436,20 +436,25 @@
       (ch.shield ? '<label class="field extra-num" style="max-width:110px"><span>Shield bonus</span><input type="number" step="1" data-shieldbonus="1" value="' + (ch.shieldBonus != null && ch.shieldBonus !== '' ? ch.shieldBonus : 2) + '"></label>' : '') +
       '<div class="stat" style="padding:.3rem .9rem;margin-bottom:.6rem"><b>' + d.ac + '</b><span>Armor class</span></div></div><p class="small muted">' + esc(d.acNote) + '</p>' +
       (CA.length ? '<h4 style="margin-top:1rem">Your own armor</h4>' + CA.map(function (a) {
-        var f = function (k, label, type, extra) { return '<label class="field"><span>' + label + '</span><input type="' + type + '" data-carmor="' + a.id + '" data-f="' + k + '" value="' + esc(a[k] != null ? a[k] : '') + '"' + (extra || '') + '></label>'; };
+        if (ui.editArmor !== a.id) {
+          var worn = ch.armor === 'custom:' + a.id;
+          return '<div class="custom-line' + (worn ? ' on' : '') + '"><div><b>' + esc(a.n || 'Custom armor') + '</b> <span class="small muted">' + esc((a.kind || 'Light') + ', AC ' + (a.ac || 10) + (a.dex === 'none' || a.kind === 'Heavy' ? '' : a.dex === '2' ? ' + Dex (max 2)' : ' + Dex') + (+a.bonus ? ', ' + R.fmt(+a.bonus) + ' magic' : '') + (+a.str ? ', needs Str ' + a.str : '') + (+a.w ? ', ' + a.w + ' lb' : '')) + '</span></div>' +
+            '<div class="toolbar">' + (worn ? '<span class="tag">worn</span>' : btn('wearArmor', 'Wear', { v: a.id }, 'btn tiny')) + btn('editArmor', 'Edit', { v: a.id }, 'btn tiny') + btn('rmArmor', 'Remove', { v: a.id }, 'btn tiny danger') + '</div></div>';
+        }
+        var f = function (k, label, type, extra) { return '<label class="field"><span>' + label + '</span><input type="' + type + '" id="ca-' + a.id + '-' + k + '" data-carmor="' + a.id + '" data-f="' + k + '" value="' + esc(a[k] != null ? a[k] : '') + '"' + (extra || '') + '></label>'; };
         return '<div class="custom-card' + (ch.armor === 'custom:' + a.id ? ' on' : '') + '"><div class="row">' + f('n', 'Name', 'text') +
           '<label class="field"><span>Type</span><select data-carmor="' + a.id + '" data-f="kind">' + ['Light', 'Medium', 'Heavy', 'Natural'].map(function (k) { return opt(k, k === 'Natural' ? 'Natural / clothing (no proficiency needed)' : k, a.kind || 'Light'); }).join('') + '</select></label>' +
           f('ac', 'Base AC', 'number', ' min="0" step="1"') +
           '<label class="field"><span>Dexterity</span><select data-carmor="' + a.id + '" data-f="dex">' + opt('full', '+ full Dex', a.dex || 'full') + opt('2', '+ Dex (max 2)', a.dex || 'full') + opt('none', 'no Dex', a.dex || 'full') + '</select></label>' +
           f('bonus', 'Magic bonus', 'number', ' step="1"') + f('str', 'Strength needed', 'number', ' min="0" step="1"') + f('w', 'Weight (lb)', 'number', ' min="0" step="any"') + '</div>' +
-          '<div class="toolbar">' + (ch.armor === 'custom:' + a.id ? '<span class="tag">worn</span>' : btn('wearArmor', 'Wear it', { v: a.id }, 'btn tiny')) + btn('rmArmor', 'Remove', { v: a.id }, 'btn tiny danger') + '</div></div>';
+          '<div class="toolbar">' + btn('saveCustom', 'Save', {}, 'btn primary') + btn('rmArmor', 'Remove', { v: a.id }, 'btn tiny danger') + '</div></div>';
       }).join('') : '') +
       '<div class="toolbar" style="margin-top:.6rem">' + btn('addArmor', '+ Add your own armor') + '</div></div>';
     h += '<div class="panel"><h3>Weapons</h3><div class="row"><select id="addWeapon" data-addweapon="1"><option value="">Add a weapon…</option>' + D.weapons.map(function (w) {
       return '<option value="' + esc(w[0]) + '">' + esc(w[0]) + ' — ' + esc(w[1]) + ', ' + esc(w[3]) + '</option>';
     }).join('') + '</select>' + btn('addCWeapon', '+ Add your own weapon') + '</div>' + attacksHtml(true) +
-      (CW.length ? '<h4 style="margin-top:1rem">Your own weapons</h4>' + CW.map(function (w) {
-        var f = function (k, label, type, extra) { return '<label class="field"><span>' + label + '</span><input type="' + type + '" data-cweapon="' + w.id + '" data-f="' + k + '" value="' + esc(w[k] != null ? w[k] : '') + '"' + (extra || '') + '></label>'; };
+      (CW.filter(function (w) { return ui.editWeapon === w.id; }).length ? '<h4 style="margin-top:1rem">Your own weapon</h4>' + CW.filter(function (w) { return ui.editWeapon === w.id; }).map(function (w) {
+        var f = function (k, label, type, extra) { return '<label class="field"><span>' + label + '</span><input type="' + type + '" id="cw-' + w.id + '-' + k + '" data-cweapon="' + w.id + '" data-f="' + k + '" value="' + esc(w[k] != null ? w[k] : '') + '"' + (extra || '') + '></label>'; };
         var types = ['Bludgeoning', 'Piercing', 'Slashing', 'Acid', 'Cold', 'Fire', 'Force', 'Lightning', 'Necrotic', 'Poison', 'Psychic', 'Radiant', 'Thunder'];
         return '<div class="custom-card"><div class="row">' + f('n', 'Name', 'text') + f('dmg', 'Damage dice', 'text', ' placeholder="1d8"') +
           '<label class="field"><span>Damage type</span><select data-cweapon="' + w.id + '" data-f="type">' + types.map(function (t) { return opt(t, t, w.type || 'Slashing'); }).join('') + '</select></label>' +
@@ -458,7 +463,8 @@
           '<label class="field"><span>Attack with</span><select data-cweapon="' + w.id + '" data-f="ability">' + opt('auto', 'Normal (Str melee, Dex ranged)', w.ability || 'auto') + opt('finesse', 'Finesse (best of Str or Dex)', w.ability || 'auto') +
           AB.map(function (a) { return opt(a, D.abilityNames[a], w.ability || 'auto'); }).join('') + '</select></label>' +
           f('hit', 'Attack bonus', 'number', ' step="1"') + f('dmgBonus', 'Damage bonus', 'number', ' step="1"') + f('props', 'Properties and notes', 'text', ' placeholder="Light, thrown (20/60)…"') + f('w', 'Weight (lb)', 'number', ' min="0" step="any"') + '</div>' +
-          '<div class="toolbar"><label class="check-line" style="margin:0"><input type="checkbox" data-cweapon="' + w.id + '" data-f="prof"' + (w.prof !== false ? ' checked' : '') + '> Proficient</label>' + btn('rmCWeapon', 'Remove', { v: w.id }, 'btn tiny danger') + '</div></div>';
+          '<label class="check-line"><input type="checkbox" data-cweapon="' + w.id + '" data-f="prof"' + (w.prof !== false ? ' checked' : '') + '> Proficient</label>' +
+          '<div class="toolbar">' + btn('saveCustom', 'Save', {}, 'btn primary') + btn('rmCWeapon', 'Remove', { v: w.id }, 'btn tiny danger') + '</div></div>';
       }).join('') : '') + '</div>';
     h += '<div class="panel"><h3>Other notes</h3><label class="field"><span>Anything else worth writing down about your gear</span><textarea id="gear" data-text="gear">' + esc(ch.gear) + '</textarea></label>' +
       '<p class="small muted">Magic items, adventuring gear, coins and carried weight are on the ' + btn('step', 'Items', { v: 'items' }, 'btn tiny') + ' step.</p></div>';
@@ -468,7 +474,7 @@
     if (!d.attacks.length) return edit ? '<p class="muted">No weapons added yet.</p>' : '';
     return '<div class="tablewrap"><table><tr><th>Weapon</th><th class="num">To hit</th><th>Damage</th><th>Properties</th>' + (edit ? '<th></th>' : '') + '</tr>' + d.attacks.map(function (a) {
       return '<tr><td><b>' + esc(a.name) + '</b>' + (a.proficient ? '' : ' <span class="small muted">(not proficient)</span>') + '</td><td class="num">' + R.fmt(a.hit) + '</td><td>' + esc(a.damage) + '</td><td class="small">' + esc(a.props) + '</td>' +
-        (edit ? '<td>' + (a.custom ? '<span class="small muted">yours</span>' : btn('rmWeapon', 'Remove', { v: a.name }, 'btn tiny')) + '</td>' : '') + '</tr>';
+        (edit ? '<td class="row-actions">' + (a.custom ? btn('editCWeapon', 'Edit', { v: a.custom }, 'btn tiny') + btn('rmCWeapon', 'Remove', { v: a.custom }, 'btn tiny') : btn('rmWeapon', 'Remove', { v: a.name }, 'btn tiny')) + '</td>' : '') + '</tr>';
     }).join('') + '</table></div>';
   }
 
@@ -768,7 +774,7 @@
 
   // ---------- actions ----------
   var actions = {
-    step: function (v) { ui.step = v; ui.partImport = null; ui.partImportDone = null; ui.partImportError = null; window.scrollTo(0, 0); },
+    step: function (v) { ui.step = v; ui.editArmor = null; ui.editWeapon = null; ui.partImport = null; ui.partImportDone = null; ui.partImportError = null; window.scrollTo(0, 0); },
     'new': function () { var c = R.newChar(); store.chars.push(c); store.current = c.id; ui.step = 'lineage'; },
     dup: function () { var c = JSON.parse(JSON.stringify(ch)); c.id = R.uid(); c.name = title(ch) + ' (copy)'; store.chars.push(c); store.current = c.id; },
     askDelete: function () { ui.confirmDelete = true; },
@@ -898,10 +904,13 @@
     removePicture: function () { delete ch.picture; delete ch.pictureFit; ui.pictureError = ''; },
     lookRandom: function () { ch.look = Object.assign({ hidden: (ch.look || {}).hidden || {} }, Avatar.random()); },
     lookReset: function () { ch.look = { hidden: (ch.look || {}).hidden || {} }; },
-    addArmor: function () { ch.customArmor = ch.customArmor || []; var a = { id: R.uid(), n: 'My armor', kind: 'Light', ac: 11, dex: 'full', bonus: 0, str: 0, w: 0 }; ch.customArmor.push(a); ch.armor = 'custom:' + a.id; },
+    addArmor: function () { ch.customArmor = ch.customArmor || []; var a = { id: R.uid(), n: 'My armor', kind: 'Light', ac: 11, dex: 'full', bonus: 0, str: 0, w: 0 }; ch.customArmor.push(a); ch.armor = 'custom:' + a.id; ui.editArmor = a.id; ui.editWeapon = null; },
+    editArmor: function (v) { ui.editArmor = v; ui.editWeapon = null; },
+    editCWeapon: function (v) { ui.editWeapon = v; ui.editArmor = null; },
+    saveCustom: function () { ui.editArmor = null; ui.editWeapon = null; },
     wearArmor: function (v) { ch.armor = 'custom:' + v; },
     rmArmor: function (v) { ch.customArmor = (ch.customArmor || []).filter(function (a) { return a.id !== v; }); if (ch.armor === 'custom:' + v) ch.armor = ''; },
-    addCWeapon: function () { ch.customWeapons = ch.customWeapons || []; ch.customWeapons.push({ id: R.uid(), n: 'My weapon', dmg: '1d8', type: 'Slashing', ranged: false, ability: 'auto', prof: true, hit: 0, dmgBonus: 0, props: '', w: 0 }); },
+    addCWeapon: function () { ch.customWeapons = ch.customWeapons || []; var nw = { id: R.uid() }; ui.editWeapon = nw.id; ui.editArmor = null; ch.customWeapons.push(Object.assign(nw, { n: 'My weapon', dmg: '1d8', type: 'Slashing', ranged: false, ability: 'auto', prof: true, hit: 0, dmgBonus: 0, props: '', w: 0 })); },
     rmCWeapon: function (v) { ch.customWeapons = (ch.customWeapons || []).filter(function (w) { return w.id !== v; }); },
     rmWeapon: function (v) { ch.weapons = ch.weapons.filter(function (w) { return w !== v; }); }
   };
@@ -968,6 +977,7 @@
     var t = e.target, a = function (n) { return t.getAttribute(n); };
     if (a('data-q') != null) { ui.q[a('data-q')] = t.value; render(); }
     else if (a('data-itemtext')) { var itx = ch.items.filter(function (i) { return i.id === a('data-itemtext'); })[0]; if (itx) { itx.note = t.value; save(); } }
+    else if ((a('data-carmor') || a('data-cweapon')) && t.tagName === 'INPUT' && t.type !== 'checkbox') { applyCustomField(t); save(); }
     else if (a('data-text')) { var path = a('data-text').split('.'); if (path.length > 1) ch[path[0]][path[1]] = t.value; else ch[path[0]] = t.value; save(); }
     else if (t.type === 'range' && a('data-clslevel')) { setLevel(a('data-clslevel'), +t.value); render(); }
   });
@@ -997,8 +1007,7 @@
     else if (a('data-pick')) ch.picks[a('data-pick')] = t.value ? [t.value] : [];
     else if (a('data-set')) ch[a('data-set')] = t.value;
     else if (a('data-check')) ch[a('data-check')] = t.checked;
-    else if (a('data-carmor')) { var ca = (ch.customArmor || []).filter(function (x) { return x.id === a('data-carmor'); })[0]; if (ca) { var fk = a('data-f'); ca[fk] = /^(ac|bonus|str|w)$/.test(fk) ? (+t.value || 0) : t.value; } }
-    else if (a('data-cweapon')) { var cw = (ch.customWeapons || []).filter(function (x) { return x.id === a('data-cweapon'); })[0]; if (cw) { var wk = a('data-f'); cw[wk] = wk === 'prof' ? t.checked : wk === 'ranged' ? !!t.value : /^(hit|dmgBonus|w)$/.test(wk) ? (+t.value || 0) : t.value; } }
+    else if (a('data-carmor') || a('data-cweapon')) { applyCustomField(t); if (t.tagName === 'INPUT' && t.type !== 'checkbox') { save(); return; } }
     else if (a('data-shieldbonus')) ch.shieldBonus = Math.round(+t.value) || 0;
     else if (a('data-free')) { ch.free = ch.free || {}; if (t.checked) ch.free[a('data-free')] = true; else delete ch.free[a('data-free')]; }
     else if (a('data-hpmanual')) { if (t.checked) { ch.hpMode = 'manual'; if (!ch.hpManual) ch.hpManual = d.hpAvg; } else ch.hpMode = 'avg'; }
@@ -1014,6 +1023,12 @@
     } else return;
     requestRender();
   });
+  // Own armour and weapons: every keystroke is kept, so tapping Save right after typing never loses it
+  function applyCustomField(t) {
+    var aid = t.getAttribute('data-carmor'), wid = t.getAttribute('data-cweapon'), k = t.getAttribute('data-f');
+    if (aid) { var ca = (ch.customArmor || []).filter(function (x) { return x.id === aid; })[0]; if (ca) ca[k] = /^(ac|bonus|str|w)$/.test(k) ? (+t.value || 0) : t.value; }
+    if (wid) { var cw = (ch.customWeapons || []).filter(function (x) { return x.id === wid; })[0]; if (cw) cw[k] = k === 'prof' ? t.checked : k === 'ranged' ? !!t.value : /^(hit|dmgBonus|w)$/.test(k) ? (+t.value || 0) : t.value; }
+  }
   function setLevel(id, value) {
     var e = entry(id);
     if (!e) return;
