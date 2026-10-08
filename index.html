@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Character Forge — D&amp;D 5e character builder</title>
+<meta name="theme-color" content="#8b2e23">
+<meta name="description" content="D&amp;D 5e character builder with a pixel-art portrait.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Char Forge">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -36,5 +44,11 @@
 <script src="js/avatar.js"></script>
 <script src="js/portrait.js"></script>
 <script src="js/app.js"></script>
+<script>
+// Offline support and automatic updates (only when served over http/https, e.g. GitHub Pages)
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+  window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () { /* not available here */ }); });
+}
+</script>
 </body>
 </html>

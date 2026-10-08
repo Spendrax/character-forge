@@ -530,7 +530,7 @@
       return '<option value="' + c.id + '"' + (c.id === ch.id ? ' selected' : '') + '>' + esc(title(c)) + '</option>';
     }).join('') + '</select>' + btn('new', 'New') + btn('dup', 'Duplicate') + btn('import', 'Import') + btn('export', 'Export') +
       (ui.confirmDelete ? btn('delete', 'Really delete?', {}, 'btn primary') + btn('cancelDelete', 'Cancel') : btn('askDelete', 'Delete', {}, 'btn danger')) +
-      (ui.importError ? '<span class="count" style="color:var(--warn)">That file is not a Character Forge export.</span>' : '') + '<span class="spacer"></span><span class="filters"><b>Sources:</b>' + TAGS.map(function (t) {
+      (ui.importError ? '<span class="count" style="color:var(--warn)">That file is not a Character Forge export.</span>' : '') + (installPrompt ? btn('install', 'Install app', {}, 'btn primary') : '') + '<span class="spacer"></span><span class="filters"><b>Sources:</b>' + TAGS.map(function (t) {
         return '<label><input type="checkbox" data-filter="' + t[0] + '"' + (store.filters[t[0]] !== false ? ' checked' : '') + '> ' + t[1] + '</label>';
       }).join('') + '<label title="Longer feature text and spell descriptions"><input type="checkbox" data-setting="detail"' + (store.detail !== false ? ' checked' : '') + '> Detailed text</label></span><input type="file" id="importFile" accept="application/json,.json" hidden></header>';
     var nav = '<nav class="steps" aria-label="Steps">' + STEPS.map(function (s) {
@@ -570,6 +570,11 @@
     },
     'import': function () { document.getElementById('importFile').click(); return false; },
     print: function () { window.print(); return false; },
+    install: function () {
+      if (!installPrompt) return false;
+      var pr = installPrompt; installPrompt = null; pr.prompt();
+      if (pr.userChoice) pr.userChoice.then(function () { render(); });
+    },
     lineage: function (v) {
       var l = R.lineage(v); ch.lineage = v; ch.sub = 0; clearPicks('lin'); ch.version = 0;
       for (var i = 0; i < l.versions.length; i++) if (ok(l.versions[i].tag || l.tag)) { ch.version = i; break; }
@@ -646,6 +651,11 @@
 
   // Editing a field and then clicking a button fires "change" in the middle of the click. Redrawing right
   // then would replace the button under the pointer and swallow the click, so the redraw waits for it.
+  // The browser offers installing the site as an app; show our own button for it in the top bar.
+  var installPrompt = null;
+  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); installPrompt = e; requestRender(); });
+  window.addEventListener('appinstalled', function () { installPrompt = null; requestRender(); });
+
   var pointerDown = false, pending = false;
   document.addEventListener('pointerdown', function () { pointerDown = true; }, true);
   document.addEventListener('pointerup', function () {

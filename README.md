@@ -10,6 +10,12 @@ A self-hosted D&D 5e character builder. Static site: no build step, no dependenc
 
 Characters are saved in the browser's localStorage. Use **Export** / **Import** (JSON) to back up or move them.
 
+### Install as an app
+
+On the GitHub Pages site, use **Install app** in the top bar (Chrome, Edge, Android), or the browser's own install / *Add to Home Screen* (Safari on iPhone and iPad: Share → Add to Home Screen).
+The installed app opens in its own window, works offline, and picks up new versions automatically the next time it opens while online.
+If you changed which files the page loads, add them to the list in `sw.js` and bump `VERSION` there (the test checks the list).
+
 ## What it does
 
 Lineage → Class and subclass (levels 1–20, single class or multiclass) → Ability scores (standard array, point buy, manual/rolled; ASIs or feats) → Background → Spells → Equipment → Items → Appearance → Details → printable Sheet.
@@ -60,6 +66,7 @@ spells known or prepared per class; Unarmored Defense only from whichever class 
     data/*.js         game data, plain scripts that fill window.DND
     data/items.js     magic item index and adventuring gear
     data/text-*.js    longer feature text and spell descriptions (optional: delete the two script tags to drop them)
+    manifest.webmanifest, sw.js, icons/   installable app: name, icons, offline copy
     test/             `node test/rules.test.js`
 
 To add content, append an entry to the matching file in `data/` following its neighbours.
