@@ -212,8 +212,12 @@
       var c = Object.assign({ key: key, step: step, label: label, count: count, options: options }, extra || {});
       var valid = {};
       options.forEach(function (o) { if (!o.disabled) valid[o.v] = 1; });
-      c.picked = arr(picks[key]).filter(function (v) { return valid[v]; }).slice(0, count);
+      // a single pick replaces; with several to pick you may take more than the usual number (a warning says so)
+      c.picked = arr(picks[key]).filter(function (v, i, all) { return valid[v] && all.indexOf(v) === i; });
+      if (count <= 1) c.picked = c.picked.slice(0, Math.max(0, count));
       c.missing = Math.max(0, count - c.picked.length);
+      c.over = Math.max(0, c.picked.length - count);
+      if (c.over) out.warnings.push(label + ': ' + c.picked.length + ' chosen, the usual number is ' + count + '. Fine if your game allows more.');
       out.choices.push(c);
       return c;
     }

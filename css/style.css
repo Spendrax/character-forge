@@ -229,3 +229,4 @@ canvas.avatar.figure.sheet-pic { width: 96px; height: 116px; }
 .row-actions .btn + .btn { margin-left: .3rem; }
 .custom-card .toolbar .btn.primary { min-width: 6rem; }
 .panel select, .panel .field { max-width: 100%; } .panel .row > .field { min-width: 0; }
+html { overflow-anchor: none; } /* the app restores scroll itself after each redraw */

@@ -88,7 +88,7 @@
 
   // ---------- choice widgets ----------
   function choiceHtml(c) {
-    var head = '<div class="choice-head"><span>' + esc(c.label) + '</span><span class="count">' + c.picked.length + ' / ' + c.count + '</span></div>';
+    var head = '<div class="choice-head"><span>' + esc(c.label) + '</span><span class="count"' + (c.over ? ' style="color:var(--warn)" title="More than the usual number. Fine if your game allows more."' : '') + '>' + c.picked.length + ' / ' + c.count + (c.over ? ' · over the usual number' : '') + '</span></div>';
     var body;
     var rich = c.options.some(function (o) { return o.t; });
     if (c.select || (c.count === 1 && c.options.length > 12 && !rich)) {
@@ -761,6 +761,32 @@
       else if (r > nav.scrollLeft + nav.clientWidth) nav.scrollLeft = r - nav.clientWidth + 12;
     }
   }
+  // Every tap redraws the page. Remember where the page and each scrolling list were, and put them back,
+  // so selecting something never jumps you back to the top.
+  var SCROLLERS = '.optlist, .scroll, .tablewrap, .imp-list, .look-controls, textarea';
+  function scrollState() {
+    var lists = {}, count = {};
+    Array.prototype.forEach.call(document.querySelectorAll(SCROLLERS), function (el) {
+      var k = scrollKey(el, count);
+      if (el.scrollTop || el.scrollLeft) lists[k] = [el.scrollTop, el.scrollLeft];
+    });
+    return { y: window.pageYOffset, x: window.pageXOffset, lists: lists };
+  }
+  function scrollKey(el, count) {
+    var host = el.closest('.choice, .panel, main') || document.body;
+    var label = (host.querySelector('.choice-head span, h3, h2') || {}).textContent || '';
+    var k = el.className + '|' + label;
+    count[k] = (count[k] || 0) + 1;
+    return k + '|' + count[k];
+  }
+  function restoreScroll(st) {
+    var count = {};
+    Array.prototype.forEach.call(document.querySelectorAll(SCROLLERS), function (el) {
+      var v = st.lists[scrollKey(el, count)];
+      if (v) { el.scrollTop = v[0]; el.scrollLeft = v[1]; }
+    });
+    if (window.pageYOffset !== st.y || window.pageXOffset !== st.x) window.scrollTo(st.x, st.y);
+  }
   function render() {
     if (!byId(store.current) && store.chars.length) store.current = store.chars[0].id;
     remember(); // record the change about to be drawn, so Undo is ready at once
@@ -788,15 +814,17 @@
     var i = STEPS.map(function (s) { return s[0]; }).indexOf(ui.step);
     var foot = '<div class="toolbar noprint" style="margin-top:1.5rem">' + (i > 0 ? btn('step', '← ' + STEPS[i - 1][1], { v: STEPS[i - 1][0] }) : '') + (i < STEPS.length - 1 ? btn('step', STEPS[i + 1][1] + ' →', { v: STEPS[i + 1][0] }, 'btn primary') : '') + '</div>';
     var oldNav = document.querySelector('.steps'), navX = oldNav ? oldNav.scrollLeft : 0;
+    var keep = scrollState();
     document.getElementById('app').innerHTML = top + installHelpHtml() + import5eHtml() + '<div class="shell">' + nav + '<main>' + body + foot + '</main>' + side + '</div>';
     keepStepInView(navX);
+    if (!ui.scrollToStep) restoreScroll(keep);
     if (ui.scrollToStep) { // a new step starts at its top; on a phone the step row stays visible above it
       ui.scrollToStep = false;
       var row = document.querySelector('.steps'), narrow = row && row.scrollWidth > row.clientWidth;
       window.scrollTo(0, narrow ? Math.max(0, row.getBoundingClientRect().top + window.pageYOffset - 6) : 0);
     }
     drawAvatars();
-    if (fid) { var el = document.getElementById(fid); if (el) { el.focus(); try { if (pos != null) el.setSelectionRange(pos, pos); } catch (e) { /* not a text field */ } } }
+    if (fid) { var el = document.getElementById(fid); if (el) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } try { if (pos != null) el.setSelectionRange(pos, pos); } catch (e) { /* not a text field */ } } }
     document.title = title(ch) + ' — Character Forge';
     saveNow();
   }
@@ -891,7 +919,7 @@
       var key = el.getAttribute('data-key'), c = d.choices.filter(function (x) { return x.key === key; })[0];
       if (!c) return;
       var cur = c.picked.slice(), i = cur.indexOf(v);
-      if (i >= 0) cur.splice(i, 1); else if (c.count === 1) cur = [v]; else if (cur.length < c.count) cur.push(v); else return;
+      if (i >= 0) cur.splice(i, 1); else if (c.count === 1) cur = [v]; else cur.push(v); // going over the usual number only warns
       ch.picks[key] = cur;
     },
     spellLevel: function (v) { ui.spellLevel = +v; ui.q.spells = ''; },
