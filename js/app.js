@@ -272,15 +272,15 @@
   }
   // "Import" on each step: brings in only that part of a character from another app's file.
   var PARTS = {
-    lineage: { label: 'lineage', what: 'lineage, subrace and lineage choices', spellbook: true },
-    'class': { label: 'classes', what: 'classes, levels, subclasses and class choices (skills, fighting styles…)', spellbook: true },
-    abilities: { label: 'ability scores', what: 'ability scores (the exact totals), ability improvements and feats' },
-    background: { label: 'background', what: 'background and its choices' },
-    spells: { label: 'spells', what: 'spells', spellbook: true },
-    equipment: { label: 'armour and weapons', what: 'worn armour, shield and weapons' },
-    items: { label: 'items and coins', what: 'inventory and coins' },
-    appearance: { label: 'picture', what: 'the character picture' },
-    details: { label: 'details', what: 'alignment, personality, backstory and notes' }
+    lineage: { label: 'lineage', short: 'Lineage', what: 'lineage, subrace and lineage choices', spellbook: true },
+    'class': { label: 'classes', short: 'Class', what: 'classes, levels, subclasses and class choices (skills, fighting styles…)', spellbook: true },
+    abilities: { label: 'ability scores', short: 'Abilities and feats', what: 'ability scores (the exact totals), ability improvements and feats' },
+    background: { label: 'background', short: 'Background', what: 'background and its choices' },
+    spells: { label: 'spells', short: 'Spells', what: 'spells', spellbook: true },
+    equipment: { label: 'armour and weapons', short: 'Armour and weapons', what: 'worn armour, shield and weapons' },
+    items: { label: 'items and coins', short: 'Items and coins', what: 'inventory and coins' },
+    appearance: { label: 'picture', short: 'Picture', what: 'the character picture' },
+    details: { label: 'details', short: 'Details and notes', what: 'alignment, personality, backstory and notes' }
   };
   function partImportHtml(step) {
     var P = PARTS[step], I = ui.partImport && ui.partImport.step === step ? ui.partImport : null, done = ui.partImportDone && ui.partImportDone.step === step ? ui.partImportDone : null;
@@ -295,44 +295,58 @@
     return bar + '</div>';
   }
   function swapIn(c2) { store.chars[store.chars.indexOf(ch)] = c2; store.current = c2.id; ch = c2; }
-  function applyPartImport(step, entry) {
-    var src = sourceName(entry), P = PARTS[step], msg;
-    ui.partImport = null; ui.partImportError = null;
-    if (step === 'spells') {
-      var u = Import5e.spellsInto(entry, ch, R, D); swapIn(normalize(u.ch));
-      msg = 'Spells imported from ' + entry.name + ' (' + src + '): ' + u.added + ' added' + (u.skipped.length ? ', ' + u.skipped.length + ' didn’t fit and are listed in Details → Other notes' : '') + '.';
-      ui.partImportDone = { step: step, msg: msg }; return;
-    }
-    var full = importerOf(entry).toCharacter(entry, R, D), f = full.ch, c = JSON.parse(JSON.stringify(ch));
+  // Copy chosen parts of an imported character onto an existing one. Returns the updated copy, a note on
+  // what changed, and the picture to add (pictures are shrunk afterwards, asynchronously).
+  var PART_ORDER = ['lineage', 'class', 'background', 'abilities', 'equipment', 'items', 'details', 'appearance', 'spells'];
+  function mergeParts(c0, entry, steps) {
+    var src = sourceName(entry), c = JSON.parse(JSON.stringify(c0)), said = [], picture = null, spellNote = '';
+    steps = PART_ORDER.filter(function (k) { return steps.indexOf(k) >= 0 && (entry.source === 'companion' || PARTS[k].spellbook); });
+    var others = steps.filter(function (k) { return k !== 'spells'; });
+    var full = others.length ? importerOf(entry).toCharacter(entry, R, D) : null, f = full && full.ch;
     var takePicks = function (prefixes) {
       Object.keys(c.picks).forEach(function (k) { if (prefixes.some(function (p) { return k.indexOf(p) === 0; })) delete c.picks[k]; });
       Object.keys(f.picks).forEach(function (k) { if (prefixes.some(function (p) { return k.indexOf(p) === 0; })) c.picks[k] = f.picks[k].slice(); });
     };
-    if (step === 'lineage') { c.lineage = f.lineage; c.version = f.version; c.sub = f.sub; takePicks(['lin']); }
-    else if (step === 'class') { c.classes = f.classes; takePicks(['cls.', 'sc.']); }
-    else if (step === 'abilities') {
-      c.asi = f.asi; takePicks(['asi.']);
-      var want = R.derive(f, store.filters).abilities, cur = R.derive(c, store.filters).abilities;
-      c.method = 'manual';
-      AB.forEach(function (a) { c.base[a] = Math.max(1, Math.min(30, want[a].total - (cur[a].total - c.base[a]))); });
+    others.forEach(function (step) {
+      if (step === 'lineage') { c.lineage = f.lineage; c.version = f.version; c.sub = f.sub; takePicks(['lin']); }
+      else if (step === 'class') { c.classes = f.classes; takePicks(['cls.', 'sc.']); }
+      else if (step === 'abilities') {
+        c.asi = f.asi; takePicks(['asi.']);
+        var want = R.derive(f, store.filters).abilities, cur = R.derive(c, store.filters).abilities;
+        c.method = 'manual';
+        AB.forEach(function (a) { c.base[a] = Math.max(1, Math.min(30, want[a].total - (cur[a].total - c.base[a]))); });
+      }
+      else if (step === 'background') { c.background = f.background; takePicks(['bg']); }
+      else if (step === 'equipment') { c.armor = f.armor; c.shield = f.shield; c.weapons = f.weapons.slice(); }
+      else if (step === 'items') { c.items = f.items; c.money = f.money; }
+      else if (step === 'details') {
+        if (f.alignment) c.alignment = f.alignment;
+        if (f.player) c.player = f.player;
+        if (!String(c.name || '').trim()) c.name = f.name;
+        ['traits', 'ideals', 'bonds', 'flaws', 'appearance', 'backstory'].forEach(function (k) { if (f.notes[k]) c.notes[k] = f.notes[k]; });
+        var extra = String(f.notes.other || '').split('Notes from ' + src + ':')[1];
+        if (extra && extra.trim()) c.notes.other = (c.notes.other ? c.notes.other + '\n\n' : '') + 'Notes from ' + src + ' (' + entry.name + '):' + extra;
+      }
+      else if (step === 'appearance') { if (!full.picture) return; picture = full.picture; }
+      said.push(PARTS[step].label);
+    });
+    if (steps.indexOf('spells') >= 0) {
+      var u = Import5e.spellsInto(entry, c, R, D); c = u.ch;
+      said.push('spells');
+      spellNote = u.added + ' spell' + (u.added === 1 ? '' : 's') + ' added' + (u.skipped.length ? ', ' + u.skipped.length + ' didn’t fit and are listed in Details → Other notes' : '');
     }
-    else if (step === 'background') { c.background = f.background; takePicks(['bg']); }
-    else if (step === 'equipment') { c.armor = f.armor; c.shield = f.shield; c.weapons = f.weapons.slice(); }
-    else if (step === 'items') { c.items = f.items; c.money = f.money; }
-    else if (step === 'details') {
-      if (f.alignment) c.alignment = f.alignment;
-      if (f.player) c.player = f.player;
-      if (!String(c.name || '').trim()) c.name = f.name;
-      ['traits', 'ideals', 'bonds', 'flaws', 'appearance', 'backstory'].forEach(function (k) { if (f.notes[k]) c.notes[k] = f.notes[k]; });
-      var extra = String(f.notes.other || '').split('Notes from ' + src + ':')[1];
-      if (extra && extra.trim()) c.notes.other = (c.notes.other ? c.notes.other + '\n\n' : '') + 'Notes from ' + src + ' (' + entry.name + '):' + extra;
-    }
-    else if (step === 'appearance') {
-      if (!full.picture) throw new Error('That character has no picture in the file.');
-      shrinkPicture(full.picture, function (data) { var me = byId(c.id); if (me && data) { me.picture = data; render(); } });
-    }
-    swapIn(normalize(c));
-    ui.partImportDone = { step: step, msg: 'Imported the ' + P.label + ' of ' + entry.name + ' (' + src + ').' + (step === 'abilities' ? ' Scores match the file exactly, with your own lineage and feats counted.' : '') };
+    return { ch: normalize(c), parts: said, picture: picture, spellNote: spellNote, missingPicture: steps.indexOf('appearance') >= 0 && !picture };
+  }
+  function partsSentence(r) { return r.parts.length ? r.parts.join(', ') : 'nothing'; }
+  function applyPartImport(step, entry) {
+    ui.partImport = null; ui.partImportError = null;
+    if (step === 'appearance' && entry.source !== 'companion') throw new Error('5th Spellbook backups have no picture.');
+    var r = mergeParts(ch, entry, [step]);
+    if (r.missingPicture) throw new Error('That character has no picture in the file.');
+    swapIn(r.ch);
+    if (r.picture) shrinkPicture(r.picture, function (data) { var me = byId(r.ch.id); if (me && data) { me.picture = data; render(); } });
+    var P = PARTS[step];
+    ui.partImportDone = { step: step, msg: step === 'spells' ? 'Spells imported from ' + entry.name + ' (' + sourceName(entry) + '): ' + r.spellNote + '.' : 'Imported the ' + P.label + ' of ' + entry.name + ' (' + sourceName(entry) + ').' + (step === 'abilities' ? ' Scores match the file exactly, with your own lineage and feats counted.' : '') };
   }
   function loadPartImport(input) {
     var file = input.files && input.files[0], step = input.getAttribute('data-step') || ui.step;
@@ -751,6 +765,8 @@
       if (pr.userChoice) pr.userChoice.then(function () { render(); });
     },
     closeInstallHelp: function () { ui.installHelp = false; },
+    import5eParts: function (v, el) { var I = ui.import5e; if (!I) return false; var id = +el.getAttribute('data-e'), e = I.entries.filter(function (x) { return x.id === id; })[0];
+      I.parts[id] = el.getAttribute('data-all') ? PART_ORDER.filter(function (k) { return e.source === 'companion' || PARTS[k].spellbook; }) : []; },
     import5eClose: function () { ui.import5e = null; ui.import5eDone = null; },
     import5eAll: function () { var I = ui.import5e; if (I) I.pick = I.pick.length === I.entries.length ? [] : I.entries.map(function (e) { return e.id; }); },
     import5eGo: function () {
@@ -759,9 +775,12 @@
       I.entries.filter(function (e) { return I.pick.indexOf(e.id) >= 0; }).forEach(function (e) {
         var tg = I.target[e.id] || 'new', old = tg !== 'new' && byId(tg);
         if (old) {
-          var u = Import5e.spellsInto(e, old, R, D), c2 = normalize(u.ch);
+          var parts = I.parts[e.id] || [];
+          if (!parts.length) return;
+          var m = mergeParts(old, e, parts), c2 = m.ch;
           store.chars[store.chars.indexOf(old)] = c2; if (!first) first = c2.id;
-          done.push({ name: title(c2), added: u.added, skipped: u.skipped.length, update: true });
+          if (m.picture) pics.push([c2.id, m.picture]);
+          done.push({ name: title(c2), update: true, parts: m.parts, spellNote: m.spellNote });
         } else {
           var r = importerOf(e).toCharacter(e, R, D), c = normalize(r.ch); c.id = R.uid();
           store.chars.push(c); if (!first) first = c.id;
@@ -770,7 +789,8 @@
         }
       });
       done.source = I.source;
-      store.current = first; ui.step = done.length === 1 && done[0].update ? 'spells' : 'sheet'; ui.import5e = null; ui.import5eDone = done; window.scrollTo(0, 0);
+      if (!done.length) return false;
+      store.current = first; ui.step = done.length === 1 && done[0].update && done[0].parts.length === 1 && done[0].parts[0] === 'spells' ? 'spells' : 'sheet'; ui.import5e = null; ui.import5eDone = done; window.scrollTo(0, 0);
       // pictures from 5e Companion: shrink them like any added picture, then show them
       pics.forEach(function (p) { shrinkPicture(p[1], function (data) { var c = byId(p[0]); if (c && data) { c.picture = data; render(); } }); });
     },
@@ -930,6 +950,7 @@
     if (a('data-text') || a('data-itemtext')) return requestRender();
     if (a('data-ui')) { if (a('data-ui') === 'current') { store.current = t.value; ui.confirmDelete = false; ui.partImport = null; ui.partImportDone = null; } else ui[a('data-ui')] = t.value; }
     else if (a('data-filter')) store.filters[a('data-filter')] = t.checked;
+    else if (a('data-imp5part')) { var IP = ui.import5e; if (IP) { var eid = +a('data-imp5part'), cur = (IP.parts[eid] || []).filter(function (k) { return k !== t.value; }); if (t.checked) cur.push(t.value); IP.parts[eid] = cur; } }
     else if (a('data-imp5target')) { if (ui.import5e) { ui.import5e.target[a('data-imp5target')] = t.value; var idT = +a('data-imp5target'); if (ui.import5e.pick.indexOf(idT) < 0) ui.import5e.pick.push(idT); } }
     else if (a('data-imp5')) { var I5 = ui.import5e, id5 = +a('data-imp5'); if (I5) { I5.pick = I5.pick.filter(function (x) { return x !== id5; }); if (t.checked) I5.pick.push(id5); } }
     else if (a('data-look')) { ch.look = ch.look || {}; ch.look[a('data-look')] = t.value; }
@@ -983,7 +1004,8 @@
           entries.forEach(function (e) { var same = store.chars.filter(function (c) { return nm(c.name) && nm(c.name) === nm(e.name); })[0]; target[e.id] = same ? same.id : 'new'; });
           var anyMatch = entries.some(function (e) { return target[e.id] !== 'new'; });
           // with a matching character, start with just those ticked: the rest are probably not wanted again
-          ui.import5e = { source: sourceName(entries[0]), entries: entries, target: target, pick: entries.filter(function (e) { return !anyMatch || target[e.id] !== 'new'; }).map(function (e) { return e.id; }) }; ui.import5eDone = null;
+          var parts = {}; entries.forEach(function (e) { parts[e.id] = ['spells']; });
+          ui.import5e = { source: sourceName(entries[0]), entries: entries, target: target, parts: parts, pick: entries.filter(function (e) { return !anyMatch || target[e.id] !== 'new'; }).map(function (e) { return e.id; }) }; ui.import5eDone = null;
         } else {
           if (!got) throw new Error('not json');
           var o = got.json, list = Array.isArray(o) ? o : (o && Array.isArray(o.chars) ? o.chars : [o]);
@@ -996,18 +1018,32 @@
   function import5eHtml() {
     var I = ui.import5e, done = ui.import5eDone;
     if (done) return '<div class="panel import5e noprint"><h3>Imported from ' + esc(done.source || '5th Spellbook') + '</h3><ul>' + done.map(function (r) {
-      return '<li><b>' + esc(r.name) + '</b> — ' + (r.update ? 'spells updated, everything else kept: ' : 'new character, ') + r.added + ' spell' + (r.added === 1 ? '' : 's') + ' added' + (r.skipped ? ', ' + r.skipped + ' listed in Details → Other notes instead' : '') + '</li>';
+      if (r.update) return '<li><b>' + esc(r.name) + '</b> — updated: ' + esc(r.parts.join(', ') || 'nothing') + (r.spellNote ? ' (' + esc(r.spellNote) + ')' : '') + '. Everything else kept.</li>';
+      return '<li><b>' + esc(r.name) + '</b> — new character, ' + r.added + ' spell' + (r.added === 1 ? '' : 's') + ' added' + (r.skipped ? ', ' + r.skipped + ' listed in Details → Other notes instead' : '') + '</li>';
     }).join('') + '</ul>' + (done.some(function (r) { return !r.update; }) ? '<p class="small muted">' + (done.source === '5e Companion' ? 'New characters come with everything 5e Companion stores. Step badges show any choice still open, and Details → Other notes lists anything that had no match here.' : 'New characters: ability scores other than the spellcasting one weren\'t in the backup, so they start at 10. Step badges show what is still open (skills, background, equipment…).') + '</p>' : '') + '<p class="small muted">Changed your mind? Press Undo at the top.</p>' + btn('import5eClose', 'Close', {}, 'btn primary') + '</div>';
     if (!I) return '';
-    return '<div class="panel import5e noprint" role="dialog" aria-label="Import from ' + esc(I.source) + '"><h3>Import from ' + esc(I.source) + '</h3><p class="muted">Found ' + I.entries.length + ' character' + (I.entries.length === 1 ? '' : 's') + '. ' + (I.source === '5e Companion' ? 'A new character comes in with everything on its sheet: race, background, classes, ability scores, skills, feats, equipment, coins, personality, notes, spells and picture.' : 'A new character comes in with its race, classes and levels, subclasses and spells.') + ' To keep a character you already made and only bring in its spells, choose “Only update the spells of” it.</p><div class="imp-list">' +
+    return '<div class="panel import5e noprint" role="dialog" aria-label="Import from ' + esc(I.source) + '"><h3>Import from ' + esc(I.source) + '</h3><p class="muted">Found ' + I.entries.length + ' character' + (I.entries.length === 1 ? '' : 's') + '. ' + (I.source === '5e Companion' ? 'A new character comes in with everything on its sheet: race, background, classes, ability scores, skills, feats, equipment, coins, personality, notes, spells and picture.' : 'A new character comes in with its race, classes and levels, subclasses and spells.') + ' To bring only some parts into a character you already made, choose “Update my character” and tick the parts you want.</p><div class="imp-list">' +
       I.entries.map(function (e) {
         var n = e.classes.reduce(function (t, c) { return t + c.spells.length; }, e.loose.length);
         var tg = I.target[e.id] || 'new';
         return '<div class="imp-row"><input type="checkbox" id="imp5-' + e.id + '" data-imp5="' + e.id + '"' + (I.pick.indexOf(e.id) >= 0 ? ' checked' : '') + '><div class="imp-main"><label for="imp5-' + e.id + '"><b>' + esc(e.name) + '</b><br><span class="small muted">' + esc(importerOf(e).summary(e)) + ' · ' + n + ' spells</span></label>' +
           '<select data-imp5target="' + e.id + '" aria-label="Where to import ' + esc(e.name) + '"><option value="new"' + (tg === 'new' ? ' selected' : '') + '>Add as a new character</option>' +
-          store.chars.map(function (c) { return '<option value="' + c.id + '"' + (tg === c.id ? ' selected' : '') + '>Only update the spells of: ' + esc(title(c)) + '</option>'; }).join('') + '</select>' +
-          (tg !== 'new' ? '<div class="small muted">Keeps everything else on ' + esc(title(byId(tg) || {})) + ' as it is: race, classes, abilities, items, notes, picture.</div>' : '') + '</div></div>';
+          store.chars.map(function (c) { return '<option value="' + c.id + '"' + (tg === c.id ? ' selected' : '') + '>Update my character: ' + esc(title(c)) + '</option>'; }).join('') + '</select>' +
+          (tg !== 'new' ? partsPicker(I, e, tg) : '') + '</div></div>';
       }).join('') + '</div><div class="toolbar">' + btn('import5eGo', 'Import ' + I.pick.length + ' character' + (I.pick.length === 1 ? '' : 's'), {}, 'btn primary') + btn('import5eAll', I.pick.length === I.entries.length ? 'Select none' : 'Select all') + btn('import5eClose', 'Cancel') + '</div></div>';
+  }
+
+  // Which parts to copy onto an existing character
+  function partsPicker(I, e, tg) {
+    var chosen = I.parts[e.id] || [], ok = function (k) { return e.source === 'companion' || PARTS[k].spellbook; };
+    var avail = PART_ORDER.filter(ok);
+    var all = avail.every(function (k) { return chosen.indexOf(k) >= 0; });
+    return '<div class="imp-parts"><span class="small"><b>What to bring into ' + esc(title(byId(tg) || {})) + ':</b></span><div class="pills">' +
+      STEPS.map(function (s) { return s[0]; }).filter(function (k) { return PARTS[k]; }).map(function (k) {
+        var on = chosen.indexOf(k) >= 0, can = ok(k);
+        return '<label class="pill imp-part' + (on ? ' on' : '') + (can ? '' : ' off') + '"' + (can ? '' : ' title="Not in a 5th Spellbook backup"') + '><input type="checkbox" data-imp5part="' + e.id + '" value="' + k + '"' + (on ? ' checked' : '') + (can ? '' : ' disabled') + '> ' + esc(PARTS[k].short) + '</label>';
+      }).join('') + btn('import5eParts', all ? 'None' : 'All', { e: e.id, all: all ? '' : '1' }, 'btn tiny') + '</div>' +
+      '<div class="small muted">' + (chosen.length ? 'Only the ticked parts change; everything else on ' + esc(title(byId(tg) || {})) + ' stays as it is.' : 'Tick at least one part.') + '</div></div>';
   }
 
   // Opened from the share menu: the service worker kept the shared file; import it like the Import button would.
