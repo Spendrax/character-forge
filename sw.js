@@ -1,7 +1,7 @@
 // Service worker: keeps a copy of the app so it opens offline, and always tries the network first
 // so a new version on the site is picked up as soon as you are online.
 // Bump VERSION when files are added or removed.
-var VERSION = 'cf-4';
+var VERSION = 'cf-5';
 var FILES = [
   './',
   'index.html',
@@ -33,6 +33,8 @@ var FILES = [
   'js/rules.js',
   'js/avatar.js',
   'js/portrait.js',
+  'js/sqlite-read.js',
+  'js/import-5e.js',
   'js/app.js',
   'icons/icon-192.png',
   'icons/icon-512.png',

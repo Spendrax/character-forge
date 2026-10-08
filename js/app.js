@@ -539,9 +539,9 @@
       return '<option value="' + c.id + '"' + (c.id === ch.id ? ' selected' : '') + '>' + esc(title(c)) + '</option>';
     }).join('') + '</select>' + btn('new', 'New') + btn('dup', 'Duplicate') + btn('import', 'Import') + btn('export', 'Export') +
       (ui.confirmDelete ? btn('delete', 'Really delete?', {}, 'btn primary') + btn('cancelDelete', 'Cancel') : btn('askDelete', 'Delete', {}, 'btn danger')) +
-      (ui.importError ? '<span class="count" style="color:var(--warn)">That file is not a Character Forge export.</span>' : '') + (isInstalledApp() ? '' : btn('install', 'Install app', {}, installPrompt ? 'btn primary' : 'btn')) + '<span class="spacer"></span><span class="filters"><b>Sources:</b>' + TAGS.map(function (t) {
+      (ui.importError ? '<span class="count" style="color:var(--warn)">' + esc(ui.importError === true ? 'That file is not a Character Forge export or a 5th Spellbook backup.' : ui.importError) + '</span>' : '') + (isInstalledApp() ? '' : btn('install', 'Install app', {}, installPrompt ? 'btn primary' : 'btn')) + '<span class="spacer"></span><span class="filters"><b>Sources:</b>' + TAGS.map(function (t) {
         return '<label><input type="checkbox" data-filter="' + t[0] + '"' + (store.filters[t[0]] !== false ? ' checked' : '') + '> ' + t[1] + '</label>';
-      }).join('') + '<label title="Longer feature text and spell descriptions"><input type="checkbox" data-setting="detail"' + (store.detail !== false ? ' checked' : '') + '> Detailed text</label></span><input type="file" id="importFile" accept="application/json,.json" hidden></header>';
+      }).join('') + '<label title="Longer feature text and spell descriptions"><input type="checkbox" data-setting="detail"' + (store.detail !== false ? ' checked' : '') + '> Detailed text</label></span><input type="file" id="importFile" hidden></header>';
     var nav = '<nav class="steps" aria-label="Steps">' + STEPS.map(function (s) {
       var n = d.todo[s[0]], show = ['sheet', 'details', 'equipment', 'items', 'appearance'].indexOf(s[0]) < 0;
       return '<button type="button" class="step' + (ui.step === s[0] ? ' on' : '') + '" data-act="step" data-v="' + s[0] + '"><span>' + s[1] + '</span>' + (show ? (n ? '<span class="badge" title="' + n + ' open">' + n + '</span>' : '<span class="badge done">✓</span>') : '') + '</button>';
@@ -553,7 +553,7 @@
       (d.warnings.length ? '<ul class="warnings">' + d.warnings.map(function (w) { return '<li>' + esc(w) + '</li>'; }).join('') + '</ul>' : '') + '</aside>';
     var i = STEPS.map(function (s) { return s[0]; }).indexOf(ui.step);
     var foot = '<div class="toolbar noprint" style="margin-top:1.5rem">' + (i > 0 ? btn('step', '← ' + STEPS[i - 1][1], { v: STEPS[i - 1][0] }) : '') + (i < STEPS.length - 1 ? btn('step', STEPS[i + 1][1] + ' →', { v: STEPS[i + 1][0] }, 'btn primary') : '') + '</div>';
-    document.getElementById('app').innerHTML = top + installHelpHtml() + '<div class="shell">' + nav + '<main>' + body + foot + '</main>' + side + '</div>';
+    document.getElementById('app').innerHTML = top + installHelpHtml() + import5eHtml() + '<div class="shell">' + nav + '<main>' + body + foot + '</main>' + side + '</div>';
     drawAvatars();
     if (fid) { var el = document.getElementById(fid); if (el) { el.focus(); try { if (pos != null) el.setSelectionRange(pos, pos); } catch (e) { /* not a text field */ } } }
     document.title = title(ch) + ' — Character Forge';
@@ -585,6 +585,18 @@
       if (pr.userChoice) pr.userChoice.then(function () { render(); });
     },
     closeInstallHelp: function () { ui.installHelp = false; },
+    import5eClose: function () { ui.import5e = null; ui.import5eDone = null; },
+    import5eAll: function () { var I = ui.import5e; if (I) I.pick = I.pick.length === I.entries.length ? [] : I.entries.map(function (e) { return e.id; }); },
+    import5eGo: function () {
+      var I = ui.import5e; if (!I || !I.pick.length) return false;
+      var done = [], first = null;
+      I.entries.filter(function (e) { return I.pick.indexOf(e.id) >= 0; }).forEach(function (e) {
+        var r = Import5e.toCharacter(e, R, D), c = normalize(r.ch); c.id = R.uid();
+        store.chars.push(c); if (!first) first = c.id;
+        done.push({ name: c.name, added: r.added, skipped: r.skipped.length });
+      });
+      store.current = first; ui.step = 'sheet'; ui.import5e = null; ui.import5eDone = done; window.scrollTo(0, 0);
+    },
     lineage: function (v) {
       var l = R.lineage(v); ch.lineage = v; ch.sub = 0; clearPicks('lin'); ch.version = 0;
       for (var i = 0; i < l.versions.length; i++) if (ok(l.versions[i].tag || l.tag)) { ch.version = i; break; }
@@ -720,6 +732,7 @@
     if (a('data-text') || a('data-itemtext')) return requestRender();
     if (a('data-ui')) { if (a('data-ui') === 'current') { store.current = t.value; ui.confirmDelete = false; } else ui[a('data-ui')] = t.value; }
     else if (a('data-filter')) store.filters[a('data-filter')] = t.checked;
+    else if (a('data-imp5')) { var I5 = ui.import5e, id5 = +a('data-imp5'); if (I5) { I5.pick = I5.pick.filter(function (x) { return x !== id5; }); if (t.checked) I5.pick.push(id5); } }
     else if (a('data-look')) { ch.look = ch.look || {}; ch.look[a('data-look')] = t.value; }
     else if (a('data-lookcolor')) { ch.look = ch.look || {}; ch.look[a('data-lookcolor')] = t.value; }
     else if (a('data-lookhide')) { ch.look = ch.look || {}; ch.look.hidden = ch.look.hidden || {}; if (t.checked) delete ch.look.hidden[a('data-lookhide')]; else ch.look.hidden[a('data-lookhide')] = 1; }
@@ -752,14 +765,36 @@
     if (!file) return;
     var reader = new FileReader();
     reader.onload = function () {
+      ui.importError = false;
+      var buf = reader.result;
       try {
-        ui.importError = false; var o = JSON.parse(reader.result), list = Array.isArray(o) ? o : (o && Array.isArray(o.chars) ? o.chars : [o]);
-        list.forEach(function (c) { if (!c || typeof c !== 'object' || !(('classes' in c) || ('level' in c)) || !c.base) throw new Error('not a character'); c = normalize(c); c.id = R.uid(); store.chars.push(c); store.current = c.id; });
-        ui.step = 'sheet';
-      } catch (err) { ui.importError = true; window.console.error('Import failed', err); }
+        if (window.SqliteFile && SqliteFile.isSqlite(buf)) {
+          var entries = Import5e.read(new SqliteFile(buf));
+          if (!entries.length) throw new Error('That 5th Spellbook backup has no characters.');
+          ui.import5e = { entries: entries, pick: entries.map(function (e) { return e.id; }) }; ui.import5eDone = null;
+        } else {
+          var o = JSON.parse(new TextDecoder('utf-8').decode(buf)), list = Array.isArray(o) ? o : (o && Array.isArray(o.chars) ? o.chars : [o]);
+          list.forEach(function (c) { if (!c || typeof c !== 'object' || !(('classes' in c) || ('level' in c)) || !c.base) throw new Error('not a character'); c = normalize(c); c.id = R.uid(); store.chars.push(c); store.current = c.id; });
+          ui.step = 'sheet';
+        }
+      } catch (err) { ui.importError = /5th Spellbook/.test(err.message) ? err.message : true; window.console.error('Import failed', err); }
+      input.value = '';
       render();
     };
-    reader.readAsText(file);
+    reader.readAsArrayBuffer(file);
+  }
+  // Pick which characters to bring in from a 5th Spellbook backup, then report what came across.
+  function import5eHtml() {
+    var I = ui.import5e, done = ui.import5eDone;
+    if (done) return '<div class="panel import5e noprint"><h3>Imported from 5th Spellbook</h3><ul>' + done.map(function (r) {
+      return '<li><b>' + esc(r.name) + '</b> — ' + r.added + ' spell' + (r.added === 1 ? '' : 's') + ' added' + (r.skipped ? ', ' + r.skipped + ' listed in Details → Other notes instead' : '') + '</li>';
+    }).join('') + '</ul><p class="small muted">Ability scores other than the spellcasting one weren\'t in the backup, so they start at 10. Each character\'s step badges show what is still open (skills, background, equipment…).</p>' + btn('import5eClose', 'Close', {}, 'btn primary') + '</div>';
+    if (!I) return '';
+    return '<div class="panel import5e noprint" role="dialog" aria-label="Import from 5th Spellbook"><h3>Import from 5th Spellbook</h3><p class="muted">Found ' + I.entries.length + ' character' + (I.entries.length === 1 ? '' : 's') + '. Each one comes in with its race, classes and levels, subclasses and spells.</p><div class="look-items">' +
+      I.entries.map(function (e) {
+        var n = e.classes.reduce(function (t, c) { return t + c.spells.length; }, e.loose.length);
+        return '<label class="imp-row"><input type="checkbox" data-imp5="' + e.id + '"' + (I.pick.indexOf(e.id) >= 0 ? ' checked' : '') + '><span><b>' + esc(e.name) + '</b><br><span class="small muted">' + esc(Import5e.summary(e)) + ' · ' + n + ' spells</span></span></label>';
+      }).join('') + '</div><div class="toolbar">' + btn('import5eGo', 'Import ' + I.pick.length + ' character' + (I.pick.length === 1 ? '' : 's'), {}, 'btn primary') + btn('import5eAll', I.pick.length === I.entries.length ? 'Select none' : 'Select all') + btn('import5eClose', 'Cancel') + '</div></div>';
   }
 
   load();

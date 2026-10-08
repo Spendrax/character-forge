@@ -98,6 +98,23 @@ assert(gd.choices.find(c => c.key === 'cls.rogue.skills').options.find(o => o.v 
 gx.background = 'Urchin'; gx.picks['cls.rogue.skills'] = ['Stealth', 'Insight', 'Deception', 'Acrobatics']; gd = R.derive(gx, {}); // Urchin gives Stealth
 assert(!gd.choices.find(c => c.key === 'cls.rogue.skills').picked.includes('Stealth') && gd.warnings.some(w => /Stealth was dropped/.test(w)));
 
+// 5th Spellbook import: a made-up backup in test/fixtures (placeholder text, no real characters)
+const SqliteFile = require('../js/sqlite-read.js'), I5 = require('../js/import-5e.js');
+const fx = fs.readFileSync(path.join(__dirname, 'fixtures/5th-spellbook-sample.sqlite'));
+const db5 = new SqliteFile(fx.buffer.slice(fx.byteOffset, fx.byteOffset + fx.length));
+assert.equal(db5.all('spell').length, 7); assert.equal(db5.all('spell')[0].description.length, 5900); // long rows span several pages
+const e5 = I5.read(db5); assert.equal(e5.length, 1); assert.equal(e5[0].name, 'Test Hero');
+const r5 = I5.toCharacter(e5[0], R, D), d5 = R.derive(r5.ch, {});
+assert.equal(r5.ch.lineage, 'dragonborn'); assert(/Brass/.test(r5.ch.picks['lin.pick0'][0]));
+assert.deepEqual(r5.ch.classes.map(c => c.cls + c.level + c.subclass), ['wizard3', 'warlock2warlock:the-genie']);
+assert(/Djinni/.test(r5.ch.picks['sc.warlock.variant'][0]));
+const wiz = d5.casters.find(s => s.clsId === 'wizard'), wl = d5.casters.find(s => s.clsId === 'warlock');
+assert.equal(d5.abilities.INT.mod, 3); assert.equal(d5.abilities.CHA.mod, 2);
+assert(wiz.cantrips.includes('Fire Bolt') && wiz.known.includes('Absorb Elements') && wiz.prepared.includes('Magic Missile') && !wiz.prepared.includes('Shield'));
+assert(wl.cantrips.includes('Eldritch Blast') && wl.known.includes('Hex'));
+assert(r5.skipped.some(s => s[0] === 'Cure Wounds') && /Cure Wounds/.test(r5.ch.notes.other));
+assert.throws(() => new SqliteFile(new TextEncoder().encode('not a database at all').buffer));
+
 // offline copy: every file the page loads must be in the service worker's list
 const sw = fs.readFileSync(path.join(__dirname, '../sw.js'), 'utf8');
 [...html.matchAll(/(?:src|href)="((?:data|js|css|icons)\/[^"]+)"/g)].forEach(m => assert(sw.includes("'" + m[1] + "'"), 'sw.js is missing ' + m[1]));

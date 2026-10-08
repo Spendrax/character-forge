@@ -10,6 +10,14 @@ A self-hosted D&D 5e character builder. Static site: no build step, no dependenc
 
 Characters are saved in the browser's localStorage. Use **Export** / **Import** (JSON) to back up or move them.
 
+### Import from 5th Spellbook
+
+**Import** also accepts a backup from the *5th Spellbook* Android app (the file its backup feature saves, for example to Google Drive).
+Pick the characters you want; each comes in with its race and subrace (dragon ancestry, tiefling bloodline…), classes with levels and subclasses (and variants such as the Genie's kind), and the spells of each class.
+The spellcasting ability is set from the modifier saved in the backup; other ability scores aren't in the backup and start at 10.
+Spells that aren't on that class's list in this app, or go past the class's limit, are written into the character's notes instead.
+The backup is read in the browser by `js/sqlite-read.js` (a small read-only SQLite reader), so nothing is uploaded anywhere.
+
 ### Install as an app
 
 On the GitHub Pages site, use **Install app** in the top bar (Chrome, Edge, Android), or the browser's own install / *Add to Home Screen* (Safari on iPhone and iPad: Share → Add to Home Screen).
@@ -63,6 +71,8 @@ spells known or prepared per class; Unarmored Defense only from whichever class 
     js/app.js         user interface
     js/avatar.js      pixel-art full figure and the shared look options
     js/portrait.js    pixel-art close-up portrait
+    js/sqlite-read.js read-only SQLite reader (for app backups)
+    js/import-5e.js   5th Spellbook backup → characters
     data/*.js         game data, plain scripts that fill window.DND
     data/items.js     magic item index and adventuring gear
     data/text-*.js    longer feature text and spell descriptions (optional: delete the two script tags to drop them)
