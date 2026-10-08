@@ -553,6 +553,12 @@
       if (hooks.unarmoredAC) cands.push([hooks.unarmoredAC + M('DEX'), 'Natural resilience']);
       if (L && L.naturalAC) cands.push([L.naturalAC + M('DEX'), 'Natural armor']);
       if (L && L.naturalACcon) cands.push([L.naturalACcon + M('CON'), 'Natural armor']);
+      // Mage Armor (the spell): 13 + Dex while wearing no armor; the best of these counts, they don't stack
+      if (ch.armor === 'spell:mage-armor') {
+        cands.push([13 + M('DEX'), 'Mage Armor']);
+        var knowsMA = Object.keys(ch.spells || {}).some(function (k) { var sp = ch.spells[k] || {}; return arr(sp.c).concat(arr(sp.k), arr(sp.p)).indexOf('Mage Armor') >= 0; });
+        if (!knowsMA) out.warnings.push('Mage Armor is on, but it is not among your spells. Fine if it comes from an item, a feat or another caster.');
+      }
       cands.sort(function (a, b) { return b[0] - a[0]; });
       ac = cands[0][0]; acNote = cands[0][1];
     }

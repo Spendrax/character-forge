@@ -132,6 +132,7 @@
     var g = { armor: 'none', armorName: '', shield: false, main: null, off: null, back: null, slots: {}, magic: [] };
     var a = D.armor.filter(function (x) { return x[0] === ch.armor; })[0];
     if (a) { g.armor = a[1].toLowerCase(); g.armorName = a[0]; }
+    if (ch.armor === 'spell:mage-armor') g.magic.push('#9fe0ff');
     var ca = !a && /^custom:/.test(ch.armor || '') ? (ch.customArmor || []).filter(function (x) { return 'custom:' + x.id === ch.armor; })[0] : null;
     if (ca && /^(Light|Medium|Heavy)$/.test(ca.kind)) { g.armor = ca.kind.toLowerCase(); g.armorName = ca.n || ''; }
     g.shield = !!ch.shield;

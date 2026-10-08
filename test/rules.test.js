@@ -168,6 +168,12 @@ const mb = owd.attacks.find(a => a.name === 'Moon blade');
 assert.equal(mb.hit, 3 + 2 + 1); assert.equal(mb.damage, '1d10 + 5 radiant'); // STR +3 (17 with human +1) + 2 bonus
 assert(owd.inv.weight >= 23);
 
+// Mage Armor: 13 + Dex with no armor, a shield still adds
+const ma = mk({ lineage: 'human', classes: [C('wizard', 1)], method: 'manual', base: { STR: 8, DEX: 15, CON: 12, INT: 16, WIS: 10, CHA: 10 }, armor: 'spell:mage-armor', spells: { wizard: { c: [], k: ['Mage Armor'], p: ['Mage Armor'] } } });
+let mad = R.derive(ma, {}); assert.equal(mad.ac, 13 + 3); assert(/Mage Armor/.test(mad.acNote)); assert(!mad.warnings.some(w => /Mage Armor/.test(w)));
+ma.shield = true; assert.equal(R.derive(ma, {}).ac, 18);
+ma.spells = {}; assert(R.derive(ma, {}).warnings.some(w => /Mage Armor is on/.test(w)));
+
 // offline copy: every file the page loads must be in the service worker's list
 const sw = fs.readFileSync(path.join(__dirname, '../sw.js'), 'utf8');
 [...html.matchAll(/(?:src|href)="((?:data|js|css|icons)\/[^"]+)"/g)].forEach(m => assert(sw.includes("'" + m[1] + "'"), 'sw.js is missing ' + m[1]));
