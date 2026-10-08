@@ -16,6 +16,7 @@ Characters are saved in the browser's localStorage. Use **Export** / **Import** 
 Pick the characters you want. Each one can come in as a **new character**, or **only update the spells** of a character you already made (picked automatically when the names match): then race, classes, ability scores, items, notes and picture stay as they are, and only the spells of the classes in the backup are replaced. A new character comes in with its race and subrace (dragon ancestry, tiefling bloodline…), classes with levels and subclasses (and variants such as the Genie's kind), and the spells of each class.
 The spellcasting ability is set from the modifier saved in the backup; other ability scores aren't in the backup and start at 10.
 Spells that aren't on that class's list in this app, or go past the class's limit, are written into the character's notes instead.
+On the **Spells** step, **Import spells from 5th Spellbook** does the same for the character you are editing only: pick the backup (and, if it has several characters, whose spells to use) and only that character's spells change.
 The backup is read in the browser by `js/sqlite-read.js` (a small read-only SQLite reader), so nothing is uploaded anywhere.
 
 ### Undo

@@ -208,3 +208,4 @@ canvas.avatar.figure.sheet-pic { width: 96px; height: 116px; }
 .imp-row .imp-main label { cursor: pointer; }
 .imp-row select { max-width: 100%; }
 .btn[disabled] { opacity: .45; cursor: default; } .btn[disabled]:hover { border-color: var(--line); }
+.spell-import { margin: .5rem 0 1rem; } .spell-import .panel { margin-top: .5rem; }

@@ -270,9 +270,51 @@
   function spellMeta(s) {
     return (s.level ? 'Level ' + s.level : 'Cantrip') + ' ' + s.school.toLowerCase() + ' · ' + s.time + ' · ' + s.range + ' · ' + s.duration + (s.ritual ? ' · ritual' : '');
   }
+  // "Import spells" on the Spells step: only ever changes the current character's spells.
+  function spellImportHtml() {
+    var I = ui.spellImport, done = ui.spellImportDone;
+    var bar = '<div class="spell-import noprint"><div class="toolbar">' + btn('importSpells', '⇩ Import spells from 5th Spellbook') +
+      '<span class="small muted">Only changes the spells of ' + esc(title(ch)) + '. Everything else stays.</span></div><input type="file" id="spellImportFile" hidden>';
+    if (ui.spellImportError) bar += '<p class="small" style="color:var(--warn)">' + esc(ui.spellImportError) + '</p>';
+    if (done) bar += '<div class="panel"><b>Spells imported from ' + esc(done.from) + '.</b> ' + done.added + ' spell' + (done.added === 1 ? '' : 's') + ' added' +
+      (done.skipped ? '; ' + done.skipped + ' didn\'t fit and are listed in Details → Other notes' : '') + '. Not right? Press Undo at the top. ' + btn('spellImportClose', 'OK', {}, 'btn tiny') + '</div>';
+    if (I) bar += '<div class="panel"><b>Whose spells?</b> <span class="muted">The backup has ' + I.entries.length + ' characters. Pick the one to take spells from.</span><div class="imp-list">' +
+      I.entries.map(function (e) {
+        var n = e.classes.reduce(function (t, c) { return t + c.spells.length; }, e.loose.length);
+        return '<label class="imp-row"><input type="radio" name="spellsFrom" data-spellsfrom="' + e.id + '"' + (I.choose === e.id ? ' checked' : '') + '><span><b>' + esc(e.name) + '</b><br><span class="small muted">' + esc(Import5e.summary(e)) + ' · ' + n + ' spells</span></span></label>';
+      }).join('') + '</div><div class="toolbar">' + btn('spellImportGo', 'Use these spells', {}, 'btn primary') + btn('spellImportCancel', 'Cancel') + '</div></div>';
+    return bar + '</div>';
+  }
+  function applySpellImport(entry) {
+    var u = Import5e.spellsInto(entry, ch, R, D), c2 = normalize(u.ch);
+    store.chars[store.chars.indexOf(ch)] = c2; store.current = c2.id;
+    ui.spellImport = null; ui.spellImportError = ''; ui.spellImportDone = { from: entry.name, added: u.added, skipped: u.skipped.length };
+  }
+  function loadSpellImport(input) {
+    var file = input.files && input.files[0];
+    input.value = '';
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      ui.spellImportError = ''; ui.spellImportDone = null; ui.spellImport = null;
+      try {
+        if (!window.SqliteFile || !SqliteFile.isSqlite(reader.result)) throw new Error('That file is not a 5th Spellbook backup.');
+        var entries = Import5e.read(new SqliteFile(reader.result));
+        if (!entries.length) throw new Error('That 5th Spellbook backup has no characters.');
+        var nm = function (x) { return String(x || '').trim().toLowerCase(); };
+        var same = entries.filter(function (e) { return nm(e.name) && nm(e.name) === nm(ch.name); });
+        if (entries.length === 1) applySpellImport(entries[0]);
+        else ui.spellImport = { entries: entries, choose: (same[0] || entries[0]).id, matched: same.length === 1 };
+      } catch (err) { ui.spellImportError = /5th Spellbook/.test(err.message) ? err.message : 'That file could not be read as a 5th Spellbook backup.'; window.console.error(err); }
+      render();
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
   function stepSpells() {
     var h = '<h2>Spells</h2>';
     if (!d.casters.length) return h + '<p class="notice">' + (d.cls ? 'This character has no spellcasting yet.' : 'Pick a class first.') + '</p>';
+    h += spellImportHtml();
     if (!d.casters.some(function (s) { return s.clsId === ui.casterTab; })) ui.casterTab = d.casters[0].clsId;
     h += slotsHtml();
     if (d.casterLevel) h += '<p class="small muted">Spell slots are shared: your classes add up to caster level ' + d.casterLevel + '. Each class still learns and prepares spells as if it were your only class.</p>';
@@ -599,7 +641,7 @@
 
   // ---------- actions ----------
   var actions = {
-    step: function (v) { ui.step = v; window.scrollTo(0, 0); },
+    step: function (v) { ui.step = v; ui.spellImport = null; ui.spellImportDone = null; ui.spellImportError = ''; window.scrollTo(0, 0); },
     'new': function () { var c = R.newChar(); store.chars.push(c); store.current = c.id; ui.step = 'lineage'; },
     dup: function () { var c = JSON.parse(JSON.stringify(ch)); c.id = R.uid(); c.name = title(ch) + ' (copy)'; store.chars.push(c); store.current = c.id; },
     askDelete: function () { ui.confirmDelete = true; },
@@ -709,6 +751,10 @@
     rmItem: function (v) { ch.items = ch.items.filter(function (i) { return i.id !== v; }); },
     eq: function (v, el) { ch.eq[el.getAttribute('data-i')] = +v; },
     look: function (v, el) { ch.look = ch.look || {}; ch.look[el.getAttribute('data-k')] = v; },
+    importSpells: function () { var f = document.getElementById('spellImportFile'); if (f) f.click(); return false; },
+    spellImportGo: function () { var I = ui.spellImport; if (!I) return false; var e = I.entries.filter(function (x) { return x.id === I.choose; })[0]; if (e) applySpellImport(e); },
+    spellImportCancel: function () { ui.spellImport = null; },
+    spellImportClose: function () { ui.spellImportDone = null; },
     undo: function () { return undo(); },
     redo: function () { return redo(); },
     pickPicture: function () { var f = document.getElementById('pictureFile'); if (f) f.click(); return false; },
@@ -787,9 +833,11 @@
     var t = e.target, a = function (n) { return t.getAttribute(n); };
     if (t.id === 'importFile') return importFile(t);
     if (t.id === 'pictureFile') return loadPicture(t);
+    if (t.id === 'spellImportFile') return loadSpellImport(t);
+    if (a('data-spellsfrom')) { if (ui.spellImport) ui.spellImport.choose = +a('data-spellsfrom'); return; }
     if (a('data-check') === 'pictureWhole') { ch.pictureFit = t.checked ? 'contain' : ''; return requestRender(); }
     if (a('data-text') || a('data-itemtext')) return requestRender();
-    if (a('data-ui')) { if (a('data-ui') === 'current') { store.current = t.value; ui.confirmDelete = false; } else ui[a('data-ui')] = t.value; }
+    if (a('data-ui')) { if (a('data-ui') === 'current') { store.current = t.value; ui.confirmDelete = false; ui.spellImport = null; ui.spellImportDone = null; } else ui[a('data-ui')] = t.value; }
     else if (a('data-filter')) store.filters[a('data-filter')] = t.checked;
     else if (a('data-imp5target')) { if (ui.import5e) { ui.import5e.target[a('data-imp5target')] = t.value; var idT = +a('data-imp5target'); if (ui.import5e.pick.indexOf(idT) < 0) ui.import5e.pick.push(idT); } }
     else if (a('data-imp5')) { var I5 = ui.import5e, id5 = +a('data-imp5'); if (I5) { I5.pick = I5.pick.filter(function (x) { return x !== id5; }); if (t.checked) I5.pick.push(id5); } }
