@@ -104,37 +104,7 @@
     });
     Object.keys(setAb).forEach(function (a) { ch.base[a] = setAb[a]; });
 
-    // spells, class by class; a spell filed under the wrong class goes to another class that has it on its list
-    d = R.derive(ch, {});
-    var skipped = [], added = 0, buckets = {};
-    var casters = d.casters.map(function (S) { var m = {}; S.list.forEach(function (s) { m[s.name] = 1; }); return { S: S, inList: m }; });
-    var bucket = function (id) { return buckets[id] = buckets[id] || { c: [], k: [], p: [] }; };
-    entry.classes.concat([{ clsId: null, spells: entry.loose, name: '' }]).forEach(function (c) {
-      if (!c.spells.length) return;
-      var label = (D.classes.filter(function (x) { return x.id === c.clsId; })[0] || { name: c.name || 'any class' }).name;
-      var own = casters.filter(function (x) { return x.S.clsId === c.clsId; });
-      var order = own.concat(casters.filter(function (x) { return x.S.clsId !== c.clsId; }));
-      c.spells.filter(function (s) { return s.prepared; }).concat(c.spells.filter(function (s) { return !s.prepared; })).forEach(function (s) {
-        var f = D.findSpell(s.name);
-        if (!f) { skipped.push([s.name, 'not in this app’s spell list']); return; }
-        if (casters.some(function (x) { return x.S.always.indexOf(f.name) >= 0; })) return; // already always prepared
-        var home = order.filter(function (x) { return x.inList[f.name]; })[0];
-        if (!home) { skipped.push([f.name, own.length ? 'not on the ' + label + ' list at this level' : label + ' has no spellcasting at this level']); return; }
-        var b = bucket(home.S.clsId);
-        if (f.level === 0) { if (b.c.indexOf(f.name) < 0) b.c.push(f.name); }
-        else if (b.k.indexOf(f.name) < 0) { b.k.push(f.name); if (s.prepared) b.p.push(f.name); }
-      });
-    });
-    casters.forEach(function (x) { var b = buckets[x.S.clsId]; if (b) ch.spells[x.S.clsId] = { c: b.c, k: b.k, p: x.S.mode === 'spellbook' ? b.p : [] }; });
-    // what the limits kept
-    d = R.derive(ch, {});
-    entry.classes.forEach(function (c) {
-      var S = d.casters.filter(function (s) { return s.clsId === c.clsId; })[0], sp = ch.spells[c.clsId];
-      if (!S || !sp) return;
-      var kept = S.cantrips.concat(S.known);
-      added += kept.length;
-      sp.c.concat(sp.k).forEach(function (n) { if (kept.indexOf(n) < 0) skipped.push([n, 'over the ' + S.name + ' limit (' + (D.findSpell(n).level ? S.knownMax + ' spells' : S.cantripsMax + ' cantrips') + ')']); });
-    });
+    var placed = placeSpells(entry, ch, R, D), skipped = placed.skipped, added = placed.added;
     var lines = ['Imported from 5th Spellbook' + (entry.race ? ' (' + entry.race + (entry.subrace ? ', ' + entry.subrace : '') + ')' : '') + '.'];
     if (Object.keys(setAb).length) lines.push('Spellcasting ability set from the backup; other ability scores were not in the backup and start at 10.');
     else lines.push('Ability scores were not in the backup and start at 10.');
@@ -144,10 +114,64 @@
     return { ch: ch, added: added, skipped: skipped, notes: notes, lineageFound: !!lin };
   }
 
+  // Put the backup's spells on a character, class by class. A spell filed under the wrong class goes to
+  // another of the character's classes that has it on its list. Classes that get no spells keep theirs.
+  function placeSpells(entry, ch, R, D) {
+    entry.classes.forEach(function (c) { if (!c.clsId) { var k = D.classes.filter(function (x) { return norm(x.name) === norm(c.name); })[0]; c.clsId = k ? k.id : ''; } });
+    var d = R.derive(ch, {});
+    var skipped = [], added = 0, buckets = {};
+    var casters = d.casters.map(function (S) { var m = {}; S.list.forEach(function (s) { m[s.name] = 1; }); return { S: S, inList: m }; });
+    var bucket = function (id) { return buckets[id] = buckets[id] || { c: [], k: [], p: [] }; };
+    entry.classes.concat([{ clsId: null, spells: entry.loose, name: '' }]).forEach(function (c) {
+      if (!c.spells.length) return;
+      var label = (D.classes.filter(function (x) { return x.id === c.clsId; })[0] || { name: c.name || 'any class' }).name;
+      var has = !c.clsId || (ch.classes || []).some(function (e) { return e.cls === c.clsId; });
+      var own = casters.filter(function (x) { return x.S.clsId === c.clsId; });
+      var order = own.concat(casters.filter(function (x) { return x.S.clsId !== c.clsId; }));
+      c.spells.filter(function (s) { return s.prepared; }).concat(c.spells.filter(function (s) { return !s.prepared; })).forEach(function (s) {
+        var f = D.findSpell(s.name);
+        if (!f) { skipped.push([s.name, 'not in this app’s spell list']); return; }
+        if (casters.some(function (x) { return x.S.always.indexOf(f.name) >= 0; })) return; // already always prepared
+        var home = order.filter(function (x) { return x.inList[f.name]; })[0];
+        if (!home) { skipped.push([f.name, !has ? label + ' is not one of this character’s classes' : own.length ? 'not on the ' + label + ' list at this level' : label + ' has no spellcasting at this level']); return; }
+        var b = bucket(home.S.clsId);
+        if (f.level === 0) { if (b.c.indexOf(f.name) < 0) b.c.push(f.name); }
+        else if (b.k.indexOf(f.name) < 0) { b.k.push(f.name); if (s.prepared) b.p.push(f.name); }
+      });
+    });
+    ch.spells = ch.spells || {};
+    casters.forEach(function (x) { var b = buckets[x.S.clsId]; if (b) ch.spells[x.S.clsId] = { c: b.c, k: b.k, p: x.S.mode === 'spellbook' ? b.p : [] }; });
+    // what the limits kept
+    d = R.derive(ch, {});
+    d.casters.forEach(function (S) {
+      var sp = buckets[S.clsId] && ch.spells[S.clsId];
+      if (!sp) return;
+      var kept = S.cantrips.concat(S.known);
+      added += kept.length;
+      sp.c.concat(sp.k).forEach(function (n) { if (kept.indexOf(n) < 0) skipped.push([n, 'over the ' + S.name + ' limit (' + (D.findSpell(n).level ? S.knownMax + ' spells' : S.cantripsMax + ' cantrips') + ')']); });
+    });
+    return { added: added, skipped: skipped, classes: Object.keys(buckets) };
+  }
+
+  // Only the spells: everything else on the existing character stays as it is.
+  function spellsInto(entry, existing, R, D) {
+    var ch = JSON.parse(JSON.stringify(existing));
+    var r = placeSpells(entry, ch, R, D);
+    var stamp = 'Spells imported from 5th Spellbook (' + entry.name + ').';
+    var add = [stamp];
+    if (r.skipped.length) add.push('Spells not added: ' + r.skipped.map(function (s) { return s[0] + ' (' + s[1] + ')'; }).join('; ') + '.');
+    ch.notes = ch.notes || {};
+    var other = String(ch.notes.other || '');
+    var at = other.indexOf(stamp); // re-importing replaces the previous import note instead of piling up
+    if (at >= 0) { var end = other.indexOf('\n\n', at); other = (other.slice(0, at) + (end >= 0 ? other.slice(end + 2) : '')).replace(/\s+$/, ''); }
+    ch.notes.other = (other ? other + '\n\n' : '') + add.join('\n');
+    return { ch: ch, added: r.added, skipped: r.skipped };
+  }
+
   function summary(entry) {
     return [entry.race + (entry.subrace ? ' (' + entry.subrace + ')' : ''), entry.classes.map(function (c) { return c.name + ' ' + c.level + (c.sub ? ' — ' + c.sub : ''); }).join(' / ')].filter(Boolean).join(' · ');
   }
 
-  root.Import5e = { read: read, toCharacter: toCharacter, summary: summary, _findSubclass: findSubclass, _findLineage: findLineage };
+  root.Import5e = { read: read, toCharacter: toCharacter, spellsInto: spellsInto, placeSpells: placeSpells, summary: summary, _findSubclass: findSubclass, _findLineage: findLineage };
   if (typeof module !== 'undefined') module.exports = root.Import5e;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -13,10 +13,14 @@ Characters are saved in the browser's localStorage. Use **Export** / **Import** 
 ### Import from 5th Spellbook
 
 **Import** also accepts a backup from the *5th Spellbook* Android app (the file its backup feature saves, for example to Google Drive).
-Pick the characters you want; each comes in with its race and subrace (dragon ancestry, tiefling bloodline…), classes with levels and subclasses (and variants such as the Genie's kind), and the spells of each class.
+Pick the characters you want. Each one can come in as a **new character**, or **only update the spells** of a character you already made (picked automatically when the names match): then race, classes, ability scores, items, notes and picture stay as they are, and only the spells of the classes in the backup are replaced. A new character comes in with its race and subrace (dragon ancestry, tiefling bloodline…), classes with levels and subclasses (and variants such as the Genie's kind), and the spells of each class.
 The spellcasting ability is set from the modifier saved in the backup; other ability scores aren't in the backup and start at 10.
 Spells that aren't on that class's list in this app, or go past the class's limit, are written into the character's notes instead.
 The backup is read in the browser by `js/sqlite-read.js` (a small read-only SQLite reader), so nothing is uploaded anywhere.
+
+### Undo
+
+**Undo** and **Redo** in the top bar (or Ctrl+Z and Ctrl+Y / Ctrl+Shift+Z outside text boxes) step back and forward through the last 40 changes, including imports and deleting a character. The history lasts until the page is closed.
 
 ### Install as an app
 

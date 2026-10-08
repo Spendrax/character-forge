@@ -111,6 +111,16 @@ assert.equal(d5.abilities.INT.mod, 3); assert.equal(d5.abilities.CHA.mod, 2);
 assert(wiz.cantrips.includes('Fire Bolt') && wiz.known.includes('Absorb Elements') && wiz.prepared.includes('Magic Missile') && !wiz.prepared.includes('Shield'));
 assert(wl.cantrips.includes('Eldritch Blast') && wl.known.includes('Hex'));
 assert(r5.skipped.some(s => s[0] === 'Cure Wounds') && /Cure Wounds/.test(r5.ch.notes.other));
+// spells only: an existing character keeps everything but the spells of the classes in the backup
+const mine = mk({ name: 'Test Hero', lineage: 'elf', classes: [C('wizard', 3), C('fighter', 2)], background: 'Sage', method: 'manual', base: { STR: 8, DEX: 14, CON: 12, INT: 17, WIS: 10, CHA: 10 }, armor: 'Leather', notes: Object.assign(R.newChar().notes, { backstory: 'mine', other: 'old note' }), spells: { wizard: { c: ['Light'], k: ['Sleep'], p: [] } } });
+const up = I5.spellsInto(I5.read(db5)[0], mine, R, D).ch;
+assert.equal(up.lineage, 'elf'); assert.equal(up.background, 'Sage'); assert.equal(up.base.INT, 17); assert.equal(up.armor, 'Leather'); assert.equal(up.notes.backstory, 'mine');
+assert.deepEqual(up.classes.map(c => c.cls), ['wizard', 'fighter']);
+assert(up.spells.wizard.k.includes('Magic Missile') && !up.spells.wizard.k.includes('Sleep'));
+assert(/^old note\n\nSpells imported/.test(up.notes.other) && /Warlock is not one of this character/.test(up.notes.other));
+assert.equal(mine.spells.wizard.k[0], 'Sleep'); // the original object is untouched
+const again = I5.spellsInto(I5.read(db5)[0], up, R, D).ch; // re-importing replaces the old import note
+assert.equal(again.notes.other.split('Spells imported from 5th Spellbook').length, 2);
 assert.throws(() => new SqliteFile(new TextEncoder().encode('not a database at all').buffer));
 
 // offline copy: every file the page loads must be in the service worker's list

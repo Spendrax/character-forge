@@ -204,3 +204,7 @@ canvas.avatar.figure.sheet-pic { width: 96px; height: 116px; }
 .check-line { display: flex; gap: .5rem; align-items: center; margin: .6rem 0; }
 @media (max-width: 640px) { .pic-wrap { grid-template-columns: 1fr; } .pic-frame { width: 100%; max-width: 320px; } }
 @media print { .char-pic { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+.imp-row .imp-main { flex: 1; display: grid; gap: .35rem; }
+.imp-row .imp-main label { cursor: pointer; }
+.imp-row select { max-width: 100%; }
+.btn[disabled] { opacity: .45; cursor: default; } .btn[disabled]:hover { border-color: var(--line); }

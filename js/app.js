@@ -21,9 +21,30 @@
     if (!byId(store.current)) store.current = store.chars[0].id;
   }
   var saveTimer;
+  // Undo / redo: every saved change keeps a copy of the characters as they were just before.
+  var undoStack = [], redoStack = [], lastSnap = null, UNDO_MAX = 40;
+  function snapshot() { return JSON.stringify({ chars: store.chars, current: store.current }); }
+  function remember() {
+    var now = snapshot();
+    if (lastSnap !== null && now !== lastSnap) { undoStack.push(lastSnap); if (undoStack.length > UNDO_MAX) undoStack.shift(); redoStack = []; }
+    lastSnap = now;
+  }
+  function restore(snap) {
+    var o = JSON.parse(snap);
+    store.chars = o.chars.map(normalize); store.current = byId(o.current) ? o.current : store.chars[0].id;
+    lastSnap = snapshot(); ui.confirmDelete = false; ui.import5e = null; ui.import5eDone = null;
+  }
+  function undo() { if (!undoStack.length) return false; flushTyping(); redoStack.push(snapshot()); restore(undoStack.pop()); }
+  function redo() { if (!redoStack.length) return false; flushTyping(); undoStack.push(snapshot()); restore(redoStack.pop()); }
+  function flushTyping() { if (saveTimer) { clearTimeout(saveTimer); remember(); } }
   function saveNow() {
-    clearTimeout(saveTimer);
+    clearTimeout(saveTimer); saveTimer = null;
+    remember(); syncUndoButtons();
     try { window.localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { /* storage unavailable */ }
+  }
+  function syncUndoButtons() {
+    var u = document.querySelector('[data-act="undo"]'), r = document.querySelector('[data-act="redo"]');
+    if (u) u.disabled = !undoStack.length; if (r) r.disabled = !redoStack.length;
   }
   function save() { clearTimeout(saveTimer); saveTimer = setTimeout(saveNow, 300); } // typing: batch the writes
   window.addEventListener('pagehide', saveNow);
@@ -544,6 +565,8 @@
 
   // ---------- frame ----------
   function render() {
+    if (!byId(store.current) && store.chars.length) store.current = store.chars[0].id;
+    remember(); // record the change about to be drawn, so Undo is ready at once
     ch = byId(store.current);
     d = R.derive(ch, store.filters);
     var active = document.activeElement, fid = active && active.id, pos = null;
@@ -551,7 +574,7 @@
     var body = { lineage: stepLineage, 'class': stepClass, abilities: stepAbilities, background: stepBackground, spells: stepSpells, equipment: stepEquipment, items: stepItems, appearance: stepAppearance, details: stepDetails, sheet: stepSheet }[ui.step]();
     var top = '<header class="top"><span class="brand">Character Forge</span><select data-ui="current" aria-label="Character">' + store.chars.map(function (c) {
       return '<option value="' + c.id + '"' + (c.id === ch.id ? ' selected' : '') + '>' + esc(title(c)) + '</option>';
-    }).join('') + '</select>' + btn('new', 'New') + btn('dup', 'Duplicate') + btn('import', 'Import') + btn('export', 'Export') +
+    }).join('') + '</select>' + '<button type="button" class="btn" data-act="undo" title="Undo (Ctrl+Z)"' + (undoStack.length ? '' : ' disabled') + '>↶ Undo</button><button type="button" class="btn" data-act="redo" title="Redo (Ctrl+Y)"' + (redoStack.length ? '' : ' disabled') + '>↷ Redo</button>' + btn('new', 'New') + btn('dup', 'Duplicate') + btn('import', 'Import') + btn('export', 'Export') +
       (ui.confirmDelete ? btn('delete', 'Really delete?', {}, 'btn primary') + btn('cancelDelete', 'Cancel') : btn('askDelete', 'Delete', {}, 'btn danger')) +
       (ui.importError ? '<span class="count" style="color:var(--warn)">' + esc(ui.importError === true ? 'That file is not a Character Forge export or a 5th Spellbook backup.' : ui.importError) + '</span>' : '') + (isInstalledApp() ? '' : btn('install', 'Install app', {}, installPrompt ? 'btn primary' : 'btn')) + '<span class="spacer"></span><span class="filters"><b>Sources:</b>' + TAGS.map(function (t) {
         return '<label><input type="checkbox" data-filter="' + t[0] + '"' + (store.filters[t[0]] !== false ? ' checked' : '') + '> ' + t[1] + '</label>';
@@ -605,11 +628,18 @@
       var I = ui.import5e; if (!I || !I.pick.length) return false;
       var done = [], first = null;
       I.entries.filter(function (e) { return I.pick.indexOf(e.id) >= 0; }).forEach(function (e) {
-        var r = Import5e.toCharacter(e, R, D), c = normalize(r.ch); c.id = R.uid();
-        store.chars.push(c); if (!first) first = c.id;
-        done.push({ name: c.name, added: r.added, skipped: r.skipped.length });
+        var tg = I.target[e.id] || 'new', old = tg !== 'new' && byId(tg);
+        if (old) {
+          var u = Import5e.spellsInto(e, old, R, D), c2 = normalize(u.ch);
+          store.chars[store.chars.indexOf(old)] = c2; if (!first) first = c2.id;
+          done.push({ name: title(c2), added: u.added, skipped: u.skipped.length, update: true });
+        } else {
+          var r = Import5e.toCharacter(e, R, D), c = normalize(r.ch); c.id = R.uid();
+          store.chars.push(c); if (!first) first = c.id;
+          done.push({ name: c.name, added: r.added, skipped: r.skipped.length });
+        }
       });
-      store.current = first; ui.step = 'sheet'; ui.import5e = null; ui.import5eDone = done; window.scrollTo(0, 0);
+      store.current = first; ui.step = done.length === 1 && done[0].update ? 'spells' : 'sheet'; ui.import5e = null; ui.import5eDone = done; window.scrollTo(0, 0);
     },
     lineage: function (v) {
       var l = R.lineage(v); ch.lineage = v; ch.sub = 0; clearPicks('lin'); ch.version = 0;
@@ -679,6 +709,8 @@
     rmItem: function (v) { ch.items = ch.items.filter(function (i) { return i.id !== v; }); },
     eq: function (v, el) { ch.eq[el.getAttribute('data-i')] = +v; },
     look: function (v, el) { ch.look = ch.look || {}; ch.look[el.getAttribute('data-k')] = v; },
+    undo: function () { return undo(); },
+    redo: function () { return redo(); },
     pickPicture: function () { var f = document.getElementById('pictureFile'); if (f) f.click(); return false; },
     removePicture: function () { delete ch.picture; delete ch.pictureFit; ui.pictureError = ''; },
     lookRandom: function () { ch.look = Object.assign({ hidden: (ch.look || {}).hidden || {} }, Avatar.random()); },
@@ -688,6 +720,16 @@
 
   // Editing a field and then clicking a button fires "change" in the middle of the click. Redrawing right
   // then would replace the button under the pointer and swallow the click, so the redraw waits for it.
+  document.addEventListener('keydown', function (e) {
+    if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+    var t = e.target, typing = t && (t.tagName === 'TEXTAREA' || (t.tagName === 'INPUT' && /^(text|search|number|email|url)$/.test(t.type)) || t.isContentEditable);
+    if (typing) return;
+    var k = e.key.toLowerCase(), r = null;
+    if (k === 'z' && !e.shiftKey) r = undo(); else if (k === 'y' || (k === 'z' && e.shiftKey)) r = redo(); else return;
+    e.preventDefault();
+    if (r !== false) render();
+  });
+
   // The browser offers installing the site as an app; show our own button for it in the top bar.
   var installPrompt = null;
   function isInstalledApp() {
@@ -749,6 +791,7 @@
     if (a('data-text') || a('data-itemtext')) return requestRender();
     if (a('data-ui')) { if (a('data-ui') === 'current') { store.current = t.value; ui.confirmDelete = false; } else ui[a('data-ui')] = t.value; }
     else if (a('data-filter')) store.filters[a('data-filter')] = t.checked;
+    else if (a('data-imp5target')) { if (ui.import5e) { ui.import5e.target[a('data-imp5target')] = t.value; var idT = +a('data-imp5target'); if (ui.import5e.pick.indexOf(idT) < 0) ui.import5e.pick.push(idT); } }
     else if (a('data-imp5')) { var I5 = ui.import5e, id5 = +a('data-imp5'); if (I5) { I5.pick = I5.pick.filter(function (x) { return x !== id5; }); if (t.checked) I5.pick.push(id5); } }
     else if (a('data-look')) { ch.look = ch.look || {}; ch.look[a('data-look')] = t.value; }
     else if (a('data-lookcolor')) { ch.look = ch.look || {}; ch.look[a('data-lookcolor')] = t.value; }
@@ -788,7 +831,11 @@
         if (window.SqliteFile && SqliteFile.isSqlite(buf)) {
           var entries = Import5e.read(new SqliteFile(buf));
           if (!entries.length) throw new Error('That 5th Spellbook backup has no characters.');
-          ui.import5e = { entries: entries, pick: entries.map(function (e) { return e.id; }) }; ui.import5eDone = null;
+          var nm = function (x) { return String(x || '').trim().toLowerCase(); }, target = {};
+          entries.forEach(function (e) { var same = store.chars.filter(function (c) { return nm(c.name) && nm(c.name) === nm(e.name); })[0]; target[e.id] = same ? same.id : 'new'; });
+          var anyMatch = entries.some(function (e) { return target[e.id] !== 'new'; });
+          // with a matching character, start with just those ticked: the rest are probably not wanted again
+          ui.import5e = { entries: entries, target: target, pick: entries.filter(function (e) { return !anyMatch || target[e.id] !== 'new'; }).map(function (e) { return e.id; }) }; ui.import5eDone = null;
         } else {
           var o = JSON.parse(new TextDecoder('utf-8').decode(buf)), list = Array.isArray(o) ? o : (o && Array.isArray(o.chars) ? o.chars : [o]);
           list.forEach(function (c) { if (!c || typeof c !== 'object' || !(('classes' in c) || ('level' in c)) || !c.base) throw new Error('not a character'); c = normalize(c); c.id = R.uid(); store.chars.push(c); store.current = c.id; });
@@ -804,13 +851,17 @@
   function import5eHtml() {
     var I = ui.import5e, done = ui.import5eDone;
     if (done) return '<div class="panel import5e noprint"><h3>Imported from 5th Spellbook</h3><ul>' + done.map(function (r) {
-      return '<li><b>' + esc(r.name) + '</b> — ' + r.added + ' spell' + (r.added === 1 ? '' : 's') + ' added' + (r.skipped ? ', ' + r.skipped + ' listed in Details → Other notes instead' : '') + '</li>';
-    }).join('') + '</ul><p class="small muted">Ability scores other than the spellcasting one weren\'t in the backup, so they start at 10. Each character\'s step badges show what is still open (skills, background, equipment…).</p>' + btn('import5eClose', 'Close', {}, 'btn primary') + '</div>';
+      return '<li><b>' + esc(r.name) + '</b> — ' + (r.update ? 'spells updated, everything else kept: ' : 'new character, ') + r.added + ' spell' + (r.added === 1 ? '' : 's') + ' added' + (r.skipped ? ', ' + r.skipped + ' listed in Details → Other notes instead' : '') + '</li>';
+    }).join('') + '</ul>' + (done.some(function (r) { return !r.update; }) ? '<p class="small muted">New characters: ability scores other than the spellcasting one weren\'t in the backup, so they start at 10. Step badges show what is still open (skills, background, equipment…).</p>' : '') + '<p class="small muted">Changed your mind? Press Undo at the top.</p>' + btn('import5eClose', 'Close', {}, 'btn primary') + '</div>';
     if (!I) return '';
-    return '<div class="panel import5e noprint" role="dialog" aria-label="Import from 5th Spellbook"><h3>Import from 5th Spellbook</h3><p class="muted">Found ' + I.entries.length + ' character' + (I.entries.length === 1 ? '' : 's') + '. Each one comes in with its race, classes and levels, subclasses and spells.</p><div class="look-items">' +
+    return '<div class="panel import5e noprint" role="dialog" aria-label="Import from 5th Spellbook"><h3>Import from 5th Spellbook</h3><p class="muted">Found ' + I.entries.length + ' character' + (I.entries.length === 1 ? '' : 's') + '. A new character comes in with its race, classes and levels, subclasses and spells. To keep a character you already made and only bring in its spells, choose “Only update the spells of” it.</p><div class="look-items">' +
       I.entries.map(function (e) {
         var n = e.classes.reduce(function (t, c) { return t + c.spells.length; }, e.loose.length);
-        return '<label class="imp-row"><input type="checkbox" data-imp5="' + e.id + '"' + (I.pick.indexOf(e.id) >= 0 ? ' checked' : '') + '><span><b>' + esc(e.name) + '</b><br><span class="small muted">' + esc(Import5e.summary(e)) + ' · ' + n + ' spells</span></span></label>';
+        var tg = I.target[e.id] || 'new';
+        return '<div class="imp-row"><input type="checkbox" id="imp5-' + e.id + '" data-imp5="' + e.id + '"' + (I.pick.indexOf(e.id) >= 0 ? ' checked' : '') + '><div class="imp-main"><label for="imp5-' + e.id + '"><b>' + esc(e.name) + '</b><br><span class="small muted">' + esc(Import5e.summary(e)) + ' · ' + n + ' spells</span></label>' +
+          '<select data-imp5target="' + e.id + '" aria-label="Where to import ' + esc(e.name) + '"><option value="new"' + (tg === 'new' ? ' selected' : '') + '>Add as a new character</option>' +
+          store.chars.map(function (c) { return '<option value="' + c.id + '"' + (tg === c.id ? ' selected' : '') + '>Only update the spells of: ' + esc(title(c)) + '</option>'; }).join('') + '</select>' +
+          (tg !== 'new' ? '<div class="small muted">Keeps everything else on ' + esc(title(byId(tg) || {})) + ' as it is: race, classes, abilities, items, notes, picture.</div>' : '') + '</div></div>';
       }).join('') + '</div><div class="toolbar">' + btn('import5eGo', 'Import ' + I.pick.length + ' character' + (I.pick.length === 1 ? '' : 's'), {}, 'btn primary') + btn('import5eAll', I.pick.length === I.entries.length ? 'Select none' : 'Select all') + btn('import5eClose', 'Cancel') + '</div></div>';
   }
 
