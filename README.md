@@ -41,7 +41,7 @@ and the import opens by itself (the file is handed over through the service work
 
 ### Limits and extras
 
-Details → **Limits and extras**, per character: switch off spell limits (any number of spells, from any class list and level), the ability score maximum of 20 (up to 30),
+Details → **Limits and extras**, per character: switch off the spell maximum (add as many spells as you like, still from your own class lists), the ability score maximum of 20 (up to 30),
 and the worked-out hit points (set your own maximum). Attunement is never blocked: going past the usual limit only shows a reminder. add extra bonuses (each ability score, AC, hit points, speed, initiative,
 passive Perception, spell save DC and attack) and extra proficiencies (skills with expertise, saving throws, languages, tools, armour, weapons).
 

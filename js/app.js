@@ -369,15 +369,14 @@
     var S = d.casters.filter(function (s) { return s.clsId === ui.casterTab; })[0];
     var noun = S.mode === 'known' ? 'Spells known' : S.mode === 'prepared' ? 'Prepared spells' : 'Spellbook';
     var of = function (n, max, rule) { return n + (S.unlimited ? (rule != null ? ' <small class="muted">(rules: ' + rule + ')</small>' : '') : ' / ' + max); };
-    h += '<label class="check-line limit-toggle"><input type="checkbox" data-free="spells"' + (ch.free && ch.free.spells ? ' checked' : '') + '> No spell limits: pick any number of spells, from any class list (for spells gained from feats, items, boons or house rules)</label>';
+    h += '<label class="check-line limit-toggle"><input type="checkbox" data-free="spells"' + (ch.free && ch.free.spells ? ' checked' : '') + '> No spell maximum: add as many spells from the ' + esc(S.name) + ' list as you like (for extra spells from feats, items, boons or house rules)</label>';
     h += '<div class="facts"><span><b>' + esc(S.name) + '</b></span><span><b>Ability</b> ' + D.abilityNames[S.ability] + '</span><span><b>Save DC</b> ' + S.dc + '</span><span><b>Spell attack</b> ' + R.fmt(S.atk) + '</span>' +
       (S.cantripsMax ? '<span><b>Cantrips</b> ' + of(S.cantrips.length, S.cantripsMax, S.limits && S.limits.cantrips) + '</span>' : '') + '<span><b>' + noun + '</b> ' + of(S.known.length, S.knownMax, S.limits && S.limits.known) + '</span>' +
       (S.mode === 'spellbook' ? '<span><b>Prepared</b> ' + of(S.prepared.length, S.preparedMax, S.limits && S.limits.prepared) + '</span>' : '') + '<span><b>Highest spell level</b> ' + S.maxLevel + '</span></div>';
-    if (S.unlimited) h += '<p class="small muted">Spell limits are off for this character: every spell is listed, including other classes\' spells and levels above your slots. Spells not on the ' + esc(S.name) + ' list are marked “other list”.</p>';
+    if (S.unlimited) h += '<p class="small muted">No spell maximum for this character: the usual numbers are shown in brackets, but you can add more.</p>';
     if (S.note) h += '<p class="small muted">' + esc(S.note) + '</p>';
     if (S.always.length) h += '<p><b>Always prepared:</b> ' + S.always.map(spellLink).join(', ') + '</p>';
-    var levels = []; for (var i = S.cantripsMax ? 0 : 1; i <= (S.unlimited ? 9 : S.maxLevel); i++) levels.push(i);
-    var onClass = {}; (S.classList || S.list).forEach(function (x) { onClass[x.name] = 1; });
+    var levels = []; for (var i = S.cantripsMax ? 0 : 1; i <= S.maxLevel; i++) levels.push(i);
     if (levels.indexOf(ui.spellLevel) < 0) ui.spellLevel = levels[0];
     var q = ui.q.spells || '';
     h += '<div class="toolbar"><div class="pills">' + levels.map(function (l) {
@@ -392,7 +391,7 @@
       return '<div class="spell' + (on || auto ? ' on' : '') + '">' +
         (auto ? '<span class="small muted" style="width:1.5rem">auto</span>' : '<button type="button" class="check' + (on ? ' on' : '') + '" aria-label="' + (on ? 'Remove ' : 'Add ') + esc(s.name) + '" data-act="spell" data-c="' + S.clsId + '" data-b="' + bucket + '" data-v="' + esc(s.name) + '">' + (on ? '✓' : '') + '</button>') +
         (book ? (on && s.level ? '<button type="button" class="check' + (prep ? ' on' : '') + '" title="Prepared" aria-label="Prepare ' + esc(s.name) + '" data-act="spell" data-c="' + S.clsId + '" data-b="p" data-v="' + esc(s.name) + '">' + (prep ? '★' : '☆') + '</button>' : '<span style="width:1.5rem"></span>') : '') +
-        '<div><b>' + spellLink(s.name) + '</b>' + (s.conc ? ' <span class="tag">conc</span>' : '') + tag(s.tag) + (S.unlimited && !onClass[s.name] ? ' <span class="tag">other list</span>' : '') + ' <span class="small muted">' + esc(spellMeta(s)) + ' · ' + esc(s.comp) + '</span>' +
+        '<div><b>' + spellLink(s.name) + '</b>' + (s.conc ? ' <span class="tag">conc</span>' : '') + tag(s.tag) +  ' <span class="small muted">' + esc(spellMeta(s)) + ' · ' + esc(s.comp) + '</span>' +
         (text ? '<div class="small">' + esc(text) + '</div>' : '') + '</div></div>';
     }).join('') + '</div>' + (rows.length ? '' : '<p class="muted">No spells match.</p>');
     return h + '<p class="small muted">' + (book ? '✓ in your spellbook · ★ prepared. ' : '') + 'Spell names link to the full text on the wiki.</p>';
@@ -611,7 +610,7 @@
     var xs = X.skills || {}, saves = X.saves || [];
     return '<h3 style="margin-top:2rem">Limits and extras</h3><p class="muted">For anything your character has beyond the normal rules: a magic item, a blessing, a boon, a house rule. Everything here is for ' + esc(title(ch)) + ' only.</p>' +
       '<div class="panel"><h4>Limits</h4>' +
-      tog('spells', 'No spell limits', 'Pick any number of cantrips and spells, from any class list and any level.') +
+      tog('spells', 'No spell maximum', 'Add as many cantrips and spells as you like, still from your own class lists.') +
       tog('abilityCap', 'Ability scores can go above 20', 'Up to 30, for items, boons or epic play.') +
       '<label class="check-line"><input type="checkbox" data-hpmanual="1"' + (manualHp ? ' checked' : '') + '> <span><b>Set my own hit point maximum</b><br><span class="small muted">Instead of the one worked out from class and Constitution (' + d.hpAvg + ' on average).</span></span></label>' +
       (manualHp ? '<label class="field extra-num" style="margin-left:1.8rem"><span>Hit point maximum</span><input type="number" min="1" data-num="hpManual" value="' + (ch.hpManual || d.hpAvg) + '"></label>' : '') +

@@ -146,12 +146,13 @@ const cu = I5.spellsInto(ce, mk({ name: 'Other', classes: [C('cleric', 4, 'cleri
 assert.equal(cu.background, 'Acolyte'); assert.equal(cu.classes[0].subclass, 'cleric:life'); assert(cu.spells.cleric.c.includes('Guidance') && !cu.spells.cleric.k.includes('Bless')); // Bless is already a Life Domain spell assert(/from 5e Companion/.test(cu.notes.other));
 
 // limits switched off, and extras
-const fr = mk({ lineage: 'human', classes: [C('wizard', 1)], method: 'manual', base: { STR: 20, DEX: 10, CON: 10, INT: 16, WIS: 10, CHA: 10 }, spells: { wizard: { c: [], k: ['Magic Missile', 'Shield', 'Sleep', 'Cure Wounds', 'Bless', 'Hex', 'Fireball'], p: [] } } });
+const wiz1 = ['Magic Missile', 'Shield', 'Sleep', 'Burning Hands', 'Charm Person', 'Detect Magic', 'Feather Fall', 'Mage Armor'];
+const fr = mk({ lineage: 'human', classes: [C('wizard', 1)], method: 'manual', base: { STR: 20, DEX: 10, CON: 10, INT: 16, WIS: 10, CHA: 10 }, spells: { wizard: { c: [], k: wiz1.concat(['Cure Wounds', 'Fireball']), p: [] } } });
 let fd = R.derive(fr, {});
-assert.equal(fd.abilities.STR.total, 20); assert.equal(fd.casters[0].known.length, 3); // the others are not level-1 wizard spells
+assert.equal(fd.abilities.STR.total, 20); assert.equal(fd.casters[0].known.length, 6); // a level-1 spellbook holds 6
 fr.free = { spells: true, abilityCap: true }; fr.extra = { STR: 3, ac: 1, hp: 5, speed: 10, init: 2, passive: 1, spellDC: 1, spellAtk: 1, skills: { Stealth: 'exp', Arcana: 'prof' }, saves: ['DEX'], languages: 'Sylvan, Thieves\' Cant' };
 const fd2 = R.derive(fr, {});
-assert.equal(fd2.abilities.STR.total, 24); assert.equal(fd2.casters[0].known.length, 7); assert(fd2.casters[0].unlimited && fd2.casters[0].missing === 0);
+assert.equal(fd2.abilities.STR.total, 24); assert.deepEqual(fd2.casters[0].known, wiz1); assert(fd2.casters[0].unlimited && fd2.casters[0].missing === 0); // no maximum, but still only wizard spells of a level you can cast
 assert.equal(fd2.ac, fd.ac + 1); assert.equal(fd2.hp, fd.hp + 5); assert.equal(fd2.speed, fd.speed + 10); assert.equal(fd2.casters[0].dc, fd.casters[0].dc + 1);
 assert(fd2.skills.Stealth.expertise && fd2.skills.Arcana.prof && fd2.saves.DEX.prof && fd2.prof.languages.includes('Sylvan'));
 fr.hpMode = 'manual'; fr.hpManual = 99; assert.equal(R.derive(fr, {}).hp, 104); // manual maximum + the extra 5

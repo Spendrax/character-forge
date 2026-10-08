@@ -633,14 +633,10 @@
       if (cast.spellbook) { S.mode = 'spellbook'; S.knownMax = 6 + 2 * (clv - 1); S.preparedMax = Math.max(1, M(cast.ability) + clv); }
       else if (cast.prepared) { S.mode = 'prepared'; S.knownMax = Math.max(1, M(cast.ability) + (half ? Math.floor(clv / 2) : clv)); }
       else { S.mode = 'known'; S.knownMax = cast.known[clv - 1]; }
-      if (free.spells) {
+      if (free.spells) { // no maximum on how many, still only this class's own list
         S.unlimited = true;
-        var seenAll = {}; S.list.forEach(function (s) { seenAll[s.name] = 1; });
-        S.classList = S.list.slice();
-        Object.keys(D.spells).forEach(function (k) { var s = D.spells[k]; if (s && !seenAll[s.name] && tagOk(s.tag, filters)) { seenAll[s.name] = 1; S.list.push(s); } });
-        S.list.sort(function (a, b) { return a.level - b.level || (a.name < b.name ? -1 : 1); });
         S.limits = { cantrips: S.cantripsMax, known: S.knownMax, prepared: S.preparedMax };
-        S.cantripsMax = 999; S.knownMax = 999; if (S.preparedMax) S.preparedMax = 999;
+        S.cantripsMax = S.cantripsMax ? 999 : 0; S.knownMax = 999; if (S.preparedMax) S.preparedMax = 999;
       }
       var inList = {}; S.list.forEach(function (s) { inList[s.name] = s; });
       var sp = (ch.spells || {})[cls.id] || {};
