@@ -520,9 +520,20 @@
 
     // ----- armor class -----
     var armor = D.armor.filter(function (a) { return a[0] === ch.armor; })[0];
+    // armour the player made: ch.armor is "custom:<id>"
+    var custA = !armor && /^custom:/.test(ch.armor || '') ? arr(ch.customArmor).filter(function (a) { return 'custom:' + a.id === ch.armor; })[0] : null;
+    var armorKind = armor ? armor[1] : custA ? custA.kind || 'Light' : '';
+    out.armorKind = armorKind;
     var styles = styleKeys.reduce(function (a, k) { var c = out.choices.filter(function (x) { return x.key === k; })[0]; return a.concat(c ? c.picked : []); }, []);
     var ac, acNote;
-    if (armor) {
+    if (custA) {
+      var cdex = custA.dex === 'none' || armorKind === 'Heavy' ? 0 : custA.dex === '2' ? Math.min(M('DEX'), 2) : M('DEX');
+      ac = (+custA.ac || 10) + cdex + (+custA.bonus || 0); acNote = custA.n || 'Custom armor';
+      if (+custA.bonus) acNote += ' (' + R.fmt(+custA.bonus) + ')';
+      if (armorKind !== 'Natural' && styles.indexOf('Defense') >= 0) { ac += 1; acNote += ', Defense'; }
+      if (+custA.str && out.abilities.STR.total < +custA.str) out.warnings.push((custA.n || 'Your armor') + ' needs Strength ' + custA.str + ' (speed is reduced by 10 ft otherwise).');
+      if (/^(Light|Medium|Heavy)$/.test(armorKind) && prof.armor.indexOf(armorKind + ' armor') < 0 && prof.armor.indexOf('All armor') < 0) out.warnings.push('Not proficient with ' + armorKind.toLowerCase() + ' armor.');
+    } else if (armor) {
       var dex = armor[1] === 'Heavy' ? 0 : armor[4] === null ? M('DEX') : Math.min(M('DEX'), armor[4]);
       ac = armor[3] + dex; acNote = armor[0];
       if (styles.indexOf('Defense') >= 0) { ac += 1; acNote += ', Defense'; }
@@ -543,7 +554,8 @@
     }
     if (L && L.fixedAC) { ac = L.fixedAC; acNote = 'Natural armor'; }
     if (ch.shield) {
-      ac += 2; acNote += ', shield';
+      var sb = ch.shieldBonus != null && ch.shieldBonus !== '' ? +ch.shieldBonus : 2;
+      ac += sb; acNote += ', shield' + (sb !== 2 ? ' (' + R.fmt(sb) + ')' : '');
       if (!prof.armor.some(function (a) { return /^Shields/.test(a); })) out.warnings.push('Not proficient with shields.');
     }
     if (L && L.acBonus) ac += L.acBonus;
@@ -552,9 +564,9 @@
 
     // ----- speed and senses -----
     var speed = (L ? L.sp : 30) + hooks.speed;
-    var heavy = armor && armor[1] === 'Heavy';
+    var heavy = armorKind === 'Heavy';
     if (has('barbarian') && has('barbarian').level >= 5 && !heavy) speed += 10;
-    if (has('monk') && has('monk').level >= 2 && !armor && !ch.shield) speed += steps(has('monk').level, [[2, 10], [6, 15], [10, 20], [14, 25], [18, 30]]);
+    if (has('monk') && has('monk').level >= 2 && (!armorKind || armorKind === 'Natural') && !ch.shield) speed += steps(has('monk').level, [[2, 10], [6, 15], [10, 20], [14, 25], [18, 30]]);
     speed += xn('speed');
     out.speed = speed;
     out.moves = [];
@@ -586,6 +598,17 @@
       if (/^\d+d\d+/.test(dmg)) dmg = dmg.replace(/^(\d+d\d+)/, '$1' + (dmgB ? (dmgB > 0 ? ' + ' : ' - ') + Math.abs(dmgB) : ''));
       return { name: w[0], hit: hit, damage: dmg, props: w[5], proficient: ok };
     }).filter(Boolean);
+    // weapons the player made
+    arr(ch.customWeapons).forEach(function (w) {
+      var ranged = !!w.ranged, props = String(w.props || '');
+      var ab = w.ability === 'finesse' ? (M('DEX') > M('STR') ? 'DEX' : 'STR') : AB.indexOf(w.ability) >= 0 ? w.ability : ranged ? 'DEX' : 'STR';
+      var hit = M(ab) + (w.prof !== false ? pb : 0) + (+w.hit || 0), dmgB = M(ab) + (+w.dmgBonus || 0);
+      if (ranged && styles.indexOf('Archery') >= 0) hit += 2;
+      if (!ranged && styles.indexOf('Dueling') >= 0 && !/two-handed/i.test(props)) dmgB += 2;
+      var dice = String(w.dmg || '1d4').trim();
+      var dmg = dice + (dmgB ? (dmgB > 0 ? ' + ' : ' - ') + Math.abs(dmgB) : '') + (w.type ? ' ' + String(w.type).toLowerCase() : '');
+      out.attacks.push({ name: w.n || 'Custom weapon', hit: hit, damage: dmg, props: [ranged ? 'Ranged' + (w.range ? ' (' + w.range + ')' : '') : 'Melee', props].filter(Boolean).join(', '), proficient: w.prof !== false, custom: w.id, ability: ab });
+    });
 
     // ----- spellcasting: one entry per class that casts, plus shared slots -----
     out.casters = [];
@@ -682,6 +705,8 @@
     var inv = { items: [], weight: 0, attuned: 0 };
     var lb = function (v) { var m = /^(\d+)\/(\d+)/.exec(v); return m ? m[1] / m[2] : parseFloat(v) || 0; };
     if (armor) inv.weight += armor[7];
+    if (custA) inv.weight += +custA.w || 0;
+    arr(ch.customWeapons).forEach(function (w) { inv.weight += +w.w || 0; });
     if (ch.shield) inv.weight += D.shield.weight;
     arr(ch.weapons).forEach(function (name) { var w = D.weapons.filter(function (x) { return x[0] === name; })[0]; if (w) inv.weight += lb(w[4]); });
     arr(ch.items).forEach(function (it) {

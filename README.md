@@ -61,6 +61,12 @@ Lineage → Class and subclass (levels 1–20, single class or multiclass) → A
 It computes HP, AC, saves, skills, initiative, passive Perception, attacks, spell slots, save DC and spell attack, and tracks unfilled choices per step.
 The **Sources** checkboxes hide or show Official, Setting, Unearthed Arcana and Homebrew content. **Detailed text** switches between short and long feature text and shows or hides spell descriptions.
 
+### Your own armor and weapons
+
+On the Equipment step, **Add your own armor** (name, light/medium/heavy/natural, base AC, how much Dexterity counts, magic bonus, Strength needed, weight)
+and **Add your own weapon** (damage dice and type, melee or ranged, which ability it attacks with, attack and damage bonuses, properties, weight).
+They count for AC, attacks, the pixel figure and carried weight, and the shield's bonus can be changed too. Homebrew armor and weapons from 5e Companion come in this way.
+
 ### Items
 
 The Items step holds the inventory: 902 magic items from the wiki (filter by rarity and type, attunement tracked against the limit of 3, or more for artificers),

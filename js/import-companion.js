@@ -158,15 +158,25 @@
     // armour, shield, weapons
     var arm = (c.armors || []).filter(function (a) { return a.equipped !== false; });
     arm.forEach(function (a) {
-      if (/shield/i.test(a.category || a.typeName || a.name)) { ch.shield = true; return; }
+      if (/shield/i.test(a.category || a.typeName || a.name)) { ch.shield = true; if (+a.armor && +a.armor !== 2) ch.shieldBonus = +a.armor; return; }
       var m = D.armor.filter(function (x) { return norm(x[0]) === norm(a.name) || norm(x[0] + ' armor') === norm(a.name); })[0];
       if (m && !ch.armor) ch.armor = m[0];
+      else if (!m && !ch.armor) { // homebrew armour becomes the character's own armour
+        var kind = /heavy/i.test(a.category) ? 'Heavy' : /medium/i.test(a.category) ? 'Medium' : /light/i.test(a.category) ? 'Light' : 'Natural';
+        var own = { id: R.uid(), n: a.name, kind: kind, ac: +a.armor || 10, dex: kind === 'Heavy' ? 'none' : kind === 'Medium' ? '2' : 'full', bonus: 0, str: 0, w: parseFloat(a.weight) || 0 };
+        ch.customArmor = (ch.customArmor || []).concat([own]); ch.armor = 'custom:' + own.id;
+      }
     });
     var used = {}; if (ch.armor) used[norm(ch.armor)] = 1; if (ch.shield) used.shield = 1;
     (c.weapons || []).forEach(function (w) {
       var m = D.weapons.filter(function (x) { return norm(x[0]) === norm(w.name); })[0];
       if (m) { if (ch.weapons.indexOf(m[0]) < 0) ch.weapons.push(m[0]); used[norm(m[0])] = 1; }
-      else ch.items.push({ id: R.uid(), k: 'custom', n: w.name, qty: 1, w: 0, att: !!w.isAttuned, attuned: !!w.isAttuned, note: 'Weapon from 5e Companion' + (w.damageDiceAmount ? ': ' + w.damageDiceAmount + (w.damageDiceName || '') + ' ' + String(w.damageTypeName || '').toLowerCase() : '') });
+      else { // homebrew weapon becomes the character's own weapon, with its damage and bonuses
+        var abName = String(w.attackAbilityName || '').toLowerCase(), abKey = Object.keys(AB).filter(function (k) { return k === abName; })[0];
+        ch.customWeapons = (ch.customWeapons || []).concat([{ id: R.uid(), n: w.name, dmg: (w.damageDiceAmount || 1) + String(w.damageDiceName || 'd4').toLowerCase(), type: title(w.damageTypeName || 'Bludgeoning'),
+          ranged: !!w.isRanged, ability: w.isFinesse ? 'finesse' : abKey ? AB[abKey] : 'auto', prof: w.isProficient !== false, hit: (+w.bonus || 0) + (+w.extraAttackBonus || 0), dmgBonus: +w.extraDamageBonus || 0,
+          props: [w.isLight ? 'Light' : '', w.isHeavy ? 'Heavy' : '', w.isTwoHanded ? 'Two-handed' : '', w.hasReach ? 'Reach' : '', w.description || ''].filter(Boolean).join(', '), w: parseFloat(w.weight) || 0 }]);
+      }
     });
 
     // inventory

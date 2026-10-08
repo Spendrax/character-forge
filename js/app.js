@@ -427,13 +427,39 @@
         return '<div class="pills" style="margin:.4rem 0">' + o.map(function (t, j) { return btn('eq', esc(t), { i: i, v: j }, 'pill' + ((ch.eq[i] | 0) === j ? ' on' : '')); }).join('') + '</div>';
       }).join('') + (d.bg ? '<h3>From ' + esc(d.bg.n) + '</h3><p>' + esc(d.bg.eq || '—') + '</p>' : '') + '</div>';
     }
-    h += '<div class="panel"><h3>Armor</h3><div class="row"><label class="field"><span>Worn armor</span><select data-set="armor"><option value="">None</option>' + D.armor.map(function (a) {
+    var CA = ch.customArmor || [], CW = ch.customWeapons || [];
+    var opt = function (v, label, cur) { return '<option value="' + esc(v) + '"' + (String(cur) === String(v) ? ' selected' : '') + '>' + esc(label) + '</option>'; };
+    h += '<div class="panel"><h3>Armor</h3><div class="row"><label class="field"><span>Worn armor</span><select data-set="armor"><option value="">None</option><optgroup label="Armor">' + D.armor.map(function (a) {
       return '<option value="' + esc(a[0]) + '"' + (ch.armor === a[0] ? ' selected' : '') + '>' + esc(a[0]) + ' — ' + a[1] + ', AC ' + a[3] + (a[1] === 'Light' ? ' + Dex' : a[1] === 'Medium' ? ' + Dex (max 2)' : '') + '</option>';
-    }).join('') + '</select></label><label style="margin-bottom:.9rem"><input type="checkbox" data-check="shield"' + (ch.shield ? ' checked' : '') + '> Shield (+2)</label>' +
-      '<div class="stat" style="padding:.3rem .9rem;margin-bottom:.6rem"><b>' + d.ac + '</b><span>Armor class</span></div></div><p class="small muted">' + esc(d.acNote) + '</p></div>';
+    }).join('') + '</optgroup>' + (CA.length ? '<optgroup label="Your own armor">' + CA.map(function (a) { return opt('custom:' + a.id, (a.n || 'Custom armor') + ' — ' + (a.kind || 'Light') + ', AC ' + (a.ac || 10) + (+a.bonus ? ' ' + R.fmt(+a.bonus) : ''), ch.armor); }).join('') + '</optgroup>' : '') + '</select></label>' +
+      '<label style="margin-bottom:.9rem"><input type="checkbox" data-check="shield"' + (ch.shield ? ' checked' : '') + '> Shield</label>' +
+      (ch.shield ? '<label class="field extra-num" style="max-width:110px"><span>Shield bonus</span><input type="number" step="1" data-shieldbonus="1" value="' + (ch.shieldBonus != null && ch.shieldBonus !== '' ? ch.shieldBonus : 2) + '"></label>' : '') +
+      '<div class="stat" style="padding:.3rem .9rem;margin-bottom:.6rem"><b>' + d.ac + '</b><span>Armor class</span></div></div><p class="small muted">' + esc(d.acNote) + '</p>' +
+      (CA.length ? '<h4 style="margin-top:1rem">Your own armor</h4>' + CA.map(function (a) {
+        var f = function (k, label, type, extra) { return '<label class="field"><span>' + label + '</span><input type="' + type + '" data-carmor="' + a.id + '" data-f="' + k + '" value="' + esc(a[k] != null ? a[k] : '') + '"' + (extra || '') + '></label>'; };
+        return '<div class="custom-card' + (ch.armor === 'custom:' + a.id ? ' on' : '') + '"><div class="row">' + f('n', 'Name', 'text') +
+          '<label class="field"><span>Type</span><select data-carmor="' + a.id + '" data-f="kind">' + ['Light', 'Medium', 'Heavy', 'Natural'].map(function (k) { return opt(k, k === 'Natural' ? 'Natural / clothing (no proficiency needed)' : k, a.kind || 'Light'); }).join('') + '</select></label>' +
+          f('ac', 'Base AC', 'number', ' min="0" step="1"') +
+          '<label class="field"><span>Dexterity</span><select data-carmor="' + a.id + '" data-f="dex">' + opt('full', '+ full Dex', a.dex || 'full') + opt('2', '+ Dex (max 2)', a.dex || 'full') + opt('none', 'no Dex', a.dex || 'full') + '</select></label>' +
+          f('bonus', 'Magic bonus', 'number', ' step="1"') + f('str', 'Strength needed', 'number', ' min="0" step="1"') + f('w', 'Weight (lb)', 'number', ' min="0" step="any"') + '</div>' +
+          '<div class="toolbar">' + (ch.armor === 'custom:' + a.id ? '<span class="tag">worn</span>' : btn('wearArmor', 'Wear it', { v: a.id }, 'btn tiny')) + btn('rmArmor', 'Remove', { v: a.id }, 'btn tiny danger') + '</div></div>';
+      }).join('') : '') +
+      '<div class="toolbar" style="margin-top:.6rem">' + btn('addArmor', '+ Add your own armor') + '</div></div>';
     h += '<div class="panel"><h3>Weapons</h3><div class="row"><select id="addWeapon" data-addweapon="1"><option value="">Add a weapon…</option>' + D.weapons.map(function (w) {
       return '<option value="' + esc(w[0]) + '">' + esc(w[0]) + ' — ' + esc(w[1]) + ', ' + esc(w[3]) + '</option>';
-    }).join('') + '</select></div>' + attacksHtml(true) + '</div>';
+    }).join('') + '</select>' + btn('addCWeapon', '+ Add your own weapon') + '</div>' + attacksHtml(true) +
+      (CW.length ? '<h4 style="margin-top:1rem">Your own weapons</h4>' + CW.map(function (w) {
+        var f = function (k, label, type, extra) { return '<label class="field"><span>' + label + '</span><input type="' + type + '" data-cweapon="' + w.id + '" data-f="' + k + '" value="' + esc(w[k] != null ? w[k] : '') + '"' + (extra || '') + '></label>'; };
+        var types = ['Bludgeoning', 'Piercing', 'Slashing', 'Acid', 'Cold', 'Fire', 'Force', 'Lightning', 'Necrotic', 'Poison', 'Psychic', 'Radiant', 'Thunder'];
+        return '<div class="custom-card"><div class="row">' + f('n', 'Name', 'text') + f('dmg', 'Damage dice', 'text', ' placeholder="1d8"') +
+          '<label class="field"><span>Damage type</span><select data-cweapon="' + w.id + '" data-f="type">' + types.map(function (t) { return opt(t, t, w.type || 'Slashing'); }).join('') + '</select></label>' +
+          '<label class="field"><span>Melee or ranged</span><select data-cweapon="' + w.id + '" data-f="ranged">' + opt('', 'Melee', w.ranged ? '1' : '') + opt('1', 'Ranged', w.ranged ? '1' : '') + '</select></label>' +
+          (w.ranged ? f('range', 'Range', 'text', ' placeholder="80/320"') : '') +
+          '<label class="field"><span>Attack with</span><select data-cweapon="' + w.id + '" data-f="ability">' + opt('auto', 'Normal (Str melee, Dex ranged)', w.ability || 'auto') + opt('finesse', 'Finesse (best of Str or Dex)', w.ability || 'auto') +
+          AB.map(function (a) { return opt(a, D.abilityNames[a], w.ability || 'auto'); }).join('') + '</select></label>' +
+          f('hit', 'Attack bonus', 'number', ' step="1"') + f('dmgBonus', 'Damage bonus', 'number', ' step="1"') + f('props', 'Properties and notes', 'text', ' placeholder="Light, thrown (20/60)…"') + f('w', 'Weight (lb)', 'number', ' min="0" step="any"') + '</div>' +
+          '<div class="toolbar"><label class="check-line" style="margin:0"><input type="checkbox" data-cweapon="' + w.id + '" data-f="prof"' + (w.prof !== false ? ' checked' : '') + '> Proficient</label>' + btn('rmCWeapon', 'Remove', { v: w.id }, 'btn tiny danger') + '</div></div>';
+      }).join('') : '') + '</div>';
     h += '<div class="panel"><h3>Other notes</h3><label class="field"><span>Anything else worth writing down about your gear</span><textarea id="gear" data-text="gear">' + esc(ch.gear) + '</textarea></label>' +
       '<p class="small muted">Magic items, adventuring gear, coins and carried weight are on the ' + btn('step', 'Items', { v: 'items' }, 'btn tiny') + ' step.</p></div>';
     return h;
@@ -442,7 +468,7 @@
     if (!d.attacks.length) return edit ? '<p class="muted">No weapons added yet.</p>' : '';
     return '<div class="tablewrap"><table><tr><th>Weapon</th><th class="num">To hit</th><th>Damage</th><th>Properties</th>' + (edit ? '<th></th>' : '') + '</tr>' + d.attacks.map(function (a) {
       return '<tr><td><b>' + esc(a.name) + '</b>' + (a.proficient ? '' : ' <span class="small muted">(not proficient)</span>') + '</td><td class="num">' + R.fmt(a.hit) + '</td><td>' + esc(a.damage) + '</td><td class="small">' + esc(a.props) + '</td>' +
-        (edit ? '<td>' + btn('rmWeapon', 'Remove', { v: a.name }, 'btn tiny') + '</td>' : '') + '</tr>';
+        (edit ? '<td>' + (a.custom ? '<span class="small muted">yours</span>' : btn('rmWeapon', 'Remove', { v: a.name }, 'btn tiny')) + '</td>' : '') + '</tr>';
     }).join('') + '</table></div>';
   }
 
@@ -872,6 +898,11 @@
     removePicture: function () { delete ch.picture; delete ch.pictureFit; ui.pictureError = ''; },
     lookRandom: function () { ch.look = Object.assign({ hidden: (ch.look || {}).hidden || {} }, Avatar.random()); },
     lookReset: function () { ch.look = { hidden: (ch.look || {}).hidden || {} }; },
+    addArmor: function () { ch.customArmor = ch.customArmor || []; var a = { id: R.uid(), n: 'My armor', kind: 'Light', ac: 11, dex: 'full', bonus: 0, str: 0, w: 0 }; ch.customArmor.push(a); ch.armor = 'custom:' + a.id; },
+    wearArmor: function (v) { ch.armor = 'custom:' + v; },
+    rmArmor: function (v) { ch.customArmor = (ch.customArmor || []).filter(function (a) { return a.id !== v; }); if (ch.armor === 'custom:' + v) ch.armor = ''; },
+    addCWeapon: function () { ch.customWeapons = ch.customWeapons || []; ch.customWeapons.push({ id: R.uid(), n: 'My weapon', dmg: '1d8', type: 'Slashing', ranged: false, ability: 'auto', prof: true, hit: 0, dmgBonus: 0, props: '', w: 0 }); },
+    rmCWeapon: function (v) { ch.customWeapons = (ch.customWeapons || []).filter(function (w) { return w.id !== v; }); },
     rmWeapon: function (v) { ch.weapons = ch.weapons.filter(function (w) { return w !== v; }); }
   };
 
@@ -966,6 +997,9 @@
     else if (a('data-pick')) ch.picks[a('data-pick')] = t.value ? [t.value] : [];
     else if (a('data-set')) ch[a('data-set')] = t.value;
     else if (a('data-check')) ch[a('data-check')] = t.checked;
+    else if (a('data-carmor')) { var ca = (ch.customArmor || []).filter(function (x) { return x.id === a('data-carmor'); })[0]; if (ca) { var fk = a('data-f'); ca[fk] = /^(ac|bonus|str|w)$/.test(fk) ? (+t.value || 0) : t.value; } }
+    else if (a('data-cweapon')) { var cw = (ch.customWeapons || []).filter(function (x) { return x.id === a('data-cweapon'); })[0]; if (cw) { var wk = a('data-f'); cw[wk] = wk === 'prof' ? t.checked : wk === 'ranged' ? !!t.value : /^(hit|dmgBonus|w)$/.test(wk) ? (+t.value || 0) : t.value; } }
+    else if (a('data-shieldbonus')) ch.shieldBonus = Math.round(+t.value) || 0;
     else if (a('data-free')) { ch.free = ch.free || {}; if (t.checked) ch.free[a('data-free')] = true; else delete ch.free[a('data-free')]; }
     else if (a('data-hpmanual')) { if (t.checked) { ch.hpMode = 'manual'; if (!ch.hpManual) ch.hpManual = d.hpAvg; } else ch.hpMode = 'avg'; }
     else if (a('data-extra')) { ch.extra = ch.extra || {}; var xv = Math.round(+t.value) || 0; if (xv) ch.extra[a('data-extra')] = xv; else delete ch.extra[a('data-extra')]; }

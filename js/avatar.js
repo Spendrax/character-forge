@@ -132,9 +132,11 @@
     var g = { armor: 'none', armorName: '', shield: false, main: null, off: null, back: null, slots: {}, magic: [] };
     var a = D.armor.filter(function (x) { return x[0] === ch.armor; })[0];
     if (a) { g.armor = a[1].toLowerCase(); g.armorName = a[0]; }
+    var ca = !a && /^custom:/.test(ch.armor || '') ? (ch.customArmor || []).filter(function (x) { return 'custom:' + x.id === ch.armor; })[0] : null;
+    if (ca && /^(Light|Medium|Heavy)$/.test(ca.kind)) { g.armor = ca.kind.toLowerCase(); g.armorName = ca.n || ''; }
     g.shield = !!ch.shield;
     var hidden = (ch.look && ch.look.hidden) || {};
-    var weps = (ch.weapons || []).map(function (n) { return { n: n, kind: weaponKind(n) }; });
+    var weps = (ch.weapons || []).concat((ch.customWeapons || []).map(function (w) { return w.n || ''; })).map(function (n) { return { n: n, kind: weaponKind(n) }; });
     (ch.items || []).forEach(function (it) {
       if (hidden[it.id]) return;
       var n = it.n || '', color = it.k === 'magic' ? RARITY[it.r] || '#e8e8ee' : null;

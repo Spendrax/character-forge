@@ -137,7 +137,8 @@ assert(!cd.skills.Arcana.prof); assert(cd.prof.languages.includes('Abyssal'));
 assert.equal(cc.picks['asi.cleric.4.feat'][0], 'Observant');
 assert.equal(cc.armor, 'Scale Mail'); assert(cc.shield); assert(cc.weapons.includes('Mace'));
 const inames = cc.items.map(i => i.n);
-assert(inames.includes('Oil (flask)') && inames.includes('Steel Mirror') && inames.includes('Torch') && inames.includes('Lucky pebble') && inames.includes('Odd stick'));
+assert(inames.includes('Oil (flask)') && inames.includes('Steel Mirror') && inames.includes('Torch') && inames.includes('Lucky pebble') && !inames.includes('Odd stick'));
+assert(cd.attacks.some(a => a.name === 'Odd stick' && /^1d4/.test(a.damage) && /bludgeoning/.test(a.damage) && a.custom)); // homebrew weapon -> own weapon
 assert.deepEqual(cc.money, { pp: 1, gp: 12, ep: 0, sp: 3, cp: 0 });
 assert.equal(cc.notes.traits, 'Calm.'); assert(/Remember the bridge/.test(cc.notes.other) && !/\bold\b/.test(cc.notes.other.split('Notes from 5e Companion')[1]));
 const cs = cd.casters[0]; assert(cs.cantrips.includes('Guidance') && cs.known.includes('Bless') && cs.always.includes('Heroism'));
@@ -156,6 +157,16 @@ assert.equal(fd2.abilities.STR.total, 24); assert.deepEqual(fd2.casters[0].known
 assert.equal(fd2.ac, fd.ac + 1); assert.equal(fd2.hp, fd.hp + 5); assert.equal(fd2.speed, fd.speed + 10); assert.equal(fd2.casters[0].dc, fd.casters[0].dc + 1);
 assert(fd2.skills.Stealth.expertise && fd2.skills.Arcana.prof && fd2.saves.DEX.prof && fd2.prof.languages.includes('Sylvan'));
 fr.hpMode = 'manual'; fr.hpManual = 99; assert.equal(R.derive(fr, {}).hp, 104); // manual maximum + the extra 5
+
+// own armour and weapons
+const ow = mk({ lineage: 'human', classes: [C('fighter', 1)], method: 'manual', base: { STR: 16, DEX: 14, CON: 14, INT: 10, WIS: 10, CHA: 10 } });
+ow.customArmor = [{ id: 'a1', n: 'Dragon scale', kind: 'Medium', ac: 14, dex: '2', bonus: 1, str: 0, w: 20 }]; ow.armor = 'custom:a1'; ow.shield = true; ow.shieldBonus = 3;
+ow.customWeapons = [{ id: 'w1', n: 'Moon blade', dmg: '1d10', type: 'Radiant', ranged: false, ability: 'finesse', prof: true, hit: 1, dmgBonus: 2, props: 'Versatile', w: 3 }];
+const owd = R.derive(ow, {});
+assert.equal(owd.ac, 14 + 2 + 1 + 3); assert(/Dragon scale/.test(owd.acNote));
+const mb = owd.attacks.find(a => a.name === 'Moon blade');
+assert.equal(mb.hit, 3 + 2 + 1); assert.equal(mb.damage, '1d10 + 5 radiant'); // STR +3 (17 with human +1) + 2 bonus
+assert(owd.inv.weight >= 23);
 
 // offline copy: every file the page loads must be in the service worker's list
 const sw = fs.readFileSync(path.join(__dirname, '../sw.js'), 'utf8');

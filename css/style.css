@@ -218,3 +218,7 @@ canvas.avatar.figure.sheet-pic { width: 96px; height: 116px; }
 .imp-part { display: inline-flex; align-items: center; gap: .3rem; cursor: pointer; }
 .imp-part input { margin: 0; }
 .imp-part.off { opacity: .45; cursor: not-allowed; }
+.custom-card { border: 1px solid var(--line); border-radius: var(--radius); padding: .6rem .8rem .2rem; margin: .5rem 0; background: var(--bg); }
+.custom-card.on { border-color: var(--accent); }
+.custom-card .row { flex-wrap: wrap; }
+.custom-card .field { min-width: 120px; flex: 1 1 140px; }
