@@ -119,7 +119,7 @@
   function placeSpells(entry, ch, R, D) {
     entry.classes.forEach(function (c) { if (!c.clsId) { var k = D.classes.filter(function (x) { return norm(x.name) === norm(c.name); })[0]; c.clsId = k ? k.id : ''; } });
     var d = R.derive(ch, {});
-    var skipped = [], added = 0, buckets = {};
+    var skipped = [], added = 0, others = 0, buckets = {};
     var casters = d.casters.map(function (S) { var m = {}; S.list.forEach(function (s) { m[s.name] = 1; }); return { S: S, inList: m }; });
     var bucket = function (id) { return buckets[id] = buckets[id] || { c: [], k: [], p: [] }; };
     entry.classes.concat([{ clsId: null, spells: entry.loose, name: '' }]).forEach(function (c) {
@@ -133,7 +133,13 @@
         if (!f) { skipped.push([s.name, 'not in this app’s spell list']); return; }
         if (casters.some(function (x) { return x.S.always.indexOf(f.name) >= 0; })) return; // already always prepared
         var home = order.filter(function (x) { return x.inList[f.name]; })[0];
-        if (!home) { skipped.push([f.name, !has ? label + ' is not one of this character’s classes' : own.length ? 'not on the ' + label + ' list at this level' : label + ' has no spellcasting at this level']); return; }
+        if (!home) {
+          if ((d.innate || []).some(function (x) { return x.name === f.name; })) return; // already from the lineage or a feat
+          // not on any of this character's class lists: keep it under My spells → Other spells, with where it came from
+          ch.extraSpells = ch.extraSpells || [];
+          if (!ch.extraSpells.some(function (x) { return x.n === f.name; })) { ch.extraSpells.push({ id: R.uid(), n: f.name, src: 'Imported' + (c.clsId || c.name ? ' (' + label + ')' : ''), per: '' }); others++; }
+          return;
+        }
         var b = bucket(home.S.clsId);
         if (f.level === 0) { if (b.c.indexOf(f.name) < 0) b.c.push(f.name); }
         else if (b.k.indexOf(f.name) < 0) { b.k.push(f.name); if (s.prepared) b.p.push(f.name); }
@@ -150,7 +156,7 @@
       added += kept.length;
       sp.c.concat(sp.k).forEach(function (n) { if (kept.indexOf(n) < 0) skipped.push([n, 'over the ' + S.name + ' limit (' + (D.findSpell(n).level ? S.knownMax + ' spells' : S.cantripsMax + ' cantrips') + ')']); });
     });
-    return { added: added, skipped: skipped, classes: Object.keys(buckets) };
+    return { added: added + others, others: others, skipped: skipped, classes: Object.keys(buckets) };
   }
 
   // Only the spells: everything else on the existing character stays as it is.

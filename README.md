@@ -57,9 +57,16 @@ If you changed which files the page loads, add them to the list in `sw.js` and b
 
 ## What it does
 
-Lineage → Class and subclass (levels 1–20, single class or multiclass) → Ability scores (standard array, point buy, manual/rolled; ASIs or feats) → Background → Spells → Equipment → Items → Appearance → Details → printable Sheet.
+Lineage → Class and subclass (levels 1–20, single class or multiclass) → Ability scores (standard array, point buy, manual/rolled; ASIs or feats) → Background → Spells → My spells → Equipment → Items → Appearance → Details → printable Sheet.
 It computes HP, AC, saves, skills, initiative, passive Perception, attacks, spell slots, save DC and spell attack, and tracks unfilled choices per step.
 The **Sources** checkboxes hide or show Official, Setting, Unearthed Arcana and Homebrew content. **Detailed text** switches between short and long feature text and shows or hides spell descriptions.
+
+### My spells
+
+One page with every spell the character can cast, by spell level with slots: class cantrips and spells (prepared, known or in the spellbook — tap ☆/★ to prepare wizard spells right there),
+always-prepared subclass spells, and spells from the **lineage** and **feats** (Tiefling Infernal Legacy, Drow Magic, Fey Touched…), each with how often it can be cast, the level it arrives at and its save DC.
+Lineages that let you pick a cantrip (High Elf, Astral Elf, Kobold…) or a spellcasting ability (Mordenkainen's lineages) ask on the Lineage step.
+**Other spells** adds any spell by hand, with where it comes from (Magic Initiate, a magic item, a boon). Imported spells that fit none of the character's class lists land there too.
 
 ### Your own armor and weapons
 

@@ -110,17 +110,19 @@ const wiz = d5.casters.find(s => s.clsId === 'wizard'), wl = d5.casters.find(s =
 assert.equal(d5.abilities.INT.mod, 3); assert.equal(d5.abilities.CHA.mod, 2);
 assert(wiz.cantrips.includes('Fire Bolt') && wiz.known.includes('Absorb Elements') && wiz.prepared.includes('Magic Missile') && !wiz.prepared.includes('Shield'));
 assert(wl.cantrips.includes('Eldritch Blast') && wl.known.includes('Hex'));
-assert(r5.skipped.some(s => s[0] === 'Cure Wounds') && /Cure Wounds/.test(r5.ch.notes.other));
+assert(!r5.skipped.some(s => s[0] === 'Cure Wounds') && r5.ch.extraSpells.some(x => x.n === 'Cure Wounds' && /Imported/.test(x.src))); // not on a class list: kept under Other spells
+assert(R.derive(r5.ch, {}).innate.some(x => x.name === 'Cure Wounds' && x.kind === 'extra'));
 // spells only: an existing character keeps everything but the spells of the classes in the backup
 const mine = mk({ name: 'Test Hero', lineage: 'elf', classes: [C('wizard', 3), C('fighter', 2)], background: 'Sage', method: 'manual', base: { STR: 8, DEX: 14, CON: 12, INT: 17, WIS: 10, CHA: 10 }, armor: 'Leather', notes: Object.assign(R.newChar().notes, { backstory: 'mine', other: 'old note' }), spells: { wizard: { c: ['Light'], k: ['Sleep'], p: [] } } });
 const up = I5.spellsInto(I5.read(db5)[0], mine, R, D).ch;
 assert.equal(up.lineage, 'elf'); assert.equal(up.background, 'Sage'); assert.equal(up.base.INT, 17); assert.equal(up.armor, 'Leather'); assert.equal(up.notes.backstory, 'mine');
 assert.deepEqual(up.classes.map(c => c.cls), ['wizard', 'fighter']);
 assert(up.spells.wizard.k.includes('Magic Missile') && !up.spells.wizard.k.includes('Sleep'));
-assert(/^old note\n\nSpells imported/.test(up.notes.other) && /Warlock is not one of this character/.test(up.notes.other));
+assert(/^old note\n\nSpells imported/.test(up.notes.other) && up.extraSpells.some(x => x.n === 'Hex' && x.src === 'Imported (Warlock)'));
 assert.equal(mine.spells.wizard.k[0], 'Sleep'); // the original object is untouched
 const again = I5.spellsInto(I5.read(db5)[0], up, R, D).ch; // re-importing replaces the old import note
 assert.equal(again.notes.other.split('Spells imported from 5th Spellbook').length, 2);
+assert.equal(again.extraSpells.filter(x => x.n === 'Hex').length, 1); // and doesn't add Other spells twice
 assert.throws(() => new SqliteFile(new TextEncoder().encode('not a database at all').buffer));
 
 // 5e Companion import: a made-up shared character in test/fixtures
@@ -142,7 +144,7 @@ assert(cd.attacks.some(a => a.name === 'Odd stick' && /^1d4/.test(a.damage) && /
 assert.deepEqual(cc.money, { pp: 1, gp: 12, ep: 0, sp: 3, cp: 0 });
 assert.equal(cc.notes.traits, 'Calm.'); assert(/Remember the bridge/.test(cc.notes.other) && !/\bold\b/.test(cc.notes.other.split('Notes from 5e Companion')[1]));
 const cs = cd.casters[0]; assert(cs.cantrips.includes('Guidance') && cs.known.includes('Bless') && cs.always.includes('Heroism'));
-assert(cr.skipped.some(x => x[0] === 'Fireball')); assert(/^data:image\/jpeg;base64,/.test(cr.picture));
+assert(!cr.skipped.some(x => x[0] === 'Fireball') && cc.extraSpells.some(x => x.n === 'Fireball')); assert(/^data:image\/jpeg;base64,/.test(cr.picture));
 const cu = I5.spellsInto(ce, mk({ name: 'Other', classes: [C('cleric', 4, 'cleric:life')], background: 'Acolyte' }), R, D).ch;
 assert.equal(cu.background, 'Acolyte'); assert.equal(cu.classes[0].subclass, 'cleric:life'); assert(cu.spells.cleric.c.includes('Guidance') && !cu.spells.cleric.k.includes('Bless')); // Bless is already a Life Domain spell assert(/from 5e Companion/.test(cu.notes.other));
 
@@ -177,4 +179,40 @@ ma.spells = {}; assert(R.derive(ma, {}).warnings.some(w => /Mage Armor is on/.te
 // offline copy: every file the page loads must be in the service worker's list
 const sw = fs.readFileSync(path.join(__dirname, '../sw.js'), 'utf8');
 [...html.matchAll(/(?:src|href)="((?:data|js|css|icons)\/[^"]+)"/g)].forEach(m => assert(sw.includes("'" + m[1] + "'"), 'sw.js is missing ' + m[1]));
+// Spells from the lineage and feats, and spells the player adds: they show on My spells with the right level and DC
+{
+  const sp = R.spellsInText('Know Thaumaturgy. Cast Hellish Rebuke (3rd level, as a 2nd-level spell) and Darkness (5th level) once each per long rest, using Charisma.');
+  assert.deepEqual(sp.spells.map(x => x.name + '@' + x.minLevel), ['Thaumaturgy@1', 'Hellish Rebuke@3', 'Darkness@5']);
+  assert.equal(sp.spells[1].per, '1/long rest'); assert.equal(sp.spells[0].ability, 'Charisma');
+  assert.deepEqual(R.spellsInText('Cast Comprehend Languages (and Magic Mouth from 3rd level) once each per long rest, using Intelligence.').spells.map(x => x.minLevel), [1, 3]);
+  assert.equal(R.spellsInText('Cast Animal Friendship on snakes at will, and Suggestion once per long rest from 3rd level.').spells[0].per, 'at will');
+  assert.equal(R.spellsInText('Lightly obscured areas, Light armor proficiency.').spells.length, 0);
+  // drow elf rogue 4 with CHA 14: Dancing Lights now, Faerie Fire at 3, Darkness waits for 5
+  const drow = mk({ lineage: 'elf', sub: 2, classes: [C('rogue', 4)], base: { STR: 10, DEX: 15, CON: 12, INT: 10, WIS: 10, CHA: 13 } });
+  let dd = R.derive(drow);
+  const by = n => dd.innate.find(x => x.name === n);
+  assert(by('Dancing Lights').ready && by('Faerie Fire').ready && !by('Darkness').ready);
+  assert.equal(by('Faerie Fire').ab, 'CHA'); assert.equal(by('Faerie Fire').dc, 8 + 2 + 2);
+  // high elf: a wizard cantrip of your choice, picked on the Lineage step
+  const he = mk({ lineage: 'elf', sub: 0, classes: [C('fighter', 1)] });
+  dd = R.derive(he);
+  const hc = dd.choices.find(c => c.spellChoice && c.step === 'lineage');
+  assert(hc && hc.missing === 1 && hc.options.some(o => o.v === 'Fire Bolt') && !hc.options.some(o => o.v === 'Cure Wounds'));
+  he.picks[hc.key] = ['Fire Bolt']; dd = R.derive(he);
+  assert(dd.innate.some(x => x.name === 'Fire Bolt' && x.ab === 'INT')); assert.equal(dd.choices.find(c => c.key === hc.key).missing, 0);
+  // fairy: lineage spells use the ability chosen with the lineage
+  const fa = mk({ lineage: 'fairy', classes: [C('fighter', 5)] });
+  dd = R.derive(fa); assert(dd.choices.some(c => c.key === 'lin.spellab')); assert(!dd.innate.find(x => x.name === 'Druidcraft').ab);
+  fa.picks['lin.spellab'] = ['WIS']; dd = R.derive(fa);
+  assert.equal(dd.innate.find(x => x.name === 'Enlarge/Reduce').ab, 'WIS'); assert(dd.innate.find(x => x.name === 'Enlarge/Reduce').ready);
+  // a feat: Fey Touched gives Misty Step
+  const ft = mk({ lineage: 'dwarf', classes: [C('fighter', 4)], picks: { 'asi.fighter.4.feat': ['Fey Touched'], 'asi.fighter.4.fa': ['WIS'] }, asi: { 'asi.fighter.4': 'feat' } });
+  dd = R.derive(ft); assert(dd.innate.some(x => x.name === 'Misty Step' && x.kind === 'feat'));
+  // spells the player adds, and Mage Armor from a dragonmark counts as known
+  const ward = mk({ lineage: 'dwarf', sub: 2, classes: [C('fighter', 1)], armor: 'spell:mage-armor', extraSpells: [{ id: 'x1', n: 'Shield', src: 'Ring' }] });
+  dd = R.derive(ward);
+  assert(dd.innate.some(x => x.name === 'Mage Armor' && x.kind === 'lineage') && dd.innate.some(x => x.name === 'Shield' && x.kind === 'extra' && x.src === 'Ring'));
+  assert(!dd.warnings.some(w => /Mage Armor/.test(w)));
+}
+
 console.log('ok —', n, 'builds derived;', D.classes.length, 'classes,', D.subclasses.length, 'subclasses,', D.lineages.length, 'lineages,', D.backgrounds.length, 'backgrounds,', D.feats.length, 'feats,', Object.keys(D.spells).length, 'spells (' + Object.keys(D.spellText).length + ' described),', longF, 'detailed features');

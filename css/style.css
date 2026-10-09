@@ -238,3 +238,16 @@ canvas.avatar.figure.sheet-pic { width: 96px; height: 116px; }
 .custom-card .toolbar .btn.primary { min-width: 6rem; }
 .panel select, .panel .field { max-width: 100%; } .panel .row > .field { min-width: 0; }
 html { overflow-anchor: none; } /* the app restores scroll itself after each redraw */
+
+/* My spells */
+.lvl-head { margin: 1.1rem 0 .4rem; }
+.my-spells .spell.not-ready { opacity: .6; }
+.check-gap { width: 1.5rem; flex: none; }
+.src-chips { margin-top: .25rem; display: flex; flex-wrap: wrap; gap: .3rem; align-items: center; }
+.src-chip { font-size: .78rem; padding: .05rem .45rem; border: 1px solid var(--line); border-radius: 999px; background: var(--panel, transparent); }
+.src-chip.later { border-style: dashed; }
+.extra-spells { margin-top: 1.4rem; }
+.extra-spell-fields { margin-top: .35rem; gap: .5rem; }
+.extra-spell-fields label { font-size: .82rem; flex: 1 1 12rem; }
+.extra-spell-fields input { width: 100%; }
+.linkbtn { background: none; border: 0; padding: 0; color: var(--accent, inherit); text-decoration: underline; cursor: pointer; font: inherit; }

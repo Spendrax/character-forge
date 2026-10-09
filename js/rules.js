@@ -99,6 +99,57 @@
     return m;
   };
 
+  // ---------- spells granted by a trait or feat ----------
+  // Lineage and feat texts say things like "Know Thaumaturgy. Cast Hellish Rebuke (3rd level) once per long rest,
+  // using Charisma." This reads them into spells (with the character level they arrive at) and choices.
+  var spellNamesByLength = null;
+  var CLASSWORD = { wizard: 'wizard', druid: 'druid', cleric: 'cleric', bard: 'bard', sorcerer: 'sorcerer', warlock: 'warlock' };
+  R.spellsInText = function (text) {
+    var out = { spells: [], choices: [] };
+    text = String(text || '');
+    if (!/\b(Know|know|Cast|cast|Learn|learn|cantrip|spell)\b/.test(text)) return out;
+    if (!spellNamesByLength) spellNamesByLength = Object.keys(D.spells).map(function (k) { return D.spells[k].name; })
+      .filter(function (n) { return !/\(UA\)|\(HB\)/.test(n); }).sort(function (a, b) { return b.length - a.length; });
+    var abil = (text.match(/(?:using|cast with|with) (Intelligence|Wisdom|Charisma|Constitution|Dexterity)\b/) || [])[1] || '';
+    var withSlots = /or with (?:spell )?slots|or with (?:your )?spell slots/.test(text);
+    if (!abil && (withSlots || /^Know one/.test(text))) abil = 'Intelligence, Wisdom or Charisma (chosen with your lineage)';
+    var optional = /\bChoose one\b/.test(text);
+    // a choice among named spells: "Know one of Dancing Lights, Light or Sacred Flame."
+    var oneOf = text.match(/\bone of ([^.;]+)/);
+    var cm = text.match(/\b(one|two) (wizard|druid|cleric|bard|sorcerer|warlock) cantrips?\b/i);
+    if (cm) out.choices.push({ count: cm[1].toLowerCase() === 'two' ? 2 : 1, list: cm[2].toLowerCase(), level: 0, label: cm[2].charAt(0).toUpperCase() + cm[2].slice(1).toLowerCase() + ' cantrip', ability: abil, optional: optional });
+    var taken = new Array(text.length + 1).join(' '), found = [];
+    var alias = { 'Enlarge': 'Enlarge/Reduce' };
+    spellNamesByLength.concat(Object.keys(alias)).forEach(function (n) {
+      var re = new RegExp('(^|[^A-Za-z])' + n.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&') + '(?![A-Za-z/])', 'g'), m;
+      while ((m = re.exec(text))) {
+        var at = m.index + m[1].length;
+        if (taken.slice(at, at + n.length).trim() !== '') continue;
+        taken = taken.slice(0, at) + new Array(n.length + 1).join('#') + taken.slice(at + n.length);
+        found.push({ name: alias[n] || n, at: at, len: n.length });
+      }
+    });
+    found.sort(function (a, b) { return a.at - b.at; });
+    var inChoice = [], seen = {};
+    found.forEach(function (f, i) {
+      var sp = D.findSpell(f.name);
+      if (!sp || seen[sp.name]) return;
+      seen[sp.name] = 1;
+      if (oneOf && f.at >= oneOf.index && f.at < oneOf.index + oneOf[0].length) { inChoice.push(sp.name); return; }
+      // the words up to the next spell (or the end of the sentence) say when and how often
+      var end = text.indexOf('.', f.at + f.len); if (end < 0) end = text.length;
+      var next = found[i + 1] && found[i + 1].at < end ? found[i + 1].at : end;
+      var after = text.slice(f.at + f.len, next), tail = text.slice(f.at + f.len, end);
+      var start = text.lastIndexOf('.', f.at) + 1, before = text.slice(start, f.at);
+      var lv = (after.match(/^[^().]{0,20}\((\d+)(?:st|nd|rd|th) level/) || after.match(/from (\d+)(?:st|nd|rd|th) level/) ||
+        before.match(/From (\d+)(?:st|nd|rd|th) level/i) || [])[1];
+      var per = !sp.level ? '' : /at will/.test(after) ? 'at will' : /short or long rest/.test(tail) ? '1/short rest' : /long rest/.test(tail) ? '1/long rest' : /ritual/.test(tail) ? 'ritual' : '';
+      out.spells.push({ name: sp.name, minLevel: lv ? +lv : 1, ability: abil, per: per, slots: withSlots && sp.level > 0 });
+    });
+    if (inChoice.length > 1) out.choices.push({ count: 1, names: inChoice, level: 0, label: 'Cantrip', ability: abil, optional: optional });
+    return out;
+  };
+
   // Work out whether a tool proficiency string is a fixed tool or a choice.
   var WORDNUM = { one: 1, two: 2, three: 3, four: 4 };
   R.parseTool = function (str) {
@@ -206,6 +257,19 @@
     var senses = { dv: 0 };
     var feats = [];
     var bgSpells = [];
+    // Spells that come from the lineage, feats or the player's own additions (not from a class)
+    var innate = [];
+    function grantSpells(text, src, trait, keyBase, step, extra) {
+      var g = R.spellsInText(text);
+      g.spells.forEach(function (sp) { innate.push(Object.assign({ src: src, trait: trait, kind: step === 'lineage' ? 'lineage' : 'feat' }, sp)); });
+      g.choices.forEach(function (gc, j) {
+        var names = gc.names || (D.spellLists[gc.list] || []).filter(function (n) { var x = D.findSpell(n); return x && x.level === gc.level && tagOk(x.tag, filters); });
+        var c = choice(keyBase + j, step, trait + ': ' + gc.label + (gc.optional ? ' (if you take this option)' : ''), gc.count,
+          names.map(function (n) { var x = D.findSpell(n); return { v: x.name, label: x.name, pre: x.school }; }), Object.assign({ spellChoice: true }, extra || {}));
+        if (gc.optional) c.missing = 0;
+        c.picked.forEach(function (n) { innate.push({ src: src, trait: trait, kind: step === 'lineage' ? 'lineage' : 'feat', name: n, minLevel: 1, ability: gc.ability, per: '', picked: true }); });
+      });
+    }
 
     // A choice is a named slot the player fills from a list of options.
     function choice(key, step, label, count, options, extra) {
@@ -295,6 +359,9 @@
         if (L.lc) freshChoice('lin.lang', 'lineage', 'Lineage language' + (L.lc > 1 ? 's' : ''), L.lc, R.choosableLanguages(), 'languages');
       });
       L.tr.forEach(function (t) { out.features.push({ src: L.name, kind: 'lineage', n: t[0], t: t[1] }); });
+      L.tr.forEach(function (t, i) { grantSpells(t[1], L.subName && L.subName.indexOf(L.name) < 0 ? L.name + ' (' + L.subName + ')' : (L.subName || L.name), t[0], 'lin.spell' + i + '.', 'lineage'); });
+      if (innate.some(function (x) { return /chosen with your lineage/.test(x.ability); }) || L.tr.some(function (t) { return /chosen with your lineage/.test(R.spellsInText(t[1]).choices.map(function (c) { return c.ability; }).join()); }))
+        out.linSpellAbility = choice('lin.spellab', 'lineage', 'Spellcasting ability for your lineage spells', 1, opts(['INT', 'WIS', 'CHA'])).picked[0] || '';
       for (var fi = 0; fi < (L.feat || 0); fi++) feats.push({ slot: 'linfeat' + fi, step: 'lineage', label: 'Lineage feat' });
     }
 
@@ -451,6 +518,7 @@
       slot.feat = f;
       out.feats.push(f);
       out.features.push({ src: 'Feat', kind: 'feat', n: f.n, t: f.t });
+      grantSpells(f.t, f.n, f.n, slot.slot + '.fsp', slot.step, { asiSlot: slot.slot });
       var chosenAb = null;
       if (f.asi && f.asi.length === 1 && f.asi[0] !== 'ANY') chosenAb = f.asi[0];
       else if (f.asi && f.asi.length) {
@@ -556,7 +624,8 @@
       // Mage Armor (the spell): 13 + Dex while wearing no armor; the best of these counts, they don't stack
       if (ch.armor === 'spell:mage-armor') {
         cands.push([13 + M('DEX'), 'Mage Armor']);
-        var knowsMA = Object.keys(ch.spells || {}).some(function (k) { var sp = ch.spells[k] || {}; return arr(sp.c).concat(arr(sp.k), arr(sp.p)).indexOf('Mage Armor') >= 0; });
+        var knowsMA = Object.keys(ch.spells || {}).some(function (k) { var sp = ch.spells[k] || {}; return arr(sp.c).concat(arr(sp.k), arr(sp.p)).indexOf('Mage Armor') >= 0; }) ||
+          innate.concat(arr(ch.extraSpells)).some(function (x) { return (x.name || x.n) === 'Mage Armor'; });
         if (!knowsMA) out.warnings.push('Mage Armor is on, but it is not among your spells. Fine if it comes from an item, a feat or another caster.');
       }
       cands.sort(function (a, b) { return b[0] - a[0]; });
@@ -686,6 +755,20 @@
     out.casterLevel = slotClasses > 1 ? casterLevel : 0;
     out.pact = pact;
     out.spell = out.casters[0] || null;
+
+    // ----- spells from the lineage, feats and the player's own list -----
+    var ABNAME = { Strength: 'STR', Dexterity: 'DEX', Constitution: 'CON', Intelligence: 'INT', Wisdom: 'WIS', Charisma: 'CHA' };
+    arr(ch.extraSpells).forEach(function (x, i) {
+      var sp = x && D.findSpell(x.n);
+      if (sp) innate.push({ name: sp.name, src: x.src || '', trait: '', kind: 'extra', minLevel: 1, per: x.per || '', ability: '', index: i });
+    });
+    var seenInnate = {};
+    out.innate = innate.filter(function (x) { var k = x.kind + '|' + x.name; if (seenInnate[k]) return false; seenInnate[k] = 1; return true; }).map(function (x) {
+      var ab = ABNAME[x.ability] || (/chosen with your lineage/.test(x.ability) ? out.linSpellAbility : '') || '';
+      var r = Object.assign({}, x, { ab: ab, ready: level >= x.minLevel, spell: D.findSpell(x.name) });
+      if (ab) { r.dc = 8 + pb + M(ab) + xn('spellDC'); r.atk = pb + M(ab) + xn('spellAtk'); }
+      return r;
+    });
 
     // ----- chosen options become features -----
     out.choices.forEach(function (c) {

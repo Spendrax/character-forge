@@ -3,7 +3,7 @@
   'use strict';
   var D = window.DND, R = window.Rules, AB = D.abilities;
   var KEY = 'character-forge.v1';
-  var STEPS = [['lineage', 'Lineage'], ['class', 'Class'], ['abilities', 'Abilities'], ['background', 'Background'], ['spells', 'Spells'], ['equipment', 'Equipment'], ['items', 'Items'], ['appearance', 'Appearance'], ['details', 'Details'], ['sheet', 'Sheet']];
+  var STEPS = [['lineage', 'Lineage'], ['class', 'Class'], ['abilities', 'Abilities'], ['background', 'Background'], ['spells', 'Spells'], ['myspells', 'My spells'], ['equipment', 'Equipment'], ['items', 'Items'], ['appearance', 'Appearance'], ['details', 'Details'], ['sheet', 'Sheet']];
   var TAGS = [['official', 'Official'], ['setting', 'Setting books'], ['ua', 'Unearthed Arcana'], ['homebrew', 'Homebrew']];
 
   var store = { chars: [], current: '', detail: true, filters: { official: true, setting: true, ua: true, homebrew: true } };
@@ -372,7 +372,7 @@
 
   function stepSpells() {
     var h = '<h2>Spells</h2>' + partImportHtml('spells');
-    if (!d.casters.length) return h + '<p class="notice">' + (d.cls ? 'This character has no spellcasting yet.' : 'Pick a class first.') + '</p>';
+    if (!d.casters.length) return h + '<p class="notice">' + (d.cls ? 'This character has no class spellcasting yet.' : 'Pick a class first.') + (d.innate.length ? ' Spells from your lineage or feats are on ' + btn('step', 'My spells', { v: 'myspells' }, 'linkbtn') + '.' : '') + '</p>';
 
     if (!d.casters.some(function (s) { return s.clsId === ui.casterTab; })) ui.casterTab = d.casters[0].clsId;
     h += slotsHtml();
@@ -390,6 +390,8 @@
     if (S.unlimited) h += '<p class="small muted">No spell maximum for this character: the usual numbers are shown in brackets, but you can add more.</p>';
     if (S.note) h += '<p class="small muted">' + esc(S.note) + '</p>';
     if (S.always.length) h += '<p><b>Always prepared:</b> ' + S.always.map(spellLink).join(', ') + '</p>';
+    var innR = d.innate.filter(function (x) { return x.ready; });
+    if (innR.length) h += '<p class="small"><b>Also yours, from your lineage, feats or added by you:</b> ' + innR.map(function (x) { return spellLink(x.name); }).join(', ') + '. These don’t count toward your class numbers; see them all on ' + btn('step', 'My spells', { v: 'myspells' }, 'linkbtn') + '.</p>';
     var levels = []; for (var i = S.cantripsMax ? 0 : 1; i <= S.maxLevel; i++) levels.push(i);
     if (levels.indexOf(ui.spellLevel) < 0) ui.spellLevel = levels[0];
     var q = ui.q.spells || '';
@@ -409,6 +411,101 @@
         (text ? '<div class="small">' + esc(text) + '</div>' : '') + '</div></div>';
     }).join('') + '</div>' + (rows.length ? '' : '<p class="muted">No spells match.</p>');
     return h + '<p class="small muted">' + (book ? '✓ in your spellbook · ★ prepared. ' : '') + 'Spell names link to the full text on the wiki.</p>';
+  }
+  // Everything the character can cast in one place: class spells (prepared, known or in the spellbook),
+  // always-prepared subclass spells, lineage and feat spells, and spells the player added from elsewhere.
+  function mySpellRows() {
+    var rows = {}, order = [];
+    function add(name, src) {
+      var s = D.findSpell(name), key = s ? s.name : name;
+      if (!rows[key]) { rows[key] = { name: key, s: s, srcs: [], ready: false, book: null, prepared: false }; order.push(key); }
+      var r = rows[key];
+      r.srcs.push(src);
+      if (src.ready) r.ready = true;
+      return r;
+    }
+    d.casters.forEach(function (S) {
+      S.cantrips.forEach(function (n) { add(n, { label: S.name, how: 'cantrip', ready: true, cls: S.clsId }); });
+      S.always.forEach(function (n) { add(n, { label: S.name, how: 'always prepared', ready: true, cls: S.clsId }); });
+      S.known.forEach(function (n) {
+        if (S.mode !== 'spellbook') return add(n, { label: S.name, how: S.mode === 'prepared' ? 'prepared' : 'known', ready: true, cls: S.clsId });
+        var prep = S.prepared.indexOf(n) >= 0, r = add(n, { label: S.name, how: prep ? 'prepared' : 'in spellbook', ready: prep, cls: S.clsId });
+        r.book = S; r.prepared = r.prepared || prep;
+      });
+    });
+    d.innate.forEach(function (x) {
+      var label = x.kind === 'extra' ? (x.src || 'Added by you') : x.kind === 'feat' ? 'Feat: ' + x.src : x.src;
+      var how = x.ready ? (x.per || (x.spell && x.spell.level ? '' : 'cantrip')) : 'from level ' + x.minLevel;
+      var r = add(x.name, { label: label, how: how, ready: x.ready, kind: x.kind, dc: x.dc, atk: x.atk, ab: x.ab, slots: x.slots, extra: x.kind === 'extra' ? x.index : null });
+      if (x.kind !== 'extra') r.trait = x.trait;
+    });
+    return order.map(function (k) { return rows[k]; });
+  }
+  function stepMySpells() {
+    var h = '<h2>My spells</h2><p class="muted">Every spell this character can cast, gathered from the Spells step, the lineage, feats and anything you add below. Pick and change class spells on the Spells step.</p>';
+    var all = mySpellRows(), view = ui.mySpellsView || 'ready';
+    var hidden = all.filter(function (r) { return !r.ready; }).length;
+    if (d.casters.length) h += slotsHtml() + d.casters.map(function (S) {
+      return '<div class="facts"><span><b>' + esc(S.name) + '</b></span><span><b>Save DC</b> ' + S.dc + '</span><span><b>Spell attack</b> ' + R.fmt(S.atk) + '</span>' +
+        (S.mode === 'spellbook' ? '<span><b>Prepared</b> ' + S.prepared.length + (S.unlimited ? '' : ' / ' + S.preparedMax) + ' (★)</span>' : '') + '</div>';
+    }).join('');
+    var innAb = {}; d.innate.forEach(function (x) { if (x.ab && x.kind !== 'extra') innAb[x.ab] = x; });
+    var abKeys = Object.keys(innAb);
+    if (abKeys.length) h += '<div class="facts">' + abKeys.map(function (a) { var x = innAb[a]; return '<span><b>' + (d.innate.some(function (y) { return y.kind === 'lineage' && y.ab === a; }) ? 'Lineage' : 'Feat') + ' spells (' + a + ')</b> DC ' + x.dc + ' · attack ' + R.fmt(x.atk) + '</span>'; }).join('') + '</div>';
+    if (d.innate.some(function (x) { return x.kind === 'lineage' && !x.ab; }) && d.choices.some(function (c) { return c.key === 'lin.spellab'; }))
+      h += '<p class="small" style="color:var(--warn)">Choose the spellcasting ability for your lineage spells on the Lineage step to see their save DC.</p>';
+    h += '<div class="toolbar"><div class="pills">' + btn('mySpellsView', 'Ready to cast', { v: 'ready' }, 'pill' + (view === 'ready' ? ' on' : '')) +
+      btn('mySpellsView', 'Everything' + (hidden ? ' (+' + hidden + ')' : ''), { v: 'all' }, 'pill' + (view === 'all' ? ' on' : '')) + '</div>' + search('myspells', 'Filter by name or school…') + '</div>';
+    if (hidden && view === 'ready') h += '<p class="small muted">' + hidden + ' more in “Everything”: spellbook spells you haven’t prepared and lineage spells you get at a higher level.</p>';
+    var q = ui.q.myspells || '';
+    var rows = all.filter(function (r) { return (view === 'all' || r.ready) && match(q, r.name + ' ' + (r.s ? r.s.school : '')); });
+    if (!all.length) h += '<p class="notice">No spells yet. Pick a spellcasting class and choose spells on the Spells step, take a lineage or feat that grants spells, or add one below.</p>';
+    else if (!rows.length) h += '<p class="muted">No spells match.</p>';
+    for (var l = 0; l <= 9; l++) {
+      var at = rows.filter(function (r) { return (r.s ? r.s.level : 0) === l; }).sort(function (a, b) { return a.name < b.name ? -1 : 1; });
+      if (!at.length) continue;
+      var slotN = l ? (d.slots[l - 1] || 0) : 0, pactHere = d.pact && d.pact.level === l ? d.pact.n : 0;
+      h += '<h3 class="lvl-head">' + (l ? 'Level ' + l : 'Cantrips') + (l ? ' <span class="small muted">' + (slotN ? slotN + ' slot' + (slotN === 1 ? '' : 's') : '') + (pactHere ? (slotN ? ' + ' : '') + pactHere + ' pact slot' + (pactHere === 1 ? '' : 's') : '') + '</span>' : '') + '</h3>';
+      h += '<div class="optlist my-spells" style="max-height:none">' + at.map(mySpellRowHtml).join('') + '</div>';
+    }
+    h += '<p class="small muted">' + (all.some(function (r) { return r.book; }) ? '★ prepared · ☆ in your spellbook, not prepared (tap to prepare). ' : '') + 'Spell names link to the full text on the wiki.</p>';
+    return h + extraSpellsHtml();
+  }
+  function mySpellRowHtml(r) {
+    var s = r.s, text = store.detail && s ? R.spellText(s.name) : '';
+    var star = r.book && s && s.level ? '<button type="button" class="check' + (r.prepared ? ' on' : '') + '" title="' + (r.prepared ? 'Prepared — tap to unprepare' : 'Not prepared — tap to prepare') + '" aria-label="' + (r.prepared ? 'Unprepare ' : 'Prepare ') + esc(r.name) + '" data-act="spell" data-c="' + r.book.clsId + '" data-b="p" data-v="' + esc(r.name) + '">' + (r.prepared ? '★' : '☆') + '</button>' : '<span class="check-gap"></span>';
+    var chips = r.srcs.map(function (x) {
+      var bits = [x.how, x.dc != null && (x.kind === 'lineage' || x.kind === 'feat') ? 'DC ' + x.dc + ' · ' + R.fmt(x.atk) : '', x.slots ? 'or with slots' : ''].filter(Boolean).join(', ');
+      return '<span class="src-chip' + (x.ready ? '' : ' later') + '">' + esc(x.label) + (bits ? ' · ' + esc(bits) : '') + '</span>';
+    }).join(' ');
+    var meta = s ? [s.school, s.time, s.range, s.duration + (s.conc ? ' (concentration)' : ''), s.comp].filter(Boolean).join(' · ') : '';
+    return '<div class="spell' + (r.ready ? ' on' : ' not-ready') + '">' + star + '<div><b>' + spellLink(r.name) + '</b>' + (s && s.conc ? ' <span class="tag">conc</span>' : '') + (s && s.ritual ? ' <span class="tag">ritual</span>' : '') + (s ? tag(s.tag) : '') +
+      ' <span class="small muted">' + esc(meta) + '</span><div class="src-chips">' + chips + (r.trait ? ' <span class="small muted">(' + esc(r.trait) + ')</span>' : '') + '</div>' +
+      (text ? '<div class="small">' + esc(text) + '</div>' : '') + '</div></div>';
+  }
+  // Spells from feats, magic items, boons or house rules that the builder can't work out by itself
+  function extraSpellsHtml() {
+    var X = ch.extraSpells || [];
+    var h = '<div class="panel extra-spells"><h3>Other spells</h3><p class="small muted">For spells from a feat choice (Magic Initiate, Fey Touched…), a magic item, a boon or your DM. Lineage spells and fixed feat spells are added for you.</p>';
+    if (X.length) h += '<div class="optlist" style="max-height:none">' + X.map(function (x) {
+      var s = D.findSpell(x.n);
+      return '<div class="spell on"><div style="flex:1"><b>' + spellLink(x.n) + '</b> <span class="small muted">' + (s ? (s.level ? 'Level ' + s.level : 'Cantrip') + ' · ' + esc(s.school) : '') + '</span>' +
+        '<div class="row extra-spell-fields"><label>Where from <input id="es-' + x.id + '-src" data-espell="' + x.id + '" data-f="src" value="' + esc(x.src || '') + '" placeholder="e.g. Magic Initiate, Ring of Spell Storing"></label>' +
+        '<label>How often <input id="es-' + x.id + '-per" data-espell="' + x.id + '" data-f="per" value="' + esc(x.per || '') + '" placeholder="e.g. 1/long rest, at will"></label></div></div>' +
+        btn('rmExtraSpell', '✕', { v: x.id }, 'btn small') + '</div>';
+    }).join('') + '</div>';
+    var q = ui.q.extraspell || '';
+    h += '<div class="toolbar" style="margin-top:.6rem">' + search('extraspell', 'Find any spell to add…') + '</div>';
+    if (q.trim().length >= 2) {
+      var have = {}; X.forEach(function (x) { have[x.n] = 1; });
+      var found = Object.keys(D.spells).map(function (k) { return D.spells[k]; }).filter(function (s) { return ok(s.tag) && match(q, s.name); })
+        .sort(function (a, b) { return a.level - b.level || (a.name < b.name ? -1 : 1); }).slice(0, 25);
+      h += found.length ? '<div class="optlist">' + found.map(function (s) {
+        return '<div class="spell"><div style="flex:1"><b>' + esc(s.name) + '</b> <span class="small muted">' + (s.level ? 'Level ' + s.level : 'Cantrip') + ' · ' + esc(s.school) + '</span></div>' +
+          (have[s.name] ? '<span class="small muted">added</span>' : btn('addExtraSpell', '+ Add', { v: s.name }, 'btn small')) + '</div>';
+      }).join('') + '</div>' : '<p class="muted small">No spell by that name.</p>';
+    }
+    return h + '</div>';
   }
   function spellLink(n) { var s = D.findSpell(n); return s ? '<a href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc(s.name) + '</a>' : esc(n); }
   function slotsHtml() {
@@ -735,6 +832,17 @@
         if (odd.length) h += '<p><b>Also always prepared:</b> ' + esc(odd.join(', ')) + '</p>';
       });
     }
+    var inn = d.innate.filter(function (x) { return x.ready; });
+    if (inn.length) {
+      if (!d.casters.length) h += '<h3>Spellcasting</h3>';
+      h += '<h4 style="margin-top:.7rem">' + (d.casters.length ? 'Other spells' : 'Spells') + '</h4>' + inn.map(function (x) {
+        var s = x.spell, t = store.detail && s ? R.spellText(s.name) : '';
+        var from = x.kind === 'extra' ? (x.src || 'added') : x.kind === 'feat' ? 'feat: ' + x.src : x.src;
+        var how = [s && !s.level ? 'cantrip' : (s ? 'level ' + s.level : ''), x.per, x.slots ? 'or with slots' : '', x.dc != null ? 'DC ' + x.dc + ', ' + R.fmt(x.atk) + ' (' + x.ab + ')' : ''].filter(Boolean).join(', ');
+        return store.detail ? '<div class="feature"><b>' + spellLink(x.name) + '</b> <span class="lv">' + esc(from + ' · ' + how) + '</span>' + (t ? '<div>' + esc(t) + '</div>' : '') + '</div>'
+          : '<p>' + spellLink(x.name) + ' <small class="muted">(' + esc(from + ' · ' + how) + ')</small></p>';
+      }).join('');
+    }
     var picks = d.choices.filter(function (c) { return /^(lin\.pick\d|sc\.[\w-]+\.variant)/.test(c.key) && c.picked.length; });
     if (picks.length) h += '<h3>Chosen options</h3>' + picks.map(function (c) { return '<p><b>' + esc(c.label) + ':</b> ' + esc(c.picked.join(', ')) + '</p>'; }).join('');
     d.classes.forEach(function (e) {
@@ -804,7 +912,7 @@
     d = R.derive(ch, store.filters);
     var active = document.activeElement, fid = active && active.id, pos = null;
     try { pos = active && active.selectionStart; } catch (e) { pos = null; }
-    var body = { lineage: stepLineage, 'class': stepClass, abilities: stepAbilities, background: stepBackground, spells: stepSpells, equipment: stepEquipment, items: stepItems, appearance: stepAppearance, details: stepDetails, sheet: stepSheet }[ui.step]();
+    var body = { lineage: stepLineage, 'class': stepClass, abilities: stepAbilities, background: stepBackground, spells: stepSpells, myspells: stepMySpells, equipment: stepEquipment, items: stepItems, appearance: stepAppearance, details: stepDetails, sheet: stepSheet }[ui.step]();
     var top = '<header class="top"><span class="brand">Character Forge</span><select data-ui="current" aria-label="Character">' + store.chars.map(function (c) {
       return '<option value="' + c.id + '"' + (c.id === ch.id ? ' selected' : '') + '>' + esc(title(c)) + '</option>';
     }).join('') + '</select>' + '<button type="button" class="btn" data-act="undo" title="Undo (Ctrl+Z)"' + (undoStack.length ? '' : ' disabled') + '>↶ Undo</button><button type="button" class="btn" data-act="redo" title="Redo (Ctrl+Y)"' + (redoStack.length ? '' : ' disabled') + '>↷ Redo</button>' + btn('new', 'New') + btn('dup', 'Duplicate') + btn('import', 'Import') + btn('export', 'Export') +
@@ -813,7 +921,7 @@
         return '<label><input type="checkbox" data-filter="' + t[0] + '"' + (store.filters[t[0]] !== false ? ' checked' : '') + '> ' + t[1] + '</label>';
       }).join('') + '<label title="Longer feature text and spell descriptions"><input type="checkbox" data-setting="detail"' + (store.detail !== false ? ' checked' : '') + '> Detailed text</label></span><input type="file" id="importFile" hidden><input type="file" id="partImportFile" hidden></header>';
     var nav = '<nav class="steps" aria-label="Steps">' + STEPS.map(function (s) {
-      var n = d.todo[s[0]], show = ['sheet', 'details', 'equipment', 'items', 'appearance'].indexOf(s[0]) < 0;
+      var n = d.todo[s[0]], show = ['sheet', 'details', 'equipment', 'items', 'appearance', 'myspells'].indexOf(s[0]) < 0;
       return '<button type="button" class="step' + (ui.step === s[0] ? ' on' : '') + '" data-act="step" data-v="' + s[0] + '"><span>' + s[1] + '</span>' + (show ? (n ? '<span class="badge" title="' + n + ' open">' + n + '</span>' : '<span class="badge done">✓</span>') : '') + '</button>';
     }).join('') + '</nav>';
     var side = '<aside class="side">' + (ui.step !== 'appearance' ? '<div class="side-portrait" data-act="step" data-v="appearance" title="Edit appearance">' + (ch.picture ? pictureHtml('in-side') : avatarCanvas('side')) + '</div>' : '') + '<h4>' + esc(title(ch)) + '</h4><div class="muted">' + esc(summaryLine(ch, d)) + '</div><div class="stats">' +
@@ -932,6 +1040,9 @@
       if (i >= 0) cur.splice(i, 1); else if (c.count === 1) cur = [v]; else cur.push(v); // going over the usual number only warns
       ch.picks[key] = cur;
     },
+    mySpellsView: function (v) { ui.mySpellsView = v; },
+    addExtraSpell: function (v) { ch.extraSpells = ch.extraSpells || []; if (!ch.extraSpells.some(function (x) { return x.n === v; })) ch.extraSpells.push({ id: R.uid(), n: v, src: '', per: '' }); ui.q.extraspell = ''; },
+    rmExtraSpell: function (v) { ch.extraSpells = (ch.extraSpells || []).filter(function (x) { return x.id !== v; }); },
     spellLevel: function (v) { ui.spellLevel = +v; ui.q.spells = ''; },
     spell: function (v, el) {
       var b = el.getAttribute('data-b'), id = el.getAttribute('data-c'), S = d.casters.filter(function (x) { return x.clsId === id; })[0];
@@ -1049,6 +1160,7 @@
     var t = e.target, a = function (n) { return t.getAttribute(n); };
     if (a('data-q') != null) { ui.q[a('data-q')] = t.value; render(); }
     else if (a('data-piczoom')) { ch.pictureView = Object.assign({}, ch.pictureView, { zoom: +t.value }); livePicture(); save(); }
+    else if (a('data-espell')) { var esx = (ch.extraSpells || []).filter(function (x) { return x.id === a('data-espell'); })[0]; if (esx) { esx[a('data-f')] = t.value; save(); } }
     else if (a('data-itemtext')) { var itx = ch.items.filter(function (i) { return i.id === a('data-itemtext'); })[0]; if (itx) { itx.note = t.value; save(); } }
     else if ((a('data-carmor') || a('data-cweapon')) && t.tagName === 'INPUT' && t.type !== 'checkbox') { applyCustomField(t); save(); }
     else if (a('data-text')) { var path = a('data-text').split('.'); if (path.length > 1) ch[path[0]][path[1]] = t.value; else ch[path[0]] = t.value; save(); }
@@ -1061,7 +1173,7 @@
     if (t.id === 'partImportFile') return loadPartImport(t);
     if (a('data-partfrom')) { if (ui.partImport) ui.partImport.choose = +a('data-partfrom'); return; }
     if (a('data-check') === 'pictureWhole') { ch.pictureFit = t.checked ? 'contain' : ''; return requestRender(); }
-    if (a('data-text') || a('data-itemtext')) return requestRender();
+    if (a('data-text') || a('data-itemtext') || a('data-espell')) return requestRender();
     if (a('data-ui')) { if (a('data-ui') === 'current') { store.current = t.value; ui.confirmDelete = false; ui.partImport = null; ui.partImportDone = null; } else ui[a('data-ui')] = t.value; }
     else if (a('data-filter')) store.filters[a('data-filter')] = t.checked;
     else if (a('data-imp5part')) { var IP = ui.import5e; if (IP) { var eid = +a('data-imp5part'), cur = (IP.parts[eid] || []).filter(function (k) { return k !== t.value; }); if (t.checked) cur.push(t.value); IP.parts[eid] = cur; } }
