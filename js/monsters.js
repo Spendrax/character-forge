@@ -6,7 +6,9 @@
   var AB = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'];
   var CRS = [0, 0.125, 0.25, 0.5].concat(Array.apply(null, Array(30)).map(function (_, i) { return i + 1; }));
   var XP = { 0: 10, 0.125: 25, 0.25: 50, 0.5: 100, 1: 200, 2: 450, 3: 700, 4: 1100, 5: 1800, 6: 2300, 7: 2900, 8: 3900, 9: 5000, 10: 5900, 11: 7200, 12: 8400, 13: 10000, 14: 11500, 15: 13000, 16: 15000, 17: 18000, 18: 20000, 19: 22000, 20: 25000, 21: 33000, 22: 41000, 23: 50000, 24: 62000, 25: 75000, 26: 90000, 27: 105000, 28: 120000, 29: 135000, 30: 155000 };
-  function crText(c) { return c === 0.125 ? '1/8' : c === 0.25 ? '1/4' : c === 0.5 ? '1/2' : String(c); }
+  function typeKey(t) { return /^swarm/i.test(t || '') ? 'swarm' : (t || ''); }
+  function bookOf(m) { return m.mine ? 'Yours' : m.ix ? m.src : 'SRD 5.1 (full stat blocks)'; }
+  function crText(c) { if (c == null) return '—'; return c === 0.125 ? '1/8' : c === 0.25 ? '1/4' : c === 0.5 ? '1/2' : String(c); }
   function mod(s) { return Math.floor((s - 10) / 2); }
   function fmt(n) { return (n >= 0 ? '+' : '') + n; }
   function pbFor(cr) { return cr < 5 ? 2 : cr < 9 ? 3 : cr < 13 ? 4 : cr < 17 ? 5 : cr < 21 ? 6 : cr < 25 ? 7 : cr < 29 ? 8 : 9; }
@@ -31,7 +33,7 @@
 
     function all() {
       var mine = (store.myMonsters || []).map(function (m) { return Object.assign({ mine: true }, m); });
-      return mine.concat((root.DND && root.DND.monsters) || []);
+      return mine.concat((root.DND && root.DND.monsters) || [], (root.DND && root.DND.monsterIndex) || []);
     }
     function find(id) { return all().filter(function (m) { return m.id === id; })[0]; }
     function loaded() { return !!(root.DND && root.DND.monsters); }
@@ -82,19 +84,31 @@
       return h + '</article>';
     }
 
+    // monsters from other books: what AideDD's list says, and a link to the full stat block there
+    function summaryBlock(m) {
+      var line = function (k, v) { return v || v === 0 ? '<div><b>' + k + '</b> ' + esc(v) + '</div>' : ''; };
+      return '<article class="statblock"><h2>' + esc(m.n) + '</h2><div class="sb-sub">' + esc(m.size + ' ' + m.type + (m.sub ? ' (' + m.sub + ')' : '') + (m.al ? ', ' + m.al : '')) + '</div><hr>' +
+        line('Armor Class', m.acv) + line('Hit Points', m.hp) + line('Movement', 'walk' + (m.mv ? ', ' + m.mv : '')) +
+        line('Challenge', m.cr == null ? '— (no CR: a companion or summoned creature)' : crText(m.cr) + ' (' + (XP[m.cr] || 0).toLocaleString('en') + ' XP)') +
+        (m.leg1 ? '<div><b>Legendary</b> yes</div>' : '') + line('Book', m.src) + '<hr>' +
+        '<p>The full stat block (abilities, traits, actions) is in <i>' + esc(m.src) + '</i>, so it isn’t copied here.</p>' +
+        '<p><a class="btn primary" href="' + esc(m.url) + '" target="_blank" rel="noopener">Open the full stat block on AideDD ↗</a></p>' +
+        '<p class="small muted">Want it here with rollable attacks? Use “Copy as my own” and fill in the rest from your book or AideDD.</p></article>';
+    }
     function filtered() {
       var q = M.q.toLowerCase(), lo = M.crMin === '' ? -1 : +M.crMin, hi = M.crMax === '' ? 99 : +M.crMax;
       var list = all().filter(function (m) {
         var cr = +m.cr || 0;
-        return (!q || (m.n + ' ' + m.type + ' ' + (m.sub || '')).toLowerCase().indexOf(q) >= 0) && (!M.type || m.type === M.type) &&
+        return (!q || (m.n + ' ' + m.type + ' ' + (m.sub || '')).toLowerCase().indexOf(q) >= 0) && (!M.type || typeKey(m.type) === M.type) && (!M.book || bookOf(m) === M.book) &&
           (!M.size || m.size === M.size) && cr >= lo && cr <= hi && (M.sort !== 'mine' || m.mine);
       });
-      if (M.sort === 'cr') list.sort(function (a, b) { return (+a.cr || 0) - (+b.cr || 0) || (a.n < b.n ? -1 : 1); });
+      if (M.sort === 'cr') list.sort(function (a, b) { return (a.cr == null ? 99 : +a.cr) - (b.cr == null ? 99 : +b.cr) || (a.n < b.n ? -1 : 1); });
       else list.sort(function (a, b) { return a.n < b.n ? -1 : 1; });
       return list;
     }
     function listHtml() {
-      var types = []; all().forEach(function (m) { if (m.type && types.indexOf(m.type) < 0) types.push(m.type); }); types.sort();
+      var types = [], books = []; all().forEach(function (m) { var t = typeKey(m.type), b = bookOf(m); if (t && types.indexOf(t) < 0) types.push(t); if (books.indexOf(b) < 0) books.push(b); }); types.sort();
+      books.sort(function (a, b) { var r = function (x) { return x === 'Yours' ? 0 : /^SRD/.test(x) ? 1 : /^Monster Manual/.test(x) ? 2 : /^Monsters of/.test(x) ? 3 : 4; }; return r(a) - r(b) || (a < b ? -1 : 1); });
       var sel = function (key, label, opts) {
         return '<label class="mon-f">' + label + ' <select data-mon="' + key + '"><option value="">Any</option>' + opts.map(function (o) {
           var v = Array.isArray(o) ? o[0] : o, t = Array.isArray(o) ? o[1] : o;
@@ -103,12 +117,12 @@
       };
       var list = filtered();
       var h = '<div class="mon-tools"><input type="search" id="mon-q" data-mon="q" placeholder="Search monsters…" value="' + esc(M.q) + '">' +
-        sel('type', 'Type', types.map(function (t) { return [t, t.charAt(0).toUpperCase() + t.slice(1)]; })) + sel('size', 'Size', SIZES) +
+        sel('type', 'Type', types.map(function (t) { return [t, t.charAt(0).toUpperCase() + t.slice(1)]; })) + sel('size', 'Size', SIZES) + sel('book', 'Book', books) +
         sel('crMin', 'CR from', CRS.map(function (c) { return [c, crText(c)]; })) + sel('crMax', 'to', CRS.map(function (c) { return [c, crText(c)]; })) +
         '<label class="mon-f">Sort <select data-mon="sort">' + [['name', 'Name'], ['cr', 'Challenge'], ['mine', 'Only mine']].map(function (o) { return '<option value="' + o[0] + '"' + (M.sort === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label>' +
-        '</div><div class="small muted mon-count">' + list.length + ' monster' + (list.length === 1 ? '' : 's') + (M.q || M.type || M.size || M.crMin !== '' || M.crMax !== '' ? ' · ' + btn('monClear', 'clear filters', {}, 'linkbtn') : '') + '</div>';
+        '</div><div class="small muted mon-count">' + list.length + ' monster' + (list.length === 1 ? '' : 's') + (M.q || M.type || M.size || M.book || M.crMin !== '' || M.crMax !== '' ? ' · ' + btn('monClear', 'clear filters', {}, 'linkbtn') : '') + '</div>';
       h += '<div class="mon-list" role="list">' + list.map(function (m) {
-        return '<button type="button" role="listitem" class="mon-row' + (M.open === m.id ? ' on' : '') + '" data-act="monOpen" data-v="' + esc(m.id) + '"><span class="mon-cr">CR ' + crText(+m.cr || 0) + '</span><span class="mon-name">' + esc(m.n) + (m.mine ? ' <span class="tag">yours</span>' : '') + '</span><span class="mon-meta">' + esc(m.size + ' ' + m.type) + '</span></button>';
+        return '<button type="button" role="listitem" class="mon-row' + (M.open === m.id ? ' on' : '') + '" data-act="monOpen" data-v="' + esc(m.id) + '"><span class="mon-cr">CR ' + crText(+m.cr || 0) + '</span><span class="mon-name">' + esc(m.n) + (m.mine ? ' <span class="tag">yours</span>' : '') + '</span><span class="mon-meta">' + esc(m.size + ' ' + m.type) + (m.ix ? ' · ' + esc(m.src.replace(/^(Adventures|Rules|Extra) \((.*)\)$/, '$2')) : '') + '</span></button>';
       }).join('') + (list.length ? '' : '<p class="muted" style="padding:.8rem">No monster matches.</p>') + '</div>';
       return h;
     }
@@ -146,20 +160,20 @@
     function html() {
       if (!loaded() && !M.loadError) { load(api.render); return '<h2>Monsters</h2><p class="muted">Loading monsters…</p>'; }
       var open = M.open && find(M.open), editing = M.edit && mineById(M.edit);
-      var h = '<div class="mon-head"><h2>Monsters</h2><span class="small muted">' + ((root.DND.monsters || []).length) + ' monsters from the 2014 rules (SRD 5.1)</span>' + btn('monNew', '+ Add your own monster', {}, 'btn') + '</div>';
+      var h = '<div class="mon-head"><h2>Monsters</h2><span class="small muted">' + ((root.DND.monsters || []).length) + ' with full stat blocks (SRD 5.1) and ' + ((root.DND.monsterIndex || []).length) + ' more from other 2014 books</span>' + btn('monNew', '+ Add your own monster', {}, 'btn') + '</div>';
       if (M.loadError) h += '<p class="notice">The monster list couldn’t load. Check your connection and open Monsters again.</p>';
-      var right = editing ? editorHtml(editing) : open ? statBlock(open) : '<div class="statblock empty"><p class="muted">Pick a monster to see its stat block. Tap any bonus or dice in a stat block to roll it.</p></div>';
+      var right = editing ? editorHtml(editing) : open ? (open.ix ? summaryBlock(open) : statBlock(open)) : '<div class="statblock empty"><p class="muted">Pick a monster to see its stat block. Tap any bonus or dice in a stat block to roll it.</p></div>';
       h += '<div class="mon-wrap' + (open || editing ? ' has-open' : '') + '"><div class="mon-left">' + listHtml() + '</div><div class="mon-right">' +
         (open || editing ? '<div class="toolbar mon-back">' + btn('monBack', '← All monsters', {}, 'btn') + (open && open.mine && !editing ? btn('monEdit', 'Edit', { v: open.id }, 'btn') : '') + (open && !open.mine ? btn('monCopy', 'Copy as my own', { v: open.id }, 'btn') : '') + '</div>' : '') + right + '</div></div>';
       if (M.roll) h += '<div class="roll-toast" role="status"><b>' + esc(M.roll.label) + '</b> <span class="roll-total">' + M.roll.total + '</span><span class="small">' + esc(M.roll.expr + ' → ' + M.roll.detail) + '</span>' + btn('monRollClose', '✕', {}, 'btn small') + '</div>';
-      h += '<p class="small muted mon-legal">Monster stat blocks: System Reference Document 5.1 by Wizards of the Coast LLC, licensed under <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC-BY-4.0</a>. Monsters from other books (Monster Manual creatures outside the SRD, Volo’s, Mordenkainen’s…) aren’t included: add them with “Add your own monster”.</p>';
+      h += '<p class="small muted mon-legal">Monster stat blocks: System Reference Document 5.1 by Wizards of the Coast LLC, licensed under <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC-BY-4.0</a>. The list of monsters from other books (name, CR, type, size, AC, hit points, book) comes from <a href="https://www.aidedd.org/dnd-filters/monsters.php" target="_blank" rel="noopener">AideDD</a>; their stat blocks stay in the books and on AideDD.</p>';
       return h;
     }
 
     var actions = {
       monOpen: function (v) { M.open = v; M.edit = ''; M.scrollTop = true; },
       monBack: function () { M.open = ''; M.edit = ''; },
-      monClear: function () { M.q = ''; M.type = ''; M.size = ''; M.crMin = ''; M.crMax = ''; },
+      monClear: function () { M.q = ''; M.type = ''; M.size = ''; M.book = ''; M.crMin = ''; M.crMax = ''; },
       monRoll: function (v, el) { var r = roll(v); if (r) M.roll = { label: el.getAttribute('data-label') || 'Roll', expr: v, total: r.total, detail: r.detail }; },
       monRollClose: function () { M.roll = null; },
       monNew: function () {
@@ -170,7 +184,11 @@
       monEdit: function (v) { M.edit = v; M.open = v; },
       monCopy: function (v) {
         var src = find(v); if (!src) return;
-        var m = JSON.parse(JSON.stringify(src)); m.id = 'my-' + Date.now().toString(36); m.n = src.n + ' (mine)'; delete m.mine;
+        var m = JSON.parse(JSON.stringify(src)); m.id = 'my-' + Date.now().toString(36); m.n = src.n + (src.ix ? '' : ' (mine)'); delete m.mine;
+        if (src.ix) {
+          m = { id: m.id, n: src.n, size: src.size, type: src.type + (src.sub ? ' (' + src.sub + ')' : ''), al: src.al, ac: String(src.acv), hp: src.hp || 1, hd: '', sp: '30 ft.' + (src.mv ? ', ' + src.mv.split(', ').map(function (x) { return x + ' ? ft.'; }).join(', ') : ''),
+            cr: src.cr == null ? 0 : src.cr, xp: XP[src.cr] || 0, pb: pbFor(src.cr || 0), ab: [10, 10, 10, 10, 10, 10], se: '', lang: '', notes: 'From ' + src.src + '. Full stat block: ' + src.url };
+        }
         ['tr', 'act', 'rea', 'leg'].forEach(function (k) { m[k + 'Text'] = (m[k] || []).map(function (b) { return (b[0] ? b[0] + '. ' : '') + b[1]; }).join('\n'); });
         store.myMonsters = store.myMonsters || []; store.myMonsters.unshift(m); M.open = m.id; M.edit = m.id;
       },

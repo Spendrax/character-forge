@@ -272,6 +272,10 @@ const sw = fs.readFileSync(path.join(__dirname, '../sw.js'), 'utf8');
   require('../js/monsters.js');
   const mons = global.DND.monsters;
   assert.equal(mons.length, 334);
+  const ix = global.DND.monsterIndex; assert(ix.length > 600);
+  const bh = ix.find(m => m.n === 'Beholder'); assert(bh && bh.cr === 13 && bh.leg1 && /aidedd\.org\/dnd\/monstres\.php\?vo=beholder$/.test(bh.url));
+  assert(!ix.some(m => mons.some(s => s.n === m.n))); // nothing listed twice
+  assert(ix.every(m => m.n && m.size && m.type && m.src && m.url && !('act' in m))); // facts and a link only
   const red = mons.find(m => m.n === 'Adult Red Dragon');
   assert.equal(red.hp, 256); assert.equal(red.cr, 17); assert.deepEqual(red.ab, [27, 10, 25, 16, 13, 21]); assert(red.leg.length && /Recharge 5–6/.test(red.act.map(a => a[0]).join()));
   assert(mons.every(m => m.n && m.size && m.type && m.ac && m.hp > 0 && m.ab.length === 6 && m.se));

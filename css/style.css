@@ -346,3 +346,4 @@ html { overflow-anchor: none; } /* the app restores scroll itself after each red
   .mon-head .btn { margin-left: 0; }
 }
 @media print { .sections, .mon-left, .mon-back, .roll-toast, .mon-head .btn { display: none !important; } .mon-wrap { display: block; } .statblock { max-height: none; } }
+.statblock a.btn.primary { display: inline-block; text-decoration: none; color: var(--accent-ink); }
