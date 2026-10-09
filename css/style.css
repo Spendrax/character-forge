@@ -251,3 +251,27 @@ html { overflow-anchor: none; } /* the app restores scroll itself after each red
 .extra-spell-fields label { font-size: .82rem; flex: 1 1 12rem; }
 .extra-spell-fields input { width: 100%; }
 .linkbtn { background: none; border: 0; padding: 0; color: var(--accent, inherit); text-decoration: underline; cursor: pointer; font: inherit; }
+
+/* Play: trackers and rests */
+.rest-bar { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin: .6rem 0 1rem; }
+.rest-msg { color: var(--ok); font-weight: 600; }
+.pips { display: inline-flex; flex-wrap: wrap; gap: .3rem; vertical-align: middle; }
+.pip { width: 1.35rem; height: 1.35rem; border-radius: 4px; border: 2px solid var(--accent); background: transparent; padding: 0; cursor: pointer; }
+.pip.on { background: var(--accent); }
+.pip.on.ok { background: var(--ok); border-color: var(--ok); }
+.pip.on.fail { background: var(--warn); border-color: var(--warn); }
+.pip:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.trk-row { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem 1rem; padding: .5rem 0; border-bottom: 1px solid var(--line); }
+.trk-row:last-child { border-bottom: 0; }
+.trk-name { flex: 1 1 12rem; min-width: 0; }
+.trk-rest { flex: 0 0 auto; }
+.pool { display: inline-flex; align-items: center; gap: .4rem; }
+.hp-row { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin-bottom: .5rem; }
+.hp-row input { width: 5rem; }
+.death { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin: .3rem 0 .6rem; }
+.ctr-edit { display: flex; flex-wrap: wrap; gap: .5rem; align-items: flex-end; margin: -.2rem 0 .8rem; font-size: .85rem; }
+.ctr-edit label { display: flex; flex-direction: column; gap: .15rem; }
+.ctr-edit input[type=number] { width: 4.5rem; }
+.slot-track { display: inline-flex; align-items: center; gap: .4rem; margin-left: .6rem; font-weight: normal; }
+.src-chips .pips { margin-left: -.1rem; }
+@media print { .pips, .rest-bar { display: none; } }

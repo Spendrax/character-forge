@@ -3,7 +3,7 @@
   'use strict';
   var D = window.DND, R = window.Rules, AB = D.abilities;
   var KEY = 'character-forge.v1';
-  var STEPS = [['lineage', 'Lineage'], ['class', 'Class'], ['abilities', 'Abilities'], ['background', 'Background'], ['spells', 'Spells'], ['myspells', 'My spells'], ['equipment', 'Equipment'], ['items', 'Items'], ['appearance', 'Appearance'], ['details', 'Details'], ['sheet', 'Sheet']];
+  var STEPS = [['lineage', 'Lineage'], ['class', 'Class'], ['abilities', 'Abilities'], ['background', 'Background'], ['spells', 'Spells'], ['myspells', 'My spells'], ['equipment', 'Equipment'], ['items', 'Items'], ['appearance', 'Appearance'], ['details', 'Details'], ['sheet', 'Sheet'], ['play', 'Play']];
   var TAGS = [['official', 'Official'], ['setting', 'Setting books'], ['ua', 'Unearthed Arcana'], ['homebrew', 'Homebrew']];
 
   var store = { chars: [], current: '', detail: true, filters: { official: true, setting: true, ua: true, homebrew: true } };
@@ -443,9 +443,10 @@
   }
   function stepMySpells() {
     var h = '<h2>My spells</h2><p class="muted">Every spell this character can cast, gathered from the Spells step, the lineage, feats and anything you add below. Pick and change class spells on the Spells step.</p>';
+    if (d.trackers.some(function (x) { return x.group === 'slots' || x.group === 'spells'; })) h += restBarHtml() + '<p class="small muted">Tap a box beside a spell level to use a slot, tap an empty one to get it back. The Play step tracks hit points and class abilities too.</p>';
     var all = mySpellRows(), view = ui.mySpellsView || 'ready';
     var hidden = all.filter(function (r) { return !r.ready; }).length;
-    if (d.casters.length) h += slotsHtml() + d.casters.map(function (S) {
+    if (d.casters.length) h += d.casters.map(function (S) {
       return '<div class="facts"><span><b>' + esc(S.name) + '</b></span><span><b>Save DC</b> ' + S.dc + '</span><span><b>Spell attack</b> ' + R.fmt(S.atk) + '</span>' +
         (S.mode === 'spellbook' ? '<span><b>Prepared</b> ' + S.prepared.length + (S.unlimited ? '' : ' / ' + S.preparedMax) + ' (★)</span>' : '') + '</div>';
     }).join('');
@@ -464,8 +465,9 @@
     for (var l = 0; l <= 9; l++) {
       var at = rows.filter(function (r) { return (r.s ? r.s.level : 0) === l; }).sort(function (a, b) { return a.name < b.name ? -1 : 1; });
       if (!at.length) continue;
-      var slotN = l ? (d.slots[l - 1] || 0) : 0, pactHere = d.pact && d.pact.level === l ? d.pact.n : 0;
-      h += '<h3 class="lvl-head">' + (l ? 'Level ' + l : 'Cantrips') + (l ? ' <span class="small muted">' + (slotN ? slotN + ' slot' + (slotN === 1 ? '' : 's') : '') + (pactHere ? (slotN ? ' + ' : '') + pactHere + ' pact slot' + (pactHere === 1 ? '' : 's') : '') + '</span>' : '') + '</h3>';
+        var st = trk('slot' + l), pt = d.pact && d.pact.level === l ? trk('pact') : null;
+      h += '<h3 class="lvl-head">' + (l ? 'Level ' + l : 'Cantrips') + (st ? ' <span class="slot-track">' + pipsHtml(st) + ' <span class="small muted">' + st.left + '/' + st.max + ' slots</span></span>' : '') +
+        (pt ? ' <span class="slot-track">' + pipsHtml(pt) + ' <span class="small muted">' + pt.left + '/' + pt.max + ' pact</span></span>' : '') + '</h3>';
       h += '<div class="optlist my-spells" style="max-height:none">' + at.map(mySpellRowHtml).join('') + '</div>';
     }
     h += '<p class="small muted">' + (all.some(function (r) { return r.book; }) ? '★ prepared · ☆ in your spellbook, not prepared (tap to prepare). ' : '') + 'Spell names link to the full text on the wiki.</p>';
@@ -476,7 +478,8 @@
     var star = r.book && s && s.level ? '<button type="button" class="check' + (r.prepared ? ' on' : '') + '" title="' + (r.prepared ? 'Prepared — tap to unprepare' : 'Not prepared — tap to prepare') + '" aria-label="' + (r.prepared ? 'Unprepare ' : 'Prepare ') + esc(r.name) + '" data-act="spell" data-c="' + r.book.clsId + '" data-b="p" data-v="' + esc(r.name) + '">' + (r.prepared ? '★' : '☆') + '</button>' : '<span class="check-gap"></span>';
     var chips = r.srcs.map(function (x) {
       var bits = [x.how, x.dc != null && (x.kind === 'lineage' || x.kind === 'feat') ? 'DC ' + x.dc + ' · ' + R.fmt(x.atk) : '', x.slots ? 'or with slots' : ''].filter(Boolean).join(', ');
-      return '<span class="src-chip' + (x.ready ? '' : ' later') + '">' + esc(x.label) + (bits ? ' · ' + esc(bits) : '') + '</span>';
+      var tk = x.ready && (x.kind === 'lineage' || x.kind === 'feat') ? trk('inn:' + r.name) : null;
+      return '<span class="src-chip' + (x.ready ? '' : ' later') + '">' + esc(x.label) + (bits ? ' · ' + esc(bits) : '') + '</span>' + (tk ? pipsHtml(tk) : '');
     }).join(' ');
     var meta = s ? [s.school, s.time, s.range, s.duration + (s.conc ? ' (concentration)' : ''), s.comp].filter(Boolean).join(' · ') : '';
     return '<div class="spell' + (r.ready ? ' on' : ' not-ready') + '">' + star + '<div><b>' + spellLink(r.name) + '</b>' + (s && s.conc ? ' <span class="tag">conc</span>' : '') + (s && s.ritual ? ' <span class="tag">ritual</span>' : '') + (s ? tag(s.tag) : '') +
@@ -506,6 +509,54 @@
       }).join('') + '</div>' : '<p class="muted small">No spell by that name.</p>';
     }
     return h + '</div>';
+  }
+  // ---------- play: tick off what you use, get it back on a rest ----------
+  function trk(key) { return d.trackers.filter(function (x) { return x.key === key; })[0]; }
+  // One box per use: filled = still available. Tapping a filled box uses one, an empty one gives it back.
+  function pipsHtml(x) {
+    if (x.max > 20) return '<span class="pool">' + btn('trackAdj', '−', { k: x.key, v: 1 }, 'btn small') + ' <b>' + x.left + '</b> / ' + x.max + ' ' + btn('trackAdj', '+', { k: x.key, v: -1 }, 'btn small') + '</span>';
+    var h = '<span class="pips" role="group" aria-label="' + esc(x.name) + ': ' + x.left + ' of ' + x.max + ' left">';
+    for (var i = 0; i < x.max; i++) {
+      var on = i < x.left;
+      h += '<button type="button" class="pip' + (on ? ' on' : '') + '" data-act="trackAdj" data-k="' + esc(x.key) + '" data-v="' + (on ? 1 : -1) + '" title="' + (on ? 'Use one' : 'Get one back') + '" aria-label="' + (on ? 'Use one ' : 'Get back one ') + esc(x.name) + '"></button>';
+    }
+    return h + '</span>';
+  }
+  function restLabel(r) { return r === 'short' ? 'short or long rest' : r === 'long' ? 'long rest' : 'never (reset by hand)'; }
+  function restBarHtml() {
+    return '<div class="rest-bar noprint">' + btn('rest', '☾ Short rest', { v: 'short' }, 'btn') + btn('rest', '☀ Long rest', { v: 'long' }, 'btn primary') +
+      (ui.restMsg ? '<span class="rest-msg">' + esc(ui.restMsg) + '</span>' : '<span class="small muted">Short rest: pact slots and short-rest abilities come back. Long rest: everything, plus hit points and half your hit dice.</span>') + '</div>';
+  }
+  function trackRow(x) {
+    return '<div class="trk-row"><div class="trk-name"><b>' + esc(x.name) + '</b>' + (x.note ? '<div class="small muted">' + esc(x.note) + '</div>' : '') + '</div>' + pipsHtml(x) +
+      '<span class="small muted trk-rest">' + (x.max > 20 ? '' : x.left + '/' + x.max + ' · ') + 'back on ' + restLabel(x.rest) + '</span></div>';
+  }
+  function stepPlay() {
+    var T = ch.track || {}, hp = T.hp == null ? d.hp : T.hp, hdUsed = Math.min(d.level, +T.hd || 0);
+    var h = '<h2>Play</h2><p class="muted">Keep track during a session: tap a box to use a spell slot or an ability, tap again to get it back. The rest buttons bring things back by themselves.</p>' + restBarHtml();
+    h += '<div class="panel"><h3>Hit points</h3><div class="hp-row"><label>Current <input type="number" id="trk-hp" data-trk="hp" value="' + hp + '" min="0" max="' + d.hp + '"></label><span class="muted">/ ' + d.hp + '</span>' +
+      ['-10', '-5', '-1', '+1', '+5', '+10'].map(function (v) { return btn('hpAdj', v, { v: v }, 'btn small'); }).join('') +
+      '<label>Temporary <input type="number" id="trk-temp" data-trk="temp" value="' + (+T.temp || 0) + '" min="0"></label></div>' +
+      (hp <= 0 ? '<div class="death"><b>Death saves</b> ' + ['deathOk', 'deathFail'].map(function (k) {
+        var n = +T[k] || 0, b = '';
+        for (var i = 0; i < 3; i++) b += '<button type="button" class="pip' + (i < n ? ' on ' + (k === 'deathOk' ? 'ok' : 'fail') : '') + '" data-act="death" data-k="' + k + '" data-v="' + (i < n ? i : i + 1) + '" aria-label="' + (k === 'deathOk' ? 'Success' : 'Failure') + ' ' + (i + 1) + '"></button>';
+        return '<span>' + (k === 'deathOk' ? 'Successes' : 'Failures') + ' <span class="pips">' + b + '</span></span>';
+      }).join(' ') + '</div>' : '') +
+      trackRow({ key: 'hd', name: 'Hit dice (' + d.hitDice + ')', max: d.level, left: d.level - hdUsed, used: hdUsed, rest: 'long', note: 'Spend them on a short rest to heal; a long rest gives back half.' }) + '</div>';
+    var slots = d.trackers.filter(function (x) { return x.group === 'slots'; });
+    if (slots.length) h += '<div class="panel"><h3>Spell slots</h3>' + slots.map(trackRow).join('') + '</div>';
+    var inn = d.trackers.filter(function (x) { return x.group === 'spells'; });
+    if (inn.length) h += '<div class="panel"><h3>Once-per-rest spells</h3>' + inn.map(trackRow).join('') + '</div>';
+    var groups = []; d.trackers.forEach(function (x) { if (['slots', 'spells', 'own'].indexOf(x.group) < 0 && groups.indexOf(x.group) < 0) groups.push(x.group); });
+    groups.forEach(function (g) { h += '<div class="panel"><h3>' + esc(g) + '</h3>' + d.trackers.filter(function (x) { return x.group === g; }).map(trackRow).join('') + '</div>'; });
+    var own = d.trackers.filter(function (x) { return x.group === 'own'; });
+    h += '<div class="panel"><h3>Your own counters</h3><p class="small muted">For anything else with limited uses: a magic item’s charges, a feat, a boon, an ability the builder doesn’t count.</p>' +
+      own.map(function (x) {
+        var c = x.own;
+        return trackRow(x) + '<div class="row ctr-edit"><label>Name <input id="ctr-' + c.id + '-n" data-ctr="' + c.id + '" data-f="n" value="' + esc(c.n || '') + '"></label><label>Uses <input type="number" min="1" max="99" id="ctr-' + c.id + '-max" data-ctr="' + c.id + '" data-f="max" value="' + (+c.max || 1) + '"></label>' +
+          '<label>Comes back on <select data-ctr="' + c.id + '" data-f="rest">' + [['short', 'Short or long rest'], ['long', 'Long rest'], ['', 'Never (by hand)']].map(function (o) { return '<option value="' + o[0] + '"' + ((c.rest || '') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label>' + btn('rmCounter', 'Remove', { v: c.id }, 'btn small danger') + '</div>';
+      }).join('') + btn('addCounter', '+ Add a counter') + '</div>';
+    return h;
   }
   function spellLink(n) { var s = D.findSpell(n); return s ? '<a href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc(s.name) + '</a>' : esc(n); }
   function slotsHtml() {
@@ -912,7 +963,7 @@
     d = R.derive(ch, store.filters);
     var active = document.activeElement, fid = active && active.id, pos = null;
     try { pos = active && active.selectionStart; } catch (e) { pos = null; }
-    var body = { lineage: stepLineage, 'class': stepClass, abilities: stepAbilities, background: stepBackground, spells: stepSpells, myspells: stepMySpells, equipment: stepEquipment, items: stepItems, appearance: stepAppearance, details: stepDetails, sheet: stepSheet }[ui.step]();
+    var body = { lineage: stepLineage, 'class': stepClass, abilities: stepAbilities, background: stepBackground, spells: stepSpells, myspells: stepMySpells, equipment: stepEquipment, items: stepItems, appearance: stepAppearance, details: stepDetails, sheet: stepSheet, play: stepPlay }[ui.step]();
     var top = '<header class="top"><span class="brand">Character Forge</span><select data-ui="current" aria-label="Character">' + store.chars.map(function (c) {
       return '<option value="' + c.id + '"' + (c.id === ch.id ? ' selected' : '') + '>' + esc(title(c)) + '</option>';
     }).join('') + '</select>' + '<button type="button" class="btn" data-act="undo" title="Undo (Ctrl+Z)"' + (undoStack.length ? '' : ' disabled') + '>↶ Undo</button><button type="button" class="btn" data-act="redo" title="Redo (Ctrl+Y)"' + (redoStack.length ? '' : ' disabled') + '>↷ Redo</button>' + btn('new', 'New') + btn('dup', 'Duplicate') + btn('import', 'Import') + btn('export', 'Export') +
@@ -921,11 +972,11 @@
         return '<label><input type="checkbox" data-filter="' + t[0] + '"' + (store.filters[t[0]] !== false ? ' checked' : '') + '> ' + t[1] + '</label>';
       }).join('') + '<label title="Longer feature text and spell descriptions"><input type="checkbox" data-setting="detail"' + (store.detail !== false ? ' checked' : '') + '> Detailed text</label></span><input type="file" id="importFile" hidden><input type="file" id="partImportFile" hidden></header>';
     var nav = '<nav class="steps" aria-label="Steps">' + STEPS.map(function (s) {
-      var n = d.todo[s[0]], show = ['sheet', 'details', 'equipment', 'items', 'appearance', 'myspells'].indexOf(s[0]) < 0;
+      var n = d.todo[s[0]], show = ['sheet', 'details', 'equipment', 'items', 'appearance', 'myspells', 'play'].indexOf(s[0]) < 0;
       return '<button type="button" class="step' + (ui.step === s[0] ? ' on' : '') + '" data-act="step" data-v="' + s[0] + '"><span>' + s[1] + '</span>' + (show ? (n ? '<span class="badge" title="' + n + ' open">' + n + '</span>' : '<span class="badge done">✓</span>') : '') + '</button>';
     }).join('') + '</nav>';
     var side = '<aside class="side">' + (ui.step !== 'appearance' ? '<div class="side-portrait" data-act="step" data-v="appearance" title="Edit appearance">' + (ch.picture ? pictureHtml('in-side') : avatarCanvas('side')) + '</div>' : '') + '<h4>' + esc(title(ch)) + '</h4><div class="muted">' + esc(summaryLine(ch, d)) + '</div><div class="stats">' +
-      [['AC', d.ac], ['HP', d.hp], ['Speed', d.speed], ['Init', R.fmt(d.init)], ['Prof', R.fmt(d.pb)], ['Passive', d.passive]].map(function (x) { return '<div class="stat"><b>' + x[1] + '</b><span>' + x[0] + '</span></div>'; }).join('') + '</div><div class="stats">' +
+      [['AC', d.ac], ['HP', ch.track && ch.track.hp != null ? ch.track.hp + '/' + d.hp : d.hp], ['Speed', d.speed], ['Init', R.fmt(d.init)], ['Prof', R.fmt(d.pb)], ['Passive', d.passive]].map(function (x) { return '<div class="stat"><b>' + x[1] + '</b><span>' + x[0] + '</span></div>'; }).join('') + '</div><div class="stats">' +
       AB.map(function (a) { return '<div class="stat"><b>' + d.abilities[a].total + '</b><span>' + a + ' ' + R.fmt(d.abilities[a].mod) + '</span></div>'; }).join('') + '</div>' +
       d.casters.map(function (s) { return '<div class="muted">' + (d.casters.length > 1 ? esc(s.name) + ': s' : 'S') + 'pell DC ' + s.dc + ' · attack ' + R.fmt(s.atk) + '</div>'; }).join('') +
       (d.warnings.length ? '<ul class="warnings">' + d.warnings.map(function (w) { return '<li>' + esc(w) + '</li>'; }).join('') + '</ul>' : '') + '</aside>';
@@ -1040,6 +1091,23 @@
       if (i >= 0) cur.splice(i, 1); else if (c.count === 1) cur = [v]; else cur.push(v); // going over the usual number only warns
       ch.picks[key] = cur;
     },
+    trackAdj: function (v, el) {
+      var k = el.getAttribute('data-k'), T = ch.track = ch.track || {}, used = T.used = T.used || {};
+      if (k === 'hd') { T.hd = Math.max(0, Math.min(d.level, (+T.hd || 0) + +v)); return; }
+      var x = trk(k); if (!x) return;
+      used[k] = Math.max(0, Math.min(x.max, x.used + +v)); if (!used[k]) delete used[k];
+      ui.restMsg = '';
+    },
+    hpAdj: function (v) { var T = ch.track = ch.track || {}, hp = T.hp == null ? d.hp : T.hp, n = +v;
+      if (n < 0 && T.temp > 0) { var soak = Math.min(T.temp, -n); T.temp -= soak; n += soak; } // temporary hit points go first
+      hp = Math.max(0, Math.min(d.hp, hp + n)); T.hp = hp >= d.hp ? null : hp; if (hp > 0) { T.deathOk = 0; T.deathFail = 0; } },
+    death: function (v, el) { var T = ch.track = ch.track || {}; T[el.getAttribute('data-k')] = +v; },
+    rest: function (v) {
+      var got = R.rest(ch, d, v);
+      ui.restMsg = (v === 'long' ? 'Long rest' : 'Short rest') + ': ' + (got.length ? 'got back ' + got.join(', ') + '.' : 'nothing was used.');
+    },
+    addCounter: function () { ch.counters = ch.counters || []; ch.counters.push({ id: R.uid(), n: 'New counter', max: 1, rest: 'long' }); },
+    rmCounter: function (v) { ch.counters = (ch.counters || []).filter(function (c) { return c.id !== v; }); if (ch.track && ch.track.used) delete ch.track.used['ctr:' + v]; },
     mySpellsView: function (v) { ui.mySpellsView = v; },
     addExtraSpell: function (v) { ch.extraSpells = ch.extraSpells || []; if (!ch.extraSpells.some(function (x) { return x.n === v; })) ch.extraSpells.push({ id: R.uid(), n: v, src: '', per: '' }); ui.q.extraspell = ''; },
     rmExtraSpell: function (v) { ch.extraSpells = (ch.extraSpells || []).filter(function (x) { return x.id !== v; }); },
@@ -1160,6 +1228,8 @@
     var t = e.target, a = function (n) { return t.getAttribute(n); };
     if (a('data-q') != null) { ui.q[a('data-q')] = t.value; render(); }
     else if (a('data-piczoom')) { ch.pictureView = Object.assign({}, ch.pictureView, { zoom: +t.value }); livePicture(); save(); }
+    else if (a('data-trk')) { var TT = ch.track = ch.track || {}, nv = Math.max(0, Math.round(+t.value) || 0); if (a('data-trk') === 'hp') TT.hp = nv >= d.hp ? null : nv; else TT.temp = nv; save(); }
+    else if (a('data-ctr') && t.tagName === 'INPUT') { var cx = (ch.counters || []).filter(function (c) { return c.id === a('data-ctr'); })[0]; if (cx) { cx[a('data-f')] = a('data-f') === 'max' ? Math.max(1, Math.min(99, Math.round(+t.value) || 1)) : t.value; save(); } }
     else if (a('data-espell')) { var esx = (ch.extraSpells || []).filter(function (x) { return x.id === a('data-espell'); })[0]; if (esx) { esx[a('data-f')] = t.value; save(); } }
     else if (a('data-itemtext')) { var itx = ch.items.filter(function (i) { return i.id === a('data-itemtext'); })[0]; if (itx) { itx.note = t.value; save(); } }
     else if ((a('data-carmor') || a('data-cweapon')) && t.tagName === 'INPUT' && t.type !== 'checkbox') { applyCustomField(t); save(); }
@@ -1173,7 +1243,10 @@
     if (t.id === 'partImportFile') return loadPartImport(t);
     if (a('data-partfrom')) { if (ui.partImport) ui.partImport.choose = +a('data-partfrom'); return; }
     if (a('data-check') === 'pictureWhole') { ch.pictureFit = t.checked ? 'contain' : ''; return requestRender(); }
-    if (a('data-text') || a('data-itemtext') || a('data-espell')) return requestRender();
+    // fields edited one after another: redraw only once the focus has left that group, so nothing typed is lost
+    if (a('data-ctr') && t.tagName === 'INPUT') return setTimeout(function () { var f = document.activeElement; if (!f || !f.getAttribute || !f.getAttribute('data-ctr')) requestRender(); }, 0);
+    if (a('data-text') || a('data-itemtext') || a('data-espell') || a('data-trk')) return requestRender();
+    if (a('data-ctr')) { var cs = (ch.counters || []).filter(function (c) { return c.id === a('data-ctr'); })[0]; if (cs) cs.rest = t.value; return requestRender(); }
     if (a('data-ui')) { if (a('data-ui') === 'current') { store.current = t.value; ui.confirmDelete = false; ui.partImport = null; ui.partImportDone = null; } else ui[a('data-ui')] = t.value; }
     else if (a('data-filter')) store.filters[a('data-filter')] = t.checked;
     else if (a('data-imp5part')) { var IP = ui.import5e; if (IP) { var eid = +a('data-imp5part'), cur = (IP.parts[eid] || []).filter(function (k) { return k !== t.value; }); if (t.checked) cur.push(t.value); IP.parts[eid] = cur; } }

@@ -57,7 +57,7 @@ If you changed which files the page loads, add them to the list in `sw.js` and b
 
 ## What it does
 
-Lineage → Class and subclass (levels 1–20, single class or multiclass) → Ability scores (standard array, point buy, manual/rolled; ASIs or feats) → Background → Spells → My spells → Equipment → Items → Appearance → Details → printable Sheet.
+Lineage → Class and subclass (levels 1–20, single class or multiclass) → Ability scores (standard array, point buy, manual/rolled; ASIs or feats) → Background → Spells → My spells → Equipment → Items → Appearance → Details → printable Sheet → Play.
 It computes HP, AC, saves, skills, initiative, passive Perception, attacks, spell slots, save DC and spell attack, and tracks unfilled choices per step.
 The **Sources** checkboxes hide or show Official, Setting, Unearthed Arcana and Homebrew content. **Detailed text** switches between short and long feature text and shows or hides spell descriptions.
 
@@ -67,6 +67,12 @@ One page with every spell the character can cast, by spell level with slots: cla
 always-prepared subclass spells, and spells from the **lineage** and **feats** (Tiefling Infernal Legacy, Drow Magic, Fey Touched…), each with how often it can be cast, the level it arrives at and its save DC.
 Lineages that let you pick a cantrip (High Elf, Astral Elf, Kobold…) or a spellcasting ability (Mordenkainen's lineages) ask on the Lineage step.
 **Other spells** adds any spell by hand, with where it comes from (Magic Initiate, a magic item, a boon). Imported spells that fit none of the character's class lists land there too.
+
+### Play: keep track during a session
+
+The **Play** step has a box for each use of a spell slot, pact slot, once-per-rest lineage or feat spell, and class ability (Rage, Bardic Inspiration, Channel Divinity, Wild Shape, Second Wind, Action Surge, Ki, Sorcery Points, Lay on Hands, Superiority Dice…) and lineage ability (Breath Weapon, Relentless Endurance…).
+Tap a filled box to use one and an empty one to get it back. It also tracks current and temporary hit points, hit dice and death saves, plus **your own counters** for item charges or anything else.
+**☾ Short rest** brings back pact slots and short-rest abilities; **☀ Long rest** brings back everything, full hit points and half your hit dice. Spell slot boxes are on My spells too.
 
 ### Your own armor and weapons
 

@@ -519,6 +519,15 @@
       out.feats.push(f);
       out.features.push({ src: 'Feat', kind: 'feat', n: f.n, t: f.t });
       grantSpells(f.t, f.n, f.n, slot.slot + '.fsp', slot.step, { asiSlot: slot.slot });
+      if (f.n === 'Eldritch Adept') {
+        // one invocation; those with a prerequisite need warlock levels (and that warlock prerequisite met)
+        var wl = entries.filter(function (e) { return e.id === 'warlock'; })[0];
+        choice(slot.slot + '.inv', slot.step, 'Eldritch Adept: invocation', 1, D.invocations.map(function (x) {
+          var lv = +((x[1] || '').match(/(\d+)\w\w level/) || [])[1] || 0;
+          var dis = !!x[1] && (!wl || wl.level < lv);
+          return { v: x[0], label: x[0], pre: x[1], t: x[2], disabled: dis, why: dis ? (wl ? 'needs warlock level ' + lv : 'needs warlock levels (' + x[1] + ')') : '' };
+        }), { asiSlot: slot.slot, group: 'Eldritch Invocation' });
+      }
       var chosenAb = null;
       if (f.asi && f.asi.length === 1 && f.asi[0] !== 'ANY') chosenAb = f.asi[0];
       else if (f.asi && f.asi.length) {
@@ -821,6 +830,9 @@
     if (inv.attuned > inv.attuneMax) out.warnings.push('Attuned to ' + inv.attuned + ' items; the usual limit is ' + inv.attuneMax + '. Fine if your game allows more.');
     out.inv = inv;
 
+    // ----- things that get used up and come back on a rest -----
+    out.trackers = R.trackers(out, ch);
+
     // ----- completeness per step -----
     out.todo = { lineage: 0, 'class': 0, abilities: 0, background: 0, spells: 0, equipment: 0, details: 0 };
     if (!lin) out.todo.lineage++;
@@ -833,6 +845,69 @@
     if (ch.method === 'array' && AB.map(function (a) { return ch.base[a]; }).sort().join() !== D.standardArray.slice().sort().join()) out.todo.abilities++;
     return out;
   }
+
+  // Limited uses to tick off during play, with the rest that brings them back.
+  // key: where the used count is saved (ch.track.used[key]); rest: 'short' (short or long rest) or 'long'.
+  R.trackers = function (d, ch) {
+    var t = [], M = function (a) { return d.abilities[a].mod; }, lv = function (id) { var e = d.classes.filter(function (x) { return x.id === id; })[0]; return e ? e.level : 0; };
+    var sc = function (id) { return d.classes.some(function (e) { return e.sc && e.sc.id === id; }); };
+    function add(group, name, max, rest, note) { if (max > 0) t.push({ key: 'res:' + name, group: group, name: name, max: max, rest: rest, note: note || '' }); }
+    (d.slots || []).forEach(function (n, i) { if (n) t.push({ key: 'slot' + (i + 1), group: 'slots', name: 'Level ' + (i + 1), max: n, rest: 'long', level: i + 1 }); });
+    if (d.pact && d.pact.n) t.push({ key: 'pact', group: 'slots', name: 'Pact slots (level ' + d.pact.level + ')', max: d.pact.n, rest: 'short', level: d.pact.level, pact: true });
+    var L;
+    if ((L = lv('barbarian'))) add('Barbarian', 'Rage', L >= 20 ? 0 : [2, 2, 3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6, 6][L - 1], 'long');
+    if ((L = lv('bard'))) add('Bard', 'Bardic Inspiration', Math.max(1, M('CHA')), L >= 5 ? 'short' : 'long');
+    if ((L = lv('cleric')) >= 2) add('Cleric', 'Channel Divinity', L >= 18 ? 3 : L >= 6 ? 2 : 1, 'short');
+    if ((L = lv('druid')) >= 2 && L < 20) add('Druid', 'Wild Shape', 2, 'short');
+    if ((L = lv('fighter'))) {
+      add('Fighter', 'Second Wind', 1, 'short');
+      if (L >= 2) add('Fighter', 'Action Surge', L >= 17 ? 2 : 1, 'short');
+      if (L >= 9) add('Fighter', 'Indomitable', L >= 17 ? 3 : L >= 13 ? 2 : 1, 'long');
+      if (sc('fighter:battle-master')) add('Fighter', 'Superiority Dice', L >= 15 ? 6 : L >= 7 ? 5 : 4, 'short');
+    }
+    if ((L = lv('monk')) >= 2) add('Monk', 'Ki Points', L, 'short');
+    if ((L = lv('paladin'))) {
+      add('Paladin', 'Divine Sense', 1 + Math.max(0, M('CHA')), 'long');
+      add('Paladin', 'Lay on Hands (hit points)', 5 * L, 'long');
+      if (L >= 3) add('Paladin', 'Channel Divinity', 1, 'short');
+    }
+    if ((L = lv('sorcerer')) >= 2) add('Sorcerer', 'Sorcery Points', L, 'long');
+    if ((L = lv('wizard'))) add('Wizard', 'Arcane Recovery', 1, 'long', 'On a short rest, get back spell slots worth up to half your wizard level: untick them below.');
+    if ((L = lv('artificer')) >= 7) add('Artificer', 'Flash of Genius', Math.max(1, M('INT')), 'long');
+    if ((L = lv('blood-hunter'))) add('Blood Hunter', 'Blood Maledict', L >= 17 ? 4 : L >= 13 ? 3 : L >= 6 ? 2 : 1, 'short');
+    if ((L = lv('rogue')) >= 20) add('Rogue', 'Stroke of Luck', 1, 'short');
+    // lineage traits with a use limit
+    (d.L ? d.L.tr : []).forEach(function (tr) {
+      var txt = tr[1], pb = /proficiency bonus (times|uses)/i.test(txt);
+      if (!/\b(once|twice|times|uses?)\b[^.]*\b(short|long) rest/i.test(txt) || /^(After each|A 4-hour|Meditate|During a short rest)/.test(txt)) return;
+      if (R.spellsInText(txt).spells.length) return; // lineage spells are tracked with the spells
+      add('Lineage', tr[0], pb ? d.pb : 1, /short or long rest|short rest/.test(txt) ? 'short' : 'long');
+    });
+    // once-per-rest lineage and feat spells
+    (d.innate || []).forEach(function (x) {
+      if (!x.ready || !/\/(short|long) rest/.test(x.per)) return;
+      t.push({ key: 'inn:' + x.name, group: 'spells', name: x.name, max: 1, rest: /short/.test(x.per) ? 'short' : 'long', note: (x.kind === 'feat' ? 'Feat: ' : '') + x.src + (x.slots ? ' (can also use a slot)' : '') });
+    });
+    arr(ch.counters).forEach(function (c) { t.push({ key: 'ctr:' + c.id, group: 'own', name: c.n || 'Counter', max: Math.max(1, +c.max || 1), rest: c.rest || '', own: c }); });
+    var used = (ch.track && ch.track.used) || {};
+    t.forEach(function (x) { x.used = Math.max(0, Math.min(x.max, +used[x.key] || 0)); x.left = x.max - x.used; });
+    return t;
+  };
+  // What a rest brings back. Returns a short list of what changed, for the message on screen.
+  R.rest = function (ch, d, kind) {
+    var tr = ch.track = ch.track || {}, used = tr.used = tr.used || {}, got = [];
+    d.trackers.forEach(function (x) {
+      if (!x.used || !(kind === 'long' ? x.rest : x.rest === 'short')) return;
+      delete used[x.key]; got.push(x.name.replace(/^Level (\d)$/, 'level $1 slots'));
+    });
+    if (kind === 'long') {
+      if (tr.hp != null && tr.hp < d.hp) got.push('hit points');
+      tr.hp = null; tr.temp = 0; tr.deathOk = 0; tr.deathFail = 0;
+      var hd = +tr.hd || 0, back = Math.min(hd, Math.max(1, Math.floor(d.level / 2)));
+      if (back) { tr.hd = hd - back; got.push(back + ' hit ' + (back === 1 ? 'die' : 'dice')); }
+    }
+    return got;
+  };
 
   // "(a) X or (b) Y" -> ["X", "Y"]
   R.parseEquip = function (line) {

@@ -215,4 +215,28 @@ const sw = fs.readFileSync(path.join(__dirname, '../sw.js'), 'utf8');
   assert(!dd.warnings.some(w => /Mage Armor/.test(w)));
 }
 
+// Eldritch Adept lets you pick an invocation; ones with a prerequisite need warlock levels
+{
+  const ea = mk({ lineage: 'dwarf', classes: [C('wizard', 4)], asi: { 'asi.wizard.4': 'feat' }, picks: { 'asi.wizard.4.feat': ['Eldritch Adept'] } });
+  let dd = R.derive(ea), c = dd.choices.find(x => x.key === 'asi.wizard.4.inv');
+  assert(c && c.missing === 1 && !c.options.find(o => o.v === 'Armor of Shadows').disabled && c.options.find(o => o.v === 'Agonizing Blast').disabled);
+  ea.picks['asi.wizard.4.inv'] = ['Armor of Shadows']; dd = R.derive(ea);
+  assert(dd.features.some(f => f.n === 'Armor of Shadows' && f.kind === 'option'));
+}
+// Play: tick off slots and abilities, rests bring them back
+{
+  const pc = mk({ lineage: 'dragonborn', classes: [C('fighter', 3, 'fighter:eldritch-knight'), C('warlock', 2)], base: { STR: 15, DEX: 12, CON: 14, INT: 10, WIS: 10, CHA: 14 }, counters: [{ id: 'k1', n: 'Wand charges', max: 7, rest: '' }] });
+  let dd = R.derive(pc), names = dd.trackers.map(x => x.key);
+  ['slot1', 'pact', 'res:Second Wind', 'res:Action Surge', 'res:Breath Weapon', 'ctr:k1'].forEach(k => assert(names.includes(k), k));
+  pc.track = { used: { slot1: 2, pact: 1, 'res:Second Wind': 1, 'res:Action Surge': 1, 'ctr:k1': 3 }, hp: 5, hd: 4 };
+  dd = R.derive(pc); assert.equal(dd.trackers.find(x => x.key === 'slot1').left, dd.trackers.find(x => x.key === 'slot1').max - 2);
+  R.rest(pc, dd, 'short');
+  assert.deepEqual(Object.keys(pc.track.used).sort(), ['ctr:k1', 'slot1']); assert.equal(pc.track.hp, 5);
+  R.rest(pc, R.derive(pc), 'long');
+  assert.deepEqual(Object.keys(pc.track.used), ['ctr:k1']); assert.equal(pc.track.hp, null); assert.equal(pc.track.hd, 4 - 2);
+  // once-per-rest lineage spells are tracked too
+  dd = R.derive(mk({ lineage: 'tiefling', classes: [C('rogue', 3)] }));
+  assert(dd.trackers.some(x => x.key === 'inn:Hellish Rebuke' && x.rest === 'long') && !dd.trackers.some(x => x.key === 'inn:Thaumaturgy'));
+}
+
 console.log('ok —', n, 'builds derived;', D.classes.length, 'classes,', D.subclasses.length, 'subclasses,', D.lineages.length, 'lineages,', D.backgrounds.length, 'backgrounds,', D.feats.length, 'feats,', Object.keys(D.spells).length, 'spells (' + Object.keys(D.spellText).length + ' described),', longF, 'detailed features');
