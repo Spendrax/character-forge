@@ -68,6 +68,12 @@ always-prepared subclass spells, and spells from the **lineage** and **feats** (
 Lineages that let you pick a cantrip (High Elf, Astral Elf, Kobold…) or a spellcasting ability (Mordenkainen's lineages) ask on the Lineage step.
 **Other spells** adds any spell by hand, with where it comes from (Magic Initiate, a magic item, a boon). Imported spells that fit none of the character's class lists land there too.
 
+### Feats
+
+Feats ask for what they let you choose, under the feat on the step where you took it: Martial Adept (maneuvers), Metamagic Adept (Metamagic), Eldritch Adept (an invocation), Fighting Initiate (a fighting style),
+Magic Initiate, Ritual Caster, Artificer Initiate, Fey Touched, Shadow Touched, Spell Sniper, the Strixhaven, Dragonlance and Planescape spell feats (their spells), Skilled (any mix of skills and tools), Weapon Master (four weapons), Prodigy, Squat Nimbleness, Elemental Adept and more.
+Their effects count too: weapon and tool proficiencies, resistances, Medium Armor Master's +3 Dexterity, and limited uses (Lucky, superiority die, sorcery points, proficiency-bonus uses) on the Play page.
+
 ### Play: keep track during a session
 
 The **Play** step has a box for each use of a spell slot, pact slot, once-per-rest lineage or feat spell, and class ability (Rage, Bardic Inspiration, Channel Divinity, Wild Shape, Second Wind, Action Surge, Ki, Sorcery Points, Lay on Hands, Superiority Dice…) and lineage ability (Breath Weapon, Relentless Endurance…).

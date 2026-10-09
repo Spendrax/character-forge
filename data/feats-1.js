@@ -62,7 +62,7 @@ F("Shadow Touched",TCE,"",MENTAL,"Learn Invisibility and one 1st-level illusion 
 F("Sharpshooter",PHB,"",[],"No disadvantage at long range, ignore half and three-quarters cover, and take -5 to hit for +10 damage with ranged weapons.");
 F("Shield Master",PHB,"",[],"Bonus-action shove after attacking, add your shield's AC to Dexterity saves against single-target effects, and take no damage on a successful Dexterity save.");
 F("Skill Expert",TCE,"",["ANY"],"Proficiency in one skill, and expertise in one skill you are proficient in.",{skc:1,expertise:1});
-F("Skilled",PHB,"",[],"Proficiency in any combination of three skills or tools.",{skc:3});
+F("Skilled",PHB,"",[],"Proficiency in any combination of three skills or tools.");
 F("Skulker",PHB,"Dexterity 13",[],"Hide when lightly obscured, missing with a ranged attack doesn't reveal you, and dim light doesn't hinder your Perception.");
 F("Slasher",TCE,"",["STR","DEX"],"Once per turn reduce the speed of a creature you hit with slashing damage by 10 ft. Slashing critical hits give the target disadvantage on attacks.");
 F("Soul of the Storm Giant",BGG,"4th level, Strike of the Giants (Storm)",["STR","WIS","CHA"],"Bonus action: 10-ft aura until your next turn giving you resistance to lightning and thunder, disadvantage on attacks against you, and slowing enemies. Proficiency bonus uses per long rest.");

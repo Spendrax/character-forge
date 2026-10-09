@@ -239,4 +239,31 @@ const sw = fs.readFileSync(path.join(__dirname, '../sw.js'), 'utf8');
   assert(dd.trackers.some(x => x.key === 'inn:Hellish Rebuke' && x.rest === 'long') && !dd.trackers.some(x => x.key === 'inn:Thaumaturgy'));
 }
 
+// Feats with choices: maneuvers, metamagic, spells, skills or tools, weapons
+{
+  const ft = (n, extra) => mk(Object.assign({ lineage: 'dwarf', classes: [C('fighter', 4)], asi: { 'asi.fighter.4': 'feat' }, picks: { 'asi.fighter.4.feat': [n] } }, extra || {}));
+  const key = k => 'asi.fighter.4.' + k;
+  let c = ft('Martial Adept'), dd = R.derive(c);
+  assert.equal(dd.choices.find(x => x.key === key('man')).count, 2);
+  c.picks[key('man')] = ['Riposte', 'Parry']; dd = R.derive(c);
+  assert(dd.features.some(f => f.n === 'Riposte' && f.src === 'Maneuver') && dd.trackers.some(t => /Superiority Die/.test(t.name) && t.rest === 'short'));
+  c = ft('Metamagic Adept'); c.picks[key('mm')] = ['Quickened Spell', 'Twinned Spell']; dd = R.derive(c);
+  assert(dd.features.some(f => f.n === 'Twinned Spell') && dd.trackers.some(t => /Sorcery Points/.test(t.name) && t.max === 2));
+  c = ft('Magic Initiate'); c.picks[key('cls')] = ['wizard']; dd = R.derive(c);
+  assert(dd.choices.find(x => x.key === key('c')).options.some(o => o.v === 'Fire Bolt') && !dd.choices.find(x => x.key === key('c')).options.some(o => o.v === 'Sacred Flame'));
+  c.picks[key('c')] = ['Fire Bolt', 'Light']; c.picks[key('s')] = ['Shield']; dd = R.derive(c);
+  assert(dd.innate.some(x => x.name === 'Shield' && x.ab === 'INT' && x.per === '1/long rest') && dd.trackers.some(t => t.key === 'inn:Shield'));
+  c = ft('Fey Touched', { picks: { 'asi.fighter.4.feat': ['Fey Touched'], 'asi.fighter.4.fa': ['WIS'], 'asi.fighter.4.s': ['Cure Wounds'] } }); dd = R.derive(c);
+  assert(dd.innate.some(x => x.name === 'Misty Step' && x.ab === 'WIS')); assert(!dd.innate.some(x => x.name === 'Cure Wounds')); // Cure Wounds is not divination or enchantment
+  c.picks[key('s')] = ['Command']; dd = R.derive(c); assert(dd.innate.some(x => x.name === 'Command' && x.ab === 'WIS'));
+  c = ft('Skilled'); c.picks[key('sk3')] = ['Stealth', "Thieves' tools", 'Arcana']; dd = R.derive(c);
+  assert(dd.prof.skills.includes('Stealth') && dd.prof.tools.includes("Thieves' tools") && !dd.prof.skills.includes("Thieves' tools"));
+  c = ft('Weapon Master', { classes: [C('wizard', 4)], asi: { 'asi.wizard.4': 'feat' }, picks: { 'asi.wizard.4.feat': ['Weapon Master'], 'asi.wizard.4.w': ['Longsword', 'Rapier', 'Whip', 'Longbow'] }, weapons: ['Longsword'] });
+  dd = R.derive(c); assert(dd.attacks[0].proficient);
+  c = ft('Medium Armor Master', { armor: 'Half Plate', method: 'manual', base: { STR: 10, DEX: 16, CON: 10, INT: 10, WIS: 10, CHA: 10 } }); assert.equal(R.derive(c).ac, 15 + 3);
+  c = ft('Fighting Initiate', { classes: [C('wizard', 4)], asi: { 'asi.wizard.4': 'feat' }, picks: { 'asi.wizard.4.feat': ['Fighting Initiate'], 'asi.wizard.4.fs': ['Defense'] }, armor: 'Leather' });
+  assert(/Defense/.test(R.derive(c).acNote));
+  c = ft('Lucky'); assert(R.derive(c).trackers.some(t => t.name === 'Luck points' && t.max === 3));
+}
+
 console.log('ok —', n, 'builds derived;', D.classes.length, 'classes,', D.subclasses.length, 'subclasses,', D.lineages.length, 'lineages,', D.backgrounds.length, 'backgrounds,', D.feats.length, 'feats,', Object.keys(D.spells).length, 'spells (' + Object.keys(D.spellText).length + ' described),', longF, 'detailed features');

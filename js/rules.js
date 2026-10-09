@@ -496,6 +496,135 @@
     }
 
     // ----- ability score improvements and feats -----
+    // What each feat lets you choose or gives you beyond its summary: maneuvers, metamagic, spells, skills,
+    // weapons, resistances… Choices show under the feat on the step where you took it.
+    var AB_FULL = { STR: 'Strength', DEX: 'Dexterity', CON: 'Constitution', INT: 'Intelligence', WIS: 'Wisdom', CHA: 'Charisma' };
+    var CASTER_AB = { bard: 'Charisma', cleric: 'Wisdom', druid: 'Wisdom', sorcerer: 'Charisma', warlock: 'Charisma', wizard: 'Intelligence', artificer: 'Intelligence' };
+    var ATTACK_CANTRIPS = ['Chill Touch', 'Eldritch Blast', 'Fire Bolt', 'Produce Flame', 'Ray of Frost', 'Shocking Grasp', 'Thorn Whip', 'Primal Savagery'];
+    out.featUses = [];
+    function featExtras(f, slot, chosenAb) {
+      var S = slot.slot, X = { asiSlot: S }, step = slot.step;
+      var spellOpts = function (test) {
+        return Object.keys(D.spells).map(function (k) { return D.spells[k]; }).filter(function (x) { return tagOk(x.tag, filters) && test(x); })
+          .sort(function (a, b) { return a.name < b.name ? -1 : 1; }).map(function (x) { return { v: x.name, label: x.name, pre: (x.level ? 'Level ' + x.level + ' ' : 'Cantrip · ') + x.school }; });
+      };
+      var onList = function (cls) { var L = D.spellLists[cls] || []; return function (x) { return L.indexOf(x.name) >= 0; }; };
+      function spellPick(key, label, n, test, ability, per) {
+        var c = choice(S + '.' + key, step, f.n + ': ' + label, n, spellOpts(test), Object.assign({ spellChoice: true }, X));
+        c.picked.forEach(function (name) { var sp = D.findSpell(name); innate.push({ src: f.n, trait: f.n, kind: 'feat', name: name, minLevel: 1, ability: ability || '', per: sp.level ? (per || '1/long rest') : '', slots: false, picked: true }); });
+        return c;
+      }
+      var lvl = function (n) { return function (x) { return x.level === n; }; };
+      var school = function (n, list) { return function (x) { return x.level === n && list.indexOf(x.school) >= 0; }; };
+      var both = function (a, b) { return function (x) { return a(x) && b(x); }; };
+      var mental = chosenAb && AB_FULL[chosenAb];
+      // spells the summary names: they use the ability the feat raised
+      innate.forEach(function (x) {
+        if (x.kind !== 'feat' || x.src !== f.n) return;
+        if (/chosen with your lineage/.test(x.ability)) x.ability = ''; // that wording is for lineages; feats use the ability they raise
+        if (!x.ability && mental && /INT|WIS|CHA/.test(chosenAb)) x.ability = mental;
+      });
+      var uses = function (name, max, rest) { out.featUses.push({ name: name, max: max, rest: rest, feat: f.n }); };
+      switch (f.n) {
+        case 'Martial Adept':
+          choice(S + '.man', step, 'Martial Adept: maneuvers', 2, D.maneuvers.map(function (m) { return { v: m[0], label: m[0], t: m[1] }; }), Object.assign({ group: 'Maneuver' }, X));
+          uses('Superiority Die (d6, Martial Adept)', 1, 'short'); break;
+        case 'Metamagic Adept':
+          choice(S + '.mm', step, 'Metamagic Adept: Metamagic options', 2, Object.keys(D.metamagic).map(function (n) { return { v: n, label: n, t: D.metamagic[n] }; }), Object.assign({ group: 'Metamagic' }, X));
+          uses('Sorcery Points (Metamagic Adept)', 2, 'long'); break;
+        case 'Fighting Initiate':
+          styleKeys.push(S + '.fs');
+          choice(S + '.fs', step, 'Fighting Initiate: Fighting Style', 1, R.cls('fighter').fightingStyles.filter(function (n) { return tagOk(/\(UA\)/.test(n) ? 'ua' : 'official', filters); }).map(function (n) {
+            var taken = styleKeys.some(function (k) { return k !== S + '.fs' && own(k).indexOf(n) >= 0; });
+            return { v: n, label: n, t: D.fightingStyles[n] || '', disabled: taken, why: taken ? 'you already have it' : '' };
+          }), Object.assign({ group: 'Fighting Style' }, X)); break;
+        case 'Magic Initiate': case 'Ritual Caster': {
+          var classes = f.n === 'Ritual Caster' ? ['bard', 'cleric', 'druid', 'sorcerer', 'warlock', 'wizard'] : ['bard', 'cleric', 'druid', 'sorcerer', 'warlock', 'wizard'];
+          var mc = choice(S + '.cls', step, f.n + ': class', 1, classes.map(function (id) { return { v: id, label: R.cls(id).name }; }), X).picked[0];
+          if (!mc) break;
+          if (f.n === 'Magic Initiate') {
+            spellPick('c', 'cantrips', 2, both(onList(mc), lvl(0)), CASTER_AB[mc]);
+            spellPick('s', '1st-level spell', 1, both(onList(mc), lvl(1)), CASTER_AB[mc]);
+          } else spellPick('r', '1st-level rituals', 2, function (x) { return x.level === 1 && x.ritual && onList(mc)(x); }, CASTER_AB[mc], 'ritual');
+          break; }
+        case 'Artificer Initiate':
+          spellPick('c', 'cantrip', 1, both(onList('artificer'), lvl(0)), 'Intelligence');
+          spellPick('s', '1st-level spell', 1, both(onList('artificer'), lvl(1)), 'Intelligence');
+          later.push(function () { freshChoice(S + '.tool', step, 'Artificer Initiate: artisan’s tools', 1, D.tools["Artisan's tools"], 'tools', X); }); break;
+        case 'Aberrant Dragonmark':
+          spellPick('c', 'sorcerer cantrip', 1, both(onList('sorcerer'), lvl(0)), 'Constitution');
+          spellPick('s', '1st-level sorcerer spell', 1, both(onList('sorcerer'), lvl(1)), 'Constitution', '1/short rest'); break;
+        case 'Fey Touched': spellPick('s', '1st-level divination or enchantment spell', 1, school(1, ['Divination', 'Enchantment']), mental); break;
+        case 'Shadow Touched': spellPick('s', '1st-level illusion or necromancy spell', 1, school(1, ['Illusion', 'Necromancy']), mental); break;
+        case 'Spell Sniper': {
+          var sab = choice(S + '.ab', step, 'Spell Sniper: cast it with', 1, opts(['INT', 'WIS', 'CHA']), X).picked[0];
+          spellPick('c', 'attack cantrip', 1, function (x) { return ATTACK_CANTRIPS.indexOf(x.name) >= 0; }, sab ? AB_FULL[sab] : ''); break; }
+        case 'Strixhaven Initiate': {
+          var stab = choice(S + '.ab', step, 'Strixhaven Initiate: cast them with', 1, opts(['INT', 'WIS', 'CHA']), X).picked[0];
+          spellPick('c', 'cantrips', 2, lvl(0), stab ? AB_FULL[stab] : '');
+          spellPick('s', '1st-level spell', 1, lvl(1), stab ? AB_FULL[stab] : ''); break; }
+        case 'Initiate of High Sorcery': {
+          var MOONS = { 'Solinari (abjuration, divination)': ['Abjuration', 'Divination'], 'Lunitari (illusion, transmutation)': ['Illusion', 'Transmutation'], 'Nuitari (enchantment, necromancy)': ['Enchantment', 'Necromancy'] };
+          var moon = choice(S + '.moon', step, 'Initiate of High Sorcery: moon', 1, opts(Object.keys(MOONS)), X).picked[0];
+          var hab = choice(S + '.ab', step, 'Initiate of High Sorcery: cast them with', 1, opts(['INT', 'WIS', 'CHA']), X).picked[0];
+          innate.forEach(function (x) { if (x.src === f.n && !x.ability && hab) x.ability = AB_FULL[hab]; });
+          if (moon) spellPick('s', '1st-level spells', 2, school(1, MOONS[moon]), hab ? AB_FULL[hab] : ''); break; }
+        case 'Adept of the Black Robes': spellPick('s', '2nd-level enchantment or necromancy spell', 1, school(2, ['Enchantment', 'Necromancy'])); break;
+        case 'Adept of the Red Robes': spellPick('s', '2nd-level illusion or transmutation spell', 1, school(2, ['Illusion', 'Transmutation'])); uses('Magical Balance', pb, 'long'); break;
+        case 'Adept of the White Robes': spellPick('s', '2nd-level abjuration or divination spell', 1, school(2, ['Abjuration', 'Divination'])); break;
+        case 'Divinely Favored': {
+          var ALIGN = { Good: 'Cure Wounds', Neutral: 'Protection from Evil and Good', Evil: 'Inflict Wounds' };
+          var al = choice(S + '.al', step, 'Divinely Favored: your alignment', 1, opts(Object.keys(ALIGN)), X).picked[0];
+          if (al && D.findSpell(ALIGN[al])) innate.push({ src: f.n, trait: f.n, kind: 'feat', name: ALIGN[al], minLevel: 1, ability: 'Wisdom', per: '1/long rest' });
+          innate.forEach(function (x) { if (x.src === f.n && !x.ability) x.ability = 'Wisdom'; }); break; }
+        case 'Quicksmithing': spellPick('r', '1st-level rituals', 2, function (x) { return x.level === 1 && x.ritual; }, 'Intelligence', 'ritual'); break;
+        case 'Scion of the Outer Planes': {
+          var PLANES = { 'Chaotic (psychic, Minor Illusion)': ['psychic', 'Minor Illusion'], 'Evil (necrotic, Chill Touch)': ['necrotic', 'Chill Touch'], 'Good (radiant, Sacred Flame)': ['radiant', 'Sacred Flame'], 'Lawful (force, Message)': ['force', 'Message'], 'Neutral (poison, Druidcraft)': ['poison', 'Druidcraft'], 'The Outlands (psychic, Mage Hand)': ['psychic', 'Mage Hand'] };
+          var pl = choice(S + '.plane', step, 'Scion of the Outer Planes: plane', 1, opts(Object.keys(PLANES)), X).picked[0];
+          if (pl) { prof.res.push(PLANES[pl][0].charAt(0).toUpperCase() + PLANES[pl][0].slice(1)); innate.push({ src: f.n, trait: f.n, kind: 'feat', name: PLANES[pl][1], minLevel: 1, ability: 'Intelligence, Wisdom or Charisma', per: '' }); }
+          break; }
+        case 'Elemental Adept': choice(S + '.el', step, 'Elemental Adept: damage type', 1, opts(['Acid', 'Cold', 'Fire', 'Lightning', 'Thunder']), X); break;
+        case 'Weapon Master':
+          choice(S + '.w', step, 'Weapon Master: weapons', 4, D.weapons.map(function (w) { return { v: w[0], label: w[0], pre: w[1] }; }), X).picked.forEach(function (w) { prof.weapons.push(w + 's'); }); break;
+        case 'Prodigy': later.push(function () { freshChoice(S + '.tool', step, 'Prodigy: tool', 1, R.allTools(), 'tools', X); }); break;
+        case 'Squat Nimbleness': later.push(function () { freshChoice(S + '.sk', step, 'Squat Nimbleness: skill', 1, ['Acrobatics', 'Athletics'], 'skills', X); }); break;
+        case 'Skilled': later.push(function () {
+          // any mix of three skills or tools
+          if (!picks[S + '.sk3'] && picks[S + '.fsk']) picks[S + '.sk3'] = picks[S + '.fsk']; // saved before tools were allowed
+          var mine = own(S + '.sk3'), sk = Object.keys(D.skills), tl = R.allTools();
+          var c = choice(S + '.sk3', step, 'Skilled: three skills or tools', 3, sk.concat(tl).map(function (v) {
+            var have = (prof.skills.indexOf(v) >= 0 || prof.tools.indexOf(v) >= 0) && mine.indexOf(v) < 0;
+            return { v: v, label: v, group: sk.indexOf(v) >= 0 ? 'Skills' : 'Tools', disabled: have, why: have ? 'you already have it' : '' };
+          }), X);
+          c.picked.forEach(function (v) { (D.skills[v] ? prof.skills : prof.tools).push(v); });
+        }); break;
+        case 'Chef': prof.tools.push("Cook's utensils"); break;
+        case 'Poisoner': prof.tools.push("Poisoner's kit"); break;
+        case 'Gunner': prof.weapons.push('Firearms'); break;
+        case 'Tavern Brawler': prof.weapons.push('Improvised weapons'); break;
+        case 'Keenness of the Stone Giant': senses.dv = senses.dv ? senses.dv : 60; break;
+        case 'Ember of the Fire Giant': prof.res.push('Fire'); break;
+        case 'Fury of the Frost Giant': prof.res.push('Cold'); break;
+        case 'Infernal Constitution': prof.res.push('Cold', 'Poison'); break;
+        case 'Lucky': uses('Luck points', 3, 'long'); break;
+        case 'Cruel (HB)': uses('Cruelty dice', pb, 'long'); break;
+        case 'Gift of the Chromatic Dragon': uses('Chromatic Infusion', 1, 'long'); uses('Reactive Resistance', pb, 'long'); break;
+        case 'Gift of the Metallic Dragon': uses('Protective Wings', pb, 'long'); break;
+        case 'Critter Friend (UA)':
+          innate.push({ src: f.n, trait: f.n, kind: 'feat', name: 'Speak with Animals', minLevel: 1, ability: '', per: 'at will' }, { src: f.n, trait: f.n, kind: 'feat', name: 'Animal Friendship', minLevel: 1, ability: '', per: '1/long rest', picked: true });
+          /* falls through */
+        case 'Barbed Hide (UA)': case "Everybody's Friend (UA)": {
+          // proficiency, or expertise if you already have it
+          var sks = { 'Barbed Hide (UA)': ['Intimidation'], 'Critter Friend (UA)': ['Animal Handling'], "Everybody's Friend (UA)": ['Deception', 'Persuasion'] }[f.n];
+          later2.unshift(function () { sks.forEach(function (k) { if (prof.skills.indexOf(k) >= 0) prof.expertise.push(k); else prof.skills.push(k); }); }); break; }
+      }
+      // limited uses the summary states ("Proficiency bonus uses per long rest", "Once per short or long rest")
+      if (!out.featUses.some(function (u) { return u.feat === f.n; }) && !innate.some(function (x) { return x.src === f.n && x.kind === 'feat' && x.picked; })) {
+        var hasSp = R.spellsInText(f.t).spells.length;
+        var m = /proficiency bonus (?:uses|times) per long rest/i.test(f.t) ? [pb, 'long'] : hasSp ? null : /once per short or long rest/i.test(f.t) ? [1, 'short'] : /once per (?:long )?rest/i.test(f.t) ? [1, /long rest/.test(f.t) ? 'long' : 'short'] : null;
+        if (m) uses(f.n, m[0], m[1]);
+      }
+    }
     var featNames = D.feats.filter(function (f) { return tagOk(f.tag, filters); });
     out.feats = [];
     feats.forEach(function (slot) {
@@ -535,6 +664,7 @@
         chosenAb = fa.picked[0] || null;
       }
       if (chosenAb) { bonus[chosenAb] += 1; if (f.saveFromAsi) prof.saves.push(chosenAb); }
+      featExtras(f, slot, chosenAb);
       hooks.init += f.init || 0; hooks.speed += f.speed || 0; hooks.hpPerLevel += f.hpPerLevel || 0; hooks.passive += f.passive || 0;
       if (f.unarmoredAC) hooks.unarmoredAC = Math.max(hooks.unarmoredAC, f.unarmoredAC);
       prof.armor = prof.armor.concat(f.armor || []); prof.languages = prof.languages.concat(f.lang || []);
@@ -615,7 +745,9 @@
       if (+custA.str && out.abilities.STR.total < +custA.str) out.warnings.push((custA.n || 'Your armor') + ' needs Strength ' + custA.str + ' (speed is reduced by 10 ft otherwise).');
       if (/^(Light|Medium|Heavy)$/.test(armorKind) && prof.armor.indexOf(armorKind + ' armor') < 0 && prof.armor.indexOf('All armor') < 0) out.warnings.push('Not proficient with ' + armorKind.toLowerCase() + ' armor.');
     } else if (armor) {
-      var dex = armor[1] === 'Heavy' ? 0 : armor[4] === null ? M('DEX') : Math.min(M('DEX'), armor[4]);
+      var hasFeat = function (n) { return out.feats.some(function (x) { return x.n === n; }); };
+      var dexCap = armor[1] === 'Medium' && armor[4] === 2 && hasFeat('Medium Armor Master') ? 3 : armor[4];
+      var dex = armor[1] === 'Heavy' ? 0 : dexCap === null ? M('DEX') : Math.min(M('DEX'), dexCap);
       ac = armor[3] + dex; acNote = armor[0];
       if (styles.indexOf('Defense') >= 0) { ac += 1; acNote += ', Defense'; }
       if (armor[5] && out.abilities.STR.total < armor[5]) out.warnings.push(armor[0] + ' needs Strength ' + armor[5] + ' (speed is reduced by 10 ft otherwise).');
@@ -883,6 +1015,7 @@
       if (R.spellsInText(txt).spells.length) return; // lineage spells are tracked with the spells
       add('Lineage', tr[0], pb ? d.pb : 1, /short or long rest|short rest/.test(txt) ? 'short' : 'long');
     });
+    (d.featUses || []).forEach(function (u) { add('Feats', u.name, u.max, u.rest); });
     // once-per-rest lineage and feat spells
     (d.innate || []).forEach(function (x) {
       if (!x.ready || !/\/(short|long) rest/.test(x.per)) return;
