@@ -27,6 +27,62 @@
     return ok ? { total: total, detail: parts.join(' ') } : null;
   }
 
+  // Read a stat block copied as text (from a book, a PDF or a website) into a monster.
+  // Works with the usual layout: name, "Size type, alignment", Armor Class, Hit Points, Speed, the six
+  // ability scores, the property lines, then traits and the Actions / Bonus Actions / Reactions / Legendary Actions sections.
+  var KEYS = [['ac', /^Armou?r Class\s*:?\s*/i], ['hpLine', /^Hit Points\s*:?\s*/i], ['sp', /^Speed\s*:?\s*/i], ['sv', /^Saving Throws\s*:?\s*/i],
+    ['sk', /^Skills\s*:?\s*/i], ['vu', /^Damage Vulnerabilities\s*:?\s*/i], ['re', /^Damage Resistances\s*:?\s*/i], ['im', /^Damage Immunities\s*:?\s*/i],
+    ['ci', /^Condition Immunities\s*:?\s*/i], ['se', /^Senses\s*:?\s*/i], ['lang', /^Languages\s*:?\s*/i], ['crLine', /^Challenge\s*:?\s*/i], ['pbLine', /^Proficiency Bonus\s*:?\s*/i]];
+  var SECTIONS = [['act', /^Actions$/i], ['bon', /^Bonus Actions$/i], ['rea', /^Reactions$/i], ['leg', /^Legendary Actions$/i], ['myth', /^Mythic Actions$/i], ['lair', /^Lair Actions$/i]];
+  function parseStatBlock(text) {
+    var lines = String(text || '').replace(/\r/g, '').replace(/[  ]/g, ' ').replace(/[‒-—−]/g, function (c) { return c === '—' ? '—' : '-'; })
+      .split('\n').map(function (l) { return l.replace(/\s+/g, ' ').trim(); }).filter(Boolean);
+    if (lines.length < 4) return null;
+    var m = { n: lines[0] || 'Monster' }, i = 1;
+    var meta = /^(Tiny|Small|Medium|Large|Huge|Gargantuan)(?:\s+or\s+\w+)?\s+(.+?)(?:,\s*(.+))?$/i.exec(lines[1] || '');
+    if (meta) { m.size = meta[1].charAt(0).toUpperCase() + meta[1].slice(1).toLowerCase(); var tm = /^(.*?)\s*\((.*)\)$/.exec(meta[2]); m.type = (tm ? tm[1] : meta[2]).toLowerCase(); m.sub = tm ? tm[2] : ''; m.al = meta[3] || ''; i = 2; }
+    // the property lines (and ability scores) until the first trait or section
+    var abilText = '', inAbil = false, rest = [];
+    for (; i < lines.length; i++) {
+      var l = lines[i], hit = KEYS.filter(function (k) { return k[1].test(l); })[0];
+      if (hit) { inAbil = false; var v = l.replace(hit[1], ''); if (m[hit[0]]) m[hit[0]] += ' ' + v; else m[hit[0]] = v; m.lastKey = hit[0]; continue; }
+      if (/^(STR|FOR)\b/.test(l) && /\b(DEX|DEXTERITY)\b/i.test(l + ' ' + (lines[i + 1] || '') + ' ' + (lines[i + 2] || ''))) { inAbil = true; abilText += ' ' + l; continue; }
+      if (/^(STR|DEX|CON|INT|WIS|CHA)$/i.test(l) || /^\d{1,2}\s*\(\s*[+-]?\s*\d+\s*\)/.test(l) && (inAbil || /^(STR|DEX|CON|INT|WIS|CHA)/i.test(lines[i - 1] || ''))) { inAbil = true; abilText += ' ' + l; continue; }
+      if (inAbil && /^(DEX|CON|INT|WIS|CHA)\b/i.test(l)) { abilText += ' ' + l; continue; }
+      // a line that only continues the previous property line (wrapped text)
+      if (!rest.length && m.lastKey && !/^[A-Z][^.]{0,70}\.\s/.test(l) && !SECTIONS.some(function (x) { return x[1].test(l); }) && !(m.crLine)) { m[m.lastKey] += ' ' + l; continue; }
+      rest = lines.slice(i); break;
+    }
+    delete m.lastKey;
+    var scores = []; abilText.replace(/(\d{1,2})\s*\(\s*[+-]?\s*\d+\s*\)/g, function (x, n) { scores.push(+n); });
+    if (scores.length < 6) { var all = lines.join(' '); scores = []; all.replace(/(\d{1,2})\s*\(\s*[+-]\s*\d+\s*\)/g, function (x, n) { if (scores.length < 6) scores.push(+n); }); }
+    if (scores.length >= 6) m.ab = scores.slice(0, 6);
+    var hp = /^(\d+)\s*(?:\(([^)]+)\))?/.exec(m.hpLine || ''); if (hp) { m.hp = +hp[1]; m.hd = (hp[2] || '').replace(/\s+/g, ''); }
+    var cr = /^(\d+\/\d+|\d+)/.exec(m.crLine || ''); if (cr) { var c = cr[1]; m.cr = c === '1/8' ? 0.125 : c === '1/4' ? 0.25 : c === '1/2' ? 0.5 : +c; m.xp = XP[m.cr]; m.pb = pbFor(m.cr); }
+    var pbm = /([+-]?\d+)/.exec(m.pbLine || ''); if (pbm) m.pb = Math.abs(+pbm[1]);
+    delete m.hpLine; delete m.crLine; delete m.pbLine;
+    if (m.ci) m.ci = m.ci.toLowerCase();
+    // traits, then the sections
+    var sec = 'tr', out = { tr: [] }, cur = null;
+    rest.forEach(function (l) {
+      var s = SECTIONS.filter(function (x) { return x[1].test(l); })[0];
+      if (s) { sec = s[0]; out[sec] = out[sec] || []; cur = null; return; }
+      var e = /^([A-Z][^.!?]{0,80}?(?:\([^)]*\))?)\.\s+(.+)$/.exec(l);
+      var lastLine = cur ? cur[1].split('\n').pop() : '';
+      var midSentence = cur && !/[.!?)"”:]$/.test(cur[1]) && !/^(At will|Cantrips|\d+(st|nd|rd|th) level|\d+\/day)/i.test(lastLine); // wrapped text
+      var intro = /legendary actions?,|lair actions?|mythic actions?/i.test(l) && /can take|on initiative count/i.test(l);
+      // an entry starts with a title-case name ("Legendary Resistance (3/Day)."); other lines continue the one before
+      var titled = e && e[1].replace(/\([^)]*\)/g, '').trim().split(/\s+/).every(function (w) { return /^[A-Z0-9]/.test(w) || /^(of|the|and|or|a|an|to|in|on|with|from|for|at|by|vs\.?)$/.test(w); });
+      if (e && titled && !midSentence && !intro && e[1].indexOf(':') < 0 && !/^(At will|Cantrips|\d+(st|nd|rd|th) level|\d+\/day)/i.test(l) && e[1].split(' ').length <= 9) { cur = [e[1], e[2]]; out[sec].push(cur); }
+      else if (intro && (sec === 'leg' || sec === 'lair' || sec === 'myth')) { cur = null; }
+      else if (cur) cur[1] += (/^(At will|Cantrips|\d+(st|nd|rd|th) level|\d+\/day|•|-)/i.test(l) || /[.!?)"”:]$/.test(cur[1]) ? '\n' : ' ') + l;
+      else { cur = ['', l]; out[sec].push(cur); }
+    });
+    ['tr', 'act', 'bon', 'rea', 'leg', 'myth', 'lair'].forEach(function (k) { if (out[k] && out[k].length) m[k] = out[k]; });
+    if (!m.ac && !m.hp && !m.act) return null;
+    return m;
+  }
+
   root.MonsterUI = function (api) {
     var esc = api.esc, btn = api.btn, ui = api.ui, store = api.store;
     var M = ui.mon = ui.mon || { q: '', type: '', size: '', crMin: '', crMax: '', sort: 'name', open: '', view: 'list' };
@@ -77,8 +133,10 @@
         line('Saving Throws', m.sv) + line('Skills', m.sk) + line('Damage Vulnerabilities', m.vu) + line('Damage Resistances', m.re) +
         line('Damage Immunities', m.im) + line('Condition Immunities', m.ci) + line('Senses', m.se) + line('Languages', m.lang) +
         (crx ? '<div class="sb-cr"><span><b>Challenge</b> ' + esc(crx) + '</span><span><b>Proficiency Bonus</b> ' + fmt(m.pb || pbFor(+m.cr || 0)) + '</span></div>' : '') + '<hr>' +
-        blocks('', m.tr, who) + blocks('Actions', m.act, who) + blocks('Reactions', m.rea, who);
+        blocks('', m.tr, who) + blocks('Actions', m.act, who) + blocks('Bonus Actions', m.bon, who) + blocks('Reactions', m.rea, who);
       if (m.leg && m.leg.length) h += '<h4 class="sb-h">Legendary Actions</h4><p class="sb-p">The ' + esc(who.toLowerCase()) + ' can take 3 legendary actions, choosing from the options below. Only one legendary action can be used at a time and only at the end of another creature’s turn. It regains spent legendary actions at the start of its turn.</p>' + blocks('', m.leg, who);
+      if (m.myth && m.myth.length) h += blocks('Mythic Actions', m.myth, who);
+      if (m.lair && m.lair.length) h += blocks('Lair Actions', m.lair, who);
       if (m.desc) h += '<p class="small muted sb-desc">' + esc(m.desc) + '</p>';
       if (m.notes) h += '<p class="small sb-desc">' + esc(m.notes).replace(/\n/g, '<br>') + '</p>';
       return h + '</article>';
@@ -93,7 +151,7 @@
         (m.leg1 ? '<div><b>Legendary</b> yes</div>' : '') + line('Book', m.src) + '<hr>' +
         '<div class="aidedd-head"><b>Full stat block</b> <span class="small muted">shown from AideDD (needs internet)</span> <a class="small" href="' + esc(m.url) + '" target="_blank" rel="noopener">open in a new tab ↗</a></div>' +
         '<iframe class="aidedd-frame" src="' + esc(m.url) + '" title="' + esc(m.n) + ' stat block on AideDD" loading="lazy" referrerpolicy="no-referrer"></iframe>' +
-        '<p class="small muted">Want it with rollable attacks? Use “Copy as my own” and fill in the rest from the stat block above.</p></article>';
+        '<p class="small muted">Want it in the app with rollable attacks, offline too? Tap “Paste its stat block” above, then select the stat block here, copy it and paste it.</p></article>';
     }
     function filtered() {
       var q = M.q.toLowerCase(), lo = M.crMin === '' ? -1 : +M.crMin, hi = M.crMax === '' ? 99 : +M.crMax;
@@ -138,7 +196,7 @@
         AB.map(function (a, i) { return '<label>' + a + '<input type="number" min="1" max="30" id="mm-ab' + i + '" data-mymon="ab' + i + '" value="' + ((m.ab || [])[i] || 10) + '"></label>'; }).join('') +
         f('sv', 'Saving throws') + f('sk', 'Skills') + f('re', 'Resistances') + f('im', 'Immunities') + f('se', 'Senses') + f('lang', 'Languages') +
         ta('tr', 'Traits', 'One per line: Name. What it does.') + ta('act', 'Actions', 'Bite. Melee Weapon Attack: +5 to hit, reach 5 ft., one target. Hit: 7 (1d8 + 3) piercing damage.') +
-        ta('rea', 'Reactions', 'One per line') + ta('leg', 'Legendary actions', 'One per line') +
+        ta('bon', 'Bonus actions', 'One per line') + ta('rea', 'Reactions', 'One per line') + ta('leg', 'Legendary actions', 'One per line') +
         '<label class="wide">Notes<textarea id="mm-notes" data-mymon="notes" rows="2">' + esc(m.notes || '') + '</textarea></label></div>' +
         '<div class="toolbar">' + btn('monSave', 'Save', {}, 'btn primary') + btn('monDelete', 'Delete', { v: m.id }, 'btn danger') + '</div><p class="small muted">Attacks written like the example (“+5 to hit”, “(1d8 + 3)”) get roll buttons.</p></article>';
     }
@@ -151,20 +209,33 @@
     function setField(m, k, v) {
       var i = /^ab(\d)$/.exec(k);
       if (i) { m.ab = m.ab || [10, 10, 10, 10, 10, 10]; m.ab[+i[1]] = Math.max(1, Math.min(30, Math.round(+v) || 10)); }
-      else if (/^(tr|act|rea|leg)$/.test(k)) { m[k + 'Text'] = v; m[k] = parseLines(v); }
+      else if (/^(tr|act|bon|rea|leg)$/.test(k)) { m[k + 'Text'] = v; m[k] = parseLines(v); }
       else if (k === 'hp') m.hp = Math.max(1, Math.round(+v) || 1);
       else if (k === 'cr') { m.cr = +v; m.xp = XP[+v]; m.pb = pbFor(+v); }
       else m[k] = v;
     }
 
+    function textsFor(m) { ['tr', 'act', 'bon', 'rea', 'leg'].forEach(function (k) { m[k + 'Text'] = (m[k] || []).map(function (b) { return (b[0] ? b[0] + '. ' : '') + b[1]; }).join('\n'); }); return m; }
+    function pasteHtml() {
+      var P = M.paste;
+      return '<article class="statblock editing"><h2>Paste a stat block</h2>' +
+        '<p class="small">Copy a whole stat block (from AideDD, your book or a PDF), from its name down to its last action, and paste it here. The app reads it into a monster of yours with rollable attacks, saved only on this device.</p>' +
+        (P.from ? '<p class="small muted">For <b>' + esc(P.from) + '</b>: ' + (P.url ? '<a href="' + esc(P.url) + '" target="_blank" rel="noopener">open its stat block on AideDD ↗</a>, select it all and copy.' : '') + '</p>' : '') +
+        '<textarea id="mon-paste" rows="14" placeholder="Strahd von Zarovich&#10;Medium undead (shapechanger), lawful evil&#10;Armor Class 16 (natural armor)&#10;Hit Points 144 (17d8 + 68)&#10;…"></textarea>' +
+        (P.error ? '<p class="small" style="color:var(--warn)">' + esc(P.error) + '</p>' : '') +
+        '<div class="toolbar">' + btn('monPasteGo', 'Make my monster', {}, 'btn primary') + btn('monPasteCancel', 'Cancel', {}, 'btn') + '</div></article>';
+    }
     function html() {
       if (!loaded() && !M.loadError) { load(api.render); return '<h2>Monsters</h2><p class="muted">Loading monsters…</p>'; }
       var open = M.open && find(M.open), editing = M.edit && mineById(M.edit);
-      var h = '<div class="mon-head"><h2>Monsters</h2><span class="small muted">' + ((root.DND.monsters || []).length) + ' with full stat blocks (SRD 5.1) and ' + ((root.DND.monsterIndex || []).length) + ' more from other 2014 books</span>' + btn('monNew', '+ Add your own monster', {}, 'btn') + '</div>';
+      var h = '<div class="mon-head"><h2>Monsters</h2><span class="small muted">' + ((root.DND.monsters || []).length) + ' with full stat blocks (SRD 5.1) and ' + ((root.DND.monsterIndex || []).length) + ' more from other 2014 books</span>' + '<span class="mon-head-btns">' + btn('monPaste', '⎘ Paste a stat block', {}, 'btn') + btn('monNew', '+ Add your own monster', {}, 'btn') +
+        btn('monExport', 'Export mine', {}, 'btn') + btn('monImport', 'Import', {}, 'btn') + '</span><input type="file" id="monImportFile" accept=".json,application/json" hidden></div>' +
+        (M.msg ? '<p class="small rest-msg">' + esc(M.msg) + '</p>' : '');
       if (M.loadError) h += '<p class="notice">The monster list couldn’t load. Check your connection and open Monsters again.</p>';
-      var right = editing ? editorHtml(editing) : open ? (open.ix ? summaryBlock(open) : statBlock(open)) : '<div class="statblock empty"><p class="muted">Pick a monster to see its stat block. Tap any bonus or dice in a stat block to roll it.</p></div>';
-      h += '<div class="mon-wrap' + (open || editing ? ' has-open' : '') + '"><div class="mon-left">' + listHtml() + '</div><div class="mon-right">' +
-        (open || editing ? '<div class="toolbar mon-back">' + btn('monBack', '← All monsters', {}, 'btn') + (open && open.mine && !editing ? btn('monEdit', 'Edit', { v: open.id }, 'btn') : '') + (open && !open.mine ? btn('monCopy', 'Copy as my own', { v: open.id }, 'btn') : '') + '</div>' : '') + right + '</div></div>';
+      var right = M.paste ? pasteHtml() : editing ? editorHtml(editing) : open ? (open.ix ? summaryBlock(open) : statBlock(open)) : '<div class="statblock empty"><p class="muted">Pick a monster to see its stat block. Tap any bonus or dice in a stat block to roll it.</p></div>';
+      var openish = open || editing || M.paste;
+      h += '<div class="mon-wrap' + (openish ? ' has-open' : '') + '"><div class="mon-left">' + listHtml() + '</div><div class="mon-right">' +
+        (openish ? '<div class="toolbar mon-back">' + btn('monBack', '← All monsters', {}, 'btn') + (!M.paste && open && open.mine && !editing ? btn('monEdit', 'Edit', { v: open.id }, 'btn') : '') + (!M.paste && open && !open.mine && !open.ix ? btn('monCopy', 'Copy as my own', { v: open.id }, 'btn') : '') + (!M.paste && open && open.ix ? btn('monPaste', 'Paste its stat block', { v: open.id }, 'btn primary') + btn('monCopy', 'Start from the basics', { v: open.id }, 'btn') : '') + '</div>' : '') + right + '</div></div>';
       if (M.roll) h += '<div class="roll-toast" role="status"><b>' + esc(M.roll.label) + '</b> <span class="roll-total">' + M.roll.total + '</span><span class="small">' + esc(M.roll.expr + ' → ' + M.roll.detail) + '</span>' + btn('monRollClose', '✕', {}, 'btn small') + '</div>';
       h += '<p class="small muted mon-legal">Monster stat blocks: System Reference Document 5.1 by Wizards of the Coast LLC, licensed under <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC-BY-4.0</a>. The list of monsters from other books (name, CR, type, size, AC, hit points, book) comes from <a href="https://www.aidedd.org/dnd-filters/monsters.php" target="_blank" rel="noopener">AideDD</a>; their stat blocks stay in the books and on AideDD.</p>';
       return h;
@@ -172,7 +243,29 @@
 
     var actions = {
       monOpen: function (v) { M.open = v; M.edit = ''; M.scrollTop = true; },
-      monBack: function () { M.open = ''; M.edit = ''; },
+      monBack: function () { M.open = ''; M.edit = ''; M.paste = null; },
+      monPaste: function (v) { var src = v && find(v); M.paste = { from: src ? src.n : '', url: src ? src.url : '', srcId: v || '' }; M.edit = ''; M.msg = ''; },
+      monPasteCancel: function () { M.paste = null; },
+      monPasteGo: function () {
+        var ta = document.getElementById('mon-paste'), text = ta ? ta.value : '', m = parseStatBlock(text);
+        if (!m) { M.paste.error = 'That doesn’t look like a stat block. Copy from the monster’s name down to its last action, then paste again.'; return; }
+        var src = M.paste.srcId && find(M.paste.srcId);
+        m.id = 'my-' + Date.now().toString(36); m.ab = m.ab || [10, 10, 10, 10, 10, 10];
+        if (src && src.ix) { m.size = m.size || src.size; m.type = m.type || src.type; if (m.cr == null) { m.cr = src.cr || 0; m.xp = XP[m.cr]; m.pb = pbFor(m.cr); } m.notes = 'From ' + src.src + '.'; }
+        if (m.cr == null) { m.cr = 0; m.xp = 10; m.pb = 2; }
+        textsFor(m);
+        store.myMonsters = store.myMonsters || []; store.myMonsters.unshift(m); M.open = m.id; M.edit = ''; M.paste = null; M.q = m.n; M.type = ''; M.size = ''; M.book = ''; M.crMin = ''; M.crMax = '';
+        var n = ['tr', 'act', 'bon', 'rea', 'leg'].reduce(function (t, k) { return t + (m[k] || []).length; }, 0);
+        M.msg = m.n + ' added to your monsters: ' + n + ' traits and actions read. Check it over, and use Edit to fix anything.';
+      },
+      monExport: function () {
+        var mine = store.myMonsters || [];
+        if (!mine.length) { M.msg = 'You have no monsters of your own yet.'; return; }
+        var blob = new Blob([JSON.stringify({ characterForgeMonsters: 1, monsters: mine }, null, 1)], { type: 'application/json' }), a = document.createElement('a');
+        a.href = URL.createObjectURL(blob); a.download = 'my-monsters.json'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+        return false;
+      },
+      monImport: function () { var f = document.getElementById('monImportFile'); if (f) f.click(); return false; },
       monClear: function () { M.q = ''; M.type = ''; M.size = ''; M.book = ''; M.crMin = ''; M.crMax = ''; },
       monRoll: function (v, el) { var r = roll(v); if (r) M.roll = { label: el.getAttribute('data-label') || 'Roll', expr: v, total: r.total, detail: r.detail }; },
       monRollClose: function () { M.roll = null; },
@@ -189,7 +282,7 @@
           m = { id: m.id, n: src.n, size: src.size, type: src.type + (src.sub ? ' (' + src.sub + ')' : ''), al: src.al, ac: String(src.acv), hp: src.hp || 1, hd: '', sp: '30 ft.' + (src.mv ? ', ' + src.mv.split(', ').map(function (x) { return x + ' ? ft.'; }).join(', ') : ''),
             cr: src.cr == null ? 0 : src.cr, xp: XP[src.cr] || 0, pb: pbFor(src.cr || 0), ab: [10, 10, 10, 10, 10, 10], se: '', lang: '', notes: 'From ' + src.src + '. Full stat block: ' + src.url };
         }
-        ['tr', 'act', 'rea', 'leg'].forEach(function (k) { m[k + 'Text'] = (m[k] || []).map(function (b) { return (b[0] ? b[0] + '. ' : '') + b[1]; }).join('\n'); });
+        ['tr', 'act', 'bon', 'rea', 'leg'].forEach(function (k) { m[k + 'Text'] = (m[k] || []).map(function (b) { return (b[0] ? b[0] + '. ' : '') + b[1]; }).join('\n'); });
         store.myMonsters = store.myMonsters || []; store.myMonsters.unshift(m); M.open = m.id; M.edit = m.id;
       },
       monSave: function () { M.edit = ''; },
@@ -203,7 +296,31 @@
       if (f) { var m = mineById(M.edit); if (m) setField(m, f, t.value); return t.tagName === 'SELECT' ? 'render' : 'save'; }
       return null;
     }
-    return { html: html, actions: actions, onInput: onInput, roll: roll };
+    // monsters a friend exported: added next to yours, never replacing one with the same id
+    function importFile(input, done) {
+      var file = input.files && input.files[0]; if (!file) return;
+      var r = new FileReader();
+      r.onload = function () {
+        try {
+          var data = JSON.parse(r.result), list = Array.isArray(data) ? data : data && data.monsters;
+          if (!Array.isArray(list)) throw new Error('no monsters');
+          store.myMonsters = store.myMonsters || [];
+          var have = {}, added = 0; store.myMonsters.forEach(function (m) { have[m.id] = m; });
+          list.forEach(function (m) {
+            if (!m || !m.n) return;
+            var same = have[m.id];
+            if (same && JSON.stringify(same) === JSON.stringify(m)) return;
+            m = JSON.parse(JSON.stringify(m)); if (same || !m.id) m.id = 'my-' + Date.now().toString(36) + added;
+            store.myMonsters.push(m); added++;
+          });
+          M.msg = added ? added + ' monster' + (added === 1 ? '' : 's') + ' imported.' : 'Nothing new in that file.';
+        } catch (e) { M.msg = 'That file isn’t a monster export from Character Forge.'; }
+        input.value = ''; done();
+      };
+      r.readAsText(file);
+    }
+    return { html: html, actions: actions, onInput: onInput, roll: roll, importFile: importFile };
   };
   root.MonsterUI.roll = roll;
+  root.MonsterUI.parse = parseStatBlock;
 })(typeof window !== 'undefined' ? window : globalThis);

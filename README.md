@@ -67,7 +67,10 @@ yours are saved with your characters.
 
 It also lists 617 monsters from the other 2014-era books (the rest of the Monster Manual, Monsters of the Multiverse, Fizban's, Glory of the Giants, Tasha's, adventures…),
 with their challenge, type, size, AC, hit points, movement, alignment and book, filterable by **Book**. Their stat blocks aren't free to share, so each one has a button that opens it on AideDD,
-and **Copy as my own** starts a monster of yours with those basics filled in.
+and its full stat block shows inside the app from AideDD when you're online.
+
+**⎘ Paste a stat block** turns a stat block you copy (from AideDD, your book or a PDF) into a monster of yours: name, type, AC, hit points, speed, ability scores, properties, traits, actions,
+bonus actions, reactions and legendary actions, with rollable attacks, saved on your device and usable offline. **Export mine** saves your monsters to a file and **Import** adds a friend's.
 
 ## What it does
 

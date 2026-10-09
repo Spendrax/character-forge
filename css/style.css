@@ -351,3 +351,7 @@ html { overflow-anchor: none; } /* the app restores scroll itself after each red
 .aidedd-frame { width: 100%; height: 70vh; min-height: 30rem; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
 .statblock:has(.aidedd-frame) { max-height: none; }
 @media print { .aidedd-frame { display: none; } }
+.mon-head-btns { margin-left: auto; display: flex; flex-wrap: wrap; gap: .4rem; }
+.mon-head .mon-head-btns .btn { margin-left: 0; }
+#mon-paste { width: 100%; font: .85rem/1.4 ui-monospace, Menlo, Consolas, monospace; margin: .4rem 0; }
+@media (max-width: 800px) { .mon-head-btns { margin-left: 0; } }

@@ -1281,6 +1281,7 @@
     if (a('data-mon') != null) return;
     if (a('data-mymon') != null) { if (t.tagName === 'SELECT') return; return setTimeout(function () { var f = document.activeElement; if (!f || !f.getAttribute || f.getAttribute('data-mymon') == null) requestRender(); }, 0); }
     if (t.id === 'importFile') return importFile(t);
+    if (t.id === 'monImportFile') return MON.importFile(t, render);
     if (t.id === 'pictureFile') return loadPicture(t);
     if (t.id === 'partImportFile') return loadPartImport(t);
     if (a('data-partfrom')) { if (ui.partImport) ui.partImport.choose = +a('data-partfrom'); return; }

@@ -283,6 +283,24 @@ const sw = fs.readFileSync(path.join(__dirname, '../sw.js'), 'utf8');
   for (let i = 0; i < 200; i++) { const r = roll('2d6+3'); assert(r.total >= 5 && r.total <= 15); }
   assert.equal(roll('1d20-2').detail.slice(-3), '− 2'); assert.equal(roll('nothing'), null);
   const sw = fs.readFileSync(path.join(__dirname, '../sw.js'), 'utf8'); assert(sw.includes("'data/monsters.js'"));
+  // Paste a stat block: read a typed-out stat block (here built from the SRD) back into a monster
+  const parse = global.MonsterUI.parse, A6 = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'], sg = n => (n >= 0 ? '+' : '') + n;
+  const asText = (m, oneLine) => [m.n, m.size + ' ' + m.type + (m.sub ? ' (' + m.sub + ')' : '') + ', ' + m.al, 'Armor Class ' + m.ac, 'Hit Points ' + m.hp + ' (' + m.hd.replace(/([+-])/, ' $1 ') + ')', 'Speed ' + m.sp]
+    .concat(oneLine ? [A6.join(' '), m.ab.map(x => x + ' (' + sg(Math.floor((x - 10) / 2)) + ')').join(' ')] : A6.flatMap((a, i) => [a, m.ab[i] + ' (' + sg(Math.floor((m.ab[i] - 10) / 2)) + ')']))
+    .concat(m.sv ? ['Saving Throws ' + m.sv] : [], m.sk ? ['Skills ' + m.sk] : [], ['Senses ' + m.se, 'Languages ' + m.lang, 'Challenge ' + m.crs + ' (' + m.xp.toLocaleString('en') + ' XP)'])
+    .concat((m.tr || []).map(b => b[0] + '. ' + b[1].split('\n')[0]), ['Actions'], m.act.map(b => b[0] + '. ' + b[1].split('\n')[0]))
+    .concat(m.leg ? ['Legendary Actions', 'The ' + m.n.toLowerCase() + ' can take 3 legendary actions, choosing from the options below.'].concat(m.leg.map(b => b[0] + '. ' + b[1])) : []).join('\n');
+  for (const name of ['Adult Red Dragon', 'Lich', 'Goblin', 'Vampire, Vampire Form', 'Mage']) {
+    const src = mons.find(m => m.n === name);
+    for (const one of [true, false]) {
+      const p = parse(asText(src, one));
+      assert.equal(p.n, src.n); assert.equal(p.size, src.size); assert.equal(p.ac, src.ac); assert.equal(p.hp, src.hp); assert.deepEqual(p.ab, src.ab); assert.equal(p.cr, src.cr);
+      assert.deepEqual(p.act.map(b => b[0]), src.act.map(b => b[0].replace(/–/g, '-')), name);
+      assert.deepEqual((p.leg || []).map(b => b[0]), (src.leg || []).map(b => b[0]), name);
+    }
+  }
+  assert.equal(parse('just some words\nnothing here\nat all\nreally'), null);
+
 }
 
 console.log('ok —', n, 'builds derived;', D.classes.length, 'classes,', D.subclasses.length, 'subclasses,', D.lineages.length, 'lineages,', D.backgrounds.length, 'backgrounds,', D.feats.length, 'feats,', Object.keys(D.spells).length, 'spells (' + Object.keys(D.spellText).length + ' described),', longF, 'detailed features');
