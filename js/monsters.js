@@ -91,9 +91,9 @@
         line('Armor Class', m.acv) + line('Hit Points', m.hp) + line('Movement', 'walk' + (m.mv ? ', ' + m.mv : '')) +
         line('Challenge', m.cr == null ? '— (no CR: a companion or summoned creature)' : crText(m.cr) + ' (' + (XP[m.cr] || 0).toLocaleString('en') + ' XP)') +
         (m.leg1 ? '<div><b>Legendary</b> yes</div>' : '') + line('Book', m.src) + '<hr>' +
-        '<p>The full stat block (abilities, traits, actions) is in <i>' + esc(m.src) + '</i>, so it isn’t copied here.</p>' +
-        '<p><a class="btn primary" href="' + esc(m.url) + '" target="_blank" rel="noopener">Open the full stat block on AideDD ↗</a></p>' +
-        '<p class="small muted">Want it here with rollable attacks? Use “Copy as my own” and fill in the rest from your book or AideDD.</p></article>';
+        '<div class="aidedd-head"><b>Full stat block</b> <span class="small muted">shown from AideDD (needs internet)</span> <a class="small" href="' + esc(m.url) + '" target="_blank" rel="noopener">open in a new tab ↗</a></div>' +
+        '<iframe class="aidedd-frame" src="' + esc(m.url) + '" title="' + esc(m.n) + ' stat block on AideDD" loading="lazy" referrerpolicy="no-referrer"></iframe>' +
+        '<p class="small muted">Want it with rollable attacks? Use “Copy as my own” and fill in the rest from the stat block above.</p></article>';
     }
     function filtered() {
       var q = M.q.toLowerCase(), lo = M.crMin === '' ? -1 : +M.crMin, hi = M.crMax === '' ? 99 : +M.crMax;
