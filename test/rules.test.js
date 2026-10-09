@@ -266,4 +266,19 @@ const sw = fs.readFileSync(path.join(__dirname, '../sw.js'), 'utf8');
   c = ft('Lucky'); assert(R.derive(c).trackers.some(t => t.name === 'Luck points' && t.max === 3));
 }
 
+// Monsters: the SRD list, and the dice roller used by stat blocks
+{
+  (0, eval)(fs.readFileSync(path.join(__dirname, '../data/monsters.js'), 'utf8'));
+  require('../js/monsters.js');
+  const mons = global.DND.monsters;
+  assert.equal(mons.length, 334);
+  const red = mons.find(m => m.n === 'Adult Red Dragon');
+  assert.equal(red.hp, 256); assert.equal(red.cr, 17); assert.deepEqual(red.ab, [27, 10, 25, 16, 13, 21]); assert(red.leg.length && /Recharge 5–6/.test(red.act.map(a => a[0]).join()));
+  assert(mons.every(m => m.n && m.size && m.type && m.ac && m.hp > 0 && m.ab.length === 6 && m.se));
+  const roll = global.MonsterUI.roll;
+  for (let i = 0; i < 200; i++) { const r = roll('2d6+3'); assert(r.total >= 5 && r.total <= 15); }
+  assert.equal(roll('1d20-2').detail.slice(-3), '− 2'); assert.equal(roll('nothing'), null);
+  const sw = fs.readFileSync(path.join(__dirname, '../sw.js'), 'utf8'); assert(sw.includes("'data/monsters.js'"));
+}
+
 console.log('ok —', n, 'builds derived;', D.classes.length, 'classes,', D.subclasses.length, 'subclasses,', D.lineages.length, 'lineages,', D.backgrounds.length, 'backgrounds,', D.feats.length, 'feats,', Object.keys(D.spells).length, 'spells (' + Object.keys(D.spellText).length + ' described),', longF, 'detailed features');

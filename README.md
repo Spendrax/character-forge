@@ -55,6 +55,16 @@ On the GitHub Pages site, use **Install app** in the top bar (Chrome, Edge, Andr
 The installed app opens in its own window, works offline, and picks up new versions automatically the next time it opens while online.
 If you changed which files the page loads, add them to the list in `sw.js` and bump `VERSION` there (the test checks the list).
 
+## Sections
+
+The app opens on a **home page** with its sections: **Characters** (the builder below, with your characters listed for one-tap opening) and **Monsters**.
+
+### Monsters
+
+All 334 monsters of the 2014 System Reference Document (SRD 5.1) with their full stat blocks: search by name, filter by type, size and challenge, sort by name or CR.
+Tap any attack bonus, damage dice, hit dice or ability score in a stat block to roll it. **Add your own monster** (or **Copy as my own** to start from an SRD one) for homebrew or creatures from other books;
+yours are saved with your characters. Monsters outside the SRD (the rest of the Monster Manual, Volo's, Mordenkainen's…) aren't included because their stat blocks aren't free to share.
+
 ## What it does
 
 Lineage → Class and subclass (levels 1–20, single class or multiclass) → Ability scores (standard array, point buy, manual/rolled; ASIs or feats) → Background → Spells → My spells → Equipment → Items → Appearance → Details → printable Sheet → Play.
@@ -139,6 +149,10 @@ spells known or prepared per class; Unarmored Defense only from whichever class 
 To add content, append an entry to the matching file in `data/` following its neighbours.
 
 ## Attribution
+
+Monster stat blocks: this work includes material taken from the System Reference Document 5.1 ("SRD 5.1") by Wizards of the Coast LLC, available at https://dnd.wizards.com/resources/systems-reference-document,
+licensed under the Creative Commons Attribution 4.0 International License (https://creativecommons.org/licenses/by/4.0/). Converted from the 5e-database project (MIT license).
+
 
 Game data is summarised from [dnd5e.wikidot.com](https://dnd5e.wikidot.com/), whose content is licensed
 [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/); the files in `data/` are shared under the same licence.

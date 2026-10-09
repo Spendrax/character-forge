@@ -7,7 +7,7 @@
   var TAGS = [['official', 'Official'], ['setting', 'Setting books'], ['ua', 'Unearthed Arcana'], ['homebrew', 'Homebrew']];
 
   var store = { chars: [], current: '', detail: true, filters: { official: true, setting: true, ua: true, homebrew: true } };
-  var ui = { step: 'lineage', q: {}, spellLevel: 0, confirmDelete: false, group: '', clsTab: '', casterTab: '', itemTab: 'magic', rarity: '', itemType: '', gearCat: '' };
+  var ui = { section: /[?&]shared=/.test(window.location.search) ? 'chars' : 'home', step: 'lineage', q: {}, spellLevel: 0, confirmDelete: false, group: '', clsTab: '', casterTab: '', itemTab: 'magic', rarity: '', itemType: '', gearCat: '' };
   var ch, d; // current character and its derived sheet
 
   // ---------- storage ----------
@@ -932,7 +932,7 @@
   }
   // Every tap redraws the page. Remember where the page and each scrolling list were, and put them back,
   // so selecting something never jumps you back to the top.
-  var SCROLLERS = '.optlist, .scroll, .tablewrap, .imp-list, .look-controls, textarea';
+  var SCROLLERS = '.mon-list, .optlist, .scroll, .tablewrap, .imp-list, .look-controls, textarea';
   function scrollState() {
     var lists = {}, count = {};
     Array.prototype.forEach.call(document.querySelectorAll(SCROLLERS), function (el) {
@@ -963,8 +963,9 @@
     d = R.derive(ch, store.filters);
     var active = document.activeElement, fid = active && active.id, pos = null;
     try { pos = active && active.selectionStart; } catch (e) { pos = null; }
+    if (ui.section !== 'chars') return renderSection(fid, pos);
     var body = { lineage: stepLineage, 'class': stepClass, abilities: stepAbilities, background: stepBackground, spells: stepSpells, myspells: stepMySpells, equipment: stepEquipment, items: stepItems, appearance: stepAppearance, details: stepDetails, sheet: stepSheet, play: stepPlay }[ui.step]();
-    var top = '<header class="top"><span class="brand">Character Forge</span><select data-ui="current" aria-label="Character">' + store.chars.map(function (c) {
+    var top = '<header class="top">' + btn('section', 'Character Forge', { v: 'home' }, 'brand linkish') + sectionNav() + '<select data-ui="current" aria-label="Character">' + store.chars.map(function (c) {
       return '<option value="' + c.id + '"' + (c.id === ch.id ? ' selected' : '') + '>' + esc(title(c)) + '</option>';
     }).join('') + '</select>' + '<button type="button" class="btn" data-act="undo" title="Undo (Ctrl+Z)"' + (undoStack.length ? '' : ' disabled') + '>↶ Undo</button><button type="button" class="btn" data-act="redo" title="Redo (Ctrl+Y)"' + (redoStack.length ? '' : ' disabled') + '>↷ Redo</button>' + btn('new', 'New') + btn('dup', 'Duplicate') + btn('import', 'Import') + btn('export', 'Export') +
       (ui.confirmDelete ? btn('delete', 'Really delete?', {}, 'btn primary') + btn('cancelDelete', 'Cancel') : btn('askDelete', 'Delete', {}, 'btn danger')) +
@@ -998,8 +999,43 @@
     saveNow();
   }
 
+  // ---------- sections: the home page and the monsters ----------
+  function sectionNav() {
+    return '<nav class="sections" aria-label="Sections">' + [['home', '⌂ Home'], ['chars', 'Characters'], ['monsters', 'Monsters']].map(function (x) {
+      return '<button type="button" class="sec' + (ui.section === x[0] ? ' on' : '') + '" data-act="section" data-v="' + x[0] + '"' + (ui.section === x[0] ? ' aria-current="page"' : '') + '>' + x[1] + '</button>';
+    }).join('') + '</nav>';
+  }
+  function homeHtml() {
+    var chars = store.chars.filter(function (c) { return c.name || c.lineage || (c.classes || []).length; });
+    var tile = function (sec, icon, name, text, extra) {
+      return '<div class="home-tile"><button type="button" class="home-main" data-act="section" data-v="' + sec + '"><span class="home-icon" aria-hidden="true">' + icon + '</span><b>' + name + '</b><span>' + text + '</span></button>' + (extra || '') + '</div>';
+    };
+    return '<main class="home"><h1>Character Forge</h1><p class="muted">Your D&amp;D 5e table companion (2014 rules).</p><div class="home-grid">' +
+      tile('chars', '⚔', 'Characters', 'Build characters step by step, print the sheet, and track spells, hit points and rests while you play.',
+        chars.length ? '<div class="home-list">' + chars.slice(0, 6).map(function (c) {
+          var dd = R.derive(c, store.filters);
+          return '<button type="button" class="home-char" data-act="openChar" data-v="' + c.id + '"><b>' + esc(title(c)) + '</b><span class="small muted">' + esc(summaryLine(c, dd)) + '</span></button>';
+        }).join('') + (chars.length > 6 ? '<span class="small muted">and ' + (chars.length - 6) + ' more</span>' : '') + '</div>' : '') +
+      tile('monsters', '🐉', 'Monsters', 'Every monster from the 2014 SRD with its full stat block, searchable by name, type, size and challenge, with dice you can roll. Add your own too.') +
+      '</div></main>';
+  }
+  function renderSection(fid, pos) {
+    var keep = scrollState();
+    var top = '<header class="top">' + btn('section', 'Character Forge', { v: 'home' }, 'brand linkish') + sectionNav() + '<span class="spacer"></span>' +
+      '<button type="button" class="btn" data-act="undo" title="Undo (Ctrl+Z)"' + (undoStack.length ? '' : ' disabled') + '>↶ Undo</button>' + (isInstalledApp() ? '' : btn('install', 'Install app', {}, installPrompt ? 'btn primary' : 'btn')) + '</header>';
+    var body = ui.section === 'monsters' ? '<main class="mon-main">' + MON.html() + '</main>' : homeHtml();
+    document.getElementById('app').innerHTML = top + installHelpHtml() + body;
+    if (ui.mon && ui.mon.scrollTop) { ui.mon.scrollTop = false; var r = document.querySelector('.mon-right'); if (r && window.innerWidth < 800) r.scrollIntoView(); else window.scrollTo(0, 0); }
+    else restoreScroll(keep);
+    if (fid) { var el = document.getElementById(fid); if (el) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } try { if (pos != null) el.setSelectionRange(pos, pos); } catch (e) { /* not text */ } } }
+    document.title = (ui.section === 'monsters' ? 'Monsters' : 'Home') + ' — Character Forge';
+    saveNow();
+  }
+
   // ---------- actions ----------
   var actions = {
+    section: function (v) { ui.section = v; window.scrollTo(0, 0); },
+    openChar: function (v) { store.current = v; ui.section = 'chars'; ui.step = 'sheet'; window.scrollTo(0, 0); },
     step: function (v) { ui.step = v; ui.picEdit = false; ui.packAdded = null; ui.editArmor = null; ui.editWeapon = null; ui.partImport = null; ui.partImportDone = null; ui.partImportError = null; ui.scrollToStep = true; },
     'new': function () { var c = R.newChar(); store.chars.push(c); store.current = c.id; ui.step = 'lineage'; },
     dup: function () { var c = JSON.parse(JSON.stringify(ch)); c.id = R.uid(); c.name = title(ch) + ' (copy)'; store.chars.push(c); store.current = c.id; },
@@ -1217,6 +1253,9 @@
   document.addEventListener('pointercancel', function () { pointerDown = false; if (pending) { pending = false; render(); } }, true);
   function requestRender() { if (pointerDown) pending = true; else render(); }
 
+  var MON = window.MonsterUI({ esc: esc, btn: btn, ui: ui, store: store, render: render });
+  Object.keys(MON.actions).forEach(function (k) { actions[k] = MON.actions[k]; });
+
   document.addEventListener('click', function (e) {
     var el = e.target.closest ? e.target.closest('[data-act]') : null;
     if (!el || el.disabled) return;
@@ -1226,6 +1265,7 @@
   });
   document.addEventListener('input', function (e) {
     var t = e.target, a = function (n) { return t.getAttribute(n); };
+    if (a('data-mon') != null || a('data-mymon') != null) { var mr = MON.onInput(t); if (mr === 'render') render(); else save(); return; }
     if (a('data-q') != null) { ui.q[a('data-q')] = t.value; render(); }
     else if (a('data-piczoom')) { ch.pictureView = Object.assign({}, ch.pictureView, { zoom: +t.value }); livePicture(); save(); }
     else if (a('data-trk')) { var TT = ch.track = ch.track || {}, nv = Math.max(0, Math.round(+t.value) || 0); if (a('data-trk') === 'hp') TT.hp = nv >= d.hp ? null : nv; else TT.temp = nv; save(); }
@@ -1238,6 +1278,8 @@
   });
   document.addEventListener('change', function (e) {
     var t = e.target, a = function (n) { return t.getAttribute(n); };
+    if (a('data-mon') != null) return;
+    if (a('data-mymon') != null) { if (t.tagName === 'SELECT') return; return setTimeout(function () { var f = document.activeElement; if (!f || !f.getAttribute || f.getAttribute('data-mymon') == null) requestRender(); }, 0); }
     if (t.id === 'importFile') return importFile(t);
     if (t.id === 'pictureFile') return loadPicture(t);
     if (t.id === 'partImportFile') return loadPartImport(t);
