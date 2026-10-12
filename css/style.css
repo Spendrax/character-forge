@@ -355,3 +355,16 @@ html { overflow-anchor: none; } /* the app restores scroll itself after each red
 .mon-head .mon-head-btns .btn { margin-left: 0; }
 #mon-paste { width: 100%; font: .85rem/1.4 ui-monospace, Menlo, Consolas, monospace; margin: .4rem 0; }
 @media (max-width: 800px) { .mon-head-btns { margin-left: 0; } }
+
+/* Play mode bar and the character summary kept in view on narrow screens */
+.mode-bar { margin: 0 0 .8rem; align-items: center; }
+.card-prof { color: var(--accent); }
+.mini-bar { display: none; }
+@media (max-width: 1100px) {
+  .mini-bar { display: flex; flex-wrap: wrap; gap: .2rem .8rem; align-items: baseline; position: fixed; left: 0; right: 0; bottom: 0; z-index: 15; background: var(--panel); border-top: 2px solid var(--accent); padding: .4rem .8rem; font-size: .85rem; box-shadow: 0 -4px 14px rgba(0,0,0,.12); }
+  .mini-bar .mini-ab { flex-basis: 100%; color: var(--muted); font-size: .8rem; }
+  .mini-bar .mini-ab b { color: var(--ink); }
+  body { padding-bottom: 4.2rem; }
+  .roll-toast { bottom: 4.6rem; }
+}
+@media print { .mini-bar { display: none !important; } }

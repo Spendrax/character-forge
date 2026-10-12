@@ -153,7 +153,11 @@
       '<div class="toolbar">' + search('lineage', 'Search lineages…') + '<select data-ui="group"><option value="">All groups</option>' +
       groups.map(function (g) { return '<option' + (ui.group === g ? ' selected' : '') + '>' + esc(g) + '</option>'; }).join('') + '</select><span class="muted small">' + list.length + ' shown</span></div>' +
       '<div class="grid scroll">' + list.map(function (l) {
-        return '<button type="button" class="card' + (ch.lineage === l.id ? ' on' : '') + '" data-act="lineage" data-v="' + esc(l.id) + '"><b>' + esc(l.name) + '</b><small>' + esc(l.group) + tag(l.tag) + '</small></button>';
+        var v0 = l.versions[0], a = v0.a === 'flex' ? 'any +2/+1' : Object.keys(v0.a || {}).map(function (k) { return k + ' +' + v0.a[k]; }).join(', ');
+        var pr = (v0.sk || []).concat((v0.prof && v0.prof.armor) || [], (v0.prof && v0.prof.weapons) || [], (v0.prof && v0.prof.tools) || []);
+        return '<button type="button" class="card' + (ch.lineage === l.id ? ' on' : '') + '" data-act="lineage" data-v="' + esc(l.id) + '"><b>' + esc(l.name) + '</b>' +
+          '<small>' + esc([a, (v0.sp || 30) + ' ft', v0.dv ? 'darkvision' : '', v0.subs ? v0.subs.length + ' subraces' : ''].filter(Boolean).join(' · ')) + '</small>' +
+          (pr.length ? '<small class="card-prof">Proficient: ' + esc(pr.join(', ')) + '</small>' : '') + '<small>' + esc(l.group) + tag(l.tag) + '</small></button>';
       }).join('') + '</div>';
     if (!d.lin) return h + '<p class="notice">Pick a lineage to see its traits.</p>';
     var lin = d.lin, v = lin.versions[ch.version] || lin.versions[0], L = d.L;
@@ -230,10 +234,20 @@
     return h + '</div>';
   }
 
+  // Standard array placed for the class: its main abilities get the highest scores.
+  var CLASS_ABILITIES = { artificer: ['INT', 'CON'], barbarian: ['STR', 'CON'], bard: ['CHA', 'DEX'], 'blood-hunter': ['DEX', 'INT'], cleric: ['WIS', 'CON'], druid: ['WIS', 'CON'], fighter: ['STR', 'CON'],
+    monk: ['DEX', 'WIS'], paladin: ['STR', 'CHA'], ranger: ['DEX', 'WIS'], rogue: ['DEX', 'CON'], sorcerer: ['CHA', 'CON'], warlock: ['CHA', 'CON'], wizard: ['INT', 'CON'] };
+  function placeArray() {
+    var first = (CLASS_ABILITIES[(ch.classes[0] || {}).cls] || []).concat(['CON', 'DEX', 'WIS', 'INT', 'CHA', 'STR']);
+    var order = first.filter(function (a, i) { return first.indexOf(a) === i; });
+    var vals = D.standardArray.slice().sort(function (x, y) { return y - x; });
+    order.forEach(function (a, i) { ch.base[a] = vals[i]; });
+  }
   function stepAbilities() {
     var m = ch.method;
     var h = '<h2>Ability scores</h2>' + partImportHtml('abilities') + '<div class="pills" style="margin:.75rem 0">' +
       [['array', 'Standard array'], ['pointbuy', 'Point buy'], ['manual', 'Manual / rolled']].map(function (x) { return btn('method', x[1], { v: x[0] }, 'pill' + (m === x[0] ? ' on' : '')); }).join('') + '</div>';
+    if (m === 'array' && d.cls && CLASS_ABILITIES[d.cls.id]) h += '<p class="small muted">Placed for a ' + esc(d.cls.name) + ': the highest scores go to ' + CLASS_ABILITIES[d.cls.id].map(function (a) { return D.abilityNames[a]; }).join(' and ') + '. Change any score to swap it with another. ' + btn('method', 'Place again', { v: 'array' }, 'linkbtn') + '</p>';
     if (m === 'pointbuy') h += '<p class="' + (d.pointsSpent === 27 ? 'muted' : 'count') + '">Points spent: <b>' + (d.pointsSpent > 90 ? '—' : d.pointsSpent) + ' / 27</b>. Scores run from 8 to 15 before bonuses.</p>';
     if (m === 'array') h += '<p class="muted">Assign 15, 14, 13, 12, 10 and 8. Choosing a value swaps it with the ability that had it.</p>';
     if (m === 'manual') h += '<p class="muted">Type your scores, or ' + btn('roll', 'roll 4d6 and drop the lowest', {}, 'btn tiny') + '</p>';
@@ -254,10 +268,11 @@
   }
 
   function stepBackground() {
-    var list = D.backgrounds.filter(function (b) { return (ok(b.tag) || b.n === ch.background) && match(ui.q.background || '', b.n); });
-    var h = '<h2>Background</h2>' + partImportHtml('background') + '<p class="muted">Where your character came from: skills, tools, languages and a story feature.</p><div class="toolbar">' + search('background', 'Search backgrounds…') + '<span class="muted small">' + list.length + ' shown</span></div>' +
+    var srcs = []; D.backgrounds.forEach(function (b) { if (ok(b.tag) && srcs.indexOf(b.s) < 0) srcs.push(b.s); }); srcs.sort();
+    var list = D.backgrounds.filter(function (b) { return (ok(b.tag) || b.n === ch.background) && match(ui.q.background || '', b.n + ' ' + (b.sk || []).join(' ')) && (!ui.bgsrc || b.s === ui.bgsrc); });
+    var h = '<h2>Background</h2>' + partImportHtml('background') + '<p class="muted">Where your character came from: skills, tools, languages and a story feature.</p><div class="toolbar">' + search('background', 'Search by name or skill…') + '<select data-ui="bgsrc" aria-label="Book"><option value="">All books</option>' + srcs.map(function (x) { return '<option' + (ui.bgsrc === x ? ' selected' : '') + '>' + esc(x) + '</option>'; }).join('') + '</select><span class="muted small">' + list.length + ' shown</span></div>' +
       '<div class="grid scroll">' + list.map(function (b) {
-        return '<button type="button" class="card' + (ch.background === b.n ? ' on' : '') + '" data-act="background" data-v="' + esc(b.n) + '"><b>' + esc(b.n) + '</b><small>' + esc(b.s) + tag(b.tag) + '</small></button>';
+        return '<button type="button" class="card' + (ch.background === b.n ? ' on' : '') + '" data-act="background" data-v="' + esc(b.n) + '"><b>' + esc(b.n) + '</b><small>' + esc((b.sk || []).join(', ') || 'skills of your choice') + '</small><small>' + esc(b.s) + tag(b.tag) + '</small></button>';
       }).join('') + '</div>';
     var b = d.bg;
     if (!b) return h + '<p class="notice">Pick a background to see what it grants.</p>';
@@ -566,6 +581,10 @@
     return h + '</div>';
   }
 
+  function profArmor(kind) { var p = d.prof.armor; return kind === 'Shield' ? p.some(function (a) { return /^Shields/.test(a); }) : p.indexOf(kind + ' armor') >= 0 || p.indexOf('All armor') >= 0; }
+  function profWeapon(w) { // same test as the attack list in rules.js
+    return d.prof.weapons.some(function (p) { p = p.toLowerCase(); return p === (w[0] + 's').toLowerCase() || (p === 'simple weapons' && /^Simple/.test(w[1])) || (p === 'martial weapons' && /^Martial/.test(w[1])); });
+  }
   function stepEquipment() {
     var h = '<h2>Equipment</h2>' + partImportHtml('equipment') + packAddedHtml();
     if (d.cls) {
@@ -580,12 +599,14 @@
     }
     var CA = ch.customArmor || [], CW = ch.customWeapons || [];
     var opt = function (v, label, cur) { return '<option value="' + esc(v) + '"' + (String(cur) === String(v) ? ' selected' : '') + '>' + esc(label) + '</option>'; };
-    h += '<div class="panel"><h3>Armor</h3><div class="row"><label class="field"><span>Worn armor</span><select data-set="armor"><option value="">None</option><optgroup label="Armor">' + D.armor.map(function (a) {
-      return '<option value="' + esc(a[0]) + '"' + (ch.armor === a[0] ? ' selected' : '') + '>' + esc(a[0]) + ' — ' + a[1] + ', AC ' + a[3] + (a[1] === 'Light' ? ' + Dex' : a[1] === 'Medium' ? ' + Dex (max 2)' : '') + '</option>';
-    }).join('') + '</optgroup><optgroup label="Spells">' + opt('spell:mage-armor', 'Mage Armor — spell, AC 13 + Dex (no armor worn)', ch.armor) + '</optgroup>' + (CA.length ? '<optgroup label="Your own armor">' + CA.map(function (a) { return opt('custom:' + a.id, (a.n || 'Custom armor') + ' — ' + (a.kind || 'Light') + ', AC ' + (a.ac || 10) + (+a.bonus ? ' ' + R.fmt(+a.bonus) : ''), ch.armor); }).join('') + '</optgroup>' : '') + '</select></label>' +
-      '<label style="margin-bottom:.9rem"><input type="checkbox" data-check="shield"' + (ch.shield ? ' checked' : '') + '> Shield</label>' +
+    h += '<div class="panel"><h3>Armor</h3><div class="row"><label class="field"><span>Worn armor</span><select data-set="armor"><option value="">None</option>' + ['Light', 'Medium', 'Heavy'].map(function (kind) {
+      return '<optgroup label="' + kind + ' armor' + (profArmor(kind) ? '' : ' (not proficient)') + '">' + D.armor.filter(function (a) { return a[1] === kind; }).map(function (a) {
+        return '<option value="' + esc(a[0]) + '"' + (ch.armor === a[0] ? ' selected' : '') + '>' + esc(a[0]) + ', AC ' + a[3] + (a[1] === 'Light' ? ' + Dex' : a[1] === 'Medium' ? ' + Dex (max 2)' : '') + (a[5] ? ', Str ' + a[5] : '') + '</option>';
+      }).join('') + '</optgroup>';
+    }).join('') + '<optgroup label="Spells">' + opt('spell:mage-armor', 'Mage Armor — spell, AC 13 + Dex (no armor worn)', ch.armor) + '</optgroup>' + (CA.length ? '<optgroup label="Your own armor">' + CA.map(function (a) { return opt('custom:' + a.id, (a.n || 'Custom armor') + ' — ' + (a.kind || 'Light') + ', AC ' + (a.ac || 10) + (+a.bonus ? ' ' + R.fmt(+a.bonus) : ''), ch.armor); }).join('') + '</optgroup>' : '') + '</select></label>' +
+      '<label style="margin-bottom:.9rem"><input type="checkbox" data-check="shield"' + (ch.shield ? ' checked' : '') + '> Shield' + (profArmor('Shield') ? '' : ' <span class="small" style="color:var(--warn)">(not proficient)</span>') + '</label>' +
       (ch.shield ? '<label class="field extra-num" style="max-width:110px"><span>Shield bonus</span><input type="number" step="1" data-shieldbonus="1" value="' + (ch.shieldBonus != null && ch.shieldBonus !== '' ? ch.shieldBonus : 2) + '"></label>' : '') +
-      '<div class="stat" style="padding:.3rem .9rem;margin-bottom:.6rem"><b>' + d.ac + '</b><span>Armor class</span></div></div><p class="small muted">' + esc(d.acNote) + '</p>' +
+      '<div class="stat" style="padding:.3rem .9rem;margin-bottom:.6rem"><b>' + d.ac + '</b><span>Armor class</span></div></div><p class="small muted">' + esc(d.acNote) + '</p>' + (d.warnings.some(function (w) { return /^Not proficient with (light|medium|heavy|shields)/i.test(w); }) ? '<p class="small" style="color:var(--warn)">' + esc(d.warnings.filter(function (w) { return /^Not proficient/.test(w); }).join(' ')) + ' Without proficiency you have disadvantage on Strength and Dexterity rolls and attacks, and can\'t cast spells.</p>' : '') +
       (CA.length ? '<h4 style="margin-top:1rem">Your own armor</h4>' + CA.map(function (a) {
         if (ui.editArmor !== a.id) {
           var worn = ch.armor === 'custom:' + a.id;
@@ -601,9 +622,11 @@
           '<div class="toolbar">' + btn('saveCustom', 'Save', {}, 'btn primary') + btn('rmArmor', 'Remove', { v: a.id }, 'btn tiny danger') + '</div></div>';
       }).join('') : '') +
       '<div class="toolbar" style="margin-top:.6rem">' + btn('addArmor', '+ Add your own armor') + '</div></div>';
-    h += '<div class="panel"><h3>Weapons</h3><div class="row"><select id="addWeapon" data-addweapon="1"><option value="">Add a weapon…</option>' + D.weapons.map(function (w) {
-      return '<option value="' + esc(w[0]) + '">' + esc(w[0]) + ' — ' + esc(w[1]) + ', ' + esc(w[3]) + '</option>';
-    }).join('') + '</select>' + btn('addCWeapon', '+ Add your own weapon') + '</div>' + attacksHtml(true) +
+    h += '<div class="panel"><h3>Weapons</h3><div class="row"><select id="addWeapon" data-addweapon="1"><option value="">Add a weapon…</option>' + ['Simple Melee', 'Simple Ranged', 'Martial Melee', 'Martial Ranged'].map(function (cat) {
+      return '<optgroup label="' + cat + '">' + D.weapons.filter(function (w) { return w[1] === cat; }).map(function (w) {
+        return '<option value="' + esc(w[0]) + '">' + (profWeapon(w) ? '✓ ' : '✗ ') + esc(w[0]) + ' — ' + esc(w[3]) + '</option>';
+      }).join('') + '</optgroup>';
+    }).join('') + '</select><span class="small muted">✓ proficient · ✗ not proficient (no proficiency bonus to hit)</span>' + btn('addCWeapon', '+ Add your own weapon') + '</div>' + attacksHtml(true) +
       (CW.filter(function (w) { return ui.editWeapon === w.id; }).length ? '<h4 style="margin-top:1rem">Your own weapon</h4>' + CW.filter(function (w) { return ui.editWeapon === w.id; }).map(function (w) {
         var f = function (k, label, type, extra) { return '<label class="field"><span>' + label + '</span><input type="' + type + '" id="cw-' + w.id + '-' + k + '" data-cweapon="' + w.id + '" data-f="' + k + '" value="' + esc(w[k] != null ? w[k] : '') + '"' + (extra || '') + '></label>'; };
         var types = ['Bludgeoning', 'Piercing', 'Slashing', 'Acid', 'Cold', 'Fire', 'Force', 'Lightning', 'Necrotic', 'Poison', 'Psychic', 'Radiant', 'Thunder'];
@@ -956,6 +979,14 @@
     });
     if (window.pageYOffset !== st.y || window.pageXOffset !== st.x) window.scrollTo(st.x, st.y);
   }
+  // A finished character opens on Play with only the play pages; the building steps come back with Edit or Level up.
+  var PLAY_STEPS = ['play', 'myspells', 'items', 'sheet'];
+  function complete(c, dd) { return !!(c.lineage && c.classes.length && c.background) && !Object.keys(dd.todo).some(function (k) { return dd.todo[k]; }); }
+  function openMode() { ui.mode = complete(ch, R.derive(ch, store.filters)) ? 'play' : 'build'; ui.step = ui.mode === 'play' ? 'play' : (ui.step === 'play' ? 'lineage' : ui.step); }
+  function visibleSteps() {
+    if (ui.mode !== 'play') return STEPS;
+    return [['play', 'Play']].concat(STEPS.filter(function (s) { return PLAY_STEPS.indexOf(s[0]) > 0 && (s[0] !== 'myspells' || d.casters.length || d.innate.length); }));
+  }
   function render() {
     if (!byId(store.current) && store.chars.length) store.current = store.chars[0].id;
     remember(); // record the change about to be drawn, so Undo is ready at once
@@ -964,6 +995,8 @@
     var active = document.activeElement, fid = active && active.id, pos = null;
     try { pos = active && active.selectionStart; } catch (e) { pos = null; }
     if (ui.section !== 'chars') return renderSection(fid, pos);
+    if (!ui.mode) openMode();
+    if (ui.mode === 'play' && !visibleSteps().some(function (x) { return x[0] === ui.step; })) ui.step = 'play';
     var body = { lineage: stepLineage, 'class': stepClass, abilities: stepAbilities, background: stepBackground, spells: stepSpells, myspells: stepMySpells, equipment: stepEquipment, items: stepItems, appearance: stepAppearance, details: stepDetails, sheet: stepSheet, play: stepPlay }[ui.step]();
     var top = '<header class="top">' + btn('section', 'Character Forge', { v: 'home' }, 'brand linkish') + sectionNav() + '<select data-ui="current" aria-label="Character">' + store.chars.map(function (c) {
       return '<option value="' + c.id + '"' + (c.id === ch.id ? ' selected' : '') + '>' + esc(title(c)) + '</option>';
@@ -972,7 +1005,11 @@
       (ui.importError ? '<span class="count" style="color:var(--warn)">' + esc(ui.importError === true ? 'That file is not a Character Forge export, a 5th Spellbook backup or a 5e Companion character.' : ui.importError) + '</span>' : '') + (isInstalledApp() ? '' : btn('install', 'Install app', {}, installPrompt ? 'btn primary' : 'btn')) + '<span class="spacer"></span><span class="filters"><b>Sources:</b>' + TAGS.map(function (t) {
         return '<label><input type="checkbox" data-filter="' + t[0] + '"' + (store.filters[t[0]] !== false ? ' checked' : '') + '> ' + t[1] + '</label>';
       }).join('') + '<label title="Longer feature text and spell descriptions"><input type="checkbox" data-setting="detail"' + (store.detail !== false ? ' checked' : '') + '> Detailed text</label></span><input type="file" id="importFile" hidden><input type="file" id="partImportFile" hidden></header>';
-    var nav = '<nav class="steps" aria-label="Steps">' + STEPS.map(function (s) {
+    var SHOWN = visibleSteps();
+    var modeBar = ui.mode === 'play' ? '<div class="toolbar mode-bar noprint">' + btn('levelUp', '⬆ Level up', {}, 'btn primary') + btn('editChar', '✎ Edit character') + '</div>'
+      : complete(ch, d) ? '<div class="toolbar mode-bar noprint"><span class="small">This character is complete.</span>' + btn('donePlay', '✓ Done — go to Play', {}, 'btn primary') + '</div>' : '';
+    body = modeBar + body;
+    var nav = '<nav class="steps" aria-label="Steps">' + SHOWN.map(function (s) {
       var n = d.todo[s[0]], show = ['sheet', 'details', 'equipment', 'items', 'appearance', 'myspells', 'play'].indexOf(s[0]) < 0;
       return '<button type="button" class="step' + (ui.step === s[0] ? ' on' : '') + '" data-act="step" data-v="' + s[0] + '"><span>' + s[1] + '</span>' + (show ? (n ? '<span class="badge" title="' + n + ' open">' + n + '</span>' : '<span class="badge done">✓</span>') : '') + '</button>';
     }).join('') + '</nav>';
@@ -981,11 +1018,14 @@
       AB.map(function (a) { return '<div class="stat"><b>' + d.abilities[a].total + '</b><span>' + a + ' ' + R.fmt(d.abilities[a].mod) + '</span></div>'; }).join('') + '</div>' +
       d.casters.map(function (s) { return '<div class="muted">' + (d.casters.length > 1 ? esc(s.name) + ': s' : 'S') + 'pell DC ' + s.dc + ' · attack ' + R.fmt(s.atk) + '</div>'; }).join('') +
       (d.warnings.length ? '<ul class="warnings">' + d.warnings.map(function (w) { return '<li>' + esc(w) + '</li>'; }).join('') + '</ul>' : '') + '</aside>';
-    var i = STEPS.map(function (s) { return s[0]; }).indexOf(ui.step);
-    var foot = '<div class="toolbar noprint" style="margin-top:1.5rem">' + (i > 0 ? btn('step', '← ' + STEPS[i - 1][1], { v: STEPS[i - 1][0] }) : '') + (i < STEPS.length - 1 ? btn('step', STEPS[i + 1][1] + ' →', { v: STEPS[i + 1][0] }, 'btn primary') : '') + '</div>';
+    var i = SHOWN.map(function (s) { return s[0]; }).indexOf(ui.step);
+    var foot = '<div class="toolbar noprint" style="margin-top:1.5rem">' + (i > 0 ? btn('step', '← ' + SHOWN[i - 1][1], { v: SHOWN[i - 1][0] }) : '') + (i < SHOWN.length - 1 ? btn('step', SHOWN[i + 1][1] + ' →', { v: SHOWN[i + 1][0] }, 'btn primary') : '') + '</div>';
+    // on narrow screens the side panel is hidden: keep the character's numbers in view at the bottom
+    var mini = '<div class="mini-bar noprint" aria-label="Character summary"><b>' + esc(title(ch)) + '</b>' + [['AC', d.ac], ['HP', ch.track && ch.track.hp != null ? ch.track.hp + '/' + d.hp : d.hp], ['Spd', d.speed], ['Init', R.fmt(d.init)]].map(function (x) { return '<span>' + x[0] + ' <b>' + x[1] + '</b></span>'; }).join('') +
+      '<span class="mini-ab">' + AB.map(function (a) { return a + ' <b>' + R.fmt(d.abilities[a].mod) + '</b>'; }).join(' ') + '</span></div>';
     var oldNav = document.querySelector('.steps'), navX = oldNav ? oldNav.scrollLeft : 0;
     var keep = scrollState();
-    document.getElementById('app').innerHTML = top + installHelpHtml() + import5eHtml() + '<div class="shell">' + nav + '<main>' + body + foot + '</main>' + side + '</div>';
+    document.getElementById('app').innerHTML = top + installHelpHtml() + import5eHtml() + '<div class="shell">' + nav + '<main>' + body + foot + '</main>' + side + '</div>' + mini;
     keepStepInView(navX);
     if (!ui.scrollToStep) restoreScroll(keep);
     if (ui.scrollToStep) { // a new step starts at its top; on a phone the step row stays visible above it
@@ -1035,9 +1075,15 @@
   // ---------- actions ----------
   var actions = {
     section: function (v) { ui.section = v; window.scrollTo(0, 0); },
-    openChar: function (v) { store.current = v; ui.section = 'chars'; ui.step = 'sheet'; window.scrollTo(0, 0); },
+    openChar: function (v) { store.current = v; ui.section = 'chars'; ch = byId(v); openMode(); window.scrollTo(0, 0); },
+    editChar: function () { ui.mode = 'build'; ui.step = 'lineage'; ui.scrollToStep = true; },
+    donePlay: function () { ui.mode = 'play'; ui.step = 'play'; ui.scrollToStep = true; },
+    levelUp: function () {
+      ui.mode = 'build'; ui.step = 'class'; ui.scrollToStep = true;
+      if (ch.classes.length === 1 && d.level < 20) { ch.classes[0].level++; ui.clsTab = ch.classes[0].cls; } // several classes: pick which one on the Class step
+    },
     step: function (v) { ui.step = v; ui.picEdit = false; ui.packAdded = null; ui.editArmor = null; ui.editWeapon = null; ui.partImport = null; ui.partImportDone = null; ui.partImportError = null; ui.scrollToStep = true; },
-    'new': function () { var c = R.newChar(); store.chars.push(c); store.current = c.id; ui.step = 'lineage'; },
+    'new': function () { var c = R.newChar(); store.chars.push(c); store.current = c.id; ui.step = 'lineage'; ui.mode = 'build'; },
     dup: function () { var c = JSON.parse(JSON.stringify(ch)); c.id = R.uid(); c.name = title(ch) + ' (copy)'; store.chars.push(c); store.current = c.id; },
     askDelete: function () { ui.confirmDelete = true; },
     cancelDelete: function () { ui.confirmDelete = false; },
@@ -1101,6 +1147,7 @@
       if (!cur) ch.classes = [{ cls: v, level: 1, subclass: '' }];
       else { clearClass(cur.cls); ch.classes[0] = { cls: v, level: cur.level, subclass: '' }; }
       ch.eq = {}; ui.clsTab = v;
+      if (ch.method === 'array') placeArray();
     },
     rmClass: function (v) { clearClass(v); ch.classes = ch.classes.filter(function (e) { return e.cls !== v; }); ch.eq = {}; },
     clsTab: function (v) { ui.clsTab = v; ui.q.subclass = ''; },
@@ -1113,7 +1160,7 @@
     background: function (v) { ch.background = v; clearPicks('bg'); },
     method: function (v) {
       ch.method = v;
-      if (v === 'array') AB.forEach(function (a, i) { ch.base[a] = D.standardArray[i]; });
+      if (v === 'array') placeArray();
       if (v === 'pointbuy') AB.forEach(function (a) { ch.base[a] = 8; });
     },
     pb: function (v, el) { var a = el.getAttribute('data-a'), n = ch.base[a] + (+v); if (n < 8 || n > 15) return; var cost = D.pointBuyCost[n] - D.pointBuyCost[ch.base[a]]; if (d.pointsSpent + cost > 27) return; ch.base[a] = n; },
@@ -1290,7 +1337,7 @@
     if (a('data-ctr') && t.tagName === 'INPUT') return setTimeout(function () { var f = document.activeElement; if (!f || !f.getAttribute || !f.getAttribute('data-ctr')) requestRender(); }, 0);
     if (a('data-text') || a('data-itemtext') || a('data-espell') || a('data-trk')) return requestRender();
     if (a('data-ctr')) { var cs = (ch.counters || []).filter(function (c) { return c.id === a('data-ctr'); })[0]; if (cs) cs.rest = t.value; return requestRender(); }
-    if (a('data-ui')) { if (a('data-ui') === 'current') { store.current = t.value; ui.confirmDelete = false; ui.partImport = null; ui.partImportDone = null; } else ui[a('data-ui')] = t.value; }
+    if (a('data-ui')) { if (a('data-ui') === 'current') { store.current = t.value; ch = byId(t.value); openMode(); ui.confirmDelete = false; ui.partImport = null; ui.partImportDone = null; } else ui[a('data-ui')] = t.value; }
     else if (a('data-filter')) store.filters[a('data-filter')] = t.checked;
     else if (a('data-imp5part')) { var IP = ui.import5e; if (IP) { var eid = +a('data-imp5part'), cur = (IP.parts[eid] || []).filter(function (k) { return k !== t.value; }); if (t.checked) cur.push(t.value); IP.parts[eid] = cur; } }
     else if (a('data-imp5target')) { if (ui.import5e) { ui.import5e.target[a('data-imp5target')] = t.value; var idT = +a('data-imp5target'); if (ui.import5e.pick.indexOf(idT) < 0) ui.import5e.pick.push(idT); } }

@@ -91,6 +91,11 @@ Feats ask for what they let you choose, under the feat on the step where you too
 Magic Initiate, Ritual Caster, Artificer Initiate, Fey Touched, Shadow Touched, Spell Sniper, the Strixhaven, Dragonlance and Planescape spell feats (their spells), Skilled (any mix of skills and tools), Weapon Master (four weapons), Prodigy, Squat Nimbleness, Elemental Adept and more.
 Their effects count too: weapon and tool proficiencies, resistances, Medium Armor Master's +3 Dexterity, and limited uses (Lucky, superiority die, sorcery points, proficiency-bonus uses) on the Play page.
 
+### Finished characters
+
+A character with every choice made opens on **Play**, with only Play, My spells, Items and Sheet as tabs. **⬆ Level up** (adds a level when there's one class) and **✎ Edit character** bring the building steps back; **✓ Done — go to Play** hides them again.
+On phones and narrow windows a bar at the bottom keeps the character's AC, HP, speed, initiative and ability modifiers in view.
+
 ### Play: keep track during a session
 
 The **Play** step has a box for each use of a spell slot, pact slot, once-per-rest lineage or feat spell, and class ability (Rage, Bardic Inspiration, Channel Divinity, Wild Shape, Second Wind, Action Surge, Ki, Sorcery Points, Lay on Hands, Superiority Dice…) and lineage ability (Breath Weapon, Relentless Endurance…).
