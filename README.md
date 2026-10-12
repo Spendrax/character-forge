@@ -71,6 +71,7 @@ and its full stat block shows inside the app from AideDD when you're online.
 
 **⎘ Paste a stat block** turns a stat block you copy (from AideDD, your book or a PDF) into a monster of yours: name, type, AC, hit points, speed, ability scores, properties, traits, actions,
 bonus actions, reactions and legendary actions, with rollable attacks, saved on your device and usable offline. **Export mine** saves your monsters to a file and **Import** adds a friend's.
+**Import** also reads stat block files you have (a `.zip` of `.md` files, or `.md` / `.txt` files): they're read on your device and kept in the browser's own storage, never in the app's files. **Remove imported** deletes them.
 
 ## What it does
 

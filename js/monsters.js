@@ -7,7 +7,7 @@
   var CRS = [0, 0.125, 0.25, 0.5].concat(Array.apply(null, Array(30)).map(function (_, i) { return i + 1; }));
   var XP = { 0: 10, 0.125: 25, 0.25: 50, 0.5: 100, 1: 200, 2: 450, 3: 700, 4: 1100, 5: 1800, 6: 2300, 7: 2900, 8: 3900, 9: 5000, 10: 5900, 11: 7200, 12: 8400, 13: 10000, 14: 11500, 15: 13000, 16: 15000, 17: 18000, 18: 20000, 19: 22000, 20: 25000, 21: 33000, 22: 41000, 23: 50000, 24: 62000, 25: 75000, 26: 90000, 27: 105000, 28: 120000, 29: 135000, 30: 155000 };
   function typeKey(t) { return /^swarm/i.test(t || '') ? 'swarm' : (t || ''); }
-  function bookOf(m) { return m.mine ? 'Yours' : m.ix ? m.src : 'SRD 5.1 (full stat blocks)'; }
+  function bookOf(m) { return m.mine ? 'Yours' : m.imp ? 'Imported: ' + m.src : m.ix ? m.src : 'SRD 5.1 (full stat blocks)'; }
   function crText(c) { if (c == null) return '—'; return c === 0.125 ? '1/8' : c === 0.25 ? '1/4' : c === 0.5 ? '1/2' : String(c); }
   function mod(s) { return Math.floor((s - 10) / 2); }
   function fmt(n) { return (n >= 0 ? '+' : '') + n; }
@@ -83,13 +83,52 @@
     return m;
   }
 
+  // ----- importing stat block files the player has (a .zip of .md files, or .md / .txt files) -----
+  // Zip: read the central directory, inflate with the browser's own DecompressionStream.
+  function unzip(buf) {
+    var v = new DataView(buf), b = new Uint8Array(buf), dec = new TextDecoder(), e = b.length - 22;
+    while (e >= 0 && v.getUint32(e, true) !== 0x06054b50) e--;
+    if (e < 0) return Promise.reject(new Error('not a zip'));
+    var n = v.getUint16(e + 10, true), p = v.getUint32(e + 16, true), jobs = [];
+    for (var i = 0; i < n; i++) {
+      var method = v.getUint16(p + 10, true), size = v.getUint32(p + 20, true), nl = v.getUint16(p + 28, true), xl = v.getUint16(p + 30, true), cl = v.getUint16(p + 32, true), off = v.getUint32(p + 42, true);
+      var name = dec.decode(b.subarray(p + 46, p + 46 + nl)); p += 46 + nl + xl + cl;
+      if (!/\.(md|markdown|txt)$/i.test(name)) continue;
+      var start = off + 30 + v.getUint16(off + 26, true) + v.getUint16(off + 28, true), data = b.subarray(start, start + size);
+      jobs.push(method === 0 ? Promise.resolve({ name: name, text: dec.decode(data) }) : method === 8 && root.DecompressionStream ?
+        new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text().then(function (nm) { return function (t) { return { name: nm, text: t }; }; }(name)) : Promise.resolve(null));
+    }
+    return Promise.all(jobs).then(function (r) { return r.filter(Boolean); });
+  }
+  // A markdown stat block with a front-matter header (name, size, armor_class, str…) turned into plain stat block text.
+  function markdownToText(md) {
+    var m = /^---\s*\n([\s\S]*?)\n---\s*\n?([\s\S]*)$/.exec(String(md).replace(/\r/g, ''));
+    if (!m) return { text: md, tags: [] };
+    var f = {}; m[1].split('\n').forEach(function (l) { var x = /^([a-z_]+):\s*(.*)$/.exec(l); if (x) f[x[1]] = x[2].replace(/^"(.*)"$/, '$1'); });
+    var tags = (f.tags || '').replace(/[\[\]]/g, '').split(',').map(function (t) { return t.trim(); });
+    var L = [f.name || 'Monster', (f.size || '') + (f.alignment ? ', ' + f.alignment : ''), 'Armor Class ' + (f.armor_class || ''), 'Hit Points ' + (f.hit_points || ''), 'Speed ' + (f.speed || '')];
+    ['str', 'dex', 'con', 'int', 'wis', 'cha'].forEach(function (a) { L.push(a.toUpperCase(), f[a] || '10 (+0)'); });
+    [['Saving Throws', 'saving_throws'], ['Skills', 'skills'], ['Damage Vulnerabilities', 'damage_vulnerabilities'], ['Damage Vulnerabilities', 'damage_vulnerabilites'], ['Damage Resistances', 'damage_resistances'],
+      ['Damage Immunities', 'damage_immunities'], ['Condition Immunities', 'condition_immunities'], ['Senses', 'senses'], ['Languages', 'languages'], ['Challenge', 'challenge']].forEach(function (k) { if (f[k[1]]) L.push(k[0] + ' ' + f[k[1]]); });
+    var body = m[2].replace(/^#+\s*/gm, '').replace(/\*{2,3}([^*]+?)\*{2,3}/g, '$1').replace(/^\s*[*-]\s+/gm, '');
+    return { text: L.join('\n') + '\n' + body, tags: tags };
+  }
+  var IDB = { db: null };
+  function idb() {
+    if (IDB.db) return IDB.db;
+    IDB.db = new Promise(function (ok, no) { var r = root.indexedDB.open('character-forge', 1); r.onupgradeneeded = function () { r.result.createObjectStore('kv'); }; r.onsuccess = function () { ok(r.result); }; r.onerror = function () { no(r.error); }; });
+    return IDB.db;
+  }
+  function idbGet(k) { return idb().then(function (db) { return new Promise(function (ok, no) { var q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess = function () { ok(q.result); }; q.onerror = function () { no(q.error); }; }); }); }
+  function idbSet(k, v) { return idb().then(function (db) { return new Promise(function (ok, no) { var t = db.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); t.oncomplete = function () { ok(); }; t.onerror = function () { no(t.error); }; }); }); }
+
   root.MonsterUI = function (api) {
     var esc = api.esc, btn = api.btn, ui = api.ui, store = api.store;
     var M = ui.mon = ui.mon || { q: '', type: '', size: '', crMin: '', crMax: '', sort: 'name', open: '', view: 'list' };
 
     function all() {
       var mine = (store.myMonsters || []).map(function (m) { return Object.assign({ mine: true }, m); });
-      return mine.concat((root.DND && root.DND.monsters) || [], (root.DND && root.DND.monsterIndex) || []);
+      return mine.concat(M.imported || [], (root.DND && root.DND.monsters) || [], (root.DND && root.DND.monsterIndex) || []);
     }
     function find(id) { return all().filter(function (m) { return m.id === id; })[0]; }
     function loaded() { return !!(root.DND && root.DND.monsters); }
@@ -99,6 +138,8 @@
       var s = document.createElement('script');
       s.src = 'data/monsters.js';
       s.onload = function () { M.loading = false; done(); };
+      // monsters imported from files live in the browser's larger storage, not with the characters
+      if (!M.imported && root.indexedDB) idbGet('importedMonsters').then(function (list) { M.imported = list || []; done(); }, function () { M.imported = []; });
       s.onerror = function () { M.loading = false; M.loadError = true; done(); };
       document.head.appendChild(s);
     }
@@ -180,7 +221,7 @@
         '<label class="mon-f">Sort <select data-mon="sort">' + [['name', 'Name'], ['cr', 'Challenge'], ['mine', 'Only mine']].map(function (o) { return '<option value="' + o[0] + '"' + (M.sort === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label>' +
         '</div><div class="small muted mon-count">' + list.length + ' monster' + (list.length === 1 ? '' : 's') + (M.q || M.type || M.size || M.book || M.crMin !== '' || M.crMax !== '' ? ' · ' + btn('monClear', 'clear filters', {}, 'linkbtn') : '') + '</div>';
       h += '<div class="mon-list" role="list">' + list.map(function (m) {
-        return '<button type="button" role="listitem" class="mon-row' + (M.open === m.id ? ' on' : '') + '" data-act="monOpen" data-v="' + esc(m.id) + '"><span class="mon-cr">CR ' + crText(+m.cr || 0) + '</span><span class="mon-name">' + esc(m.n) + (m.mine ? ' <span class="tag">yours</span>' : '') + '</span><span class="mon-meta">' + esc(m.size + ' ' + m.type) + (m.ix ? ' · ' + esc(m.src.replace(/^(Adventures|Rules|Extra) \((.*)\)$/, '$2')) : '') + '</span></button>';
+        return '<button type="button" role="listitem" class="mon-row' + (M.open === m.id ? ' on' : '') + '" data-act="monOpen" data-v="' + esc(m.id) + '"><span class="mon-cr">CR ' + crText(+m.cr || 0) + '</span><span class="mon-name">' + esc(m.n) + (m.mine ? ' <span class="tag">yours</span>' : '') + '</span><span class="mon-meta">' + esc(m.size + ' ' + m.type) + ((m.ix || m.imp) ? ' · ' + esc(m.src.replace(/^(Adventures|Rules|Extra) \((.*)\)$/, '$2')) : '') + '</span></button>';
       }).join('') + (list.length ? '' : '<p class="muted" style="padding:.8rem">No monster matches.</p>') + '</div>';
       return h;
     }
@@ -229,7 +270,7 @@
       if (!loaded() && !M.loadError) { load(api.render); return '<h2>Monsters</h2><p class="muted">Loading monsters…</p>'; }
       var open = M.open && find(M.open), editing = M.edit && mineById(M.edit);
       var h = '<div class="mon-head"><h2>Monsters</h2><span class="small muted">' + ((root.DND.monsters || []).length) + ' with full stat blocks (SRD 5.1) and ' + ((root.DND.monsterIndex || []).length) + ' more from other 2014 books</span>' + '<span class="mon-head-btns">' + btn('monPaste', '⎘ Paste a stat block', {}, 'btn') + btn('monNew', '+ Add your own monster', {}, 'btn') +
-        btn('monExport', 'Export mine', {}, 'btn') + btn('monImport', 'Import', {}, 'btn') + '</span><input type="file" id="monImportFile" accept=".json,application/json" hidden></div>' +
+        btn('monExport', 'Export mine', {}, 'btn') + btn('monImport', 'Import', {}, 'btn') + ((M.imported || []).length ? btn('monClearImported', 'Remove imported (' + M.imported.length + ')', {}, 'btn danger') : '') + '</span><input type="file" id="monImportFile" accept=".json,.zip,.md,.txt,application/json,application/zip,text/markdown,text/plain" multiple hidden></div>' +
         (M.msg ? '<p class="small rest-msg">' + esc(M.msg) + '</p>' : '');
       if (M.loadError) h += '<p class="notice">The monster list couldn’t load. Check your connection and open Monsters again.</p>';
       var right = M.paste ? pasteHtml() : editing ? editorHtml(editing) : open ? (open.ix ? summaryBlock(open) : statBlock(open)) : '<div class="statblock empty"><p class="muted">Pick a monster to see its stat block. Tap any bonus or dice in a stat block to roll it.</p></div>';
@@ -265,6 +306,10 @@
         a.href = URL.createObjectURL(blob); a.download = 'my-monsters.json'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
         return false;
       },
+      monClearImported: function () {
+        if (!M.confirmClear) { M.confirmClear = true; M.msg = 'Press “Remove imported” again to delete the ' + (M.imported || []).length + ' imported monsters from this device.'; return; }
+        M.confirmClear = false; M.imported = []; idbSet('importedMonsters', []); M.msg = 'Imported monsters removed.';
+      },
       monImport: function () { var f = document.getElementById('monImportFile'); if (f) f.click(); return false; },
       monClear: function () { M.q = ''; M.type = ''; M.size = ''; M.book = ''; M.crMin = ''; M.crMax = ''; },
       monRoll: function (v, el) { var r = roll(v); if (r) M.roll = { label: el.getAttribute('data-label') || 'Roll', expr: v, total: r.total, detail: r.detail }; },
@@ -296,9 +341,34 @@
       if (f) { var m = mineById(M.edit); if (m) setField(m, f, t.value); return t.tagName === 'SELECT' ? 'render' : 'save'; }
       return null;
     }
+    // stat block files (.zip / .md / .txt): read on this device and kept in the browser's own storage
+    function importStatFiles(files, done) {
+      M.msg = 'Reading ' + files.length + ' file' + (files.length === 1 ? '' : 's') + '…'; done();
+      Promise.all(files.map(function (f) {
+        return /\.zip$/i.test(f.name) ? f.arrayBuffer().then(unzip) : f.text().then(function (t) { return [{ name: f.name, text: t }]; });
+      })).then(function (groups) {
+        var have = {}, list = (M.imported || []).slice(), added = 0, failed = 0;
+        list.forEach(function (m) { have[m.n.toLowerCase()] = 1; });
+        [].concat.apply([], groups).forEach(function (file, i) {
+          var md = markdownToText(file.text), m = parseStatBlock(md.text);
+          if (!m) { failed++; return; }
+          if (have[m.n.toLowerCase()]) return;
+          var book = md.tags.filter(function (t) { return t && !/^(tiny|small|medium|large|huge|gargantuan|cr[\d\/.]+|aberration|beast|celestial|construct|dragon|elemental|fey|fiend|giant|humanoid|monstrosity|ooze|plant|undead|swarm)$/.test(t); }).pop() || 'files';
+          m.id = 'imp-' + Date.now().toString(36) + '-' + i; m.imp = 1; m.src = book.replace(/-/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+          m.ab = m.ab || [10, 10, 10, 10, 10, 10]; if (m.cr == null) { m.cr = 0; m.xp = 10; m.pb = 2; }
+          list.push(m); have[m.n.toLowerCase()] = 1; added++;
+        });
+        return idbSet('importedMonsters', list).then(function () {
+          M.imported = list;
+          M.msg = added + ' monster' + (added === 1 ? '' : 's') + ' imported and saved on this device' + (failed ? '; ' + failed + ' file' + (failed === 1 ? '' : 's') + ' couldn’t be read' : '') + '.';
+        });
+      }).catch(function () { M.msg = 'Those files couldn’t be read. Use a .zip of stat block files, or .md / .txt files.'; }).then(done);
+    }
     // monsters a friend exported: added next to yours, never replacing one with the same id
     function importFile(input, done) {
-      var file = input.files && input.files[0]; if (!file) return;
+      var files = [].slice.call(input.files || []); if (!files.length) return;
+      if (files.some(function (f) { return /\.(zip|md|markdown|txt)$/i.test(f.name); })) { importStatFiles(files, done); input.value = ''; return; }
+      var file = files[0];
       var r = new FileReader();
       r.onload = function () {
         try {
@@ -323,4 +393,5 @@
   };
   root.MonsterUI.roll = roll;
   root.MonsterUI.parse = parseStatBlock;
+  root.MonsterUI.fromMarkdown = markdownToText;
 })(typeof window !== 'undefined' ? window : globalThis);

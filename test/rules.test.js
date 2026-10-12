@@ -300,6 +300,10 @@ const sw = fs.readFileSync(path.join(__dirname, '../sw.js'), 'utf8');
     }
   }
   assert.equal(parse('just some words\nnothing here\nat all\nreally'), null);
+  // stat block files with a front-matter header (as in a .zip of .md files)
+  const gob = global.MonsterUI.fromMarkdown('---\nname: "Goblin"\ntags: [small, humanoid, cr1/4, my-notes]\nstr: 8 (-1)\ndex: 14 (+2)\ncon: 10 (+0)\nint: 10 (+0)\nwis: 8 (-1)\ncha: 8 (-1)\nsize: Small humanoid\nalignment: neutral evil\nchallenge: "1/4 (50 XP)"\nspeed: "30 ft."\nhit_points: "7 (2d6)"\narmor_class: "15 (leather armor, shield)"\n---\n\n***Nimble Escape.*** The goblin can take the Disengage or Hide action as a bonus action.\n\n### Actions\n\n***Scimitar.*** Melee Weapon Attack: +4 to hit, reach 5 ft., one target. Hit: 5 (1d6 + 2) slashing damage.\n');
+  const gp = parse(gob.text);
+  assert.equal(gp.n, 'Goblin'); assert.equal(gp.hp, 7); assert.equal(gp.cr, 0.25); assert.deepEqual(gp.ab, [8, 14, 10, 10, 8, 8]); assert.deepEqual(gp.act.map(a => a[0]), ['Scimitar']); assert.equal(gob.tags.pop(), 'my-notes');
 
 }
 
