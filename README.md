@@ -73,6 +73,10 @@ and its full stat block shows inside the app from AideDD when you're online.
 bonus actions, reactions and legendary actions, with rollable attacks, saved on your device and usable offline. **Export mine** saves your monsters to a file and **Import** adds a friend's.
 **Import** also reads stat block files you have (a `.zip` of `.md` files, or `.md` / `.txt` files): they're read on your device and kept in the browser's own storage, never in the app's files. **Remove imported** deletes them.
 
+### House rules
+
+A **House rules** section (next to Characters and Monsters) holds your table's own rules as short titled notes you can search and read quickly during a game.
+
 ## What it does
 
 Lineage → Class and subclass (levels 1–20, single class or multiclass) → Ability scores (standard array, point buy, manual/rolled; ASIs or feats) → Background → Spells → My spells → Equipment → Items → Appearance → Details → printable Sheet → Play.
@@ -94,12 +98,12 @@ Their effects count too: weapon and tool proficiencies, resistances, Medium Armo
 
 ### Finished characters
 
-A character with every choice made opens on **Play**, with only Play, My spells, Items and Sheet as tabs. **⬆ Level up** (adds a level when there's one class) and **✎ Edit character** bring the building steps back; **✓ Done — go to Play** hides them again.
+A character with every choice made opens on **Session**, with only Session, My spells, Items and Sheet as tabs. **⬆ Level up** (adds a level when there's one class) and **✎ Edit character** bring the building steps back; **✓ Done — go to Session** hides them again.
 On phones and narrow windows a bar at the bottom keeps the character's AC, HP, speed, initiative and ability modifiers in view.
 
-### Play: keep track during a session
+### Session: keep track during a game
 
-The **Play** step has a box for each use of a spell slot, pact slot, once-per-rest lineage or feat spell, and class ability (Rage, Bardic Inspiration, Channel Divinity, Wild Shape, Second Wind, Action Surge, Ki, Sorcery Points, Lay on Hands, Superiority Dice…) and lineage ability (Breath Weapon, Relentless Endurance…).
+The **Session** page has a box for each use of a spell slot, pact slot, once-per-rest lineage or feat spell, and class ability (Rage, Bardic Inspiration, Channel Divinity, Wild Shape, Second Wind, Action Surge, Ki, Sorcery Points, Lay on Hands, Superiority Dice…) and lineage ability (Breath Weapon, Relentless Endurance…).
 Tap a filled box to use one and an empty one to get it back. It also tracks current and temporary hit points, hit dice and death saves, plus **your own counters** for item charges or anything else.
 **☾ Short rest** brings back pact slots and short-rest abilities; **☀ Long rest** brings back everything, full hit points and half your hit dice. Spell slot boxes are on My spells too.
 

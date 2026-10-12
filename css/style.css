@@ -368,3 +368,23 @@ html { overflow-anchor: none; } /* the app restores scroll itself after each red
   .roll-toast { bottom: 4.6rem; }
 }
 @media print { .mini-bar { display: none !important; } }
+
+/* List 2: clearer spell list, rest confirmation, quick item entry, house rules, bigger bottom bar */
+:root { --spell-line: #c9bda8; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --spell-line: #6b6474; } }
+:root[data-theme="dark"] { --spell-line: #6b6474; }
+.optlist .spell { border-bottom: 2px solid var(--spell-line); padding: .6rem .6rem; }
+.optlist .spell:last-child { border-bottom: 0; }
+.spell-name { font-size: 1.125rem; font-style: italic; font-weight: 700; }
+.fold { background: none; border: 0; padding: 0 .3rem 0 0; font: inherit; font-style: normal; color: var(--muted); cursor: pointer; }
+.fold:hover, .fold:focus-visible { color: var(--accent); }
+.rest-confirm { background: var(--soft); border: 1px solid var(--accent); border-radius: 8px; padding: .5rem .7rem; }
+.quick-item { width: 100%; margin: 0 0 .7rem; }
+.rules .rule h3 { font-size: 1.1rem; }
+.rule-text { margin: .5rem 0 0; white-space: normal; }
+@media (max-width: 1100px) {
+  .mini-bar { padding: .8rem 1rem; font-size: 1.05rem; gap: .35rem 1.1rem; }
+  .mini-bar .mini-ab { font-size: 1rem; }
+  body { padding-bottom: 7rem; }
+  .roll-toast { bottom: 7.4rem; }
+}
