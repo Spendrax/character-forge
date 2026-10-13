@@ -1,5 +1,5 @@
-// Treasures: quick random loot sized to a fight. Our own tables, in the spirit of the DMG's
-// (pocket money per creature, or a hoard for a boss), with magic items from the app's item list.
+// Treasures: quick random loot sized to a fight, with the DMG's (2014) coin, gem and art amounts
+// (pocket money per creature, or a hoard for a boss) and magic items from the app's item list.
 (function (root) {
   'use strict';
   function d(n, s, r) { var t = 0; for (var i = 0; i < n; i++) t += 1 + Math.floor(r() * s); return t; }
@@ -9,22 +9,28 @@
   // Creatures that don't carry money.
   var NO_POCKETS = /^(beast|ooze|plant|construct|elemental|swarm)/i;
 
-  // Pocket money for one creature: [chance, coin, dice, sides, multiplier]
+  // Amounts follow the Dungeon Master's Guide (2014): individual treasure and treasure hoards by challenge.
+  // Pocket money for one creature: [d100 up to, [[coin, dice, sides, multiplier], ...]]
   var POCKET = [
-    [[45, 'cp', 5, 6, 1], [75, 'sp', 4, 6, 1], [95, 'gp', 2, 6, 1], [100, 'pp', 1, 4, 1]],
-    [[30, 'sp', 4, 6, 10], [75, 'gp', 2, 6, 10], [100, 'pp', 1, 6, 5]],
-    [[40, 'gp', 4, 6, 10], [80, 'gp', 2, 6, 100], [100, 'pp', 2, 6, 10]],
-    [[30, 'gp', 2, 6, 100], [75, 'pp', 2, 6, 10], [100, 'pp', 4, 6, 10]]
+    [[30, [['cp', 5, 6, 1]]], [60, [['sp', 4, 6, 1]]], [70, [['ep', 3, 6, 1]]], [95, [['gp', 3, 6, 1]]], [100, [['pp', 1, 6, 1]]]],
+    [[30, [['cp', 4, 6, 100], ['ep', 1, 6, 10]]], [60, [['sp', 6, 6, 10], ['gp', 2, 6, 10]]], [70, [['ep', 3, 6, 10], ['gp', 2, 6, 10]]], [95, [['gp', 4, 6, 10]]], [100, [['gp', 2, 6, 10], ['pp', 3, 6, 1]]]],
+    [[20, [['sp', 4, 6, 100], ['gp', 1, 6, 100]]], [35, [['ep', 1, 6, 100], ['gp', 1, 6, 100]]], [75, [['gp', 2, 6, 100], ['pp', 1, 6, 10]]], [100, [['gp', 2, 6, 100], ['pp', 2, 6, 10]]]],
+    [[15, [['ep', 2, 6, 1000], ['gp', 8, 6, 100]]], [55, [['gp', 1, 6, 1000], ['pp', 1, 6, 100]]], [100, [['gp', 1, 6, 1000], ['pp', 2, 6, 100]]]]
   ];
   // Hoard coins: [coin, dice, sides, multiplier]
   var HOARD = [
-    [['cp', 5, 6, 100], ['sp', 3, 6, 100], ['gp', 2, 6, 10]],
-    [['sp', 2, 6, 1000], ['gp', 5, 6, 100], ['pp', 3, 6, 10]],
-    [['gp', 4, 6, 1000], ['pp', 4, 6, 100]],
-    [['gp', 10, 6, 1000], ['pp', 6, 6, 1000]]
+    [['cp', 6, 6, 100], ['sp', 3, 6, 100], ['gp', 2, 6, 10]],
+    [['cp', 2, 6, 100], ['sp', 2, 6, 1000], ['gp', 6, 6, 100], ['pp', 3, 6, 10]],
+    [['gp', 4, 6, 1000], ['pp', 5, 6, 100]],
+    [['gp', 12, 6, 1000], ['pp', 8, 6, 1000]]
   ];
-  // Valuables: [chance %, count dice, sides, [values]]
-  var VALUABLES = [[60, 2, 4, [10, 25, 50]], [70, 2, 6, [50, 100, 250]], [75, 3, 6, [250, 500, 750, 1000]], [80, 1, 8, [1000, 2500, 5000, 7500]]];
+  // Gems or art in a hoard: [chance %, options [kind, count dice, sides, value each]]
+  var VALUABLES = [
+    [94, [['gem', 2, 6, 10], ['art', 2, 4, 25], ['gem', 2, 6, 50]]],
+    [96, [['art', 2, 4, 25], ['gem', 3, 6, 50], ['gem', 3, 6, 100], ['art', 2, 4, 250]]],
+    [97, [['art', 2, 4, 250], ['art', 2, 4, 750], ['gem', 3, 6, 500], ['gem', 3, 6, 1000]]],
+    [98, [['gem', 3, 6, 1000], ['art', 1, 10, 2500], ['art', 1, 4, 7500], ['gem', 1, 8, 5000]]]
+  ];
   var GEMS = { 10: ['Azurite', 'Banded agate', 'Hematite', 'Malachite', 'Tiger eye', 'Turquoise'], 25: ['Bloodstone', 'Carnelian', 'Jasper', 'Moonstone', 'Onyx', 'Zircon'],
     50: ['Bloodstone', 'Chalcedony', 'Citrine', 'Moonstone', 'Onyx', 'Quartz'], 100: ['Amber', 'Amethyst', 'Coral', 'Garnet', 'Jade', 'Pearl'],
     250: ['Coral', 'Pearl', 'Spinel', 'Tourmaline', 'Jet', 'Garnet'], 500: ['Alexandrite', 'Aquamarine', 'Black pearl', 'Blue spinel', 'Peridot', 'Topaz'],
@@ -33,9 +39,10 @@
   var ART = ['silver ewer', 'carved bone statuette', 'gold ring set with a small stone', 'embroidered silk handkerchief', 'brass mug with jade inlay', 'small painted portrait',
     'gold locket with a lock of hair', 'silver-plated dagger', 'jeweled anklet', 'ceremonial mask', 'carved ivory comb', 'woven tapestry', 'gilded holy symbol', 'crystal goblet',
     'jeweled music box', 'electrum crown', 'gold dragon figurine', 'velvet cloak with gold thread'];
-  // Magic items: [chance %, how many (dice, sides), rarity weights {rarity: weight}]
-  var MAGIC_HOARD = [[45, 1, 2, { Common: 55, Uncommon: 45 }], [65, 1, 3, { Common: 15, Uncommon: 55, Rare: 30 }], [80, 1, 4, { Uncommon: 20, Rare: 50, 'Very rare': 30 }], [100, 2, 3, { Rare: 20, 'Very rare': 50, Legendary: 30 }]];
-  var MAGIC_POCKET = [3, 6, 10, 15]; // small chance of one item in pocket money, one tier lower
+  // Magic items: [chance %, how many (dice, sides), rarity weights]. Close to the DMG hoard tables, which
+  // roll on item tables A (minor) to I (legendary); here items come by rarity from the app's item list.
+  var MAGIC_HOARD = [[64, 1, 4, { Common: 35, Uncommon: 45, Rare: 20 }], [72, 1, 4, { Common: 15, Uncommon: 40, Rare: 30, 'Very rare': 15 }],
+    [85, 1, 4, { Uncommon: 25, Rare: 35, 'Very rare': 30, Legendary: 10 }], [98, 1, 6, { Rare: 30, 'Very rare': 35, Legendary: 35 }]];
 
   function weighted(w, r) { var tot = 0, k; for (k in w) tot += w[k]; var x = r() * tot; for (k in w) { x -= w[k]; if (x < 0) return k; } return k; }
   function magicItem(rarity, items, r) {
@@ -56,8 +63,7 @@
           if (NO_POCKETS.test(cr.type || '')) { skipped++; continue; }
           carriers++;
           var t = tierOf(cr.cr), x = r() * 100, row = POCKET[t].filter(function (p) { return x < p[0]; })[0];
-          addCoins(out.coins, row[1], d(row[2], row[3], r) * row[4]);
-          if (r() * 100 < MAGIC_POCKET[t]) { var it = magicItem(t >= 2 ? 'Uncommon' : 'Common', items, r); if (it) out.items.push(it); }
+          row[1].forEach(function (c) { addCoins(out.coins, c[0], d(c[1], c[2], r) * c[3]); });
         }
       });
       if (skipped) out.notes.push(skipped + ' creature' + (skipped > 1 ? 's' : '') + ' (beasts, oozes, constructs…) carried nothing.');
@@ -67,8 +73,8 @@
     HOARD[tier].forEach(function (c) { addCoins(out.coins, c[0], d(c[1], c[2], r) * c[3]); });
     var v = VALUABLES[tier];
     if (r() * 100 < v[0]) {
-      var n = d(v[1], v[2], r), value = pick(v[3], r);
-      if (r() < 0.5) out.valuables.push({ kind: 'gem', n: n, value: value, names: Array.apply(null, Array(n)).map(function () { return pick(GEMS[value] || GEMS[50], r); }) });
+      var o = pick(v[1], r), n = d(o[1], o[2], r), value = o[3];
+      if (o[0] === 'gem') out.valuables.push({ kind: 'gem', n: n, value: value, names: Array.apply(null, Array(n)).map(function () { return pick(GEMS[value] || GEMS[50], r); }) });
       else out.valuables.push({ kind: 'art', n: n, value: value, names: Array.apply(null, Array(n)).map(function () { return pick(ART, r); }) });
     }
     var m = MAGIC_HOARD[tier];
@@ -129,7 +135,7 @@
           (s.kind === 'pocket' ? '<label class="mon-f">Creatures <input type="number" min="1" max="50" id="tre-count" data-tre="count" value="' + s.count + '"></label>' : '') + '</div>';
       return '<main class="mon-main tre-main"><h2>Treasures</h2><div class="panel"><p class="small muted">Pocket money is what each creature carries (bandits: a few coins). A hoard is a boss’s or lair’s stash: more coins, gems, art and magic items. Stronger creatures give more.</p>' +
         kindPills + source + '<div class="toolbar">' + btn('treRoll', '🎲 Random treasure', {}, 'btn primary') + '</div></div>' + resultHtml(s.last) +
-        '<p class="small muted">The amounts are this app’s own tables, close in spirit to the Dungeon Master’s Guide. Magic items come from the item list in Characters → Items.</p></main>';
+        '<p class="small muted">Coins, gems and art follow the Dungeon Master’s Guide (2014) treasure tables. Magic items are picked by rarity from the item list in Characters → Items, with chances close to the book’s.</p></main>';
     }
     var actions = {
       treKind: function (v) { state().kind = v; },
