@@ -307,4 +307,12 @@ const sw = fs.readFileSync(path.join(__dirname, '../sw.js'), 'utf8');
 
 }
 
+{ // encounter difficulty (DMG 2014): 4 level-1 PCs vs 2 goblins (50 XP each) = 100 x1.5 = 150 -> Easy (thresholds 100/200/300/400)
+  require('../js/encounter.js'); const rate = globalThis.EncounterUI.rate;
+  let r = rate([1, 1, 1, 1], [50, 50]); assert.equal(r.adjusted, 150); assert.equal(r.label, 'Easy'); assert.deepEqual(r.thresholds, [100, 200, 300, 400]);
+  r = rate([5, 5], [1800]); assert.equal(r.mult, 1.5); assert.equal(r.label, 'Deadly'); // small party: one step up
+  r = rate([3, 3, 3, 3, 3, 3], [100, 100, 100]); assert.equal(r.mult, 1.5); // big party: one step down
+  assert.equal(rate([1, 1, 1, 1], [10]).label, 'Trivial');
+}
+
 console.log('ok —', n, 'builds derived;', D.classes.length, 'classes,', D.subclasses.length, 'subclasses,', D.lineages.length, 'lineages,', D.backgrounds.length, 'backgrounds,', D.feats.length, 'feats,', Object.keys(D.spells).length, 'spells (' + Object.keys(D.spellText).length + ' described),', longF, 'detailed features');

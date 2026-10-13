@@ -389,7 +389,10 @@
       };
       r.readAsText(file);
     }
-    return { html: html, actions: actions, onInput: onInput, roll: roll, importFile: importFile };
+    // used by the Encounters section
+    function ensure(done) { if (!loaded()) load(done); return loaded(); }
+    function block(m) { return m.ix ? summaryBlock(m) : statBlock(m); }
+    return { html: html, actions: actions, onInput: onInput, roll: roll, importFile: importFile, all: all, find: find, ensure: ensure, block: block, crText: crText, XP: XP };
   };
   root.MonsterUI.roll = roll;
   root.MonsterUI.parse = parseStatBlock;

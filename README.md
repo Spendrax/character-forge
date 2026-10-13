@@ -73,6 +73,12 @@ and its full stat block shows inside the app from AideDD when you're online.
 bonus actions, reactions and legendary actions, with rollable attacks, saved on your device and usable offline. **Export mine** saves your monsters to a file and **Import** adds a friend's.
 **Import** also reads stat block files you have (a `.zip` of `.md` files, or `.md` / `.txt` files): they're read on your device and kept in the browser's own storage, never in the app's files. **Remove imported** deletes them.
 
+### Encounters
+
+In the style of Kobold Fight Club. Set your party (groups of players by level, or your own characters), add monsters from every list in the Monsters section, and the page rates the fight Easy, Medium, Hard or Deadly with the 2014 Dungeon Master's Guide rules (XP thresholds per level, the multiplier for the number of monsters, one step up for parties under 3 and one step down for 6 or more). **Random encounter** picks monsters to hit a chosen difficulty. Save encounters by name and load them later.
+
+**Run it** rolls initiative for the monsters (and for your own characters), with boxes for the players' rolls. Track each monster's hit points (type `7` for damage, `+5` for healing), step through turns and rounds, and tap a monster to read its stat block.
+
 ### House rules
 
 A **House rules** section (next to Characters and Monsters) holds your table's own rules as short titled notes you can search and read quickly during a game.
