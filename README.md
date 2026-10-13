@@ -85,6 +85,12 @@ Quick random loot. **Pocket money** is what each creature carries: a few coins f
 
 When you press **End fight** in Encounters, the app asks whether to roll treasure. Say yes and it opens Treasures with loot that fits the fight: a hoard if one monster was as strong as the party (its challenge rating at least the party's average level), pocket money otherwise. You can switch between the two before rolling again.
 
+### Books
+
+The free official rules, the System Reference Document 5.1, are built in: races, classes, backgrounds, equipment, feats, playing the game (ability checks, adventuring, combat), spellcasting and every SRD spell, conditions and other game-master rules, and magic items. Read them by chapter, or search the whole book; results jump to the right section with the words highlighted.
+
+**+ Add a book** adds your own PDF, Markdown or text file. It is kept in this browser's storage on this device, never uploaded or put in the app's files, so each person adds their own copies. PDFs are shown page by page (with [pdf.js](https://mozilla.github.io/pdf.js/), Apache 2.0) and can be searched when they contain text; scanned PDFs can be read but not searched.
+
 ### House rules
 
 A **House rules** section (next to Characters and Monsters) holds your table's own rules as short titled notes you can search and read quickly during a game.
@@ -178,6 +184,9 @@ spells known or prepared per class; Unarmored Defense only from whichever class 
 To add content, append an entry to the matching file in `data/` following its neighbours.
 
 ## Attribution
+
+- The Books section includes material taken from the System Reference Document 5.1 ("SRD 5.1") by Wizards of the Coast LLC, available at https://dnd.wizards.com/resources/systems-reference-document, licensed under the Creative Commons Attribution 4.0 International License (https://creativecommons.org/licenses/by/4.0/legalcode). Markdown text from OldManUmby's SRD v5.1 reForged (https://github.com/OldManUmby/DND.SRD.Wiki).
+- PDF viewing uses Mozilla's pdf.js (Apache License 2.0), in `js/vendor/pdfjs/` with its license.
 
 Monster stat blocks: this work includes material taken from the System Reference Document 5.1 ("SRD 5.1") by Wizards of the Coast LLC, available at https://dnd.wizards.com/resources/systems-reference-document,
 licensed under the Creative Commons Attribution 4.0 International License (https://creativecommons.org/licenses/by/4.0/). Converted from the 5e-database project (MIT license).

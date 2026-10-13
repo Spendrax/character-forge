@@ -327,4 +327,13 @@ const sw = fs.readFileSync(path.join(__dirname, '../sw.js'), 'utf8');
   for (let i = 0; i < 30; i++) { const h = T.roll({ kind: 'hoard', tier: 3 }, D.magicItems, rng); assert.ok(T.value(h) >= 12000); h.items.forEach(it => assert.ok(D.magicItems.some(x => x[0] === it.n && x[1].includes(it.r)))); }
 }
 
+{ // books: the free rules load, and the Markdown reader handles headings, tables and quotes
+  require('../data/srd-book.js'); require('../js/books.js'); const B = globalThis.BooksUI, book = D.book || globalThis.DND.book;
+  assert.ok(book.chapters.length >= 10); const all = book.chapters.flatMap(c => c.parts); assert.ok(all.length > 90);
+  assert.ok(all.some(p => /Grappling/.test(p.md))); assert.ok(all.some(p => p.t === 'Conditions'));
+  const heads = [], h = B.md('# Title\n\n| A | B |\n|---|---|\n| 1 | **2** |\n\n> Quote *it*\n\n- one\n- two', heads);
+  assert.ok(/<h2 id="h-title">/.test(h) && /<td><b>2<\/b><\/td>/.test(h) && /<aside class="bk-box"><p>Quote <i>it<\/i>/.test(h) && /<ul><li>one<\/li><li>two<\/li><\/ul>/.test(h));
+  assert.ok(!/<script/.test(B.md('<script>alert(1)</script>'))); assert.equal(B.splitText('X', '# A\na\n# B\nb').chapters[0].parts.length, 2);
+}
+
 console.log('ok —', n, 'builds derived;', D.classes.length, 'classes,', D.subclasses.length, 'subclasses,', D.lineages.length, 'lineages,', D.backgrounds.length, 'backgrounds,', D.feats.length, 'feats,', Object.keys(D.spells).length, 'spells (' + Object.keys(D.spellText).length + ' described),', longF, 'detailed features');

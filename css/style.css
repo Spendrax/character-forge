@@ -431,3 +431,46 @@ html { overflow-anchor: none; } /* the app restores scroll itself after each red
 .tre-item.r-uncommon b { color: var(--ok); } .tre-item.r-rare b { color: #2f6fb0; } .tre-item.r-very-rare b { color: #7b3fa8; } .tre-item.r-legendary b { color: var(--warn); }
 .enc-loot { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; border: 2px solid var(--accent); }
 #tre-count { width: 4.5rem; }
+
+/* Books */
+.bk-main { max-width: 84rem; }
+.bk-shelf { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; margin-bottom: 1rem; }
+.bk-add { cursor: pointer; }
+.bk-layout { display: grid; grid-template-columns: 17rem minmax(0, 1fr); gap: 1.2rem; align-items: start; }
+.bk-side { position: sticky; top: .5rem; max-height: calc(100vh - 1rem); overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: .7rem; }
+.bk-side input[type=search] { width: 100%; margin-bottom: .5rem; }
+.bk-toc details { margin-bottom: .2rem; }
+.bk-toc summary { font-weight: 700; cursor: pointer; padding: .3rem 0; }
+.bk-link { display: block; width: 100%; text-align: left; background: none; border: 0; color: var(--ink); padding: .3rem .5rem; border-radius: 6px; font: inherit; cursor: pointer; }
+.bk-link:hover { background: var(--soft); }
+.bk-link.on { background: var(--accent); color: var(--accent-ink); }
+.bk-hits { display: flex; flex-direction: column; gap: .3rem; }
+.bk-hit { text-align: left; background: none; border: 1px solid var(--line); border-radius: 6px; padding: .45rem .55rem; color: var(--ink); font: inherit; cursor: pointer; display: flex; flex-direction: column; gap: .15rem; }
+.bk-hit:hover { border-color: var(--accent); }
+.bk-read { min-width: 0; }
+.bk-page { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 1rem 1.4rem; line-height: 1.6; font-size: 1.02rem; }
+.bk-page h2 { font-family: var(--serif); color: var(--accent); margin: .2rem 0 .8rem; }
+.bk-page h3 { font-family: var(--serif); color: var(--accent); border-bottom: 1px solid var(--line); padding-bottom: .2rem; margin-top: 1.6rem; }
+.bk-page h4, .bk-page h5, .bk-page h6 { margin: 1.2rem 0 .3rem; }
+.bk-page mark { background: #f3d36b; color: #23201b; }
+.bk-box { background: var(--soft); border-left: 4px solid var(--accent); padding: .3rem 1rem; margin: 1rem 0; border-radius: 0 6px 6px 0; }
+.bk-table { overflow-x: auto; margin: .8rem 0; }
+.bk-table table { border-collapse: collapse; font-size: .92rem; min-width: 60%; }
+.bk-table th, .bk-table td { border-bottom: 1px solid var(--line); padding: .3rem .6rem; text-align: left; vertical-align: top; }
+.bk-table thead th { border-bottom: 2px solid var(--accent); }
+.bk-table tr:nth-child(even) td { background: var(--soft); }
+.bk-crumb { margin: 0; }
+.bk-jump { margin: .3rem 0 1rem; } .bk-jump div { display: flex; flex-wrap: wrap; gap: .2rem .9rem; padding: .4rem 0; }
+.bk-nav { margin-top: 1.5rem; border-top: 1px solid var(--line); padding-top: .8rem; }
+.bk-tocbtn { display: none; margin-bottom: .5rem; }
+.bk-pdf { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: .4rem; }
+.bk-pdf canvas { display: block; margin: 0 auto; max-width: 100%; background: #fff; }
+.bk-pdfnav { justify-content: center; margin: .5rem 0; }
+#bk-pg { width: 4.5rem; }
+@media (max-width: 800px) {
+  .bk-layout { grid-template-columns: 1fr; }
+  .bk-side { position: static; max-height: none; }
+  .bk-side.closed { display: none; }
+  .bk-tocbtn { display: inline-block; }
+  .bk-page { padding: .8rem .9rem; }
+}
