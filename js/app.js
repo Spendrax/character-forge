@@ -871,6 +871,8 @@
   }
 
   function stepSheet() {
+    // skills sit below everything else on the sheet, spells included
+    var skillsH = '<div class="sheet-skills"><h3>Skills</h3><ul class="lines">' + Object.keys(d.skills).map(function (k) { var s = d.skills[k]; return '<li><span class="dot' + (s.expertise ? ' e' : s.prof ? ' p' : '') + '"></span><span class="v">' + R.fmt(s.total) + '</span><span>' + k + ' <small class="muted">' + s.ability + '</small></span></li>'; }).join('') + '</ul></div>';
     var S = d.spell, p = d.prof;
     function list(label, a) { return a.length ? '<p><b>' + label + ':</b> ' + esc(a.join(', ')) + '</p>' : ''; }
     function group(kind, label, clsId) {
@@ -886,14 +888,12 @@
       '<span><b>XP</b> ' + D.xpByLevel[d.level - 1].toLocaleString('en') + '</span><span><b>Size</b> ' + esc(d.size || 'Medium') + '</span></div></div><div class="sheet-cols"><div>' +
       '<div class="abil">' + AB.map(function (a) { var x = d.abilities[a]; return '<div class="stat"><span>' + a + '</span><b>' + R.fmt(x.mod) + '</b><i>' + x.total + '</i></div>'; }).join('') + '</div>' +
       '<h3>Saving throws</h3><ul class="lines">' + AB.map(function (a) { var s = d.saves[a]; return '<li><span class="dot' + (s.prof ? ' p' : '') + '"></span><span class="v">' + R.fmt(s.total) + '</span><span>' + D.abilityNames[a] + '</span></li>'; }).join('') + '</ul>' +
-      '<h3>Skills</h3><ul class="lines">' + Object.keys(d.skills).map(function (k) { var s = d.skills[k]; return '<li><span class="dot' + (s.expertise ? ' e' : s.prof ? ' p' : '') + '"></span><span class="v">' + R.fmt(s.total) + '</span><span>' + k + ' <small class="muted">' + s.ability + '</small></span></li>'; }).join('') + '</ul>' +
       '<p class="small muted">● proficient · ◉ expertise</p></div><div>' +
       '<div class="slots">' + [['Armor class', d.ac], ['Hit points', d.hp], ['Hit dice', d.hitDice], ['Initiative', R.fmt(d.init)], ['Speed', d.speed + ' ft'], ['Proficiency', R.fmt(d.pb)], ['Passive Perception', d.passive]].map(function (x) { return '<div class="stat" style="padding:.3rem .7rem"><b>' + x[1] + '</b><span>' + x[0] + '</span></div>'; }).join('') + '</div>' +
       '<p class="small muted">AC: ' + esc(d.acNote) + (d.moves.length ? ' · Also: ' + esc(d.moves.join(', ')) : '') + (d.darkvision ? ' · Darkvision ' + d.darkvision + ' ft' : '') + '</p>' +
       (d.resources.length ? '<div class="facts">' + d.resources.map(function (r) { return '<span><b>' + esc(r[0]) + '</b> ' + esc(r[1]) + '</span>'; }).join('') + '</div>' : '') +
       (d.attacks.length ? '<h3>Attacks</h3>' + attacksHtml(false) : '') +
       '<h3>Proficiencies</h3>' + list('Armor', p.armor) + list('Weapons', p.weapons) + list('Tools', p.tools) + list('Languages', p.languages) + list('Resistances', p.res) + list('Immunities', p.imm);
-    var keepH = h; h = '';
     if (d.casters.length) {
       h += '<h3>Spellcasting</h3>' + slotsHtml();
       d.casters.forEach(function (S) {
@@ -925,7 +925,6 @@
           : '<p>' + spellLink(x.name) + ' <small class="muted">(' + esc(from + ' · ' + how) + ')</small></p>';
       }).join('');
     }
-    var spellH = h; h = keepH; // spells go below both columns, after the skills
     var picks = d.choices.filter(function (c) { return /^(lin\.pick\d|sc\.[\w-]+\.variant)/.test(c.key) && c.picked.length; });
     if (picks.length) h += '<h3>Chosen options</h3>' + picks.map(function (c) { return '<p><b>' + esc(c.label) + ':</b> ' + esc(c.picked.join(', ')) + '</p>'; }).join('');
     d.classes.forEach(function (e) {
@@ -945,7 +944,7 @@
     [['traits', 'Personality traits'], ['ideals', 'Ideals'], ['bonds', 'Bonds'], ['flaws', 'Flaws'], ['appearance', 'Appearance'], ['backstory', 'Backstory'], ['other', 'Notes']].forEach(function (n) {
       if (ch.notes[n[0]]) h += '<h3>' + n[1] + '</h3><p style="white-space:pre-wrap">' + esc(ch.notes[n[0]]) + '</p>';
     });
-    return h + '</div></div>' + (spellH ? '<div class="sheet-spells">' + spellH + '</div>' : '') + '<p class="small muted" style="margin-top:1rem">Rules summaries paraphrased from <a href="https://dnd5e.wikidot.com/" target="_blank" rel="noopener">dnd5e.wikidot.com</a> (CC BY-SA 3.0). Check the wiki or your books for full wording.</p></div>';
+    return h + '</div></div>' + skillsH + '<p class="small muted" style="margin-top:1rem">Rules summaries paraphrased from <a href="https://dnd5e.wikidot.com/" target="_blank" rel="noopener">dnd5e.wikidot.com</a> (CC BY-SA 3.0). Check the wiki or your books for full wording.</p></div>';
   }
   function totalTodo() { var n = 0; for (var k in d.todo) n += d.todo[k]; return n; }
 
