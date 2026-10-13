@@ -75,9 +75,9 @@ bonus actions, reactions and legendary actions, with rollable attacks, saved on 
 
 ### Encounters
 
-In the style of Kobold Fight Club. Set your party (groups of players by level, or your own characters), add monsters from every list in the Monsters section, and the page rates the fight Easy, Medium, Hard or Deadly with the 2014 Dungeon Master's Guide rules (XP thresholds per level, the multiplier for the number of monsters, one step up for parties under 3 and one step down for 6 or more). **Random encounter** picks monsters to hit a chosen difficulty. Save encounters by name and load them later.
+In the style of Kobold Fight Club. Set your party (groups of players by level, or your own characters), add monsters from every list in the Monsters section, and the page rates the fight Easy, Medium, Hard or Deadly with the 2014 Dungeon Master's Guide rules (XP thresholds per level, the multiplier for the number of monsters, one step up for parties under 3 and one step down for 6 or more). **Place** (Arctic, Coast, Desert, Forest, Grassland, Hill, Mountain, Swamp, Underdark, Underwater, City) keeps the monster list and random encounters to creatures that live there; the match is a best guess from the monster's name, and creatures with no known home (most fiends, for example) only show under Anywhere. **Random encounter** picks monsters to hit a chosen difficulty. Save encounters by name and load them later.
 
-**Run it** rolls initiative for the monsters (and for your own characters), with boxes for the players' rolls. Track each monster's hit points (type `7` for damage, `+5` for healing), step through turns and rounds, and tap a monster to read its stat block.
+**Run it** rolls initiative for the monsters (and for your own characters), with boxes for the players' rolls. Track each monster's hit points (−10 −5 −1 +1 +5 +10 buttons, or type `7` for damage and `+5` for healing), step through turns and rounds, and tap a monster to read its stat block.
 
 ### House rules
 

@@ -313,6 +313,9 @@ const sw = fs.readFileSync(path.join(__dirname, '../sw.js'), 'utf8');
   r = rate([5, 5], [1800]); assert.equal(r.mult, 1.5); assert.equal(r.label, 'Deadly'); // small party: one step up
   r = rate([3, 3, 3, 3, 3, 3], [100, 100, 100]); assert.equal(r.mult, 1.5); // big party: one step down
   assert.equal(rate([1, 1, 1, 1], [10]).label, 'Trivial');
+  const fits = globalThis.EncounterUI.fits;
+  assert.ok(fits({ n: 'Adult Black Dragon' }, 'Swamp')); assert.ok(!fits({ n: 'Adult Black Dragon' }, 'Arctic'));
+  assert.ok(fits({ n: 'Hunter Shark', sp: 'swim 40 ft.', type: 'beast' }, 'Underwater')); assert.ok(!fits({ n: 'Pirate' }, 'Underwater')); assert.ok(fits({ n: 'Guard' }, 'City'));
 }
 
 console.log('ok —', n, 'builds derived;', D.classes.length, 'classes,', D.subclasses.length, 'subclasses,', D.lineages.length, 'lineages,', D.backgrounds.length, 'backgrounds,', D.feats.length, 'feats,', Object.keys(D.spells).length, 'spells (' + Object.keys(D.spellText).length + ' described),', longF, 'detailed features');

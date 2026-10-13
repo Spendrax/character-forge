@@ -417,3 +417,6 @@ html { overflow-anchor: none; } /* the app restores scroll itself after each red
 .hpbar span { display: block; height: 100%; background: var(--ok); }
 .enc-modal { position: fixed; inset: 5vh 50% auto auto; transform: translateX(50%); width: min(46rem, 94vw); max-height: 88vh; overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 1rem; box-shadow: 0 10px 40px rgba(0,0,0,.35); z-index: 50; }
 @media (max-width: 800px) { .enc-wrap { grid-template-columns: 1fr; } .enc-list { max-height: 45vh; } .enc-c { grid-template-columns: 3rem minmax(0, 1fr) auto; } .enc-c .enc-dmg { grid-column: 1 / -1; } }
+.enc-adj { grid-column: 2 / -1; display: flex; gap: .3rem; flex-wrap: wrap; }
+.enc-place select { font-weight: 600; }
+@media (max-width: 800px) { .enc-adj { grid-column: 1 / -1; } .enc-adj .btn { flex: 1; } }

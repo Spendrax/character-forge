@@ -8,6 +8,33 @@
     [2400, 4900, 7300, 10900], [2800, 5700, 8500, 12700]];
   var MULT = [0.5, 1, 1.5, 2, 2.5, 3, 4, 5], LABELS = ['Easy', 'Medium', 'Hard', 'Deadly'];
 
+  // Where a monster lives, guessed from its name (in the spirit of the DMG's "monsters by environment" lists).
+  // Common folk such as bandits and scouts are found in most places.
+  var ROAMERS = 'badger|giant badger|weasel|giant weasel|mule|giant centipede|swarm of beetles|swarm of centipedes|swarm of wasps|giant fire beetle|bandit|bandit captain|scout|berserker|cultist|cult fanatic|tribal warrior|druid|veteran|thug|wolf|giant eagle|vulture|hawk|raven|eagle';
+  var ENV = {
+    Arctic: 'ice|frost|winter|polar bear|yeti|abominable yeti|remorhaz|white dragon|silver dragon|mammoth|saber-toothed tiger|giant owl|owlbear|dire wolf|winter wolf|frost giant|ice mephit|crag cat|snow|elk|giant elk|reindeer|seal|orca|walrus',
+    Coast: 'sahuagin|merrow|merfolk|harpy|roc|crab|giant crab|pteranodon|plesiosaurus|bronze dragon|sea hag|pirate|kuo-toa|water elemental|steam mephit|guard|ogre|lizardfolk|giant lizard|griffon|banshee|blue dragon|marid|sea|reef shark|giant octopus|giant toad|swashbuckler|wereshark',
+    Desert: 'desert|death dog|flying snake|medusa|behir|dust|sand|blue dragon|brass dragon|camel|jackal|werejackal|mummy|mummy lord|sphinx|androsphinx|gynosphinx|lamia|gnoll|scorpion|giant scorpion|hyena|giant hyena|purple worm|yuan-ti|yuan-ti pureblood|yuan-ti abomination|yuan-ti malison|djinni|efreeti|fire elemental|air elemental|dust mephit|hobgoblin|cockatrice|constrictor snake|giant constrictor snake|giant vulture|ghoul|lion|giant spider|wraith|hell hound|salamander|bulette|thri-kreen',
+    Forest: 'green dragon|worg|flying snake|oni|elf|dryad|satyr|treant|awakened tree|awakened shrub|unicorn|pixie|sprite|blink dog|owlbear|boar|giant boar|black bear|brown bear|elk|dire wolf|ape|giant ape|spider|giant spider|ettercap|centaur|gnoll|goblin|bugbear|hobgoblin|kobold|orc|pseudodragon|faerie dragon|will-o\'-wisp|werewolf|werebear|wereboar|weretiger|tiger|panther|green hag|banshee|shambling mound|giant owl|owl|hippogriff|gorgon|troll|wood woad|displacer beast|grick|stirge|swarm of insects|giant wasp|giant badger|deer|blights?|needle blight|twig blight|vine blight|wolf|dryad|couatl|baboon|harpy|giant elk|wolf|wyvern|druid|elk',
+    Grassland: 'gold dragon|rhinoceros|worg|death dog|centaur|gnoll|goblin|hobgoblin|orc|ogre|lion|elephant|mammoth|hyena|giant hyena|jackal|griffon|hippogriff|pegasus|ankheg|bulette|wyvern|cockatrice|chimera|axe beak|triceratops|allosaurus|tyrannosaurus rex|ankylosaurus|horse|riding horse|warhorse|draft horse|pony|cattle|wereboar|weretiger|elk|giant elk|boar|giant boar|giant wasp|swarm of insects|cyclops|blink dog|panther|tiger|wolf|hill giant|couatl|gorgon|manticore|giant goat|scarecrow',
+    Hill: 'copper dragon|red dragon|hill giant|ogre|orc|orc eye of gruumsh|orog|goblin|bugbear|hobgoblin|griffon|hippogriff|manticore|werewolf|wyvern|bulette|ettin|peryton|giant goat|goat|giant elk|elk|lion|hyena|dwarf|halfling|green hag|chimera|cyclops|harpy|owlbear|troll|stone giant|wolf|dire wolf|giant boar|boar|pegasus|galeb duhr',
+    Mountain: 'red dragon|silver dragon|copper dragon|stone giant|cloud giant|storm giant|fire giant|frost giant|roc|griffon|manticore|chimera|wyvern|aarakocra|galeb duhr|gargoyle|giant goat|goat|ogre|orc|troll|air elemental|earth elemental|basilisk|hippogriff|peryton|pteranodon|young red dragon|azer|salamander|dwarf|duergar|giant eagle|perytons?|ettin|kenku|harpy|yeti|crag cat|giant elk|hell hound|spectator',
+    Swamp: 'black dragon|lizardfolk|lizard king|lizard queen|bullywug|crocodile|giant crocodile|hydra|shambling mound|will-o\'-wisp|hag|green hag|sea hag|ghoul|ghast|frog|giant frog|toad|giant toad|yuan-ti|troll|water weird|naga|spirit naga|bone naga|giant snake|constrictor snake|giant constrictor snake|poisonous snake|giant poisonous snake|stirge|swarm of insects|mud mephit|otyugh|kuo-toa|swarm of poisonous snakes|swarm of rats|lizard|giant lizard|wererat|zombie|wight|banshee|black pudding|ochre jelly|vine blight|catoblepas|froghemoth|grung',
+    Underdark: 'drow|kruthik|behir|deep dragon|oblex|drow elite warrior|drow mage|drow priestess of lolth|duergar|deep gnome|svirfneblin|mind flayer|beholder|spectator|aboleth|hook horror|grick|grick alpha|umber hulk|purple worm|roper|piercer|cloaker|darkmantle|kuo-toa|myconid|gas spore|violet fungus|shrieker|carrion crawler|gelatinous cube|ochre jelly|black pudding|gray ooze|otyugh|troglodyte|quaggoth|grimlock|chuul|xorn|earth elemental|giant spider|phase spider|drider|bat|giant bat|swarm of bats|minotaur|nothic|gibbering mouther|rust monster|basilisk|kobold|goblin|bugbear|ghoul|ghast|cave|spirit naga|bone naga|salamander|fire giant|dwarf|intellect devourer|derro|rat|giant rat|swarm of rats|giant centipede|mimic|wraith',
+    Underwater: 'aboleth|kraken|sahuagin|sahuagin priestess|sahuagin baron|merfolk|merrow|marid|dragon turtle|sea hag|shark|reef shark|hunter shark|giant shark|octopus|giant octopus|plesiosaurus|killer whale|orca|eel|giant eel|water elemental|storm giant|chuul|kuo-toa|sea horse|giant sea horse|quipper|swarm of quippers|water weird|bronze dragon|sea|whale|squid|giant crab|crab|wereshark|scrag|sea spawn',
+    City: 'bandit|bandit captain|guard|veteran|knight|noble|commoner|acolyte|priest|mage|archmage|spy|thug|assassin|cultist|cult fanatic|gladiator|swashbuckler|wererat|rat|giant rat|swarm of rats|cat|mastiff|doppelganger|vampire|vampire spawn|ghost|ghoul|ghast|imp|quasit|kenku|mimic|invisible stalker|gargoyle|smoke mephit|zombie|skeleton|specter|shadow|succubus|incubus|rakshasa|crawling claw|flying sword|animated armor|rug of smothering|homunculus|helmed horror|stone golem|iron golem|clay golem|flesh golem|shield guardian|pseudodragon|faerie dragon|otyugh|gelatinous cube|carrion crawler|raven|swarm of ravens|deva|planetar|spirit naga|lich|mummy|wight|poltergeist|will-o\'-wisp|merchant|bard|monk|pirate|dwarf|halfling|gnome|elf|bugbear|kobold|goblin|half-ogre|hobgoblin|yuan-ti pureblood|drow|duergar|bodak|nalfeshnee|night hag|cloaker|intellect devourer|mind flayer|gnoll'
+  };
+  var ENV_RX = {};
+  Object.keys(ENV).forEach(function (k) { ENV_RX[k] = new RegExp('\\b(?:' + ENV[k] + (k === 'Underwater' ? '' : '|' + ROAMERS) + ')s?\\b', 'i'); });
+  function fits(m, env) {
+    if (!env) return true;
+    var name = m.n.replace(/\s*\(.*\)$/, '');
+    if (ENV_RX[env].test(name)) return true;
+    // Anything that only swims belongs underwater (or on a coast).
+    var mv = String(m.sp || m.mv || '').toLowerCase();
+    return (env === 'Underwater' || env === 'Coast') && /swim/.test(mv) && !/fly/.test(mv) && (/^\s*(?:swim|0 ft|5 ft)/.test(mv) || (m.mv && !/walk/.test(mv))) && m.type === 'beast';
+  }
+
   // The arithmetic, kept apart so it can be tested without a page.
   function rate(partyLevels, monsterXps) {
     var t = [0, 0, 0, 0];
@@ -22,7 +49,7 @@
 
   root.EncounterUI = function (api) {
     var esc = api.esc, btn = api.btn, ui = api.ui, store = api.store, MON = api.MON, R = api.R;
-    var E = ui.enc = ui.enc || { q: '', crMin: '', crMax: '', type: '', diff: 'Medium', open: '' };
+    var E = ui.enc = ui.enc || { q: '', crMin: '', crMax: '', type: '', env: '', diff: 'Medium', open: '' };
     function cur() {
       store.encounter = store.encounter || { name: '', party: [{ n: 4, lvl: 3 }], mons: [] };
       return store.encounter;
@@ -45,12 +72,13 @@
     // ----- building -----
     function pickerHtml() {
       var q = E.q.toLowerCase(), lo = E.crMin === '' ? -1 : +E.crMin, hi = E.crMax === '' ? 99 : +E.crMax;
-      var list = MON.all().filter(function (m) { var cr = m.cr == null ? -1 : +m.cr; return m.cr != null && (!q || m.n.toLowerCase().indexOf(q) >= 0) && cr >= lo && cr <= hi && (!E.type || m.type === E.type); })
+      var list = MON.all().filter(function (m) { var cr = m.cr == null ? -1 : +m.cr; return m.cr != null && (!q || m.n.toLowerCase().indexOf(q) >= 0) && cr >= lo && cr <= hi && (!E.type || m.type === E.type) && fits(m, E.env); })
         .sort(function (a, b) { return a.n < b.n ? -1 : 1; });
       var types = []; MON.all().forEach(function (m) { if (m.type && types.indexOf(m.type) < 0 && !/^swarm/.test(m.type)) types.push(m.type); }); types.sort();
       var crs = [0, 0.125, 0.25, 0.5].concat(Array.apply(null, Array(30)).map(function (_, i) { return i + 1; }));
       var sel = function (k, label, opts) { return '<label class="mon-f">' + label + ' <select data-enc="' + k + '"><option value="">Any</option>' + opts.map(function (o) { return '<option value="' + o + '"' + (String(E[k]) === String(o) ? ' selected' : '') + '>' + (k === 'type' ? o : MON.crText(o)) + '</option>'; }).join('') + '</select></label>'; };
-      return '<div class="panel enc-pick"><h3>Monsters</h3><div class="mon-tools"><input type="search" id="enc-q" data-enc="q" placeholder="Search monsters…" value="' + esc(E.q) + '">' +
+      var place = '<label class="mon-f enc-place">Place <select data-enc="env"><option value="">Anywhere</option>' + Object.keys(ENV).map(function (k) { return '<option' + (E.env === k ? ' selected' : '') + '>' + k + '</option>'; }).join('') + '</select></label>';
+      return '<div class="panel enc-pick"><h3>Monsters</h3><div class="mon-tools">' + place + '<input type="search" id="enc-q" data-enc="q" placeholder="Search monsters…" value="' + esc(E.q) + '">' +
         sel('crMin', 'CR from', crs) + sel('crMax', 'to', crs) + sel('type', 'Type', types) + '</div><div class="small muted mon-count">' + list.length + ' monsters</div>' +
         '<div class="mon-list enc-list">' + list.slice(0, 200).map(function (m) {
           return '<div class="enc-row"><button type="button" class="btn small" data-act="encAdd" data-v="' + esc(m.id) + '" aria-label="Add ' + esc(m.n) + '">+</button>' +
@@ -109,7 +137,8 @@
             '<input type="number" class="enc-init" id="init-' + c.k + '" data-encinit="' + c.k + '" value="' + c.init + '" aria-label="Initiative of ' + esc(c.n) + '">' +
             '<div class="enc-cn">' + (c.id ? '<button type="button" class="linkbtn enc-name" data-act="encView" data-v="' + esc(c.id) + '">' + esc(c.n) + '</button>' : '<b>' + esc(c.n) + '</b>') + (c.ac ? ' <span class="small muted">AC ' + c.ac + '</span>' : '') +
             (c.max ? '<div class="hpbar"><span style="width:' + hpPct + '%"></span></div>' : '') + '</div>' +
-            (c.max ? '<span class="enc-hp"><b>' + c.hp + '</b>/' + c.max + '</span><input type="text" inputmode="numeric" class="enc-dmg" id="dmg-' + c.k + '" data-encdmg="' + c.k + '" placeholder="−dmg" aria-label="Damage or healing for ' + esc(c.n) + '">' : '<span></span><span></span>') + '</div>';
+            (c.max ? '<span class="enc-hp"><b>' + c.hp + '</b>/' + c.max + '</span><input type="text" inputmode="numeric" class="enc-dmg" id="dmg-' + c.k + '" data-encdmg="' + c.k + '" placeholder="−dmg" aria-label="Damage or healing for ' + esc(c.n) + '">' +
+              '<div class="enc-adj">' + ['-10', '-5', '-1', '+1', '+5', '+10'].map(function (v) { return btn('encHp', v.replace('-', '−'), { v: c.k, d: v }, 'btn small'); }).join('') + '</div>' : '<span></span><span></span>') + '</div>';
         }).join('') + '</div>';
     }
 
@@ -123,7 +152,7 @@
     function randomEncounter(enc) {
       var levels = partyLevels(enc); if (!levels.length) return 'Add your party first.';
       var target = LABELS.indexOf(E.diff), t = rate(levels, []).thresholds, goal = t[target], cap = target < 3 ? t[target + 1] : t[3] * 1.5;
-      var pool = MON.all().filter(function (m) { return m.cr != null && xpOf(m) > 0 && xpOf(m) <= goal && (!E.type || m.type === E.type); });
+      var pool = MON.all().filter(function (m) { return m.cr != null && xpOf(m) > 0 && xpOf(m) <= goal && (!E.type || m.type === E.type) && fits(m, E.env); });
       if (!pool.length) return 'No monsters fit that difficulty with these filters.';
       for (var tries = 0; tries < 200; tries++) {
         var m = pool[Math.floor(Math.random() * pool.length)], n = 1, mons;
@@ -150,6 +179,7 @@
       encView: function (v) { E.open = v; },
       encViewClose: function () { E.open = ''; },
       encRun: function () { var enc = cur(); if (!enc.mons.length) { E.msg = 'Add some monsters first.'; return; } startRun(enc); E.msg = ''; },
+      encHp: function (v, el) { var c = store.encRun.list.filter(function (x) { return x.k === v; })[0]; if (c) c.hp = Math.max(0, Math.min(c.max, c.hp + +el.getAttribute('data-d'))); },
       encNext: function () { var run = store.encRun; run.turn++; if (run.turn >= run.list.length) { run.turn = 0; run.round++; } },
       encStop: function () { store.encRun = null; }
     };
@@ -177,4 +207,5 @@
     return { html: html, actions: actions, onInput: onInput, onChange: onChange };
   };
   root.EncounterUI.rate = rate;
+  root.EncounterUI.fits = fits;
 })(typeof window !== 'undefined' ? window : globalThis);
