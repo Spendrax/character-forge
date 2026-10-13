@@ -1312,7 +1312,7 @@
     var safari = /Safari/.test(ua) && !/Chrome|Chromium|CriOS|FxiOS|EdgiOS|Edg\//.test(ua);
     if (!/^https?:$/.test(location.protocol) || window.self !== window.top) return { name: 'this page', steps: ['Open the site itself (https://spendrax.github.io/character-forge/) in your browser, then press Install app there. A preview or a file opened from your computer can\'t be installed.'] };
     if (ios) return { name: 'iPhone and iPad', steps: ['Tap the Share button (the square with an arrow). In Safari it is at the bottom or top of the screen; in Chrome, Edge or Firefox it is in the address bar or the menu.', 'Scroll down and tap Add to Home Screen.', 'Make sure Open as Web App is on, if you see it, then tap Add.'] };
-    if (samsung) return { name: 'Samsung Internet', steps: ['Tap the menu (☰) at the bottom.', 'Tap Add page to, then Home screen.'] };
+    if (samsung) return { name: 'Samsung Internet', steps: ['Use a normal tab: a Secret mode tab can\'t install apps.', 'If the address bar shows an install icon (a + or a down arrow), tap it, then Install.', 'Otherwise tap the menu (☰) at the bottom, then Add page to, then Home screen, then Add.'] };
     if (android && firefox) return { name: 'Firefox for Android', steps: ['Tap the menu (⋮).', 'Tap Add app to Home screen (on some versions: Install, or Add to Home screen).'] };
     if (android) return { name: 'your Android browser', steps: ['Open the browser menu (⋮).', 'Tap Install app or Add to Home screen.'] };
     if (safari) return { name: 'Safari on Mac', steps: ['In the menu bar, choose File, then Add to Dock (needs macOS Sonoma or newer).', 'On older macOS, open the site in Chrome or Edge to install it.'] };
