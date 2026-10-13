@@ -871,7 +871,7 @@
   }
 
   function stepSheet() {
-    // skills sit below everything else on the sheet, spells included
+    // skills sit right under the proficiencies, before the spells
     var skillsH = '<div class="sheet-skills"><h3>Skills</h3><ul class="lines">' + Object.keys(d.skills).map(function (k) { var s = d.skills[k]; return '<li><span class="dot' + (s.expertise ? ' e' : s.prof ? ' p' : '') + '"></span><span class="v">' + R.fmt(s.total) + '</span><span>' + k + ' <small class="muted">' + s.ability + '</small></span></li>'; }).join('') + '</ul></div>';
     var S = d.spell, p = d.prof;
     function list(label, a) { return a.length ? '<p><b>' + label + ':</b> ' + esc(a.join(', ')) + '</p>' : ''; }
@@ -894,6 +894,7 @@
       (d.resources.length ? '<div class="facts">' + d.resources.map(function (r) { return '<span><b>' + esc(r[0]) + '</b> ' + esc(r[1]) + '</span>'; }).join('') + '</div>' : '') +
       (d.attacks.length ? '<h3>Attacks</h3>' + attacksHtml(false) : '') +
       '<h3>Proficiencies</h3>' + list('Armor', p.armor) + list('Weapons', p.weapons) + list('Tools', p.tools) + list('Languages', p.languages) + list('Resistances', p.res) + list('Immunities', p.imm);
+    h += skillsH;
     if (d.casters.length) {
       h += '<h3>Spellcasting</h3>' + slotsHtml();
       d.casters.forEach(function (S) {
@@ -944,7 +945,7 @@
     [['traits', 'Personality traits'], ['ideals', 'Ideals'], ['bonds', 'Bonds'], ['flaws', 'Flaws'], ['appearance', 'Appearance'], ['backstory', 'Backstory'], ['other', 'Notes']].forEach(function (n) {
       if (ch.notes[n[0]]) h += '<h3>' + n[1] + '</h3><p style="white-space:pre-wrap">' + esc(ch.notes[n[0]]) + '</p>';
     });
-    return h + '</div></div>' + skillsH + '<p class="small muted" style="margin-top:1rem">Rules summaries paraphrased from <a href="https://dnd5e.wikidot.com/" target="_blank" rel="noopener">dnd5e.wikidot.com</a> (CC BY-SA 3.0). Check the wiki or your books for full wording.</p></div>';
+    return h + '</div></div><p class="small muted" style="margin-top:1rem">Rules summaries paraphrased from <a href="https://dnd5e.wikidot.com/" target="_blank" rel="noopener">dnd5e.wikidot.com</a> (CC BY-SA 3.0). Check the wiki or your books for full wording.</p></div>';
   }
   function totalTodo() { var n = 0; for (var k in d.todo) n += d.todo[k]; return n; }
 

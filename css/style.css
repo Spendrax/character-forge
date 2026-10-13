@@ -388,4 +388,4 @@ html { overflow-anchor: none; } /* the app restores scroll itself after each red
   body { padding-bottom: 7rem; }
   .roll-toast { bottom: 7.4rem; }
 }
-.sheet-skills .lines { columns: 15rem; column-gap: 1.5rem; }
+.sheet-skills .lines { columns: 13rem; column-gap: 1.5rem; }
