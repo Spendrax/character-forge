@@ -146,7 +146,8 @@
       if (!MON.ensure(api.render)) return '<main class="mon-main"><h2>Encounters</h2><p class="muted">Loading monsters…</p></main>';
       var enc = cur(), view = E.open && MON.find(E.open);
       var main = store.encRun ? runHtml() : '<div class="enc-wrap">' + pickerHtml() + '<div>' + partyHtml(enc) + encounterHtml(enc) + '</div></div>';
-      return '<main class="mon-main"><h2>Encounters</h2>' + (E.msg ? '<p class="small rest-msg">' + esc(E.msg) + '</p>' : '') + main +
+      var ask = E.askLoot && !store.encRun ? '<div class="panel enc-loot"><b>Fight over.</b> Roll treasure for this encounter? ' + btn('encLootYes', '💰 Yes, roll treasure', {}, 'btn primary') + btn('encLootNo', 'No', {}, 'btn') + '</div>' : '';
+      return '<main class="mon-main"><h2>Encounters</h2>' + ask + (E.msg ? '<p class="small rest-msg">' + esc(E.msg) + '</p>' : '') + main +
         (view ? '<div class="enc-modal" role="dialog" aria-label="' + esc(view.n) + '"><div class="toolbar">' + btn('encViewClose', '✕ Close', {}, 'btn') + '</div>' + MON.block(view) + '</div>' : '') + '</main>';
     }
     function randomEncounter(enc) {
@@ -181,7 +182,13 @@
       encRun: function () { var enc = cur(); if (!enc.mons.length) { E.msg = 'Add some monsters first.'; return; } startRun(enc); E.msg = ''; },
       encHp: function (v, el) { var c = store.encRun.list.filter(function (x) { return x.k === v; })[0]; if (c) c.hp = Math.max(0, Math.min(c.max, c.hp + +el.getAttribute('data-d'))); },
       encNext: function () { var run = store.encRun; run.turn++; if (run.turn >= run.list.length) { run.turn = 0; run.round++; } },
-      encStop: function () { store.encRun = null; }
+      encStop: function () { store.encRun = null; E.askLoot = true; },
+      encLootNo: function () { E.askLoot = false; },
+      encLootYes: function () {
+        var enc = cur(); E.askLoot = false;
+        var creatures = enc.mons.map(function (x) { var m = MON.find(x.id); return m && { name: m.n, cr: +m.cr || 0, type: m.type || '', n: x.count }; }).filter(Boolean);
+        api.onLoot(creatures, partyLevels(enc), enc.name);
+      }
     };
     function onInput(t) {
       var a = function (n) { return t.getAttribute(n); };

@@ -318,4 +318,13 @@ const sw = fs.readFileSync(path.join(__dirname, '../sw.js'), 'utf8');
   assert.ok(fits({ n: 'Hunter Shark', sp: 'swim 40 ft.', type: 'beast' }, 'Underwater')); assert.ok(!fits({ n: 'Pirate' }, 'Underwater')); assert.ok(fits({ n: 'Guard' }, 'City'));
 }
 
+{ // treasure: beasts carry nothing, a high-tier hoard is rich and its items exist in the list
+  require('../js/treasure.js'); const T = globalThis.EncounterUI && globalThis.TreasureUI; let seed = 7; const rng = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const wolves = T.roll({ kind: 'pocket', tier: 0, creatures: [{ cr: 0.25, type: 'beast', n: 3 }] }, D.magicItems, rng);
+  assert.deepEqual(wolves.coins, {}); assert.ok(/carried nothing/.test(wolves.notes[0]));
+  const bandits = T.roll({ kind: 'pocket', tier: 0, creatures: [{ cr: 0.125, type: 'humanoid', n: 5 }] }, D.magicItems, rng);
+  assert.ok(T.value(bandits) > 0 && T.value(bandits) <= 200);
+  for (let i = 0; i < 30; i++) { const h = T.roll({ kind: 'hoard', tier: 3 }, D.magicItems, rng); assert.ok(T.value(h) >= 10000); h.items.forEach(it => assert.ok(D.magicItems.some(x => x[0] === it.n && x[1].includes(it.r)))); }
+}
+
 console.log('ok —', n, 'builds derived;', D.classes.length, 'classes,', D.subclasses.length, 'subclasses,', D.lineages.length, 'lineages,', D.backgrounds.length, 'backgrounds,', D.feats.length, 'feats,', Object.keys(D.spells).length, 'spells (' + Object.keys(D.spellText).length + ' described),', longF, 'detailed features');

@@ -79,6 +79,12 @@ In the style of Kobold Fight Club. Set your party (groups of players by level, o
 
 **Run it** rolls initiative for the monsters (and for your own characters), with boxes for the players' rolls. Track each monster's hit points (−10 −5 −1 +1 +5 +10 buttons, or type `7` for damage and `+5` for healing), step through turns and rounds, and tap a monster to read its stat block.
 
+### Treasures
+
+Quick random loot. **Pocket money** is what each creature carries: a few coins for bandits, more for stronger creatures, and nothing for beasts, oozes or constructs. A **hoard** is a boss's or lair's stash, with more coins, gems, art objects and magic items (from the app's item list, rarer as the challenge goes up). The amounts are the app's own tables, close in spirit to the Dungeon Master's Guide.
+
+When you press **End fight** in Encounters, the app asks whether to roll treasure. Say yes and it opens Treasures with loot that fits the fight: a hoard if one monster was as strong as the party (its challenge rating at least the party's average level), pocket money otherwise. You can switch between the two before rolling again.
+
 ### House rules
 
 A **House rules** section (next to Characters and Monsters) holds your table's own rules as short titled notes you can search and read quickly during a game.

@@ -420,3 +420,14 @@ html { overflow-anchor: none; } /* the app restores scroll itself after each red
 .enc-adj { grid-column: 2 / -1; display: flex; gap: .3rem; flex-wrap: wrap; }
 .enc-place select { font-weight: 600; }
 @media (max-width: 800px) { .enc-adj { grid-column: 1 / -1; } .enc-adj .btn { flex: 1; } }
+
+/* Treasures */
+.tre-main { max-width: 52rem; }
+.coins { display: flex; flex-wrap: wrap; gap: .5rem; margin: .8rem 0; }
+.coin { padding: .4rem .8rem; border-radius: 999px; border: 2px solid var(--line); font-size: 1.05rem; }
+.coin-pp { border-color: #9aa7b4; } .coin-gp { border-color: #c9a227; } .coin-ep { border-color: #b7a77a; } .coin-sp { border-color: #b5b5b5; } .coin-cp { border-color: #b06a3b; }
+.tre-list { padding-left: 1.2rem; margin: .3rem 0 .8rem; }
+.tre-list li { margin: .25rem 0; }
+.tre-item.r-uncommon b { color: var(--ok); } .tre-item.r-rare b { color: #2f6fb0; } .tre-item.r-very-rare b { color: #7b3fa8; } .tre-item.r-legendary b { color: var(--warn); }
+.enc-loot { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; border: 2px solid var(--accent); }
+#tre-count { width: 4.5rem; }

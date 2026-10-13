@@ -1050,7 +1050,7 @@
 
   // ---------- sections: the home page and the monsters ----------
   function sectionNav() {
-    return '<nav class="sections" aria-label="Sections">' + [['home', '⌂ Home'], ['chars', 'Characters'], ['monsters', 'Monsters'], ['encounters', 'Encounters'], ['rules', 'House rules']].map(function (x) {
+    return '<nav class="sections" aria-label="Sections">' + [['home', '⌂ Home'], ['chars', 'Characters'], ['monsters', 'Monsters'], ['encounters', 'Encounters'], ['treasure', 'Treasures'], ['rules', 'House rules']].map(function (x) {
       return '<button type="button" class="sec' + (ui.section === x[0] ? ' on' : '') + '" data-act="section" data-v="' + x[0] + '"' + (ui.section === x[0] ? ' aria-current="page"' : '') + '>' + x[1] + '</button>';
     }).join('') + '</nav>';
   }
@@ -1066,6 +1066,7 @@
           return '<button type="button" class="home-char" data-act="openChar" data-v="' + c.id + '"><b>' + esc(title(c)) + '</b><span class="small muted">' + esc(summaryLine(c, dd)) + '</span></button>';
         }).join('') + (chars.length > 6 ? '<span class="small muted">and ' + (chars.length - 6) + ' more</span>' : '') + '</div>' : '') +
       tile('encounters', '⚔︎', 'Encounters', 'Build a fight for your party, see how hard it is (2014 rules), roll a random one, then run it with initiative and hit points.') +
+      tile('treasure', '💰', 'Treasures', 'Quick random loot after a fight: a few coins for bandits, a hoard with gems and magic items for a boss.') +
       tile('rules', '📜', 'House rules', 'Your table’s own rules, written down and quick to find during a game.') +
       tile('monsters', '🐉', 'Monsters', 'Every monster from the 2014 SRD with its full stat block, searchable by name, type, size and challenge, with dice you can roll. Add your own too.') +
       '</div></main>';
@@ -1087,12 +1088,12 @@
     var keep = scrollState();
     var top = '<header class="top">' + btn('section', 'Character Forge', { v: 'home' }, 'brand linkish') + sectionNav() + '<span class="spacer"></span>' +
       '<button type="button" class="btn" data-act="undo" title="Undo (Ctrl+Z)"' + (undoStack.length ? '' : ' disabled') + '>↶ Undo</button>' + (isInstalledApp() ? '' : btn('install', 'Install app', {}, installPrompt ? 'btn primary' : 'btn')) + '</header>';
-    var body = ui.section === 'monsters' ? '<main class="mon-main">' + MON.html() + '</main>' : ui.section === 'encounters' ? ENC.html() : ui.section === 'rules' ? rulesHtml() : homeHtml();
+    var body = ui.section === 'monsters' ? '<main class="mon-main">' + MON.html() + '</main>' : ui.section === 'encounters' ? ENC.html() : ui.section === 'treasure' ? TRE.html() : ui.section === 'rules' ? rulesHtml() : homeHtml();
     document.getElementById('app').innerHTML = top + installHelpHtml() + body;
     if (ui.mon && ui.mon.scrollTop) { ui.mon.scrollTop = false; var r = document.querySelector('.mon-right'); if (r && window.innerWidth < 800) r.scrollIntoView(); else window.scrollTo(0, 0); }
     else restoreScroll(keep);
     if (fid) { var el = document.getElementById(fid); if (el) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } try { if (pos != null) el.setSelectionRange(pos, pos); } catch (e) { /* not text */ } } }
-    document.title = (ui.section === 'monsters' ? 'Monsters' : ui.section === 'encounters' ? 'Encounters' : ui.section === 'rules' ? 'House rules' : 'Home') + ' — Character Forge';
+    document.title = (ui.section === 'monsters' ? 'Monsters' : ui.section === 'encounters' ? 'Encounters' : ui.section === 'treasure' ? 'Treasures' : ui.section === 'rules' ? 'House rules' : 'Home') + ' — Character Forge';
     saveNow();
   }
 
@@ -1340,7 +1341,10 @@
 
   var MON = window.MonsterUI({ esc: esc, btn: btn, ui: ui, store: store, render: render });
   Object.keys(MON.actions).forEach(function (k) { actions[k] = MON.actions[k]; });
-  var ENC = window.EncounterUI({ esc: esc, btn: btn, ui: ui, store: store, render: render, MON: MON, R: R });
+  var TRE = window.TreasureUI({ esc: esc, btn: btn, ui: ui, store: store });
+  Object.keys(TRE.actions).forEach(function (k) { actions[k] = TRE.actions[k]; });
+  var ENC = window.EncounterUI({ esc: esc, btn: btn, ui: ui, store: store, render: render, MON: MON, R: R,
+    onLoot: function (creatures, levels, title) { TRE.fromEncounter(creatures, levels, title); ui.section = 'treasure'; window.scrollTo(0, 0); } });
   Object.keys(ENC.actions).forEach(function (k) { actions[k] = ENC.actions[k]; });
 
   document.addEventListener('click', function (e) {
@@ -1352,6 +1356,7 @@
   });
   document.addEventListener('input', function (e) {
     var t = e.target, a = function (n) { return t.getAttribute(n); };
+    if (ui.section === 'treasure') { var tr = TRE.onInput(t); if (tr === 'render') render(); else if (tr) save(); if (tr) return; }
     if (ui.section === 'encounters') { var er = ENC.onInput(t); if (er === 'render') render(); else if (er) save(); if (er) return; }
     if (a('data-mon') != null || a('data-mymon') != null) { var mr = MON.onInput(t); if (mr === 'render') render(); else save(); return; }
     if (a('data-q') != null) { ui.q[a('data-q')] = t.value; render(); }
