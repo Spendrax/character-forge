@@ -893,6 +893,7 @@
       (d.resources.length ? '<div class="facts">' + d.resources.map(function (r) { return '<span><b>' + esc(r[0]) + '</b> ' + esc(r[1]) + '</span>'; }).join('') + '</div>' : '') +
       (d.attacks.length ? '<h3>Attacks</h3>' + attacksHtml(false) : '') +
       '<h3>Proficiencies</h3>' + list('Armor', p.armor) + list('Weapons', p.weapons) + list('Tools', p.tools) + list('Languages', p.languages) + list('Resistances', p.res) + list('Immunities', p.imm);
+    var keepH = h; h = '';
     if (d.casters.length) {
       h += '<h3>Spellcasting</h3>' + slotsHtml();
       d.casters.forEach(function (S) {
@@ -924,6 +925,7 @@
           : '<p>' + spellLink(x.name) + ' <small class="muted">(' + esc(from + ' · ' + how) + ')</small></p>';
       }).join('');
     }
+    var spellH = h; h = keepH; // spells go below both columns, after the skills
     var picks = d.choices.filter(function (c) { return /^(lin\.pick\d|sc\.[\w-]+\.variant)/.test(c.key) && c.picked.length; });
     if (picks.length) h += '<h3>Chosen options</h3>' + picks.map(function (c) { return '<p><b>' + esc(c.label) + ':</b> ' + esc(c.picked.join(', ')) + '</p>'; }).join('');
     d.classes.forEach(function (e) {
@@ -943,7 +945,7 @@
     [['traits', 'Personality traits'], ['ideals', 'Ideals'], ['bonds', 'Bonds'], ['flaws', 'Flaws'], ['appearance', 'Appearance'], ['backstory', 'Backstory'], ['other', 'Notes']].forEach(function (n) {
       if (ch.notes[n[0]]) h += '<h3>' + n[1] + '</h3><p style="white-space:pre-wrap">' + esc(ch.notes[n[0]]) + '</p>';
     });
-    return h + '</div></div><p class="small muted" style="margin-top:1rem">Rules summaries paraphrased from <a href="https://dnd5e.wikidot.com/" target="_blank" rel="noopener">dnd5e.wikidot.com</a> (CC BY-SA 3.0). Check the wiki or your books for full wording.</p></div>';
+    return h + '</div></div>' + (spellH ? '<div class="sheet-spells">' + spellH + '</div>' : '') + '<p class="small muted" style="margin-top:1rem">Rules summaries paraphrased from <a href="https://dnd5e.wikidot.com/" target="_blank" rel="noopener">dnd5e.wikidot.com</a> (CC BY-SA 3.0). Check the wiki or your books for full wording.</p></div>';
   }
   function totalTodo() { var n = 0; for (var k in d.todo) n += d.todo[k]; return n; }
 
