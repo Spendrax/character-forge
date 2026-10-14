@@ -327,6 +327,19 @@ const sw = fs.readFileSync(path.join(__dirname, '../sw.js'), 'utf8');
   for (let i = 0; i < 30; i++) { const h = T.roll({ kind: 'hoard', tier: 3 }, D.magicItems, rng); assert.ok(T.value(h) >= 12000); h.items.forEach(it => assert.ok(D.magicItems.some(x => x[0] === it.n && x[1].includes(it.r)))); }
 }
 
+{ // artificer Replicate Magic Item: pick items by level; each extra item uses an infusion known. Manual skill overrides.
+  const F = { official: 1, setting: 1, ua: 1, homebrew: 1 }, c = R.newChar(); c.classes = [{ cls: 'artificer', level: 6 }];
+  c.picks = { 'cls.artificer.infusions': ['Replicate Magic Item'], 'cls.artificer.replicate': ['Bag of Holding', 'Boots of Elvenkind', 'Boots of Speed'] };
+  let d = R.derive(c, F), inf = d.choices.find(x => x.key === 'cls.artificer.infusions'), rep = d.choices.find(x => x.key === 'cls.artificer.replicate');
+  assert.deepEqual(rep.picked, ['Bag of Holding', 'Boots of Elvenkind']); // Boots of Speed is 14th level
+  assert.equal(inf.count, D.classes.find(x => x.id === 'artificer').columns['Infusions Known'][5] - 1); assert.equal(rep.count, 2);
+  assert.ok(d.features.some(f => f.n === 'Bag of Holding')); assert.equal(R.replicable().length, 51);
+  c.picks['cls.artificer.infusions'] = []; assert.ok(!R.derive(c, F).choices.some(x => x.key === 'cls.artificer.replicate'));
+  const base = R.derive(c, F).skills; c.extra = { skills: { Arcana: 'exp', History: 'none' }, skillBonus: { Stealth: 2 } };
+  const s2 = R.derive(c, F).skills;
+  assert.ok(s2.Arcana.expertise && !s2.History.prof); assert.equal(s2.Stealth.total, base.Stealth.total + 2);
+}
+
 { // books: the free rules load, and the Markdown reader handles headings, tables and quotes
   require('../data/srd-book.js'); require('../js/books.js'); const B = globalThis.BooksUI, book = D.book || globalThis.DND.book;
   assert.ok(book.chapters.length >= 10); const all = book.chapters.flatMap(c => c.parts); assert.ok(all.length > 90);

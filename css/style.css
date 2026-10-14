@@ -220,6 +220,11 @@ canvas.avatar.figure.sheet-pic { width: 96px; height: 116px; }
 .extra-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: .5rem .8rem; margin-bottom: .6rem; }
 .extra-grid .field input { width: 100%; }
 .extra-skills { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: .3rem .8rem; }
+.skill-edit { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: .25rem 1.2rem; }
+.skill-row { display: grid; grid-template-columns: 2.2rem minmax(0, 1fr) 8.5rem 3.4rem; gap: .4rem; align-items: center; padding: .15rem 0; border-bottom: 1px solid var(--line, #0001); }
+.skill-row .v { font-weight: 700; text-align: right; }
+.skill-row.changed .v { color: var(--accent, #8b2a1f); }
+.skill-row select, .skill-row input { width: 100%; min-width: 0; }
 .limit-toggle { padding: .5rem .7rem; border: 1px dashed var(--line); border-radius: var(--radius); }
 .panel h4 { margin: 0 0 .5rem; }
 .imp-parts { display: grid; gap: .35rem; padding: .5rem .6rem; border-radius: var(--radius); background: var(--panel); border: 1px solid var(--line); }

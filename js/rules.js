@@ -168,6 +168,16 @@
   };
 
   // ---------- spell slots ----------
+  function ord(n) { return n + (n % 100 > 10 && n % 100 < 14 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th'); }
+  R.ord = ord;
+  // Artificer "Replicate Magic Item" tables (Tasha's Cauldron of Everything): [item, artificer level]
+  R.replicable = function () {
+    var L = { 2: 'Alchemy Jug|Bag of Holding|Cap of Water Breathing|Goggles of Night|Rope of Climbing|Sending Stones|Wand of Magic Detection|Wand of Secrets',
+      6: 'Boots of Elvenkind|Cloak of Elvenkind|Cloak of the Manta Ray|Eyes of Charming|Gloves of Thievery|Lantern of Revealing|Pipes of Haunting|Ring of Water Walking',
+      10: 'Boots of Striding and Springing|Boots of the Winterlands|Bracers of Archery|Brooch of Shielding|Cloak of Protection|Eyes of the Eagle|Gauntlets of Ogre Power|Gloves of Missile Snaring|Gloves of Swimming and Climbing|Hat of Disguise|Headband of Intellect|Helm of Telepathy|Medallion of Thoughts|Necklace of Adaptation|Periapt of Wound Closure|Pipes of the Sewers|Quiver of Ehlonna|Ring of Jumping|Ring of Mind Shielding|Slippers of Spider Climbing|Ventilating Lungs|Winged Boots',
+      14: 'Amulet of Health|Arcane Propulsion Arm|Belt of Hill Giant Strength|Boots of Levitation|Boots of Speed|Bracers of Defense|Cloak of the Bat|Dimensional Shackles|Gem of Seeing|Horn of Blasting|Ring of Free Action|Ring of Protection|Ring of the Ram' };
+    return [].concat.apply([], Object.keys(L).map(function (l) { return L[l].split('|').map(function (n) { return [n, +l]; }); }));
+  };
   R.slotsFor = function (kind, level) {
     if (kind === 'full') return D.fullCasterSlots[level - 1];
     if (kind === 'half') return level < 2 ? [] : D.fullCasterSlots[Math.ceil(level / 2) - 1];
@@ -278,7 +288,7 @@
       options.forEach(function (o) { if (!o.disabled) valid[o.v] = 1; });
       // a single pick replaces; with several to pick you may take more than the usual number (a warning says so)
       c.picked = arr(picks[key]).filter(function (v, i, all) { return valid[v] && all.indexOf(v) === i; });
-      if (count <= 1) c.picked = c.picked.slice(0, Math.max(0, count));
+      if (count <= 1 && !c.multi) c.picked = c.picked.slice(0, Math.max(0, count));
       c.missing = Math.max(0, count - c.picked.length);
       c.over = Math.max(0, c.picked.length - count);
       if (c.over) out.warnings.push(label + ': ' + c.picked.length + ' chosen, the usual number is ' + count + '. Fine if your game allows more.');
@@ -410,15 +420,24 @@
       var optList = function (list, textIdx, preIdx) {
         return list.map(function (x) { return { v: x[0], label: x[0], pre: preIdx != null ? x[preIdx] : '', t: x[textIdx] }; });
       };
-      var G = function (group) { return { group: group, clsId: cls.id }; };
+      var G = function (group) { return { group: group, clsId: cls.id, clv: clv }; };
       if (cls.id === 'warlock') {
         if (col('Invocations Known')) choice(K + 'invocations', 'class', 'Eldritch Invocations', col('Invocations Known'), optList(D.invocations, 2, 1), G('Eldritch Invocation'));
         if (clv >= 3) choice(K + 'boon', 'class', 'Pact Boon', 1, Object.keys(D.pactBoons).map(function (n) { return { v: n, label: n, t: D.pactBoons[n] }; }), G('Pact Boon'));
       }
       if (cls.id === 'sorcerer' && clv >= 3)
         choice(K + 'metamagic', 'class', 'Metamagic', steps(clv, [[3, 2], [10, 3], [17, 4]]), Object.keys(D.metamagic).map(function (n) { return { v: n, label: n, t: D.metamagic[n] }; }), G('Metamagic'));
-      if (cls.id === 'artificer' && col('Infusions Known'))
-        choice(K + 'infusions', 'class', 'Infusions Known', col('Infusions Known'), optList(D.infusions, 2, 1), G('Infusion'));
+      if (cls.id === 'artificer' && col('Infusions Known')) {
+        // each replicated item beyond the first uses up one more infusion known
+        var repLv = {}; R.replicable().forEach(function (r) { repLv[r[0]] = r[1]; });
+        var reps = own(K + 'infusions').indexOf('Replicate Magic Item') >= 0 ? own(K + 'replicate').filter(function (n) { return repLv[n] <= clv; }) : [];
+        choice(K + 'infusions', 'class', 'Infusions Known', col('Infusions Known') - Math.max(0, reps.length - 1), optList(D.infusions, 2, 1), G('Infusion'));
+        if (reps.length || own(K + 'infusions').indexOf('Replicate Magic Item') >= 0)
+          choice(K + 'replicate', 'class', 'Replicate Magic Item: which items', Math.max(1, reps.length), R.replicable().map(function (r) {
+            var x = D.magicItems.filter(function (i) { return i[0] === r[0] || (r[0] === 'Belt of Hill Giant Strength' && i[0] === 'Belt of Giant Strength'); })[0];
+            return { v: r[0], label: r[0], pre: ord(r[1]) + ' level', t: x ? x[2] + (x[3] ? ', requires attunement' : '') : 'Wondrous item', disabled: r[1] > clv, why: r[1] > clv ? 'from ' + ord(r[1]) + ' level' : '' };
+          }), Object.assign(G('Replicated item'), { multi: true, note: 'Pick one item each time you take this infusion. Each item after the first uses one more of your infusions known.' }));
+      }
       if (cls.id === 'blood-hunter' && col('Blood Curses Known'))
         choice(K + 'curses', 'class', 'Blood Curses', col('Blood Curses Known'), optList(D.bloodCurses, 2, 1), G('Blood Curse'));
       if (EXPERTISE[cls.id]) later2.push(function () {
@@ -680,7 +699,11 @@
     later2.forEach(function (fn) { fn(); });
     prof.languages = prof.languages.concat(xlist('languages')); prof.tools = prof.tools.concat(xlist('tools'));
     prof.armor = prof.armor.concat(xlist('armor')); prof.weapons = prof.weapons.concat(xlist('weapons'));
-    Object.keys(X.skills || {}).forEach(function (k) { if (!D.skills[k] || !X.skills[k]) return; prof.skills.push(k); if (X.skills[k] === 'exp') prof.expertise.push(k); });
+    Object.keys(X.skills || {}).forEach(function (k) {
+      var v = X.skills[k]; if (!D.skills[k] || !v) return;
+      if (v === 'none') { prof.skills = prof.skills.filter(function (x) { return x !== k; }); prof.expertise = prof.expertise.filter(function (x) { return x !== k; }); return; }
+      prof.skills.push(k); if (v === 'exp') prof.expertise.push(k); else if (v === 'prof') prof.expertise = prof.expertise.filter(function (x) { return x !== k; });
+    });
     (X.saves || []).forEach(function (a) { prof.saves.push(a); });
     ['armor', 'weapons', 'tools', 'languages', 'skills', 'expertise', 'saves', 'res', 'imm'].forEach(function (k) { prof[k] = uniq(prof[k]); });
     out.prof = prof;
@@ -709,7 +732,7 @@
     out.skills = {};
     Object.keys(D.skills).forEach(function (s) {
       var p = prof.skills.indexOf(s) >= 0, e = p && prof.expertise.indexOf(s) >= 0;
-      out.skills[s] = { ability: D.skills[s], prof: p, expertise: e, total: M(D.skills[s]) + (e ? pb * 2 : p ? pb : joat) };
+      out.skills[s] = { ability: D.skills[s], prof: p, expertise: e, total: M(D.skills[s]) + (e ? pb * 2 : p ? pb : joat) + (+(X.skillBonus || {})[s] || 0) };
     });
     out.passive = 10 + out.skills.Perception.total + hooks.passive + xn('passive');
     out.init = M('DEX') + hooks.init + joat + (L && L.initProf ? pb : 0) + xn('init');

@@ -101,13 +101,18 @@
       var sel = c.options.filter(function (o) { return o.v === c.picked[0]; })[0];
       if (sel && sel.t) body += '<p class="small">' + esc(sel.t) + '</p>';
     } else if (rich) {
-      var q = ui.q[c.key] || '';
-      var rows = c.options.filter(function (o) { return c.picked.indexOf(o.v) >= 0 || match(q, o.label + ' ' + o.t); }).map(function (o) {
+      var q = ui.q[c.key] || '', lvOf = function (o) { var m = String(o.pre || '').match(/(\d+)(?:st|nd|rd|th) level|^Level (\d+)/); return m ? +(m[1] || m[2]) : 0; };
+      var lvs = c.options.map(lvOf).filter(function (l, i, a) { return a.indexOf(l) === i; }).sort(function (a, b) { return a - b; });
+      var lf = lvs.length > 1 ? ui.q[c.key + ':lv'] || '' : '';
+      var lvOk = function (o) { return !lf || (lf === 'now' ? lvOf(o) <= (c.clv || 20) && !o.disabled : lvOf(o) === +lf); };
+      var rows = c.options.filter(function (o) { return c.picked.indexOf(o.v) >= 0 || (match(q, o.label + ' ' + o.t + ' ' + (o.pre || '')) && lvOk(o)); }).map(function (o) {
         var on = c.picked.indexOf(o.v) >= 0;
         return '<button type="button" class="opt' + (on ? ' on' : '') + '" data-act="pick" data-key="' + esc(c.key) + '" data-v="' + esc(o.v) + '"' + (o.disabled && !on ? ' disabled' : '') + '><b>' + esc(o.label) + '</b>' + (o.disabled && !on && o.why ? ' <small class="muted">— ' + esc(o.why) + '</small>' : '') +
           (o.pre ? ' <small class="muted">— requires ' + esc(o.pre) + '</small>' : '') + '<span>' + esc(o.t) + '</span></button>';
       }).join('');
-      body = (c.options.length > 12 ? '<div class="toolbar">' + search(c.key, 'Filter…') + '</div>' : '') + '<div class="optlist">' + rows + '</div>';
+      var lvPill = function (v, t) { return btn('optLv', t, { key: c.key, v: v }, 'pill small' + (lf === v ? ' on' : '')); };
+      body = (lvs.length > 1 ? '<div class="pills">' + lvPill('', 'All') + (c.clv ? lvPill('now', 'Can take at level ' + c.clv) : '') + lvs.map(function (l) { return lvPill(String(l), l ? R.ord(l) + ' level' : 'Any level'); }).join('') + '</div>' : '') +
+        (c.options.length > 12 ? '<div class="toolbar">' + search(c.key, 'Search name or text…') + '</div>' : '') + (c.note ? '<p class="small muted">' + esc(c.note) + '</p>' : '') + '<div class="optlist">' + (rows || '<p class="small muted">Nothing matches.</p>') + '</div>';
     } else {
       var lastPG = null;
       body = '<div class="pills">' + c.options.map(function (o) {
@@ -473,8 +478,14 @@
     h += '<div class="toolbar"><div class="pills">' + btn('mySpellsView', 'Ready to cast', { v: 'ready' }, 'pill' + (view === 'ready' ? ' on' : '')) +
       btn('mySpellsView', 'Everything' + (hidden ? ' (+' + hidden + ')' : ''), { v: 'all' }, 'pill' + (view === 'all' ? ' on' : '')) + '</div>' + search('myspells', 'Filter by name or school…') + '</div>';
     if (hidden && view === 'ready') h += '<p class="small muted">' + hidden + ' more in “Everything”: spellbook spells you haven’t prepared and lineage spells you get at a higher level.</p>';
+    // with spells from several places (two classes, or a class plus a lineage or feat), show where each comes from
+    var froms = d.casters.map(function (S) { return [S.clsId, S.name]; });
+    if (all.some(function (r) { return r.srcs.some(function (x) { return !x.cls; }); })) froms.push(['other', 'Lineage, feats and added']);
+    var from = froms.length > 1 && froms.some(function (f) { return f[0] === ui.mySpellsFrom; }) ? ui.mySpellsFrom : '';
+    if (froms.length > 1) h += '<div class="pills">' + btn('mySpellsFrom', 'All sources', { v: '' }, 'pill small' + (!from ? ' on' : '')) + froms.map(function (f) { return btn('mySpellsFrom', esc(f[1]), { v: f[0] }, 'pill small' + (from === f[0] ? ' on' : '')); }).join('') + '</div>';
+    var fromOk = function (r) { return !from || r.srcs.some(function (x) { return from === 'other' ? !x.cls : x.cls === from; }); };
     var q = ui.q.myspells || '';
-    var rows = all.filter(function (r) { return (view === 'all' || r.ready) && match(q, r.name + ' ' + (r.s ? r.s.school : '')); });
+    var rows = all.filter(function (r) { return (view === 'all' || r.ready) && fromOk(r) && match(q, r.name + ' ' + (r.s ? r.s.school : '')); });
     if (!all.length) h += '<p class="notice">No spells yet. Pick a spellcasting class and choose spells on the Spells step, take a lineage or feat that grants spells, or add one below.</p>';
     else if (!rows.length) h += '<p class="muted">No spells match.</p>';
     for (var l = 0; l <= 9; l++) {
@@ -492,7 +503,8 @@
     var s = r.s, open = ui.spellOpen && ui.spellOpen[r.name], text = open && s ? R.spellText(s.name) : '';
     var star = r.book && s && s.level ? '<button type="button" class="check' + (r.prepared ? ' on' : '') + '" title="' + (r.prepared ? 'Prepared — tap to unprepare' : 'Not prepared — tap to prepare') + '" aria-label="' + (r.prepared ? 'Unprepare ' : 'Prepare ') + esc(r.name) + '" data-act="spell" data-c="' + r.book.clsId + '" data-b="p" data-v="' + esc(r.name) + '">' + (r.prepared ? '★' : '☆') + '</button>' : '<span class="check-gap"></span>';
     var chips = r.srcs.map(function (x) {
-      var bits = [x.how, x.dc != null && (x.kind === 'lineage' || x.kind === 'feat') ? 'DC ' + x.dc + ' · ' + R.fmt(x.atk) : '', x.slots ? 'or with slots' : ''].filter(Boolean).join(', ');
+      var cs = x.cls && d.casters.length > 1 ? d.casters.filter(function (S) { return S.clsId === x.cls; })[0] : null; // multiclassed: each class has its own DC
+      var bits = [x.how, x.dc != null && (x.kind === 'lineage' || x.kind === 'feat') ? 'DC ' + x.dc + ' · ' + R.fmt(x.atk) : cs ? 'DC ' + cs.dc + ' · ' + R.fmt(cs.atk) : '', x.slots ? 'or with slots' : ''].filter(Boolean).join(', ');
       var tk = x.ready && (x.kind === 'lineage' || x.kind === 'feat') ? trk('inn:' + r.name) : null;
       return '<span class="src-chip' + (x.ready ? '' : ' later') + '">' + esc(x.label) + (bits ? ' · ' + esc(bits) : '') + '</span>' + (tk ? pipsHtml(tk) : '');
     }).join(' ');
@@ -862,17 +874,20 @@
       '<div class="panel"><h4>Extra bonuses</h4><p class="small muted">Added on top of everything the app works out. Use negative numbers for penalties.</p><div class="extra-grid">' +
       AB.map(function (a) { return num(a, D.abilityNames[a]); }).join('') + '</div><div class="extra-grid">' +
       num('ac', 'Armor class') + num('hp', 'Hit points') + num('speed', 'Speed (ft)') + num('init', 'Initiative') + num('passive', 'Passive Perception') + num('spellDC', 'Spell save DC') + num('spellAtk', 'Spell attack') + '</div></div>' +
-      '<div class="panel"><h4>Extra proficiencies</h4><div class="extra-skills">' + Object.keys(D.skills).map(function (k) {
-        var v = xs[k] || '', has = d.skills[k] && d.skills[k].prof && !v;
-        return '<label class="field"><span>' + esc(k) + (has ? ' <small class="muted">· already</small>' : '') + '</span><select data-extraskill="' + esc(k) + '"><option value="">—</option><option value="prof"' + (v === 'prof' ? ' selected' : '') + '>Proficient</option><option value="exp"' + (v === 'exp' ? ' selected' : '') + '>Expertise</option></select></label>';
-      }).join('') + '</div><p class="small" style="margin:.8rem 0 .3rem"><b>Saving throws</b></p><div class="pills">' + AB.map(function (a) {
+      '<div class="panel" id="skills-edit"><h4>Skills</h4><p class="small muted">Change any skill by hand. “Auto” keeps what your lineage, class, background and feats give. The bonus is added on top (an item, a blessing…).</p><div class="skill-edit">' + Object.keys(D.skills).map(function (k) {
+        var v = xs[k] || '', s = d.skills[k], b = +(X.skillBonus || {})[k] || 0, o = function (val, t) { return '<option value="' + val + '"' + (v === val ? ' selected' : '') + '>' + t + '</option>'; };
+        return '<div class="skill-row' + (v || b ? ' changed' : '') + '"><span class="v">' + R.fmt(s.total) + '</span><span class="nm">' + esc(k) + ' <small class="muted">' + s.ability + '</small></span>' +
+          '<select data-extraskill="' + esc(k) + '" aria-label="' + esc(k) + ' proficiency">' + o('', 'Auto' + (s.prof && !v ? (s.expertise ? ' · exp.' : ' · prof.') : '')) + o('none', 'Not proficient') + o('prof', 'Proficient') + o('exp', 'Expertise') + '</select>' +
+          '<input type="number" step="1" id="xs-' + esc(k) + '" data-skillbonus="' + esc(k) + '" value="' + b + '" aria-label="' + esc(k) + ' bonus"></div>';
+      }).join('') + '</div></div>' +
+      '<div class="panel"><h4>Extra proficiencies</h4><p class="small" style="margin:0 0 .3rem"><b>Saving throws</b></p><div class="pills">' + AB.map(function (a) {
         return '<label class="check-line" style="margin:0 .8rem 0 0"><input type="checkbox" data-extrasave="' + a + '"' + (saves.indexOf(a) >= 0 ? ' checked' : '') + '> ' + D.abilityNames[a] + '</label>';
       }).join('') + '</div><div class="row" style="margin-top:.6rem">' + txt('languages', 'Languages', 'e.g. Sylvan, Thieves\' Cant') + txt('tools', 'Tools', 'e.g. Herbalism kit') + '</div><div class="row">' + txt('armor', 'Armor', 'e.g. Heavy armor') + txt('weapons', 'Weapons', 'e.g. Martial weapons') + '</div></div>';
   }
 
   function stepSheet() {
     // skills sit right under the proficiencies, before the spells
-    var skillsH = '<div class="sheet-skills"><h3>Skills</h3><ul class="lines">' + Object.keys(d.skills).map(function (k) { var s = d.skills[k]; return '<li><span class="dot' + (s.expertise ? ' e' : s.prof ? ' p' : '') + '"></span><span class="v">' + R.fmt(s.total) + '</span><span>' + k + ' <small class="muted">' + s.ability + '</small></span></li>'; }).join('') + '</ul></div>';
+    var skillsH = '<div class="sheet-skills"><h3>Skills ' + btn('editSkills', 'Edit', {}, 'btn small noprint') + '</h3><ul class="lines">' + Object.keys(d.skills).map(function (k) { var s = d.skills[k]; return '<li><span class="dot' + (s.expertise ? ' e' : s.prof ? ' p' : '') + '"></span><span class="v">' + R.fmt(s.total) + '</span><span>' + k + ' <small class="muted">' + s.ability + '</small></span></li>'; }).join('') + '</ul></div>';
     var S = d.spell, p = d.prof;
     function list(label, a) { return a.length ? '<p><b>' + label + ':</b> ' + esc(a.join(', ')) + '</p>' : ''; }
     function group(kind, label, clsId) {
@@ -1042,6 +1057,7 @@
       var row = document.querySelector('.steps'), narrow = row && row.scrollWidth > row.clientWidth;
       window.scrollTo(0, narrow ? Math.max(0, row.getBoundingClientRect().top + window.pageYOffset - 6) : 0);
     }
+    if (ui.jumpTo) { var jt = document.getElementById(ui.jumpTo); ui.jumpTo = null; if (jt) jt.scrollIntoView({ block: 'start' }); }
     drawAvatars();
     if (fid) { var el = document.getElementById(fid); if (el) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } try { if (pos != null) el.setSelectionRange(pos, pos); } catch (e) { /* not a text field */ } } }
     document.title = title(ch) + ' — Character Forge';
@@ -1103,6 +1119,7 @@
   var actions = {
     section: function (v) { ui.section = v; window.scrollTo(0, 0); },
     openChar: function (v) { store.current = v; ui.section = 'chars'; ch = byId(v); openMode(); window.scrollTo(0, 0); },
+    editSkills: function () { ui.mode = 'build'; ui.step = 'details'; ui.jumpTo = 'skills-edit'; },
     editChar: function () { ui.mode = 'build'; ui.step = 'lineage'; ui.scrollToStep = true; },
     donePlay: function () { ui.mode = 'play'; ui.step = 'play'; ui.scrollToStep = true; },
     levelUp: function () {
@@ -1194,11 +1211,13 @@
     roll: function () { AB.forEach(function (a) { var r = [0, 0, 0, 0].map(function () { return 1 + Math.floor(Math.random() * 6); }).sort(); ch.base[a] = r[1] + r[2] + r[3]; }); },
     hp: function (v) { ch.hpMode = v; if (v === 'manual' && !ch.hpManual) ch.hpManual = d.hpAvg; },
     asimode: function (v, el) { ch.asi[el.getAttribute('data-slot')] = v; },
+    mySpellsFrom: function (v) { ui.mySpellsFrom = v; },
+    optLv: function (v, el) { ui.q[el.getAttribute('data-key') + ':lv'] = v; },
     pick: function (v, el) {
       var key = el.getAttribute('data-key'), c = d.choices.filter(function (x) { return x.key === key; })[0];
       if (!c) return;
       var cur = c.picked.slice(), i = cur.indexOf(v);
-      if (i >= 0) cur.splice(i, 1); else if (c.count === 1) cur = [v]; else cur.push(v); // going over the usual number only warns
+      if (i >= 0) cur.splice(i, 1); else if (c.count === 1 && !c.multi) cur = [v]; else cur.push(v); // going over the usual number only warns
       ch.picks[key] = cur;
     },
     trackAdj: function (v, el) {
@@ -1417,6 +1436,7 @@
     else if (a('data-hpmanual')) { if (t.checked) { ch.hpMode = 'manual'; if (!ch.hpManual) ch.hpManual = d.hpAvg; } else ch.hpMode = 'avg'; }
     else if (a('data-extra')) { ch.extra = ch.extra || {}; var xv = Math.round(+t.value) || 0; if (xv) ch.extra[a('data-extra')] = xv; else delete ch.extra[a('data-extra')]; }
     else if (a('data-extratext')) { ch.extra = ch.extra || {}; ch.extra[a('data-extratext')] = t.value.trim(); }
+    else if (a('data-skillbonus')) { ch.extra = ch.extra || {}; var sb = ch.extra.skillBonus = ch.extra.skillBonus || {}; if (+t.value) sb[a('data-skillbonus')] = +t.value; else delete sb[a('data-skillbonus')]; }
     else if (a('data-extraskill')) { ch.extra = ch.extra || {}; ch.extra.skills = ch.extra.skills || {}; if (t.value) ch.extra.skills[a('data-extraskill')] = t.value; else delete ch.extra.skills[a('data-extraskill')]; }
     else if (a('data-extrasave')) { ch.extra = ch.extra || {}; var sv = (ch.extra.saves || []).filter(function (x) { return x !== a('data-extrasave'); }); if (t.checked) sv.push(a('data-extrasave')); ch.extra.saves = sv; }
     else if (a('data-addweapon')) { if (t.value && ch.weapons.indexOf(t.value) < 0) ch.weapons.push(t.value); }
