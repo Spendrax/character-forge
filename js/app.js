@@ -1087,7 +1087,7 @@
       window.scrollTo(0, narrow ? Math.max(0, row.getBoundingClientRect().top + window.pageYOffset - 6) : 0);
     }
     if (ui.jumpTo) { var jt = document.getElementById(ui.jumpTo); ui.jumpTo = null; if (jt) jt.scrollIntoView({ block: 'start' }); }
-    drawAvatars();
+    drawAvatars(); AUD.after();
     if (fid) { var el = document.getElementById(fid); if (el) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } try { if (pos != null) el.setSelectionRange(pos, pos); } catch (e) { /* not a text field */ } } }
     document.title = title(ch) + ' — Character Forge';
     saveNow();
@@ -1095,7 +1095,7 @@
 
   // ---------- sections: the home page and the monsters ----------
   function sectionNav() {
-    return '<nav class="sections" aria-label="Sections">' + [['home', '⌂ Home'], ['chars', 'Characters'], ['monsters', 'Monsters'], ['encounters', 'Encounters'], ['treasure', 'Treasures'], ['books', 'Books'], ['rules', 'House rules']].map(function (x) {
+    return '<nav class="sections" aria-label="Sections">' + [['home', '⌂ Home'], ['chars', 'Characters'], ['monsters', 'Monsters'], ['encounters', 'Encounters'], ['treasure', 'Treasures'], ['books', 'Books'], ['audio', 'Audio'], ['rules', 'House rules']].map(function (x) {
       return '<button type="button" class="sec' + (ui.section === x[0] ? ' on' : '') + '" data-act="section" data-v="' + x[0] + '"' + (ui.section === x[0] ? ' aria-current="page"' : '') + '>' + x[1] + '</button>';
     }).join('') + '</nav>';
   }
@@ -1113,6 +1113,7 @@
       tile('encounters', '⚔︎', 'Encounters', 'Build a fight for your party, see how hard it is (2014 rules), roll a random one, then run it with initiative and hit points.') +
       tile('treasure', '💰', 'Treasures', 'Quick random loot after a fight: a few coins for bandits, a hoard with gems and magic items for a boss.') +
       tile('books', '📚', 'Books', 'Every class, race, background, feat and spell, plus the official free rules for play and magic items, all searchable. Add your own books (PDF) too, kept on your device.') +
+      tile('audio', '🎵', 'Audio', 'Music by mood for the table: tavern, dungeon, combat… Find it on Spotify or Qobuz and keep your own playlists for each mood.') +
       tile('rules', '📜', 'House rules', 'Your table’s own rules, written down and quick to find during a game.') +
       tile('monsters', '🐉', 'Monsters', 'Every monster from the 2014 SRD with its full stat block, searchable by name, type, size and challenge, with dice you can roll. Add your own too.') +
       '</div></main>';
@@ -1134,13 +1135,14 @@
     var keep = scrollState();
     var top = '<header class="top">' + btn('section', 'Character Forge', { v: 'home' }, 'brand linkish') + sectionNav() + '<span class="spacer"></span>' +
       '<button type="button" class="btn" data-act="undo" title="Undo (Ctrl+Z)"' + (undoStack.length ? '' : ' disabled') + '>↶ Undo</button>' + (isInstalledApp() ? '' : btn('install', 'Install app', {}, installPrompt ? 'btn primary' : 'btn')) + '</header>';
-    var body = ui.section === 'monsters' ? '<main class="mon-main">' + MON.html() + '</main>' : ui.section === 'encounters' ? ENC.html() : ui.section === 'treasure' ? TRE.html() : ui.section === 'books' ? BOOKS.html() : ui.section === 'rules' ? rulesHtml() : homeHtml();
+    var body = ui.section === 'monsters' ? '<main class="mon-main">' + MON.html() + '</main>' : ui.section === 'encounters' ? ENC.html() : ui.section === 'treasure' ? TRE.html() : ui.section === 'books' ? BOOKS.html() : ui.section === 'audio' ? AUD.html() : ui.section === 'rules' ? rulesHtml() : homeHtml();
     document.getElementById('app').innerHTML = top + installHelpHtml() + body;
     if (ui.mon && ui.mon.scrollTop) { ui.mon.scrollTop = false; var r = document.querySelector('.mon-right'); if (r && window.innerWidth < 800) r.scrollIntoView(); else window.scrollTo(0, 0); }
     else restoreScroll(keep);
     if (ui.section === 'books') BOOKS.after();
+    AUD.after();
     if (fid) { var el = document.getElementById(fid); if (el) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } try { if (pos != null) el.setSelectionRange(pos, pos); } catch (e) { /* not text */ } } }
-    document.title = (ui.section === 'monsters' ? 'Monsters' : ui.section === 'encounters' ? 'Encounters' : ui.section === 'treasure' ? 'Treasures' : ui.section === 'books' ? 'Books' : ui.section === 'rules' ? 'House rules' : 'Home') + ' — Character Forge';
+    document.title = (ui.section === 'monsters' ? 'Monsters' : ui.section === 'encounters' ? 'Encounters' : ui.section === 'treasure' ? 'Treasures' : ui.section === 'books' ? 'Books' : ui.section === 'audio' ? 'Audio' : ui.section === 'rules' ? 'House rules' : 'Home') + ' — Character Forge';
     saveNow();
   }
 
@@ -1402,6 +1404,8 @@
   Object.keys(MON.actions).forEach(function (k) { actions[k] = MON.actions[k]; });
   var BOOKS = window.BooksUI({ esc: esc, btn: btn, ui: ui, store: store, render: render });
   Object.keys(BOOKS.actions).forEach(function (k) { actions[k] = BOOKS.actions[k]; });
+  var AUD = window.AudioUI({ esc: esc, btn: btn, ui: ui, store: store });
+  Object.keys(AUD.actions).forEach(function (k) { actions[k] = AUD.actions[k]; });
   var TRE = window.TreasureUI({ esc: esc, btn: btn, ui: ui, store: store });
   Object.keys(TRE.actions).forEach(function (k) { actions[k] = TRE.actions[k]; });
   var ENC = window.EncounterUI({ esc: esc, btn: btn, ui: ui, store: store, render: render, MON: MON, R: R,
@@ -1418,6 +1422,7 @@
   document.addEventListener('input', function (e) {
     var t = e.target, a = function (n) { return t.getAttribute(n); };
     if (ui.section === 'books') { var bk = BOOKS.onInput(t); if (bk === 'render') render(); if (bk) return; }
+    if (ui.section === 'audio') { var au = AUD.onInput(t); if (au === 'render') render(); if (au) return; }
     if (ui.section === 'treasure') { var tr = TRE.onInput(t); if (tr === 'render') render(); else if (tr) save(); if (tr) return; }
     if (ui.section === 'encounters') { var er = ENC.onInput(t); if (er === 'render') render(); else if (er) save(); if (er) return; }
     if (a('data-mon') != null || a('data-mymon') != null) { var mr = MON.onInput(t); if (mr === 'render') render(); else save(); return; }

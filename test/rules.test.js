@@ -340,6 +340,14 @@ const sw = fs.readFileSync(path.join(__dirname, '../sw.js'), 'utf8');
   assert.ok(s2.Arcana.expertise && !s2.History.prof); assert.equal(s2.Stealth.total, base.Stealth.total + 2);
 }
 
+{ // audio: Spotify links become in-app players; only https links are kept
+  require('../js/audio.js'); const AU = globalThis.AudioUI;
+  assert.equal(AU.spotifyEmbed('https://open.spotify.com/playlist/37i9dQZF1DX?si=abc'), 'https://open.spotify.com/embed/playlist/37i9dQZF1DX');
+  assert.equal(AU.spotifyEmbed('https://open.spotify.com/intl-fr/album/1A2b'), 'https://open.spotify.com/embed/album/1A2b');
+  assert.equal(AU.spotifyEmbed('https://open.qobuz.com/playlist/123'), '');
+  assert.equal(AU.cleanUrl('javascript:alert(1)'), ''); assert.equal(AU.cleanUrl('http://x.com'), ''); assert.ok(AU.cleanUrl(' https://open.qobuz.com/playlist/1 '));
+}
+
 { // books: the free rules load, and the Markdown reader handles headings, tables and quotes
   require('../data/srd-book.js'); require('../js/books.js'); const B = globalThis.BooksUI, book = D.book || globalThis.DND.book;
   assert.ok(book.chapters.length >= 10); const all = book.chapters.flatMap(c => c.parts); assert.ok(all.length > 90);
