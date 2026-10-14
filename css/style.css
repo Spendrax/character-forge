@@ -480,5 +480,8 @@ html { overflow-anchor: none; } /* the app restores scroll itself after each red
   .bk-page { padding: .8rem .9rem; }
 }
 
-.notes-big { min-height: 60vh; width: 100%; font: inherit; line-height: 1.5; }
+.notes-big { min-height: 35vh; width: 100%; font: inherit; line-height: 1.5; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.notes-mid { min-height: 30vh; width: 100%; font: inherit; line-height: 1.5; margin: .4rem 0; }
+.note summary { cursor: pointer; display: flex; flex-wrap: wrap; gap: .3rem .5rem; align-items: baseline; }
+.note-peek { flex-basis: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

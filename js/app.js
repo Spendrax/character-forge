@@ -885,10 +885,34 @@
       }).join('') + '</div><div class="row" style="margin-top:.6rem">' + txt('languages', 'Languages', 'e.g. Sylvan, Thieves\' Cant') + txt('tools', 'Tools', 'e.g. Herbalism kit') + '</div><div class="row">' + txt('armor', 'Armor', 'e.g. Heavy armor') + txt('weapons', 'Weapons', 'e.g. Martial weapons') + '</div></div>';
   }
 
-  // Notes kept during play: sessions, NPCs, quests, loot… Saved with the character.
+  // Notes kept during play: write one, give it a title and a category, save it; saved notes can be filtered, searched and edited.
+  var NOTE_CATS = ['Session', 'People', 'Places', 'Quests', 'Loot', 'Lore', 'Other'];
   function stepNotes() {
-    return '<h2>Notes</h2><p class="muted">Anything you want to keep track of while playing: sessions, people you met, quests, clues. Saved with this character.</p>' +
-      '<label class="field"><span class="sr-only">Notes</span><textarea id="f-session" class="notes-big" data-text="notes.session" placeholder="Session 1 — …">' + esc(ch.notes.session || '') + '</textarea></label>';
+    var J = ch.journal || [], N = ch.notes, f = ui.noteCat || '', q = ui.q.notes || '';
+    var cats = NOTE_CATS.concat(J.map(function (n) { return n.c; }).filter(function (c, i, a) { return c && NOTE_CATS.indexOf(c) < 0 && a.indexOf(c) === i; }));
+    var dl = '<datalist id="note-cats">' + cats.map(function (c) { return '<option value="' + esc(c) + '">'; }).join('') + '</datalist>';
+    var h = '<h2>Notes</h2><p class="muted">Write a note, give it a title and a category, then save it. Saved notes are below, easy to filter and search. Saved with this character.</p>' + dl +
+      '<div class="panel"><div class="row"><label class="field"><span>Title</span><input type="text" id="f-draftTitle" data-text="notes.draftTitle" value="' + esc(N.draftTitle || '') + '" placeholder="e.g. Session 3, Captain Varo"></label>' +
+      '<label class="field"><span>Category</span><input type="text" id="f-draftCat" list="note-cats" data-text="notes.draftCat" value="' + esc(N.draftCat || '') + '" placeholder="Pick below or type your own"></label></div>' +
+      '<div class="pills">' + cats.map(function (c) { return btn('draftCat', esc(c), { v: c }, 'pill small' + (N.draftCat === c ? ' on' : '')); }).join('') + '</div>' +
+      '<label class="field"><span>Note</span><textarea id="f-session" class="notes-big" data-text="notes.session" placeholder="What happened, who you met…">' + esc(N.session || '') + '</textarea></label>' +
+      '<div class="toolbar">' + btn('saveNote', 'Save note', {}, 'btn primary') + '</div></div>';
+    if (!J.length) return h + '<p class="muted small">No saved notes yet.</p>';
+    var used = cats.filter(function (c) { return J.some(function (n) { return (n.c || 'Other') === c; }); });
+    var rows = J.filter(function (n) { return (!f || (n.c || 'Other') === f) && match(q, n.t + ' ' + n.c + ' ' + n.x); }).slice().reverse();
+    h += '<h3>Saved notes (' + J.length + ')</h3><div class="pills">' + btn('noteCat', 'All', { v: '' }, 'pill small' + (!f ? ' on' : '')) +
+      used.map(function (c) { var n = J.filter(function (x) { return (x.c || 'Other') === c; }).length; return btn('noteCat', esc(c) + ' ' + n, { v: c }, 'pill small' + (f === c ? ' on' : '')); }).join('') + '</div>' +
+      '<div class="toolbar">' + search('notes', 'Search notes…') + '</div>';
+    if (!rows.length) return h + '<p class="muted">No notes match.</p>';
+    return h + '<div class="note-list">' + rows.map(function (n) {
+      var open = ui.noteOpen === n.id;
+      return '<details class="panel note"' + (open ? ' open' : '') + '><summary data-act="noteOpen" data-v="' + n.id + '"><b>' + esc(n.t || 'Untitled') + '</b> <span class="tag">' + esc(n.c || 'Other') + '</span> <span class="small muted">' + esc(n.at || '') + '</span>' +
+        (open ? '' : '<span class="small muted note-peek">' + esc(String(n.x || '').slice(0, 90)) + '</span>') + '</summary>' +
+        '<div class="row"><label class="field"><span>Title</span><input type="text" id="jn-' + n.id + '-t" data-jnote="' + n.id + '" data-f="t" value="' + esc(n.t || '') + '"></label>' +
+        '<label class="field"><span>Category</span><input type="text" id="jn-' + n.id + '-c" list="note-cats" data-jnote="' + n.id + '" data-f="c" value="' + esc(n.c || '') + '"></label></div>' +
+        '<textarea id="jn-' + n.id + '-x" class="notes-mid" data-jnote="' + n.id + '" data-f="x">' + esc(n.x || '') + '</textarea>' +
+        '<div class="toolbar">' + btn('rmNote', 'Delete note', { v: n.id }, 'btn small danger') + '</div></details>';
+    }).join('') + '</div>';
   }
   function stepSheet() {
     // skills sit right under the proficiencies, before the spells
@@ -1216,6 +1240,15 @@
     roll: function () { AB.forEach(function (a) { var r = [0, 0, 0, 0].map(function () { return 1 + Math.floor(Math.random() * 6); }).sort(); ch.base[a] = r[1] + r[2] + r[3]; }); },
     hp: function (v) { ch.hpMode = v; if (v === 'manual' && !ch.hpManual) ch.hpManual = d.hpAvg; },
     asimode: function (v, el) { ch.asi[el.getAttribute('data-slot')] = v; },
+    saveNote: function () {
+      var N = ch.notes; if (!String(N.session || '').trim() && !String(N.draftTitle || '').trim()) return;
+      ch.journal = (ch.journal || []).concat([{ id: 'n' + Date.now().toString(36), t: String(N.draftTitle || '').trim() || String(N.session).trim().split('\n')[0].slice(0, 40), c: String(N.draftCat || '').trim() || 'Other', x: N.session || '', at: new Date().toISOString().slice(0, 10) }]);
+      N.session = ''; N.draftTitle = ''; N.draftCat = ''; ui.noteCat = '';
+    },
+    noteCat: function (v) { ui.noteCat = v; },
+    draftCat: function (v) { ch.notes.draftCat = v; },
+    noteOpen: function (v) { ui.noteOpen = ui.noteOpen === v ? null : v; },
+    rmNote: function (v) { ch.journal = (ch.journal || []).filter(function (n) { return n.id !== v; }); },
     mySpellsFrom: function (v) { ui.mySpellsFrom = v; },
     optLv: function (v, el) { ui.q[el.getAttribute('data-key') + ':lv'] = v; },
     pick: function (v, el) {
@@ -1393,6 +1426,7 @@
     else if (a('data-trk')) { var TT = ch.track = ch.track || {}, nv = Math.max(0, Math.round(+t.value) || 0); if (a('data-trk') === 'hp') TT.hp = nv >= d.hp ? null : nv; else TT.temp = nv; save(); }
     else if (a('data-ctr') && t.tagName === 'INPUT') { var cx = (ch.counters || []).filter(function (c) { return c.id === a('data-ctr'); })[0]; if (cx) { cx[a('data-f')] = a('data-f') === 'max' ? Math.max(1, Math.min(99, Math.round(+t.value) || 1)) : t.value; save(); } }
     else if (a('data-rule')) { var ru = (store.rules || []).filter(function (r) { return r.id === a('data-rule'); })[0]; if (ru) { ru[a('data-f')] = t.value; save(); } }
+    else if (a('data-jnote')) { var jn = (ch.journal || []).filter(function (x) { return x.id === a('data-jnote'); })[0]; if (jn) { jn[a('data-f')] = t.value; save(); } }
     else if (a('data-espell')) { var esx = (ch.extraSpells || []).filter(function (x) { return x.id === a('data-espell'); })[0]; if (esx) { esx[a('data-f')] = t.value; save(); } }
     else if (a('data-itemtext')) { var itx = ch.items.filter(function (i) { return i.id === a('data-itemtext'); })[0]; if (itx) { itx.note = t.value; save(); } }
     else if ((a('data-carmor') || a('data-cweapon')) && t.tagName === 'INPUT' && t.type !== 'checkbox') { applyCustomField(t); save(); }

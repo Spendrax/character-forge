@@ -21,7 +21,7 @@
       spells: {},
       armor: '', shield: false, weapons: [], eq: {}, gear: '', items: [], money: { pp: 0, gp: 0, ep: 0, sp: 0, cp: 0 },
       hpMode: 'avg', hpManual: 0,
-      notes: { traits: '', ideals: '', bonds: '', flaws: '', appearance: '', backstory: '', other: '', session: '' }
+      notes: { traits: '', ideals: '', bonds: '', flaws: '', appearance: '', backstory: '', other: '', session: '', draftTitle: '', draftCat: '' }
     };
   };
 
