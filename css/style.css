@@ -495,7 +495,8 @@ html { overflow-anchor: none; } /* the app restores scroll itself after each red
 .audio-item.on { border-color: var(--accent); }
 .audio-item .spacer { flex: 1; }
 .audio-dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 16; display: flex; align-items: center; gap: .4rem; padding: 0 .4rem; background: var(--panel); }
-.audio-dock:empty { display: none; }
-.audio-dock iframe { flex: 1; min-width: 0; border: 0; border-radius: 12px; height: 80px; }
+.audio-dock:not(.on) { display: none; }
+.audio-frame { flex: 1; min-width: 0; }
+.audio-dock iframe { width: 100%; border: 0; border-radius: 12px; height: 80px; display: block; }
 body.has-dock::after { content: ""; display: block; height: 90px; }
 .audio-main a.btn, .audio-item a.btn { text-decoration: none; }

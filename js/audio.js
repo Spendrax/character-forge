@@ -56,14 +56,37 @@
       if (!el) { el = document.createElement('div'); el.id = 'audio-dock'; el.className = 'audio-dock noprint'; document.body.appendChild(el); }
       return el;
     }
+    // Spotify's iFrame API lets the app start the music itself and switch playlists without rebuilding the player.
+    // If it can't load (offline, blocked), the plain player is used and you tap ▶ in it.
+    var api = null, ctl = null, apiState = '';
+    function loadApi(done) {
+      if (api) return done(api);
+      if (apiState === 'failed') return done(null);
+      var prev = root.onSpotifyIframeApiReady;
+      root.onSpotifyIframeApiReady = function (A) { api = A; apiState = 'ready'; if (prev) try { prev(A); } catch (e) { /* ignore */ } done(A); };
+      if (apiState) return; apiState = 'loading';
+      var sc = document.createElement('script'); sc.src = 'https://open.spotify.com/embed/iframe-api/v1'; sc.async = true;
+      sc.onerror = function () { apiState = 'failed'; done(null); };
+      document.head.appendChild(sc);
+    }
+    function uriOf(u) { var m = spotifyEmbed(u).match(/embed\/(\w+)\/(\w+)/); return m ? 'spotify:' + m[1] + ':' + m[2] : ''; }
     function drawDock() {
       var el = dock(), src = playing ? spotifyEmbed(playing.u) : '';
-      if (el.getAttribute('data-src') === src) return place();
-      el.setAttribute('data-src', src);
-      el.innerHTML = src ? '<iframe title="Spotify player" src="' + esc(src) + '?utm_source=generator&theme=0" height="80" loading="lazy" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>' +
-        '<button type="button" class="btn small audio-close" data-act="audStop" aria-label="Close the player">✕</button>' : '';
       document.body.classList.toggle('has-dock', !!src);
+      el.classList.toggle('on', !!src);
+      if (!el.firstChild) el.innerHTML = '<div class="audio-frame"><div id="spotify-embed"></div></div><button type="button" class="btn small audio-close" data-act="audStop" aria-label="Close the player">✕</button>';
       place();
+      if (!src) { el.removeAttribute('data-src'); if (ctl) try { ctl.pause(); } catch (e) { /* not ready */ } return; }
+      if (el.getAttribute('data-src') === src) return;
+      el.setAttribute('data-src', src);
+      loadApi(function (A) {
+        if (!playing || spotifyEmbed(playing.u) !== src) return; // changed meanwhile
+        if (A && ctl) { ctl.loadUri(uriOf(playing.u)); ctl.play(); return; }
+        if (A) return A.createController(document.getElementById('spotify-embed'), { uri: uriOf(playing.u), width: '100%', height: 80 }, function (c) {
+          ctl = c; c.addListener('ready', function () { c.play(); });
+        });
+        el.querySelector('.audio-frame').innerHTML = '<iframe title="Spotify player" src="' + esc(src) + '?utm_source=generator&theme=0" height="80" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>';
+      });
     }
     function place() { var m = document.querySelector('.mini-bar'), h = m && root.getComputedStyle(m).display !== 'none' ? m.offsetHeight : 0; dock().style.bottom = h + 'px'; }
 
@@ -76,7 +99,7 @@
     function html() {
       var mood = MOODS.filter(function (m) { return m[0] === S.mood; })[0] || MOODS[0], lists = A().lists;
       var sr = searches(mood), mine = lists[mood[0]] || [], picks = (PICKS[mood[0]] || []).map(function (p) { return { u: PL + p[0], t: p[1] }; });
-      var h = '<main class="mon-main audio-main"><h2>Audio</h2><p class="muted">Pick a mood, then ▶ Play here: the player opens at the bottom and keeps going while you use the rest of the app. Tap ▶ inside it to start.</p>';
+      var h = '<main class="mon-main audio-main"><h2>Audio</h2><p class="muted">Pick a mood, then ▶ Play here: the music starts in the player at the bottom and keeps going while you use the rest of the app. Switching playlists starts the new one right away.</p>';
       h += '<div class="audio-moods">' + MOODS.map(function (m) {
         var n = (lists[m[0]] || []).length;
         return '<button type="button" class="audio-mood' + (m[0] === mood[0] ? ' on' : '') + '" data-act="audMood" data-v="' + m[0] + '"><span aria-hidden="true">' + m[2] + '</span> ' + esc(m[1]) + (n ? ' <small>+' + n + '</small>' : '') + '</button>';
