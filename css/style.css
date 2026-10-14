@@ -479,3 +479,6 @@ html { overflow-anchor: none; } /* the app restores scroll itself after each red
   .bk-tocbtn { display: inline-block; }
   .bk-page { padding: .8rem .9rem; }
 }
+
+.notes-big { min-height: 60vh; width: 100%; font: inherit; line-height: 1.5; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

@@ -3,7 +3,7 @@
   'use strict';
   var D = window.DND, R = window.Rules, AB = D.abilities;
   var KEY = 'character-forge.v1';
-  var STEPS = [['lineage', 'Lineage'], ['class', 'Class'], ['abilities', 'Abilities'], ['background', 'Background'], ['spells', 'Spells'], ['myspells', 'My spells'], ['equipment', 'Equipment'], ['items', 'Items'], ['appearance', 'Appearance'], ['details', 'Details'], ['sheet', 'Sheet'], ['play', 'Session']];
+  var STEPS = [['lineage', 'Lineage'], ['class', 'Class'], ['abilities', 'Abilities'], ['background', 'Background'], ['spells', 'Spells'], ['myspells', 'My spells'], ['equipment', 'Equipment'], ['items', 'Items'], ['appearance', 'Appearance'], ['details', 'Details'], ['sheet', 'Sheet'], ['notes', 'Notes'], ['play', 'Session']];
   var TAGS = [['official', 'Official'], ['setting', 'Setting books'], ['ua', 'Unearthed Arcana'], ['homebrew', 'Homebrew']];
 
   var store = { chars: [], current: '', detail: true, filters: { official: true, setting: true, ua: true, homebrew: true } };
@@ -392,7 +392,7 @@
 
   function stepSpells() {
     var h = '<h2>Spells</h2>' + partImportHtml('spells');
-    if (!d.casters.length) return h + '<p class="notice">' + (d.cls ? 'This character has no class spellcasting yet.' : 'Pick a class first.') + (d.innate.length ? ' Spells from your lineage or feats are on ' + btn('step', 'My spells', { v: 'myspells' }, 'linkbtn') + '.' : '') + '</p>';
+    if (!d.casters.length) return h + '<p class="notice">' + (d.cls ? 'This character has no class spellcasting yet.' : 'Pick a class first.') + (d.innate.length ? ' Spells from your lineage or feats are on ' + btn('step', 'My spells', { v: 'myspells' }, 'linkbtn') + '.' : '') + '</p>' + extraSpellsHtml();
 
     if (!d.casters.some(function (s) { return s.clsId === ui.casterTab; })) ui.casterTab = d.casters[0].clsId;
     h += slotsHtml();
@@ -430,7 +430,7 @@
         '<div><b class="spell-name">' + foldBtn(s.name, open) + spellLink(s.name) + '</b>' + (s.conc ? ' <span class="tag">conc</span>' : '') + tag(s.tag) +  ' <span class="small muted">' + esc(spellMeta(s)) + ' · ' + esc(s.comp) + '</span>' +
         (text ? '<div class="small">' + esc(text) + '</div>' : '') + '</div></div>';
     }).join('') + '</div>' + (rows.length ? '' : '<p class="muted">No spells match.</p>');
-    return h + '<p class="small muted">' + (book ? '✓ in your spellbook · ★ prepared. ' : '') + 'Spell names link to the full text on the wiki.</p>';
+    return h + '<p class="small muted">' + (book ? '✓ in your spellbook · ★ prepared. ' : '') + 'Spell names link to the full text on the wiki.</p>' + extraSpellsHtml();
   }
   // Everything the character can cast in one place: class spells (prepared, known or in the spellbook),
   // always-prepared subclass spells, lineage and feat spells, and spells the player added from elsewhere.
@@ -462,7 +462,7 @@
     return order.map(function (k) { return rows[k]; });
   }
   function stepMySpells() {
-    var h = '<h2>My spells</h2><p class="muted">Every spell this character can cast, gathered from the Spells step, the lineage, feats and anything you add below. Pick and change class spells on the Spells step.</p>';
+    var h = '<h2>My spells</h2><p class="muted">Every spell this character can cast, gathered from the Spells step, the lineage, feats and Other spells. Pick, change or add spells on the Spells step (✎ Edit character).</p>';
     if (d.trackers.some(function (x) { return x.group === 'slots' || x.group === 'spells'; })) h += restBarHtml() + '<p class="small muted">Tap a box beside a spell level to use a slot, tap an empty one to get it back. The Session page tracks hit points and class abilities too.</p>';
     var all = mySpellRows(), view = ui.mySpellsView || 'ready';
     var hidden = all.filter(function (r) { return !r.ready; }).length;
@@ -486,7 +486,7 @@
     var fromOk = function (r) { return !from || r.srcs.some(function (x) { return from === 'other' ? !x.cls : x.cls === from; }); };
     var q = ui.q.myspells || '';
     var rows = all.filter(function (r) { return (view === 'all' || r.ready) && fromOk(r) && match(q, r.name + ' ' + (r.s ? r.s.school : '')); });
-    if (!all.length) h += '<p class="notice">No spells yet. Pick a spellcasting class and choose spells on the Spells step, take a lineage or feat that grants spells, or add one below.</p>';
+    if (!all.length) h += '<p class="notice">No spells yet. Pick a spellcasting class and choose spells on the Spells step, take a lineage or feat that grants spells, or add one under Other spells on the Spells step.</p>';
     else if (!rows.length) h += '<p class="muted">No spells match.</p>';
     for (var l = 0; l <= 9; l++) {
       var at = rows.filter(function (r) { return (r.s ? r.s.level : 0) === l; }).sort(function (a, b) { return a.name < b.name ? -1 : 1; });
@@ -497,7 +497,7 @@
       h += '<div class="optlist my-spells" style="max-height:none">' + at.map(mySpellRowHtml).join('') + '</div>';
     }
     h += '<p class="small muted">' + (all.some(function (r) { return r.book; }) ? '★ prepared · ☆ in your spellbook, not prepared (tap to prepare). ' : '') + 'Spell names link to the full text on the wiki.</p>';
-    return h + extraSpellsHtml();
+    return h;
   }
   function mySpellRowHtml(r) {
     var s = r.s, open = ui.spellOpen && ui.spellOpen[r.name], text = open && s ? R.spellText(s.name) : '';
@@ -885,6 +885,11 @@
       }).join('') + '</div><div class="row" style="margin-top:.6rem">' + txt('languages', 'Languages', 'e.g. Sylvan, Thieves\' Cant') + txt('tools', 'Tools', 'e.g. Herbalism kit') + '</div><div class="row">' + txt('armor', 'Armor', 'e.g. Heavy armor') + txt('weapons', 'Weapons', 'e.g. Martial weapons') + '</div></div>';
   }
 
+  // Notes kept during play: sessions, NPCs, quests, loot… Saved with the character.
+  function stepNotes() {
+    return '<h2>Notes</h2><p class="muted">Anything you want to keep track of while playing: sessions, people you met, quests, clues. Saved with this character.</p>' +
+      '<label class="field"><span class="sr-only">Notes</span><textarea id="f-session" class="notes-big" data-text="notes.session" placeholder="Session 1 — …">' + esc(ch.notes.session || '') + '</textarea></label>';
+  }
   function stepSheet() {
     // skills sit right under the proficiencies, before the spells
     var skillsH = '<div class="sheet-skills"><h3>Skills ' + btn('editSkills', 'Edit', {}, 'btn small noprint') + '</h3><ul class="lines">' + Object.keys(d.skills).map(function (k) { var s = d.skills[k]; return '<li><span class="dot' + (s.expertise ? ' e' : s.prof ? ' p' : '') + '"></span><span class="v">' + R.fmt(s.total) + '</span><span>' + k + ' <small class="muted">' + s.ability + '</small></span></li>'; }).join('') + '</ul></div>';
@@ -1004,7 +1009,7 @@
     if (window.pageYOffset !== st.y || window.pageXOffset !== st.x) window.scrollTo(st.x, st.y);
   }
   // A finished character opens on Play with only the play pages; the building steps come back with Edit or Level up.
-  var PLAY_STEPS = ['play', 'myspells', 'items', 'sheet'];
+  var PLAY_STEPS = ['play', 'myspells', 'items', 'sheet', 'notes'];
   function complete(c, dd) { return !!(c.lineage && c.classes.length && c.background) && !Object.keys(dd.todo).some(function (k) { return dd.todo[k]; }); }
   function openMode() { ui.mode = complete(ch, R.derive(ch, store.filters)) ? 'play' : 'build'; ui.step = ui.mode === 'play' ? 'play' : (ui.step === 'play' ? 'lineage' : ui.step); }
   function visibleSteps() {
@@ -1021,7 +1026,7 @@
     if (ui.section !== 'chars') return renderSection(fid, pos);
     if (!ui.mode) openMode();
     if (ui.mode === 'play' && !visibleSteps().some(function (x) { return x[0] === ui.step; })) ui.step = 'play';
-    var body = { lineage: stepLineage, 'class': stepClass, abilities: stepAbilities, background: stepBackground, spells: stepSpells, myspells: stepMySpells, equipment: stepEquipment, items: stepItems, appearance: stepAppearance, details: stepDetails, sheet: stepSheet, play: stepPlay }[ui.step]();
+    var body = { lineage: stepLineage, 'class': stepClass, abilities: stepAbilities, background: stepBackground, spells: stepSpells, myspells: stepMySpells, equipment: stepEquipment, items: stepItems, appearance: stepAppearance, details: stepDetails, sheet: stepSheet, notes: stepNotes, play: stepPlay }[ui.step]();
     var top = '<header class="top">' + btn('section', 'Character Forge', { v: 'home' }, 'brand linkish') + sectionNav() + '<select data-ui="current" aria-label="Character">' + store.chars.map(function (c) {
       return '<option value="' + c.id + '"' + (c.id === ch.id ? ' selected' : '') + '>' + esc(title(c)) + '</option>';
     }).join('') + '</select>' + '<button type="button" class="btn" data-act="undo" title="Undo (Ctrl+Z)"' + (undoStack.length ? '' : ' disabled') + '>↶ Undo</button><button type="button" class="btn" data-act="redo" title="Redo (Ctrl+Y)"' + (redoStack.length ? '' : ' disabled') + '>↷ Redo</button>' + btn('new', 'New') + btn('dup', 'Duplicate') + btn('import', 'Import') + btn('export', 'Export') +
@@ -1034,7 +1039,7 @@
       : complete(ch, d) ? '<div class="toolbar mode-bar noprint"><span class="small">This character is complete.</span>' + btn('donePlay', '✓ Done — go to Session', {}, 'btn primary') + '</div>' : '';
     body = modeBar + body;
     var nav = '<nav class="steps" aria-label="Steps">' + SHOWN.map(function (s) {
-      var n = d.todo[s[0]], show = ['sheet', 'details', 'equipment', 'items', 'appearance', 'myspells', 'play'].indexOf(s[0]) < 0;
+      var n = d.todo[s[0]], show = ['sheet', 'notes', 'details', 'equipment', 'items', 'appearance', 'myspells', 'play'].indexOf(s[0]) < 0;
       return '<button type="button" class="step' + (ui.step === s[0] ? ' on' : '') + '" data-act="step" data-v="' + s[0] + '"><span>' + s[1] + '</span>' + (show ? (n ? '<span class="badge" title="' + n + ' open">' + n + '</span>' : '<span class="badge done">✓</span>') : '') + '</button>';
     }).join('') + '</nav>';
     var side = '<aside class="side">' + (ui.step !== 'appearance' ? '<div class="side-portrait" data-act="step" data-v="appearance" title="Edit appearance">' + (ch.picture ? pictureHtml('in-side') : avatarCanvas('side')) + '</div>' : '') + '<h4>' + esc(title(ch)) + '</h4><div class="muted">' + esc(summaryLine(ch, d)) + '</div><div class="stats">' +
