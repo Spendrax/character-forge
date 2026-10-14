@@ -1083,7 +1083,7 @@
     if (!ui.scrollToStep) restoreScroll(keep);
     if (ui.scrollToStep) { // a new step starts at its top; on a phone the step row stays visible above it
       ui.scrollToStep = false;
-      var row = document.querySelector('.steps'), narrow = row && row.scrollWidth > row.clientWidth;
+      var row = document.querySelector('.steps'), narrow = row && (row.scrollWidth > row.clientWidth || window.innerWidth < 800); // phone: play mode has fewer steps, so the row may not overflow
       window.scrollTo(0, narrow ? Math.max(0, row.getBoundingClientRect().top + window.pageYOffset - 6) : 0);
     }
     if (ui.jumpTo) { var jt = document.getElementById(ui.jumpTo); ui.jumpTo = null; if (jt) jt.scrollIntoView({ block: 'start' }); }
