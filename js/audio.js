@@ -1,4 +1,4 @@
-// Audio: music for the table. Moods with Spotify and Qobuz searches, your own playlists for each mood,
+// Audio: music for the table. Suggested Spotify playlists for each mood, searches on Spotify and Qobuz, your own playlists,
 // and a small Spotify player docked at the bottom that keeps playing while you move around the app.
 (function (root) {
   'use strict';
@@ -12,9 +12,24 @@
     ['sea', 'Sea and pirates', '🌊', 'pirate sea shanty ambience'], ['sad', 'Sad moment', '🌧️', 'sad emotional fantasy music'],
     ['victory', 'Victory', '🏆', 'triumphant victory fantasy music'], ['magic', 'Magic and wonder', '✨', 'magical fantasy ambient music']
   ];
-  // [id, name, words added to the search]
-  var STYLES = [['', 'Any style', ''], ['orch', 'Orchestral', 'orchestral'], ['folk', 'Celtic and folk', 'celtic folk'], ['amb', 'Ambience only', 'ambience sounds no music'],
-    ['game', 'Video game', 'video game soundtrack'], ['dark', 'Dark ambient', 'dark ambient'], ['synth', 'Synth', 'synthwave']];
+  // Suggested Spotify playlists for each mood (public D&D playlists, checked to exist in October 2026): [playlist id, name]
+  var PICKS = {
+    tavern: [['2Ca3Hi7H5ASwu7jsNCIddE', 'Medieval Tavern Music'], ['2IZI0N8iQdxOdwuAVoYrZR', 'Medieval Tavern (500+ tracks)']],
+    town: [['1BabADdkcNNQ9Kmnfvxj9a', 'Medieval Town'], ['3KeHeHSbWYbdLKuWyK6G0V', 'City (Lively)']],
+    travel: [['19lrJbgreBfi4HlLYOsPyV', 'D&D Adventure Music'], ['3LGcymlXO40dcbLiRsFfLm', 'Adventuring Music']],
+    forest: [['6WHwtLXHwxH9AEC4qo4tYX', 'Elven Forest Ambience'], ['05RgD6XFGztjwadz9yvW5H', 'Enchanted Forest']],
+    camp: [['3Mj4KgXSruvhHvsllw392U', 'Resting by the Campfire'], ['5zJDcAPMAXFgFy8eRNuwbr', 'Camp / Fire']],
+    dungeon: [['61r7AoxyRCmo03tIoKpPko', 'Ambient: Dungeon'], ['429Y5dm8z0On9pxh0tY9Eq', 'Creepy Dungeon Music']],
+    mystery: [['3Yxt8Z4pnjQ6uFZKEK30al', 'Investigation & Mystery'], ['6eSxCnwg3fEHD0UCdXYGdL', 'Mysterious DnD Music']],
+    horror: [['6cXCERlllosIgL02ewXHEs', 'Ominous Dark Fantasy'], ['1zrjG0me3fUh9N5OCtslrB', 'D&D Horror']],
+    combat: [['1bbIcqTRI5oCXeXMCV8nij', 'Epic Combat'], ['4AKwlOzZZz1xw1EAD2Sd4m', 'Music for Epic Battles']],
+    boss: [['5J22LSj5myp2fwxBVrtGab', 'High-Intensity Boss Fights'], ['5WnB6wpclrPltZNYBjQQ7c', 'Epic Boss Music']],
+    sea: [['6wzHc9LYCHuTCvvXezlyKu', 'Sea Shanty Ambient'], ['23wwFIDNQukMeGOIEIYSY3', 'Nautical Combat']],
+    sad: [['0TKsFw6NQ57ZqhbJrjVHhM', 'Sad DnD Themes'], ['1Mbdl2LIOk9MvpadoBXNG8', 'Sad & Melancholic']],
+    victory: [['43f1nm2QS6UHLm4TvktpBk', 'Triumphant Scenes'], ['5QvlKRARFeT2SQXVTA6zQ0', 'D&D Victory']],
+    magic: [['1yYMz2aZf9qyUcQmeiYjip', 'Feywild Ambience'], ['1WUw0WdF59lT81yPGBwWgL', 'The Feywild']]
+  };
+  var PL = 'https://open.spotify.com/playlist/';
 
   // Spotify links that can play inside the app: open.spotify.com/{playlist|album|track|episode|show|artist}/{id}
   function spotifyEmbed(u) {
@@ -24,15 +39,15 @@
   function service(u) { return /spotify\.com/.test(u) ? 'Spotify' : /qobuz\.com/.test(u) ? 'Qobuz' : 'Link'; }
   // Only plain web links are kept: no javascript: or data: links from a pasted value.
   function cleanUrl(u) { u = String(u || '').trim(); try { var x = new URL(u); return x.protocol === 'https:' ? x.href : ''; } catch (e) { return ''; } }
-  function searches(mood, style, extra) {
-    var q = [extra || (mood ? mood[3] : ''), style ? style[2] : ''].filter(Boolean).join(' ').trim(), e = encodeURIComponent(q);
-    return { q: q, spotify: 'https://open.spotify.com/search/' + e + '/playlists', qobuz: 'https://www.qobuz.com/search?q=' + e };
+  function searches(mood) {
+    var e = encodeURIComponent(mood[3]);
+    return { spotify: 'https://open.spotify.com/search/' + e + '/playlists', qobuz: 'https://www.qobuz.com/search?q=' + e };
   }
 
   root.AudioUI = function (api) {
     var esc = api.esc, btn = api.btn, ui = api.ui, store = api.store;
     var A = function () { return store.audio = store.audio || { lists: {} }; };
-    var S = ui.audio = ui.audio || { mood: 'tavern', style: '', q: '', add: '', msg: '' };
+    var S = ui.audio = ui.audio || { mood: 'tavern', add: '', msg: '' };
     var playing = null; // { u, t } shown in the dock
 
     // The dock lives outside the app's page, so redrawing pages never stops the music.
@@ -52,27 +67,26 @@
     }
     function place() { var m = document.querySelector('.mini-bar'), h = m && root.getComputedStyle(m).display !== 'none' ? m.offsetHeight : 0; dock().style.bottom = h + 'px'; }
 
+    function row(x, i, mine) {
+      var sp = !!spotifyEmbed(x.u), on = playing && playing.u === x.u;
+      return '<div class="audio-item' + (on ? ' on' : '') + '">' + (mine ? '<span class="tag">' + service(x.u) + '</span>' : '') + '<b>' + esc(x.t || x.u) + '</b><span class="spacer"></span>' +
+        (sp ? btn('audPlay', on ? '■ Stop' : '▶ Play here', { v: x.u, t: x.t || '' }, 'btn small' + (on ? '' : ' primary')) : '') +
+        '<a class="btn small" href="' + esc(x.u) + '" target="_blank" rel="noopener">' + (sp ? 'Spotify ↗' : 'Open ↗') + '</a>' + (mine ? btn('audRm', '✕', { v: i }, 'btn small') : '') + '</div>';
+    }
     function html() {
-      var mood = MOODS.filter(function (m) { return m[0] === S.mood; })[0] || MOODS[0], style = STYLES.filter(function (s) { return s[0] === S.style; })[0], lists = A().lists;
-      var sr = searches(mood, style, S.q.trim()), mine = lists[mood[0]] || [];
-      var h = '<main class="mon-main audio-main"><h2>Audio</h2><p class="muted">Music for the table. Pick a mood, open a search on Spotify or Qobuz, and keep the playlists you like here. Spotify plays in a small player at the bottom that keeps going while you use the rest of the app.</p>';
+      var mood = MOODS.filter(function (m) { return m[0] === S.mood; })[0] || MOODS[0], lists = A().lists;
+      var sr = searches(mood), mine = lists[mood[0]] || [], picks = (PICKS[mood[0]] || []).map(function (p) { return { u: PL + p[0], t: p[1] }; });
+      var h = '<main class="mon-main audio-main"><h2>Audio</h2><p class="muted">Pick a mood, then ▶ Play here: the player opens at the bottom and keeps going while you use the rest of the app. Tap ▶ inside it to start.</p>';
       h += '<div class="audio-moods">' + MOODS.map(function (m) {
         var n = (lists[m[0]] || []).length;
-        return '<button type="button" class="audio-mood' + (m[0] === mood[0] ? ' on' : '') + '" data-act="audMood" data-v="' + m[0] + '"><span aria-hidden="true">' + m[2] + '</span> ' + esc(m[1]) + (n ? ' <small>' + n + '</small>' : '') + '</button>';
+        return '<button type="button" class="audio-mood' + (m[0] === mood[0] ? ' on' : '') + '" data-act="audMood" data-v="' + m[0] + '"><span aria-hidden="true">' + m[2] + '</span> ' + esc(m[1]) + (n ? ' <small>+' + n + '</small>' : '') + '</button>';
       }).join('') + '</div>';
-      h += '<div class="panel"><h3>' + mood[2] + ' ' + esc(mood[1]) + '</h3>' +
-        '<p class="small" style="margin:.2rem 0 .4rem"><b>Style</b></p><div class="pills">' + STYLES.map(function (s) { return btn('audStyle', esc(s[1]), { v: s[0] }, 'pill small' + (S.style === s[0] ? ' on' : '')); }).join('') + '</div>' +
-        '<label class="field"><span>Search words <small class="muted">(leave empty for the mood’s own)</small></span><input type="search" id="aud-q" data-aud="q" value="' + esc(S.q) + '" placeholder="' + esc(mood[3]) + '"></label>' +
-        '<div class="toolbar"><a class="btn primary" href="' + esc(sr.spotify) + '" target="_blank" rel="noopener">Find on Spotify</a><a class="btn" href="' + esc(sr.qobuz) + '" target="_blank" rel="noopener">Find on Qobuz</a></div>' +
-        '<p class="small muted">Searching for “' + esc(sr.q) + '”. Spotify shows playlists; Qobuz shows albums (soundtracks work well).</p></div>';
+      h += '<div class="panel"><h3>' + mood[2] + ' ' + esc(mood[1]) + '</h3><div class="audio-list">' + picks.map(function (x) { return row(x, 0, false); }).join('') + '</div>' +
+        '<p class="small muted">Suggested public D&D playlists on Spotify. Want something else? ' +
+        '<a href="' + esc(sr.spotify) + '" target="_blank" rel="noopener">Find more on Spotify</a> · <a href="' + esc(sr.qobuz) + '" target="_blank" rel="noopener">Find on Qobuz</a></p></div>';
       h += '<div class="panel"><h3>My ' + esc(mood[1].toLowerCase()) + ' playlists</h3>';
       if (!mine.length) h += '<p class="small muted">None yet. On Spotify or Qobuz, use Share → Copy link on a playlist or album, then paste it here.</p>';
-      else h += '<div class="audio-list">' + mine.map(function (x, i) {
-        var sp = !!spotifyEmbed(x.u), on = playing && playing.u === x.u;
-        return '<div class="audio-item' + (on ? ' on' : '') + '"><span class="tag">' + service(x.u) + '</span><b>' + esc(x.t || x.u) + '</b><span class="spacer"></span>' +
-          (sp ? btn('audPlay', on ? '■ Stop' : '▶ Play here', { v: i }, 'btn small' + (on ? '' : ' primary')) : '') +
-          '<a class="btn small" href="' + esc(x.u) + '" target="_blank" rel="noopener">Open ↗</a>' + btn('audRm', '✕', { v: i }, 'btn small') + '</div>';
-      }).join('') + '</div>';
+      else h += '<div class="audio-list">' + mine.map(function (x, i) { return row(x, i, true); }).join('') + '</div>';
       h += '<div class="row audio-add"><label class="field"><span>Paste a link</span><input type="url" id="aud-add" data-aud="add" value="' + esc(S.add) + '" placeholder="https://open.spotify.com/playlist/…"></label>' +
         '<label class="field"><span>Name <small class="muted">(optional)</small></span><input type="text" id="aud-name" data-aud="name" value="' + esc(S.name || '') + '" placeholder="e.g. Cozy tavern"></label></div>' +
         '<div class="toolbar">' + btn('audAdd', '+ Add to ' + esc(mood[1]), {}, 'btn') + (S.msg ? '<span class="small" style="color:var(--warn)">' + esc(S.msg) + '</span>' : '') + '</div>';
@@ -80,8 +94,7 @@
       return h + '</main>';
     }
     var actions = {
-      audMood: function (v) { S.mood = v; S.q = ''; S.msg = ''; },
-      audStyle: function (v) { S.style = v; },
+      audMood: function (v) { S.mood = v; S.msg = ''; },
       audAdd: function () {
         var u = cleanUrl(S.add); if (!u) { S.msg = 'Paste a full link starting with https://'; return; }
         var L = A().lists[S.mood] = A().lists[S.mood] || [];
@@ -89,13 +102,14 @@
         L.push({ u: u, t: String(S.name || '').trim() }); S.add = ''; S.name = ''; S.msg = '';
       },
       audRm: function (v) { var L = A().lists[S.mood] || [], x = L[+v]; if (x && playing && playing.u === x.u) { playing = null; drawDock(); } L.splice(+v, 1); },
-      audPlay: function (v) { var x = (A().lists[S.mood] || [])[+v]; playing = x && !(playing && playing.u === x.u) ? x : null; drawDock(); },
+      audPlay: function (v, el) { playing = playing && playing.u === v ? null : { u: v, t: el.getAttribute('data-t') }; drawDock(); },
       audStop: function () { playing = null; drawDock(); }
     };
-    function onInput(t) { var k = t.getAttribute('data-aud'); if (k == null) return null; S[k] = t.value; return k === 'q' ? 'render' : 'none'; }
+    function onInput(t) { var k = t.getAttribute('data-aud'); if (k == null) return null; S[k] = t.value; return 'none'; }
     return { html: html, actions: actions, onInput: onInput, after: place };
   };
   root.AudioUI.spotifyEmbed = spotifyEmbed;
   root.AudioUI.cleanUrl = cleanUrl;
   root.AudioUI.MOODS = MOODS;
+  root.AudioUI.PICKS = PICKS;
 })(typeof window !== 'undefined' ? window : globalThis);
