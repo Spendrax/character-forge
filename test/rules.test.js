@@ -333,6 +333,9 @@ const sw = fs.readFileSync(path.join(__dirname, '../sw.js'), 'utf8');
   assert.ok(all.some(p => /Grappling/.test(p.md))); assert.ok(all.some(p => p.t === 'Conditions'));
   const heads = [], h = B.md('# Title\n\n| A | B |\n|---|---|\n| 1 | **2** |\n\n> Quote *it*\n\n- one\n- two', heads);
   assert.ok(/<h2 id="h-title">/.test(h) && /<td><b>2<\/b><\/td>/.test(h) && /<aside class="bk-box"><p>Quote <i>it<\/i>/.test(h) && /<ul><li>one<\/li><li>two<\/li><\/ul>/.test(h));
+  const rb = B.rulesBook(D), rp = rb.chapters.flatMap(c => c.parts); // "Rules from the books": every class, race and spell level, no broken values
+  assert.deepEqual(rb.chapters.map(c => c.parts.length).filter((n, i) => i === 0 || i === 2 || i === 5), [D.classes.length, D.lineages.length, 10]);
+  assert.ok(!rp.some(p => /undefined|NaN|\[object/.test(p.md))); assert.ok(/\| 20th \| \+6 \| Superior Inspiration \| 4 \| 22 \| 4 \| 3 \| 3 \| 3 \| 3 \| 2 \| 2 \| 1 \| 1 \|/.test(rp.find(p => p.t === 'Bard').md));
   assert.ok(!/<script/.test(B.md('<script>alert(1)</script>'))); assert.equal(B.splitText('X', '# A\na\n# B\nb').chapters[0].parts.length, 2);
 }
 

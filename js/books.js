@@ -50,6 +50,94 @@
     return { chapters: [{ t: name, parts: parts }] };
   }
 
+  // ---------- "Rules from the books": a searchable book built from the summaries the builder already uses ----------
+  function ord(n) { return n + (n % 100 > 10 && n % 100 < 14 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th'); }
+  function rulesBook(D) {
+    var FT = D.featureText || {}, ST = D.spellText || {}, TAG = { setting: ' · setting', ua: ' · Unearthed Arcana', homebrew: ' · homebrew' };
+    var src = function (s, tag) { return '*' + (s || '') + (TAG[tag] || '') + '*'; };
+    var list = function (a) { return a && a.length ? [].concat(a).join(', ') : 'None'; };
+    var abil = function (a) { return a === 'flex' ? '+2 and +1, or three +1s, to scores of your choice' : a ? Object.keys(a).map(function (k) { return k + ' +' + a[k]; }).join(', ') : ''; };
+    var byLetter = function (rows, name, one) {
+      var parts = [], cur = null;
+      rows.slice().sort(function (a, b) { return name(a).localeCompare(name(b)); }).forEach(function (r) {
+        var L = name(r)[0].toUpperCase(); if (!cur || cur.t !== L) { cur = { t: L, md: '# ' + L }; parts.push(cur); } cur.md += '\n\n' + one(r);
+      });
+      return parts;
+    };
+    var classes = D.classes.map(function (c) {
+      var ft = FT[c.id] || {}, byLvl = {}, k = c.casting, cols = Object.keys(c.columns || {}).map(function (n) { return [n, function (i) { var v = c.columns[n][i]; return v === 0 ? '—' : v; }]; });
+      var nz = function (a) { return a && a.some(function (v) { return v; }); };
+      if (k) {
+        if (nz(k.cantrips)) cols.push(['Cantrips', function (i) { return k.cantrips[i] || '—'; }]);
+        if (!k.prepared && nz(k.known)) cols.push(['Spells known', function (i) { return k.known[i] || '—'; }]);
+        if (k.kind === 'pact') cols.push(['Slots', function (i) { return k.pactSlots[i]; }], ['Slot level', function (i) { return ord(k.pactLevel[i]); }]);
+        else { var sl = function (i) { var L = i + 1, r = k.kind === 'full' ? D.fullCasterSlots[L - 1] : k.kind === 'half' && L < 2 ? [] : D.fullCasterSlots[Math.ceil(L / 2) - 1]; return r || []; }, top = sl(19).length;
+          for (var j = 0; j < top; j++) (function (j) { cols.push([ord(j + 1), function (i) { return sl(i)[j] || '—'; }]); })(j); }
+      }
+      c.features.forEach(function (f) { (byLvl[f.l] = byLvl[f.l] || []).push(f.n); });
+      (c.asiLevels || []).forEach(function (l) { (byLvl[l] = byLvl[l] || []).push('Ability Score Improvement'); });
+      (byLvl[c.subclassLevel] = byLvl[c.subclassLevel] || []).push(c.subclassTerm);
+      D.subclasses.forEach(function (s) { if (s.c === c.id) (s.features || []).forEach(function (f) { var L = byLvl[f.l] = byLvl[f.l] || [], n = c.subclassTerm + ' feature'; if (f.l > c.subclassLevel && L.indexOf(n) < 0) L.push(n); }); });
+      var m = ['# ' + c.name, src('Class', c.tag), '**Hit die:** d' + c.hitDie + ' · **Saving throws:** ' + list(c.saves) + ' · **Multiclassing:** ' + (c.multiclass || 'none'),
+        '## Proficiencies', '- **Armor:** ' + list(c.armor) + '\n- **Weapons:** ' + list(c.weapons) + '\n- **Tools:** ' + list(c.tools) + '\n- **Skills:** choose ' + c.skillChoose + ' from ' + list(c.skillList),
+        '## Equipment', c.equipment.map(function (e) { return '- ' + e; }).join('\n'),
+        '## ' + c.name + ' table', '| Level | Prof. | Features |' + cols.map(function (x) { return ' ' + x[0] + ' |'; }).join('') + '\n|' + '---|'.repeat(3 + cols.length) + '\n' +
+          Array.from({ length: 20 }, function (_, i) { return '| ' + ord(i + 1) + ' | +' + (Math.ceil((i + 1) / 4) + 1) + ' | ' + (byLvl[i + 1] || ['—']).join(', ') + ' |' + cols.map(function (x) { return ' ' + x[1](i) + ' |'; }).join(''); }).join('\n'),
+        '## Class features'];
+      c.features.forEach(function (f) { m.push('### ' + f.n + ' (' + ord(f.l) + ' level)', ft[f.n] || f.t); });
+      if (c.asiLevels) m.push('### Ability Score Improvement', 'At ' + c.asiLevels.map(ord).join(', ') + ' level, raise one ability score by 2 or two by 1 (max 20), or take a feat.');
+      if (c.fightingStyles && D.fightingStyles) m.push('### Fighting Style options', c.fightingStyles.map(function (n) { return '- **' + n + '.** ' + (D.fightingStyles[n] || ''); }).join('\n'));
+      m.push('## ' + c.subclassTerm + 's');
+      D.subclasses.filter(function (s) { return s.c === c.id; }).forEach(function (s) {
+        var sft = FT[s.id] || {};
+        m.push('### ' + s.name, src(s.source, s.tag));
+        if (s.spells) m.push('**Spells:** ' + Object.keys(s.spells).map(function (l) { return ord(+l) + ': ' + s.spells[l].join(', '); }).join(' · '));
+        (s.features || []).forEach(function (f) { m.push('**' + f.n + ' (' + ord(f.l) + ').** ' + (sft[f.n] || f.t)); });
+      });
+      return { t: c.name, md: m.join('\n\n') };
+    });
+    var opt = [['Fighting styles', D.fightingStyles], ['Metamagic', D.metamagic], ['Pact boons', D.pactBoons], ['Eldritch invocations', D.invocations], ['Artificer infusions', D.infusions],
+      ['Battle Master maneuvers', D.maneuvers], ['Elemental disciplines', D.disciplines], ['Blood curses', D.bloodCurses], ['Arcane shots', D.arcaneShots], ['Runes', D.runes]]
+      .filter(function (o) { return o[1]; }).map(function (o) {
+        var rows = Array.isArray(o[1]) ? o[1] : Object.keys(o[1]).map(function (k) { return [k, o[1][k]]; });
+        return { t: o[0], md: '# ' + o[0] + '\n\n' + rows.map(function (r) { var mid = r.length > 2 && r[1] !== '' ? ' *(' + (typeof r[1] === 'number' ? r[1] + ' ki' : r[1]) + ')*' : ''; return '**' + r[0] + '.**' + mid + ' ' + r[r.length - 1]; }).join('\n\n') };
+      });
+    var traits = function (v) {
+      var bits = [], sp = v.sp ? v.sp + ' ft' + (v.fly ? ', fly ' + (v.fly === true ? 'equal to walking' : v.fly + ' ft') : '') + (v.swim ? ', swim ' + (v.swim === true ? 'equal to walking' : v.swim + ' ft') : '') + (v.climb ? ', climb ' + (v.climb === true ? 'equal to walking' : v.climb + ' ft') : '') : '';
+      if (v.a) bits.push('**Ability scores:** ' + abil(v.a)); if (v.sz) bits.push('**Size:** ' + v.sz); if (sp) bits.push('**Speed:** ' + sp); if (v.dv) bits.push('**Darkvision:** ' + v.dv + ' ft');
+      if (v.lang || v.lc) bits.push('**Languages:** ' + (v.lang || []).concat(v.lc ? [v.lc + ' of your choice'] : []).join(', '));
+      return (bits.length ? bits.join(' · ') + '\n\n' : '') + (v.tr || []).map(function (t) { return '**' + t[0] + '.** ' + t[1]; }).join('\n\n');
+    };
+    var races = D.lineages.map(function (l) {
+      return { t: l.name, md: '# ' + l.name + '\n\n' + l.versions.map(function (v) {
+        return '## ' + v.n + '\n\n' + src(v.s, v.tag || l.tag) + '\n\n' + traits(v) + (v.pick ? '\n\n**' + v.pick.label + ':** ' + v.pick.from.join(', ') : '') +
+          (v.subs || []).filter(function (s) { return s.tr || s.a; }).map(function (s) { return '\n\n### ' + s.n + '\n\n' + src(s.s, s.tag) + '\n\n' + traits(s); }).join('');
+      }).join('\n\n') };
+    });
+    var bgs = byLetter(D.backgrounds, function (b) { return b.n; }, function (b) {
+      var sk = (b.sk || []).concat(b.skc ? ['choose ' + b.skc.n + ' from ' + list(b.skc.from)] : []);
+      return '## ' + b.n + '\n\n' + src(b.s, b.tag) + '\n\n- **Skills:** ' + list(sk) + (b.tools ? '\n- **Tools:** ' + list([].concat(b.tools)) : '') +
+        (b.lang || b.lc ? '\n- **Languages:** ' + (b.lang || []).concat(b.lc ? [b.lc + ' of your choice'] : []).join(', ') : '') + (b.eq ? '\n- **Equipment:** ' + b.eq : '') +
+        (b.f ? '\n\n**Feature: ' + b.f[0] + '.** ' + b.f[1] : '');
+    });
+    var feats = byLetter(D.feats, function (f) { return f.n; }, function (f) {
+      return '## ' + f.n + '\n\n' + src(f.s, f.tag) + (f.pre ? ' · Prerequisite: ' + f.pre : '') + (f.asi && f.asi.length ? ' · +1 to ' + (f.asi[0] === 'ANY' ? 'any ability' : f.asi.join(' or ')) : '') + '\n\n' + f.t;
+    });
+    var spells = Object.keys(D.spells).map(function (k) { return D.spells[k]; });
+    var levels = Array.from({ length: 10 }, function (_, l) {
+      var t = l ? ord(l) + ' level' : 'Cantrips', rows = spells.filter(function (s) { return s.level === l; }).sort(function (a, b) { return a.name.localeCompare(b.name); });
+      return { t: t, md: '# ' + t + ' spells\n\n' + rows.map(function (s) {
+        var cls = Object.keys(D.spellLists || {}).filter(function (c) { return D.spellLists[c].indexOf(s.name) >= 0; });
+        return '## ' + s.name + '\n\n*' + (l ? ord(l) + '-level ' + s.school.toLowerCase() : s.school + ' cantrip') + (s.ritual ? ' (ritual)' : '') + (TAG[s.tag] || '') + '*\n\n' +
+          '**Casting time:** ' + s.time + ' · **Range:** ' + s.range + ' · **Components:** ' + s.comp + ' · **Duration:** ' + (s.conc ? 'Concentration, ' : '') + s.duration +
+          (cls.length ? '\n\n**Classes:** ' + cls.join(', ') : '') + '\n\n' + (ST[s.name] || '[Full text on the wiki](' + s.url + ')');
+      }).join('\n\n') };
+    });
+    return { id: 'rules', title: 'Rules from the books (summaries)', chapters: [
+      { t: 'Classes', parts: classes }, { t: 'Class options', parts: opt }, { t: 'Races', parts: races },
+      { t: 'Backgrounds', parts: bgs }, { t: 'Feats', parts: feats }, { t: 'Spells', parts: levels }] };
+  }
+
   // ---------- storage for your own books (IndexedDB, same database as imported monsters) ----------
   var DB = null;
   function idb() {
@@ -74,7 +162,8 @@
       if (!srdReady() && !B.loading) { B.loading = true; loadScript('data/srd-book.js').then(function () { B.loading = false; render(); }, function () { B.loading = false; B.err = 'Couldn’t load the free rules. Check your connection and try again.'; render(); }); }
       if (!mine && root.indexedDB) { mine = []; get('books').then(function (l) { mine = l || []; render(); }, function () { mine = []; }); }
     }
-    function bookObj(id) { return id === 'srd' ? root.DND.book : texts[id]; }
+    var rules = null, BUILT = [{ id: 'srd', kind: 'srd', name: 'Free rules (SRD 5.1)' }, { id: 'rules', kind: 'rules', name: 'Rules from the books' }];
+    function bookObj(id) { return id === 'srd' ? root.DND.book : id === 'rules' ? (rules = rules || rulesBook(root.DND)) : texts[id]; }
     function pos() { return store.bookPos = store.bookPos || {}; }
 
     // ---------- reading the free rules or a text book ----------
@@ -177,23 +266,24 @@
 
     // ---------- the page ----------
     function shelfHtml() {
-      var list = [{ id: 'srd', name: 'Free rules (SRD 5.1)', kind: 'srd' }].concat(mine || []);
+      var list = BUILT.concat(mine || []);
       return '<div class="bk-shelf">' + list.map(function (b) {
         return '<button type="button" class="pill' + (B.open === b.id ? ' on' : '') + '" data-act="bkOpen" data-v="' + esc(b.id) + '">' + (b.kind === 'pdf' ? '📕 ' : '📘 ') + esc(b.name) + '</button>';
       }).join('') + '<label class="btn small bk-add">+ Add a book<input type="file" id="bookFile" accept=".pdf,.md,.markdown,.txt,application/pdf,text/plain,text/markdown" hidden></label></div>';
     }
     function html() {
       ensure();
-      var meta = B.open === 'srd' ? { id: 'srd', kind: 'srd', name: 'Free rules (SRD 5.1)' } : (mine || []).filter(function (b) { return b.id === B.open; })[0];
-      if (!meta) { B.open = 'srd'; meta = { id: 'srd', kind: 'srd', name: 'Free rules (SRD 5.1)' }; }
+      var meta = BUILT.concat(mine || []).filter(function (b) { return b.id === B.open; })[0];
+      if (!meta) { B.open = 'srd'; meta = BUILT[0]; }
+      var own = meta.kind === 'pdf' || meta.kind === 'text';
       var h = '<main class="mon-main bk-main"><h2>Books</h2>' + shelfHtml() + (B.msg ? '<p class="small rest-msg">' + esc(B.msg) + '</p>' : '');
       var search = '<input type="search" id="bk-q" data-bk="q" placeholder="Search ' + esc(meta.name) + '…" value="' + esc(B.q) + '">';
-      var tools = meta.kind !== 'srd' ? '<div class="toolbar">' + (B.confirmRm === meta.id ? '<span class="small">Remove “' + esc(meta.name) + '” from this device?</span>' + btn('bkRemove', 'Remove', { v: meta.id }, 'btn danger') + btn('bkRemoveCancel', 'Keep', {}, 'btn') : btn('bkRemoveAsk', 'Remove this book', { v: meta.id }, 'btn small')) + '</div>' : '';
+      var tools = own ? '<div class="toolbar">' + (B.confirmRm === meta.id ? '<span class="small">Remove “' + esc(meta.name) + '” from this device?</span>' + btn('bkRemove', 'Remove', { v: meta.id }, 'btn danger') + btn('bkRemoveCancel', 'Keep', {}, 'btn') : btn('bkRemoveAsk', 'Remove this book', { v: meta.id }, 'btn small')) + '</div>' : '';
       if (meta.kind === 'pdf') {
         h += '<div class="bk-layout bk-layout-pdf"><aside class="bk-side">' + search + (B.q ? (pdf.doc ? pdfSearch() : '') : '<p class="small muted">Search finds the pages that mention a word.</p>') + tools + '</aside><section class="bk-read">' + pdfHtml(meta) + '</section></div>';
       } else {
         if (meta.kind === 'srd' && !srdReady()) return h + '<p class="muted">' + esc(B.err || 'Loading the free rules…') + '</p></main>';
-        if (meta.kind !== 'srd' && !texts[meta.id]) {
+        if (own && !texts[meta.id]) {
           if (!B.loadingText) { B.loadingText = true; get('book:' + meta.id).then(function (t) { B.loadingText = false; texts[meta.id] = splitText(meta.name, typeof t === 'string' ? t : ''); texts[meta.id].title = meta.name; render(); }, function () { B.loadingText = false; }); }
           return h + '<p class="muted">Opening…</p></main>';
         }
@@ -202,6 +292,7 @@
           '<button type="button" class="btn small bk-tocbtn" data-act="bkToc">' + (B.toc ? 'Hide contents' : '☰ Contents') + '</button>' + readerHtml(book, meta.id) + '</section></div>';
       }
       if (meta.kind === 'srd') h += '<p class="small muted">This work includes material taken from the System Reference Document 5.1 (“SRD 5.1”) by Wizards of the Coast LLC, available at <a href="https://dnd.wizards.com/resources/systems-reference-document" target="_blank" rel="noopener">dnd.wizards.com</a>, licensed under the <a href="https://creativecommons.org/licenses/by/4.0/legalcode" target="_blank" rel="noopener">Creative Commons Attribution 4.0 International License</a>. Text prepared by <a href="https://github.com/OldManUmby/DND.SRD.Wiki" target="_blank" rel="noopener">OldManUmby’s SRD reForged</a>.</p>';
+      else if (meta.kind === 'rules') h += '<p class="small muted">Short summaries in our own words of the classes, races, backgrounds, feats and spells the builder uses, from <a href="https://dnd5e.wikidot.com" target="_blank" rel="noopener">dnd5e.wikidot.com</a>. They are not the books’ text: check the book for exact wording.</p>';
       else h += '<p class="small muted">Books you add stay in this browser on this device. They are never uploaded or shared.</p>';
       return h + '</main>';
     }
@@ -251,4 +342,5 @@
   };
   root.BooksUI.md = md;
   root.BooksUI.splitText = splitText;
+  root.BooksUI.rulesBook = rulesBook;
 })(typeof window !== 'undefined' ? window : globalThis);

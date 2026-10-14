@@ -1067,7 +1067,7 @@
         }).join('') + (chars.length > 6 ? '<span class="small muted">and ' + (chars.length - 6) + ' more</span>' : '') + '</div>' : '') +
       tile('encounters', '⚔︎', 'Encounters', 'Build a fight for your party, see how hard it is (2014 rules), roll a random one, then run it with initiative and hit points.') +
       tile('treasure', '💰', 'Treasures', 'Quick random loot after a fight: a few coins for bandits, a hoard with gems and magic items for a boss.') +
-      tile('books', '📚', 'Books', 'The free official rules (SRD 5.1) to read and search, plus your own books (PDF) kept on your device.') +
+      tile('books', '📚', 'Books', 'The free official rules (SRD 5.1), summaries of every class, race, background, feat and spell to search, plus your own books (PDF) kept on your device.') +
       tile('rules', '📜', 'House rules', 'Your table’s own rules, written down and quick to find during a game.') +
       tile('monsters', '🐉', 'Monsters', 'Every monster from the 2014 SRD with its full stat block, searchable by name, type, size and challenge, with dice you can roll. Add your own too.') +
       '</div></main>';
