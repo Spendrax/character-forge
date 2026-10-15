@@ -67,13 +67,36 @@
     }
     return faces;
   }
+  // A real d100 (like a Zocchihedron): 100 faces spread evenly over a ball. Each face is the flat plane touching the
+  // ball at one of 100 evenly spread points; corners are where three neighbouring planes meet.
+  function zocchi() {
+    var pts = [], ga = Math.PI * (3 - Math.sqrt(5));
+    for (var i = 0; i < 100; i++) { var y = 1 - 2 * (i + 0.5) / 100, r = Math.sqrt(1 - y * y); pts.push([r * Math.cos(i * ga), y, r * Math.sin(i * ga)]); }
+    var tris = hull(pts), verts = tris.map(function (t) { // the point where the three touching planes n·x = 1 meet
+      var a = pts[t.vi[0]], b = pts[t.vi[1]], c = pts[t.vi[2]];
+      return mul(add(add(cross(b, c), cross(c, a)), cross(a, b)), 1 / dot(a, cross(b, c)));
+    });
+    var r = 0; verts.forEach(function (v) { r = Math.max(r, len(v)); });
+    verts = verts.map(function (v) { return mul(v, 1 / r); });
+    var faces = pts.map(function (p, i) {
+      var c = mul(p, 1 / r), vi = []; tris.forEach(function (t, ti) { if (t.vi.indexOf(i) >= 0) vi.push(ti); });
+      var e1 = unit(sub(verts[vi[0]], c)), e2 = cross(p, e1);
+      vi.sort(function (a, b) { var pa = sub(verts[a], c), pb = sub(verts[b], c); return Math.atan2(dot(pa, e2), dot(pa, e1)) - Math.atan2(dot(pb, e2), dot(pb, e1)); });
+      return { vi: vi, n: p, c: c, value: i + 1 };
+    });
+    return { verts: verts, faces: faces };
+  }
   var SHAPES = {};
   function shape(sides) {
     if (SHAPES[sides]) return SHAPES[sides];
-    var verts = sides === 10 ? d10Verts() : VERTS[sides], r = 0;
-    verts.forEach(function (v) { r = Math.max(r, len(v)); });
-    verts = verts.map(function (v) { return mul(v, 1 / r); });
-    var faces = hull(verts);
+    var verts, faces;
+    if (sides === 100) { var z = zocchi(); verts = z.verts; faces = z.faces; }
+    else {
+      var r = 0; verts = sides === 10 ? d10Verts() : VERTS[sides];
+      verts.forEach(function (v) { r = Math.max(r, len(v)); });
+      verts = verts.map(function (v) { return mul(v, 1 / r); });
+      faces = hull(verts);
+    }
     faces.forEach(function (f) {
       // label frame: "up" toward the farthest corner (the point of a d10 kite), "right" across the face
       var far = 0, best = -1; f.vi.forEach(function (m) { var dd = len(sub(verts[m], f.c)); if (dd > best) { best = dd; far = m; } });
@@ -81,7 +104,7 @@
       var ri = Infinity; f.vi.forEach(function (m, x) { var a = verts[m], b = verts[f.vi[(x + 1) % f.vi.length]], ab = unit(sub(b, a)), ac = sub(f.c, a); ri = Math.min(ri, len(sub(ac, mul(ab, dot(ac, ab))))); });
       f.ri = ri;
     });
-    if (sides !== 4) { // opposite faces add up like on real dice
+    if (sides !== 4 && sides !== 100) { // opposite faces add up like on real dice
       var used = {}, next = 1;
       faces.forEach(function (f, i) {
         if (used[i]) return;
@@ -96,12 +119,11 @@
   var LIGHT = unit([-0.45, 0.55, 0.85]);
   var COLORS = { blue: [44, 92, 170], red: [150, 34, 30], green: [36, 112, 72], black: [44, 44, 52], ivory: [226, 214, 186] };
   function label(die, v) {
-    if (die.kind === 'd100t') return v === 10 ? '00' : String(v * 10);
     if (die.sides === 10) v = v % 10;
     return String(v) + ((v === 6 || v === 9) && die.sides >= 8 ? '.' : '');
   }
   function shade(rgb, k) { return 'rgb(' + rgb.map(function (c) { return Math.max(0, Math.min(255, Math.round(c * k))); }).join(',') + ')'; }
-  function drawDie(ctx, die, q, x, y, k) {
+  function drawDie(ctx, die, q, x, y, k, settled) {
     var S = shape(die.sides), V = S.verts.map(function (v) { return qrot(q, v); }), rgb = COLORS[die.color] || COLORS.blue;
     var ink = die.color === 'ivory' ? '#2a2420' : '#f4f6ff';
     var P = function (p) { return [x + k * p[0], y - k * p[1]]; };
@@ -112,6 +134,7 @@
       ctx.beginPath(); f.vi.forEach(function (m, i) { var p = P(V[m]); if (i) ctx.lineTo(p[0], p[1]); else ctx.moveTo(p[0], p[1]); }); ctx.closePath();
       ctx.fillStyle = shade(rgb, lit); ctx.fill();
       ctx.lineJoin = 'round'; ctx.lineWidth = Math.max(1, k * 0.03); ctx.strokeStyle = 'rgba(0,0,0,.28)'; ctx.stroke();
+      if (settled && die.sides === 100 && f.value === die.value) { ctx.lineWidth = Math.max(2, k * 0.035); ctx.strokeStyle = 'rgba(255,214,120,.95)'; ctx.stroke(); } // 100 numbers showing: ring the result
       // numbers: painted in the face's own plane (with a flat view this mapping is exact)
       var c = qrot(q, f.c), up = qrot(q, f.up), rt = qrot(q, f.right);
       var put = function (txt, at, u, r, size) {
@@ -126,7 +149,7 @@
           var dir = unit(sub(S.verts[m], f.c)), at = add(f.c, mul(dir, f.ri * 1.15)), u = qrot(q, dir);
           put(String(die.cornerValues[m]), qrot(q, at), u, qrot(q, cross(dir, f.n)), f.ri * 0.62);
         });
-      } else put(label(die, f.value), c, up, rt, f.ri * (die.sides === 6 ? 1.05 : die.sides === 20 ? 0.95 : 0.9) * (die.kind === 'd100t' ? 0.7 : 1));
+      } else put(label(die, f.value), c, up, rt, f.ri * (die.sides === 6 ? 1.05 : die.sides === 20 ? 0.95 : 0.9) * (die.sides === 100 ? 0.78 : 1));
     });
     ctx.setTransform(die.dpr, 0, 0, die.dpr, 0, 0);
   }
@@ -160,10 +183,7 @@
     var list = [];
     KINDS.forEach(function (kd) {
       for (var i = 0; i < (counts[kd[0]] || 0); i++) {
-        if (kd[1] === 100) { // percentile: a tens die and a units die
-          var t = randInt(10), u = randInt(10), val = t * 10 + u || 100;
-          list.push({ kind: 'd100t', sides: 10, value: t || 10, group: 'd100', total: val }, { kind: 'd100u', sides: 10, value: u || 10, group: 'd100', skip: true });
-        } else list.push({ kind: kd[0], sides: kd[1], value: 1 + randInt(kd[1]), group: kd[0] });
+        list.push({ kind: kd[0], sides: kd[1], value: 1 + randInt(kd[1]), group: kd[0] });
       }
     });
     return list;
@@ -175,7 +195,7 @@
     var order = list.map(function (_, i) { return i; }).sort(function () { return rnd() - 0.5; });
     order.forEach(function (idx, slot) {
       var d = list[idx], cx = area.x + (slot % cols + 0.5) * cw, cy = area.y + (Math.floor(slot / cols) + 0.5) * chh;
-      d.k = k; d.fx = cx + (rnd() - 0.5) * cw * 0.35; d.fy = cy + (rnd() - 0.5) * chh * 0.35;
+      d.k = k * (d.sides === 100 ? 1.45 : 1); d.fx = cx + (rnd() - 0.5) * cw * 0.35; d.fy = cy + (rnd() - 0.5) * chh * 0.35;
       d.sx = w * (0.2 + rnd() * 0.6); d.sy = h + k * 2.5;
       var S = shape(d.sides), target;
       var spin = rnd() * Math.PI * 2;
@@ -237,15 +257,15 @@
     var dpr = cv._dpr; ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(bg, 0, 0);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     var dur = root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches ? 250 : 1500, done = true;
-    var st = dice.map(function (d) { var t = still ? 1 : Math.max(0, Math.min(1, (now - start - d.delay) / dur)); if (t < 1) done = false; return { d: d, s: stateAt(d, t) }; });
+    var st = dice.map(function (d) { var t = still ? 1 : Math.max(0, Math.min(1, (now - start - d.delay) / dur)); if (t < 1) done = false; return { d: d, t: t, s: stateAt(d, t) }; });
     st.forEach(function (x) { drawShadow(ctx, x.s.x, x.s.y, x.d.k, x.s.h); });
-    st.sort(function (a, b) { return a.s.h - b.s.h; }).forEach(function (x) { drawDie(ctx, x.d, x.s.q, x.s.x, x.s.y, x.d.k * (1 + 0.32 * x.s.h)); });
+    st.sort(function (a, b) { return a.s.h - b.s.h; }).forEach(function (x) { drawDie(ctx, x.d, x.s.q, x.s.x, x.s.y, x.d.k * (1 + 0.32 * x.s.h), x.s.h < 1e-3 && x.t >= 1); });
     return done;
   }
   function loop(now) { if (draw(now)) { raf = 0; showResult(); return; } raf = root.requestAnimationFrame(loop); }
   function showResult() {
     var groups = {}, sum = 0;
-    dice.forEach(function (d) { if (d.skip) return; var v = d.group === 'd100' ? d.total : d.value; sum += v; (groups[d.group] = groups[d.group] || []).push(v); });
+    dice.forEach(function (d) { var v = d.value; sum += v; (groups[d.group] = groups[d.group] || []).push(v); });
     var detail = Object.keys(groups).map(function (g) { return g + ': ' + groups[g].join(', '); }).join(' · ') + (mod ? ' · bonus ' + (mod > 0 ? '+' : '−') + Math.abs(mod) : '');
     var nat = dice.length === 1 && dice[0].kind === 'd20' ? (dice[0].value === 20 ? ' <span class="dice3d-crit">Natural 20!</span>' : dice[0].value === 1 ? ' <span class="dice3d-fail">Natural 1</span>' : '') : '';
     lastText = (sum + mod) + ' (' + detail + ')';

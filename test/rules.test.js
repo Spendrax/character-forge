@@ -360,7 +360,7 @@ const sw = fs.readFileSync(path.join(__dirname, '../sw.js'), 'utf8');
 
 { // 3D dice: every die is a proper solid, numbered 1..n, and always lands showing the rolled result
   require('../js/dice3d.js'); const DD = globalThis.Dice3D;
-  [[4, 4], [6, 6], [8, 8], [10, 10], [12, 12], [20, 20]].forEach(([s, f]) => { const S = DD._shape(s); assert.equal(S.faces.length, f, 'd' + s); if (s !== 4) assert.deepEqual(S.faces.map(x => x.value).sort((a, b) => a - b), Array.from({ length: s }, (_, i) => i + 1)); });
+  [[4, 4], [6, 6], [8, 8], [10, 10], [12, 12], [20, 20], [100, 100]].forEach(([s, f]) => { const S = DD._shape(s); assert.equal(S.faces.length, f, 'd' + s); if (s !== 4) assert.deepEqual(S.faces.map(x => x.value).sort((a, b) => a - b), Array.from({ length: s }, (_, i) => i + 1)); });
   for (let i = 0; i < 50; i++) {
     const L = DD._makeDice({ d4: 1, d6: 1, d8: 1, d10: 1, d12: 1, d20: 1, d100: 1 }); DD._plan(L, 400, 800, 64);
     L.forEach(d => { const S = DD._shape(d.sides); let up, best = -9;

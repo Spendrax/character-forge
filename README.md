@@ -36,7 +36,7 @@ file's exact totals with your own lineage and feats counted.
 
 ### Dice roller
 
-The round red button at the bottom right opens a 3D dice roller on a wooden table: pick any mix of d4, d6, d8, d10, d12, d20 and d100 plus a bonus, then Roll.
+The round red button at the bottom right opens a 3D dice roller on a wooden table: pick any mix of d4, d6, d8, d10, d12, d20 and d100 (a real 100-sided die; its result face is ringed in gold) plus a bonus, then Roll.
 The dice tumble and land showing their result; the total and each die are shown at the top (a single d20 also flags a natural 20 or 1). Tap the table to roll the same dice again, ✕/Back to close.
 Five dice colours; your last choice is remembered. Results come from the browser's secure random source; the animation is drawn by `js/dice3d.js` (no library), and it works offline.
 
