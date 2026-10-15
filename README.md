@@ -162,6 +162,16 @@ the reduced proficiency list for each added class; features, subclass and abilit
 shared spell slots from the combined caster level (full + half + third, artificer rounded up) with pact slots kept separate;
 spells known or prepared per class; Unarmored Defense only from whichever class granted it first. Ability score prerequisites are shown as warnings, not enforced.
 
+## Mutants & Masterminds 3e
+
+The switch at the top (D&D 5e | M&M 3e) moves between the two games; each has its own home page, characters and house rules (Audio, dice and your own books are shared).
+
+- **Heroes:** build heroes on power points (15 per power level, plus points earned in play): abilities, defenses, skills (with Close/Ranged Combat and Expertise specialties), advantages, powers built from the 40 effects with any extras and flaws, and complications. Costs are worked out as you go (per-rank and flat modifiers, 1 point per 2+ ranks when cheap, Removable per 5 points), and the power level limits are checked: attack + effect, Dodge/Parry + Toughness, Fortitude + Will, skills ≤ PL + 10. A printable sheet lists everything, with each attack's bonus and DC.
+- **Rules:** a searchable book of summaries: core rules, abilities and defenses, skills, all advantages, every power effect with its action, range, duration and cost, every extra and flaw, combat and conditions. Add your own copy of the Hero's Handbook (PDF) to read it alongside.
+
+Names, costs and stats come from the game's Open Game Content as published at [d20herosrd.com](https://www.d20herosrd.com); the descriptions are short summaries in our own words (`data/mm.js`).
+Mutants & Masterminds is a trademark of Green Ronin Publishing. This is an unofficial fan tool, not affiliated with or endorsed by Green Ronin.
+
 ## Limits
 
 - Feat and multiclass prerequisites are shown but not enforced.

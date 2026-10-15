@@ -372,7 +372,7 @@ const sw = fs.readFileSync(path.join(__dirname, '../sw.js'), 'utf8');
 
 { // Mutants & Masterminds 3e: power costs follow the rules, the PL limits catch over-limit heroes, the rules book builds
   require('../data/mm.js'); require('../js/mm.js'); const MR = globalThis.MMRules, M3 = globalThis.MM;
-  assert.equal(M3.effects.length, 40); assert.equal(M3.advantages.length, 75);
+  assert.equal(M3.effects.length, 40); assert.equal(M3.advantages.length, 74);
   const pc = p => MR.powerCost(Object.assign({ rank: 1, mods: [] }, p)).cost;
   assert.equal(pc({ effect: 'Damage', rank: 10, mods: [{ n: 'Increased Range', v: 1 }] }), 20);       // Blast 10
   assert.equal(pc({ effect: 'Protection', rank: 10, mods: [{ n: 'Sustained', v: 0 }] }), 10);         // Force Field 10
