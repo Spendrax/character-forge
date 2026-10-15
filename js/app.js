@@ -1040,6 +1040,24 @@
     if (ui.mode !== 'play') return STEPS;
     return [['play', 'Session']].concat(STEPS.filter(function (s) { return PLAY_STEPS.indexOf(s[0]) > 0 && (s[0] !== 'myspells' || d.casters.length || d.innate.length); }));
   }
+  // Phone back button and back swipe: every page you move to is a step in the browser history,
+  // so Back returns to the previous page instead of leaving the app.
+  var navLast = null, navRestoring = false;
+  function navState() { return { s: ui.section, st: ui.step, m: ui.mode || '', c: store.current, mo: (ui.mon && ui.mon.open) || '' }; }
+  function syncHistory() {
+    var st = navState(), k = JSON.stringify(st);
+    if (k === navLast) return;
+    try { if (navLast === null || navRestoring) window.history.replaceState(st, ''); else window.history.pushState(st, ''); } catch (e) { /* history unavailable */ }
+    navLast = k; navRestoring = false;
+  }
+  window.addEventListener('popstate', function (e) {
+    var st = e.state; if (!st || !st.s) return;
+    navRestoring = true;
+    ui.section = st.s; ui.step = st.st; if (st.m) ui.mode = st.m; if (byId(st.c)) store.current = st.c;
+    if (ui.mon) { ui.mon.open = st.mo; ui.mon.edit = ''; }
+    ui.scrollToStep = true; render();
+    if (ui.section !== 'chars') window.scrollTo(0, 0);
+  });
   function render() {
     if (!byId(store.current) && store.chars.length) store.current = store.chars[0].id;
     remember(); // record the change about to be drawn, so Undo is ready at once
@@ -1087,7 +1105,7 @@
       window.scrollTo(0, narrow ? Math.max(0, row.getBoundingClientRect().top + window.pageYOffset - 6) : 0);
     }
     if (ui.jumpTo) { var jt = document.getElementById(ui.jumpTo); ui.jumpTo = null; if (jt) jt.scrollIntoView({ block: 'start' }); }
-    drawAvatars(); AUD.after();
+    drawAvatars(); AUD.after(); syncHistory();
     if (fid) { var el = document.getElementById(fid); if (el) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } try { if (pos != null) el.setSelectionRange(pos, pos); } catch (e) { /* not a text field */ } } }
     document.title = title(ch) + ' — Character Forge';
     saveNow();
@@ -1140,7 +1158,7 @@
     if (ui.mon && ui.mon.scrollTop) { ui.mon.scrollTop = false; var r = document.querySelector('.mon-right'); if (r && window.innerWidth < 800) r.scrollIntoView(); else window.scrollTo(0, 0); }
     else restoreScroll(keep);
     if (ui.section === 'books') BOOKS.after();
-    AUD.after();
+    AUD.after(); syncHistory();
     if (fid) { var el = document.getElementById(fid); if (el) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } try { if (pos != null) el.setSelectionRange(pos, pos); } catch (e) { /* not text */ } } }
     document.title = (ui.section === 'monsters' ? 'Monsters' : ui.section === 'encounters' ? 'Encounters' : ui.section === 'treasure' ? 'Treasures' : ui.section === 'books' ? 'Books' : ui.section === 'audio' ? 'Audio' : ui.section === 'rules' ? 'House rules' : 'Home') + ' — Character Forge';
     saveNow();
