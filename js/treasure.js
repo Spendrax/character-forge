@@ -134,7 +134,7 @@
         : '<div class="toolbar"><label class="mon-f">Strength <select data-tre="tier">' + TIERS.map(function (x, i) { return '<option value="' + i + '"' + (s.tier === i ? ' selected' : '') + '>' + x + '</option>'; }).join('') + '</select></label>' +
           (s.kind === 'pocket' ? '<label class="mon-f">Creatures <input type="number" min="1" max="50" id="tre-count" data-tre="count" value="' + s.count + '"></label>' : '') + '</div>';
       return '<main class="mon-main tre-main"><h2>Treasures</h2><div class="panel"><p class="small muted">Pocket money is what each creature carries (bandits: a few coins). A hoard is a boss’s or lair’s stash: more coins, gems, art and magic items. Stronger creatures give more.</p>' +
-        kindPills + source + '<div class="toolbar">' + btn('treRoll', '🎲 Random treasure', {}, 'btn primary') + '</div></div>' + resultHtml(s.last) +
+        kindPills + source + '<div class="toolbar">' + btn('treRoll', root.Icon('d20') + ' Random treasure', {}, 'btn primary') + '</div></div>' + resultHtml(s.last) +
         '<p class="small muted">Coins, gems and art follow the Dungeon Master’s Guide (2014) treasure tables. Magic items are picked by rarity from the item list in Characters → Items, with chances close to the book’s.</p></main>';
     }
     var actions = {

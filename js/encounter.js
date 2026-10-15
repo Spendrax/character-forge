@@ -103,9 +103,9 @@
           '<button type="button" class="linkbtn enc-name" data-act="encView" data-v="' + esc(m.id) + '">' + esc(m.n) + '</button><span class="small muted">CR ' + MON.crText(m.cr) + ' · ' + (xpOf(m) * x.count).toLocaleString('en') + ' XP</span></div>';
       }).join('');
       var saved = store.encounters || [];
-      return '<div class="panel"><div class="toolbar" style="margin:0"><h3 style="margin:0">Encounter</h3><span class="spacer"></span>' + btn('encRun', '⚔ Run it', {}, 'btn primary') + '</div>' + bar +
+      return '<div class="panel"><div class="toolbar" style="margin:0"><h3 style="margin:0">Encounter</h3><span class="spacer"></span>' + btn('encRun', root.Icon('swords') + ' Run it', {}, 'btn primary') + '</div>' + bar +
         (rows || '<p class="muted">Add monsters with + from the list.</p>') +
-        '<div class="toolbar enc-tools"><label class="mon-f">Place <select data-enc="env" aria-label="Place for the random encounter"><option value="">Anywhere</option>' + Object.keys(ENV).map(function (k) { return '<option' + (E.env === k ? ' selected' : '') + '>' + k + '</option>'; }).join('') + '</select></label><label class="mon-f">Random <select data-enc="diff">' + LABELS.map(function (l) { return '<option' + (E.diff === l ? ' selected' : '') + '>' + l + '</option>'; }).join('') + '</select></label>' + btn('encRandom', '🎲 Random encounter', {}, 'btn small') + btn('encClear', 'Clear', {}, 'btn small') + '</div>' +
+        '<div class="toolbar enc-tools"><label class="mon-f">Place <select data-enc="env" aria-label="Place for the random encounter"><option value="">Anywhere</option>' + Object.keys(ENV).map(function (k) { return '<option' + (E.env === k ? ' selected' : '') + '>' + k + '</option>'; }).join('') + '</select></label><label class="mon-f">Random <select data-enc="diff">' + LABELS.map(function (l) { return '<option' + (E.diff === l ? ' selected' : '') + '>' + l + '</option>'; }).join('') + '</select></label>' + btn('encRandom', root.Icon('d20') + ' Random encounter', {}, 'btn small') + btn('encClear', 'Clear', {}, 'btn small') + '</div>' +
         '<div class="toolbar enc-tools"><input type="text" id="enc-name" data-encname="1" placeholder="Name this encounter" value="' + esc(enc.name || '') + '">' + btn('encSave', 'Save', {}, 'btn small') +
         (saved.length ? '<select data-encload="1" aria-label="Load a saved encounter"><option value="">Load a saved one…</option>' + saved.map(function (s) { return '<option value="' + s.id + '">' + esc(s.name || 'Untitled') + '</option>'; }).join('') + '</select>' : '') + '</div></div>';
     }
@@ -146,7 +146,7 @@
       if (!MON.ensure(api.render)) return '<main class="mon-main"><h2>Encounters</h2><p class="muted">Loading monsters…</p></main>';
       var enc = cur(), view = E.open && MON.find(E.open);
       var main = store.encRun ? runHtml() : '<div class="enc-wrap">' + pickerHtml() + '<div>' + partyHtml(enc) + encounterHtml(enc) + '</div></div>';
-      var ask = E.askLoot && !store.encRun ? '<div class="panel enc-loot"><b>Fight over.</b> Roll treasure for this encounter? ' + btn('encLootYes', '💰 Yes, roll treasure', {}, 'btn primary') + btn('encLootNo', 'No', {}, 'btn') + '</div>' : '';
+      var ask = E.askLoot && !store.encRun ? '<div class="panel enc-loot"><b>Fight over.</b> Roll treasure for this encounter? ' + btn('encLootYes', root.Icon('coins') + ' Yes, roll treasure', {}, 'btn primary') + btn('encLootNo', 'No', {}, 'btn') + '</div>' : '';
       return '<main class="mon-main"><h2>Encounters</h2>' + ask + (E.msg ? '<p class="small rest-msg">' + esc(E.msg) + '</p>' : '') + main +
         (view ? '<div class="enc-modal" role="dialog" aria-label="' + esc(view.n) + '"><div class="toolbar">' + btn('encViewClose', '✕ Close', {}, 'btn') + '</div>' + MON.block(view) + '</div>' : '') + '</main>';
     }

@@ -275,7 +275,7 @@
     function shelfHtml() {
       var list = BUILT.concat(mine || []);
       return '<div class="bk-shelf">' + list.map(function (b) {
-        return '<button type="button" class="pill' + (B.open === b.id ? ' on' : '') + '" data-act="bkOpen" data-v="' + esc(b.id) + '">' + (b.kind === 'pdf' ? '📕 ' : '📘 ') + esc(b.name) + '</button>';
+        return '<button type="button" class="pill' + (B.open === b.id ? ' on' : '') + '" data-act="bkOpen" data-v="' + esc(b.id) + '">' + root.Icon(b.kind === 'pdf' ? 'tome' : 'book') + ' ' + esc(b.name) + '</button>';
       }).join('') + '<label class="btn small bk-add">+ Add a book<input type="file" id="bookFile" accept=".pdf,.md,.markdown,.txt,application/pdf,text/plain,text/markdown" hidden></label></div>';
     }
     function html() {

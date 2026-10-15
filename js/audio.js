@@ -2,15 +2,15 @@
 // and a small Spotify player docked at the bottom that keeps playing while you move around the app.
 (function (root) {
   'use strict';
-  // [id, name, icon, search words]
+  // [id, name, icon (js/icons.js), search words]
   var MOODS = [
-    ['tavern', 'Tavern', '🍺', 'tavern fantasy music'], ['town', 'Town', '🏘️', 'medieval town ambience'],
-    ['travel', 'Travel', '🐎', 'fantasy adventure travel music'], ['forest', 'Forest', '🌲', 'enchanted forest ambience'],
-    ['camp', 'Camp and rest', '🔥', 'campfire night ambience'], ['dungeon', 'Dungeon', '🕯️', 'dark dungeon ambience'],
-    ['mystery', 'Mystery', '🔍', 'mystery investigation fantasy music'], ['horror', 'Horror', '👻', 'dark horror ambience'],
-    ['combat', 'Combat', '⚔️', 'epic battle music'], ['boss', 'Boss fight', '🐉', 'epic boss battle orchestral'],
-    ['sea', 'Sea and pirates', '🌊', 'pirate sea shanty ambience'], ['sad', 'Sad moment', '🌧️', 'sad emotional fantasy music'],
-    ['victory', 'Victory', '🏆', 'triumphant victory fantasy music'], ['magic', 'Magic and wonder', '✨', 'magical fantasy ambient music']
+    ['tavern', 'Tavern', 'tankard', 'tavern fantasy music'], ['town', 'Town', 'house', 'medieval town ambience'],
+    ['travel', 'Travel', 'signpost', 'fantasy adventure travel music'], ['forest', 'Forest', 'tree', 'enchanted forest ambience'],
+    ['camp', 'Camp and rest', 'campfire', 'campfire night ambience'], ['dungeon', 'Dungeon', 'candle', 'dark dungeon ambience'],
+    ['mystery', 'Mystery', 'eye', 'mystery investigation fantasy music'], ['horror', 'Horror', 'skull', 'dark horror ambience'],
+    ['combat', 'Combat', 'swords', 'epic battle music'], ['boss', 'Boss fight', 'dragon', 'epic boss battle orchestral'],
+    ['sea', 'Sea and pirates', 'ship', 'pirate sea shanty ambience'], ['sad', 'Sad moment', 'rain', 'sad emotional fantasy music'],
+    ['victory', 'Victory', 'trophy', 'triumphant victory fantasy music'], ['magic', 'Magic and wonder', 'sparkle', 'magical fantasy ambient music']
   ];
   // Suggested Spotify playlists for each mood (public D&D playlists, checked to exist in October 2026): [playlist id, name]
   var PICKS = {
@@ -102,9 +102,9 @@
       var h = '<main class="mon-main audio-main"><h2>Audio</h2><p class="muted">Pick a mood, then ▶ Play here: the music starts in the player at the bottom and keeps going while you use the rest of the app. Switching playlists starts the new one right away.</p>';
       h += '<div class="audio-moods">' + MOODS.map(function (m) {
         var n = (lists[m[0]] || []).length;
-        return '<button type="button" class="audio-mood' + (m[0] === mood[0] ? ' on' : '') + '" data-act="audMood" data-v="' + m[0] + '"><span aria-hidden="true">' + m[2] + '</span> ' + esc(m[1]) + (n ? ' <small>+' + n + '</small>' : '') + '</button>';
+        return '<button type="button" class="audio-mood' + (m[0] === mood[0] ? ' on' : '') + '" data-act="audMood" data-v="' + m[0] + '">' + root.Icon(m[2]) + ' ' + esc(m[1]) + (n ? ' <small>+' + n + '</small>' : '') + '</button>';
       }).join('') + '</div>';
-      h += '<div class="panel"><h3>' + mood[2] + ' ' + esc(mood[1]) + '</h3><div class="audio-list">' + picks.map(function (x) { return row(x, 0, false); }).join('') + '</div>' +
+      h += '<div class="panel"><h3 class="ico-h">' + root.Icon(mood[2]) + ' ' + esc(mood[1]) + '</h3><div class="audio-list">' + picks.map(function (x) { return row(x, 0, false); }).join('') + '</div>' +
         '<p class="small muted">Suggested public D&D playlists on Spotify. Want something else? ' +
         '<a href="' + esc(sr.spotify) + '" target="_blank" rel="noopener">Find more on Spotify</a> · <a href="' + esc(sr.qobuz) + '" target="_blank" rel="noopener">Find on Qobuz</a></p></div>';
       h += '<div class="panel"><h3>My ' + esc(mood[1].toLowerCase()) + ' playlists</h3>';

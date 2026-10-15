@@ -1105,17 +1105,17 @@
       return '<div class="home-tile"><button type="button" class="home-main" data-act="section" data-v="' + sec + '"><span class="home-icon" aria-hidden="true">' + icon + '</span><b>' + name + '</b><span>' + text + '</span></button>' + (extra || '') + '</div>';
     };
     return '<main class="home"><h1>Character Forge</h1><p class="muted">Your D&amp;D 5e table companion (2014 rules).</p><div class="home-grid">' +
-      tile('chars', '⚔', 'Characters', 'Build characters step by step, print the sheet, and track spells, hit points and rests while you play.',
+      tile('chars', Icon('sword'), 'Characters', 'Build characters step by step, print the sheet, and track spells, hit points and rests while you play.',
         chars.length ? '<div class="home-list">' + chars.slice(0, 6).map(function (c) {
           var dd = R.derive(c, store.filters);
           return '<button type="button" class="home-char" data-act="openChar" data-v="' + c.id + '"><b>' + esc(title(c)) + '</b><span class="small muted">' + esc(summaryLine(c, dd)) + '</span></button>';
         }).join('') + (chars.length > 6 ? '<span class="small muted">and ' + (chars.length - 6) + ' more</span>' : '') + '</div>' : '') +
-      tile('encounters', '⚔︎', 'Encounters', 'Build a fight for your party, see how hard it is (2014 rules), roll a random one, then run it with initiative and hit points.') +
-      tile('treasure', '💰', 'Treasures', 'Quick random loot after a fight: a few coins for bandits, a hoard with gems and magic items for a boss.') +
-      tile('books', '📚', 'Books', 'Every class, race, background, feat and spell, plus the official free rules for play and magic items, all searchable. Add your own books (PDF) too, kept on your device.') +
-      tile('audio', '🎵', 'Audio', 'Music by mood for the table: tavern, dungeon, combat… Find it on Spotify or Qobuz and keep your own playlists for each mood.') +
-      tile('rules', '📜', 'House rules', 'Your table’s own rules, written down and quick to find during a game.') +
-      tile('monsters', '🐉', 'Monsters', 'Every monster from the 2014 SRD with its full stat block, searchable by name, type, size and challenge, with dice you can roll. Add your own too.') +
+      tile('encounters', Icon('swords'), 'Encounters', 'Build a fight for your party, see how hard it is (2014 rules), roll a random one, then run it with initiative and hit points.') +
+      tile('treasure', Icon('coins'), 'Treasures', 'Quick random loot after a fight: a few coins for bandits, a hoard with gems and magic items for a boss.') +
+      tile('books', Icon('book'), 'Books', 'Every class, race, background, feat and spell, plus the official free rules for play and magic items, all searchable. Add your own books (PDF) too, kept on your device.') +
+      tile('audio', Icon('lute'), 'Audio', 'Music by mood for the table: tavern, dungeon, combat… Find it on Spotify or Qobuz and keep your own playlists for each mood.') +
+      tile('rules', Icon('scroll'), 'House rules', 'Your table’s own rules, written down and quick to find during a game.') +
+      tile('monsters', Icon('dragon'), 'Monsters', 'Every monster from the 2014 SRD with its full stat block, searchable by name, type, size and challenge, with dice you can roll. Add your own too.') +
       '</div></main>';
   }
   // House rules: short titled notes for the table, searchable; saved with the characters.

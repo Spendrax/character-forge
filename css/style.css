@@ -295,7 +295,8 @@ html { overflow-anchor: none; } /* the app restores scroll itself after each red
 .home-main:hover b { color: var(--accent); }
 .home-main b { font: 700 1.35rem var(--serif); }
 .home-main span:last-child { color: var(--muted); }
-.home-icon { font-size: 2rem; line-height: 1; }
+.home-icon { font-size: 2rem; line-height: 1; color: var(--ink); }
+.home-icon .ico { width: 2.4rem; height: 2.4rem; }
 .home-list { border-top: 1px solid var(--line); display: flex; flex-direction: column; padding: .3rem 0; }
 .home-list > span { padding: .3rem 1.2rem; }
 .home-char { display: flex; flex-direction: column; text-align: left; background: none; border: 0; padding: .45rem 1.2rem; font: inherit; color: inherit; cursor: pointer; }
@@ -500,3 +501,11 @@ html { overflow-anchor: none; } /* the app restores scroll itself after each red
 .audio-dock iframe { width: 100%; border: 0; border-radius: 12px; height: 80px; display: block; }
 body.has-dock::after { content: ""; display: block; height: 90px; }
 .audio-main a.btn, .audio-item a.btn { text-decoration: none; }
+.ico { width: 1.25em; height: 1.25em; vertical-align: -.25em; flex: none; }
+.ico .ia { fill: var(--accent); fill-opacity: .22; }
+.audio-mood { display: flex; align-items: center; gap: .55rem; }
+.audio-mood .ico { width: 1.7rem; height: 1.7rem; color: var(--ink); }
+.audio-mood.on .ico { color: var(--accent); }
+.audio-mood.on .ico .ia { fill-opacity: .35; }
+.ico-h { display: flex; align-items: center; gap: .5rem; }
+.ico-h .ico { width: 1.6em; height: 1.6em; color: var(--accent); }
