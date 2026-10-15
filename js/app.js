@@ -1043,7 +1043,7 @@
   // Phone back button and back swipe: every page you move to is a step in the browser history,
   // so Back returns to the previous page instead of leaving the app.
   var navLast = null, navRestoring = false;
-  function navState() { return { s: ui.section, st: ui.step, m: ui.mode || '', c: store.current, mo: (ui.mon && ui.mon.open) || '' }; }
+  function navState() { return { g: gameOf(), s: ui.section, st: ui.step, m: ui.mode || '', c: store.current, mo: (ui.mon && ui.mon.open) || '' }; }
   function syncHistory() {
     var st = navState(), k = JSON.stringify(st);
     if (k === navLast) return;
@@ -1053,7 +1053,7 @@
   window.addEventListener('popstate', function (e) {
     var st = e.state; if (!st || !st.s) return;
     navRestoring = true;
-    ui.section = st.s; ui.step = st.st; if (st.m) ui.mode = st.m; if (byId(st.c)) store.current = st.c;
+    if (st.g) store.game = st.g; ui.section = st.s; ui.step = st.st; if (st.m) ui.mode = st.m; if (byId(st.c)) store.current = st.c;
     if (ui.mon) { ui.mon.open = st.mo; ui.mon.edit = ''; }
     ui.scrollToStep = true; render();
     if (ui.section !== 'chars') window.scrollTo(0, 0);
@@ -1069,7 +1069,7 @@
     if (!ui.mode) openMode();
     if (ui.mode === 'play' && !visibleSteps().some(function (x) { return x[0] === ui.step; })) ui.step = 'play';
     var body = { lineage: stepLineage, 'class': stepClass, abilities: stepAbilities, background: stepBackground, spells: stepSpells, myspells: stepMySpells, equipment: stepEquipment, items: stepItems, appearance: stepAppearance, details: stepDetails, sheet: stepSheet, notes: stepNotes, play: stepPlay }[ui.step]();
-    var top = '<header class="top">' + btn('section', 'Character Forge', { v: 'home' }, 'brand linkish') + sectionNav() + '<select data-ui="current" aria-label="Character">' + store.chars.map(function (c) {
+    var top = '<header class="top">' + btn('section', 'Character Forge', { v: 'home' }, 'brand linkish') + gameSwitch() + sectionNav() + '<select data-ui="current" aria-label="Character">' + store.chars.map(function (c) {
       return '<option value="' + c.id + '"' + (c.id === ch.id ? ' selected' : '') + '>' + esc(title(c)) + '</option>';
     }).join('') + '</select>' + '<button type="button" class="btn" data-act="undo" title="Undo (Ctrl+Z)"' + (undoStack.length ? '' : ' disabled') + '>↶ Undo</button><button type="button" class="btn" data-act="redo" title="Redo (Ctrl+Y)"' + (redoStack.length ? '' : ' disabled') + '>↷ Redo</button>' + btn('new', 'New') + btn('dup', 'Duplicate') + btn('import', 'Import') + btn('export', 'Export') +
       (ui.confirmDelete ? btn('delete', 'Really delete?', {}, 'btn primary') + btn('cancelDelete', 'Cancel') : btn('askDelete', 'Delete', {}, 'btn danger')) +
@@ -1112,8 +1112,17 @@
   }
 
   // ---------- sections: the home page and the monsters ----------
+  // Two games side by side, each with its own sections; Audio, dice and your own books are shared.
+  function gameOf() { return store.game === 'mm' ? 'mm' : 'dnd'; }
+  function gameSwitch() {
+    return '<div class="game-switch" role="group" aria-label="Game">' + [['dnd', 'D&amp;D 5e'], ['mm', 'M&amp;M 3e']].map(function (g) {
+      return '<button type="button" class="' + (gameOf() === g[0] ? 'on' : '') + '" data-act="game" data-v="' + g[0] + '"' + (gameOf() === g[0] ? ' aria-pressed="true"' : ' aria-pressed="false"') + '>' + g[1] + '</button>';
+    }).join('') + '</div>';
+  }
   function sectionNav() {
-    return '<nav class="sections" aria-label="Sections">' + [['home', '⌂ Home'], ['chars', 'Characters'], ['monsters', 'Monsters'], ['encounters', 'Encounters'], ['treasure', 'Treasures'], ['books', 'Books'], ['audio', 'Audio'], ['rules', 'House rules']].map(function (x) {
+    var list = gameOf() === 'mm' ? [['mm-home', '⌂ Home'], ['mm-heroes', 'Heroes'], ['mm-rules', 'Rules'], ['audio', 'Audio'], ['rules', 'House rules']]
+      : [['home', '⌂ Home'], ['chars', 'Characters'], ['monsters', 'Monsters'], ['encounters', 'Encounters'], ['treasure', 'Treasures'], ['books', 'Books'], ['audio', 'Audio'], ['rules', 'House rules']];
+    return '<nav class="sections" aria-label="Sections">' + list.map(function (x) {
       return '<button type="button" class="sec' + (ui.section === x[0] ? ' on' : '') + '" data-act="section" data-v="' + x[0] + '"' + (ui.section === x[0] ? ' aria-current="page"' : '') + '>' + x[1] + '</button>';
     }).join('') + '</nav>';
   }
@@ -1137,8 +1146,9 @@
       '</div></main>';
   }
   // House rules: short titled notes for the table, searchable; saved with the characters.
+  function houseRules() { var k = gameOf() === 'mm' ? 'mmRules' : 'rules'; return store[k] = store[k] || []; }
   function rulesHtml() {
-    var list = store.rules || [], q = ui.q.rules || '';
+    var list = houseRules(), q = ui.q.rules || '';
     var shown = list.filter(function (r) { return match(q, r.t + ' ' + r.x); });
     return '<main class="home rules"><div class="toolbar"><h2 style="margin:0">House rules</h2><span class="spacer"></span>' + btn('ruleAdd', '+ Add a rule', {}, 'btn primary') + '</div>' +
       (list.length > 3 ? '<div class="toolbar">' + search('rules', 'Search rules…') + '</div>' : '') +
@@ -1151,22 +1161,24 @@
   }
   function renderSection(fid, pos) {
     var keep = scrollState();
-    var top = '<header class="top">' + btn('section', 'Character Forge', { v: 'home' }, 'brand linkish') + sectionNav() + '<span class="spacer"></span>' +
+    var top = '<header class="top">' + btn('section', 'Character Forge', { v: gameOf() === 'mm' ? 'mm-home' : 'home' }, 'brand linkish') + gameSwitch() + sectionNav() + '<span class="spacer"></span>' +
       '<button type="button" class="btn" data-act="undo" title="Undo (Ctrl+Z)"' + (undoStack.length ? '' : ' disabled') + '>↶ Undo</button>' + (isInstalledApp() ? '' : btn('install', 'Install app', {}, installPrompt ? 'btn primary' : 'btn')) + '</header>';
-    var body = ui.section === 'monsters' ? '<main class="mon-main">' + MON.html() + '</main>' : ui.section === 'encounters' ? ENC.html() : ui.section === 'treasure' ? TRE.html() : ui.section === 'books' ? BOOKS.html() : ui.section === 'audio' ? AUD.html() : ui.section === 'rules' ? rulesHtml() : homeHtml();
+    var body = /^mm-(home|heroes)$/.test(ui.section) ? MMV.html(ui.section) : ui.section === 'mm-rules' ? BOOKS.html() : ui.section === 'monsters' ? '<main class="mon-main">' + MON.html() + '</main>' : ui.section === 'encounters' ? ENC.html() : ui.section === 'treasure' ? TRE.html() : ui.section === 'books' ? BOOKS.html() : ui.section === 'audio' ? AUD.html() : ui.section === 'rules' ? rulesHtml() : homeHtml();
     document.getElementById('app').innerHTML = top + installHelpHtml() + body;
     if (ui.mon && ui.mon.scrollTop) { ui.mon.scrollTop = false; var r = document.querySelector('.mon-right'); if (r && window.innerWidth < 800) r.scrollIntoView(); else window.scrollTo(0, 0); }
     else restoreScroll(keep);
-    if (ui.section === 'books') BOOKS.after();
+    if (ui.section === 'books' || ui.section === 'mm-rules') BOOKS.after();
+    var mt = document.querySelector('.mm-tabs .on'); if (mt) mt.parentNode.scrollLeft = Math.max(0, mt.offsetLeft - mt.parentNode.offsetLeft - 24); // keep the open tab in view
     AUD.after(); Dice3D.place(); syncHistory();
     if (fid) { var el = document.getElementById(fid); if (el) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } try { if (pos != null) el.setSelectionRange(pos, pos); } catch (e) { /* not text */ } } }
-    document.title = (ui.section === 'monsters' ? 'Monsters' : ui.section === 'encounters' ? 'Encounters' : ui.section === 'treasure' ? 'Treasures' : ui.section === 'books' ? 'Books' : ui.section === 'audio' ? 'Audio' : ui.section === 'rules' ? 'House rules' : 'Home') + ' — Character Forge';
+    document.title = (/^mm-(home|heroes)$/.test(ui.section) ? MMV.title(ui.section) : ui.section === 'mm-rules' ? 'M&M rules' : ui.section === 'monsters' ? 'Monsters' : ui.section === 'encounters' ? 'Encounters' : ui.section === 'treasure' ? 'Treasures' : ui.section === 'books' ? 'Books' : ui.section === 'audio' ? 'Audio' : ui.section === 'rules' ? 'House rules' : 'Home') + ' — Character Forge';
     saveNow();
   }
 
   // ---------- actions ----------
   var actions = {
     section: function (v) { ui.section = v; window.scrollTo(0, 0); },
+    game: function (v) { if (gameOf() === v) return; store.game = v === 'mm' ? 'mm' : 'dnd'; ui.section = v === 'mm' ? 'mm-home' : 'home'; ui.q.rules = ''; window.scrollTo(0, 0); },
     openChar: function (v) { store.current = v; ui.section = 'chars'; ch = byId(v); openMode(); window.scrollTo(0, 0); },
     editSkills: function () { ui.mode = 'build'; ui.step = 'details'; ui.jumpTo = 'skills-edit'; },
     editChar: function () { ui.mode = 'build'; ui.step = 'lineage'; ui.scrollToStep = true; },
@@ -1296,10 +1308,10 @@
       var got = R.rest(ch, d, v);
       ui.restMsg = (v === 'long' ? 'Long rest' : 'Short rest') + ': ' + (got.length ? 'got back ' + got.join(', ') + '.' : 'nothing was used.');
     },
-    ruleAdd: function () { store.rules = store.rules || []; var r = { id: R.uid(), t: '', x: '' }; store.rules.unshift(r); ui.editRule = r.id; },
+    ruleAdd: function () { var r = { id: R.uid(), t: '', x: '' }; houseRules().unshift(r); ui.editRule = r.id; },
     ruleEdit: function (v) { ui.editRule = v; },
     ruleDone: function () { ui.editRule = null; },
-    ruleRm: function (v) { store.rules = (store.rules || []).filter(function (r) { return r.id !== v; }); ui.editRule = null; },
+    ruleRm: function (v) { var l = houseRules(); l.splice(l.map(function (r) { return r.id; }).indexOf(v), 1); ui.editRule = null; },
     restCancel: function () { ui.confirmRest = null; },
     spellFold: function (v) { ui.spellOpen = ui.spellOpen || {}; ui.spellOpen[v] = !ui.spellOpen[v]; },
     quickItem: function (v) { var it = ch.items.filter(function (i) { return i.id === v; })[0]; if (it) it.quick = !it.quick; },
@@ -1423,6 +1435,8 @@
   Object.keys(MON.actions).forEach(function (k) { actions[k] = MON.actions[k]; });
   var BOOKS = window.BooksUI({ esc: esc, btn: btn, ui: ui, store: store, render: render });
   Object.keys(BOOKS.actions).forEach(function (k) { actions[k] = BOOKS.actions[k]; });
+  var MMV = window.MMUI({ esc: esc, btn: btn, ui: ui, store: store });
+  Object.keys(MMV.actions).forEach(function (k) { actions[k] = MMV.actions[k]; });
   var AUD = window.AudioUI({ esc: esc, btn: btn, ui: ui, store: store });
   Object.keys(AUD.actions).forEach(function (k) { actions[k] = AUD.actions[k]; });
   var TRE = window.TreasureUI({ esc: esc, btn: btn, ui: ui, store: store });
@@ -1440,7 +1454,8 @@
   });
   document.addEventListener('input', function (e) {
     var t = e.target, a = function (n) { return t.getAttribute(n); };
-    if (ui.section === 'books') { var bk = BOOKS.onInput(t); if (bk === 'render') render(); if (bk) return; }
+    if (ui.section === 'books' || ui.section === 'mm-rules') { var bk = BOOKS.onInput(t); if (bk === 'render') render(); if (bk) return; }
+    if (ui.section === 'mm-heroes') { var mi = MMV.onInput(t); if (mi === 'render') render(); else if (mi) save(); if (mi) return; }
     if (ui.section === 'audio') { var au = AUD.onInput(t); if (au === 'render') render(); if (au) return; }
     if (ui.section === 'treasure') { var tr = TRE.onInput(t); if (tr === 'render') render(); else if (tr) save(); if (tr) return; }
     if (ui.section === 'encounters') { var er = ENC.onInput(t); if (er === 'render') render(); else if (er) save(); if (er) return; }
@@ -1449,7 +1464,7 @@
     else if (a('data-piczoom')) { ch.pictureView = Object.assign({}, ch.pictureView, { zoom: +t.value }); livePicture(); save(); }
     else if (a('data-trk')) { var TT = ch.track = ch.track || {}, nv = Math.max(0, Math.round(+t.value) || 0); if (a('data-trk') === 'hp') TT.hp = nv >= d.hp ? null : nv; else TT.temp = nv; save(); }
     else if (a('data-ctr') && t.tagName === 'INPUT') { var cx = (ch.counters || []).filter(function (c) { return c.id === a('data-ctr'); })[0]; if (cx) { cx[a('data-f')] = a('data-f') === 'max' ? Math.max(1, Math.min(99, Math.round(+t.value) || 1)) : t.value; save(); } }
-    else if (a('data-rule')) { var ru = (store.rules || []).filter(function (r) { return r.id === a('data-rule'); })[0]; if (ru) { ru[a('data-f')] = t.value; save(); } }
+    else if (a('data-rule')) { var ru = houseRules().filter(function (r) { return r.id === a('data-rule'); })[0]; if (ru) { ru[a('data-f')] = t.value; save(); } }
     else if (a('data-jnote')) { var jn = (ch.journal || []).filter(function (x) { return x.id === a('data-jnote'); })[0]; if (jn) { jn[a('data-f')] = t.value; save(); } }
     else if (a('data-espell')) { var esx = (ch.extraSpells || []).filter(function (x) { return x.id === a('data-espell'); })[0]; if (esx) { esx[a('data-f')] = t.value; save(); } }
     else if (a('data-itemtext')) { var itx = ch.items.filter(function (i) { return i.id === a('data-itemtext'); })[0]; if (itx) { itx.note = t.value; save(); } }
@@ -1460,7 +1475,8 @@
   document.addEventListener('change', function (e) {
     var t = e.target, a = function (n) { return t.getAttribute(n); };
     if (t.id === 'bookFile') return BOOKS.importFile(t);
-    if (ui.section === 'books') { if (BOOKS.onChange(t)) { render(); return; } }
+    if (ui.section === 'books' || ui.section === 'mm-rules') { if (BOOKS.onChange(t)) { render(); return; } }
+    if (ui.section === 'mm-heroes') { var mc = MMV.onChange(t); if (mc) { requestRender(); return; } } // wait for the tap that moved focus
     if (ui.section === 'encounters') { var ec = ENC.onChange(t); if (ec) { render(); return; } if (a('data-enc') != null) return; }
     if (a('data-mon') != null) return;
     if (a('data-mymon') != null) { if (t.tagName === 'SELECT') return; return setTimeout(function () { var f = document.activeElement; if (!f || !f.getAttribute || f.getAttribute('data-mymon') == null) requestRender(); }, 0); }
@@ -1657,6 +1673,7 @@
   }
 
   load();
+  if (store.game === 'mm' && ui.section === 'home') ui.section = 'mm-home'; // reopen in the game you were using
   render();
   takeSharedFile();
   window.Forge = { store: store, ui: ui, render: render, derived: function () { return d; } };

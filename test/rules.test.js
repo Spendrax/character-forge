@@ -370,6 +370,23 @@ const sw = fs.readFileSync(path.join(__dirname, '../sw.js'), 'utf8');
   }
 }
 
+{ // Mutants & Masterminds 3e: power costs follow the rules, the PL limits catch over-limit heroes, the rules book builds
+  require('../data/mm.js'); require('../js/mm.js'); const MR = globalThis.MMRules, M3 = globalThis.MM;
+  assert.equal(M3.effects.length, 40); assert.equal(M3.advantages.length, 75);
+  const pc = p => MR.powerCost(Object.assign({ rank: 1, mods: [] }, p)).cost;
+  assert.equal(pc({ effect: 'Damage', rank: 10, mods: [{ n: 'Increased Range', v: 1 }] }), 20);       // Blast 10
+  assert.equal(pc({ effect: 'Protection', rank: 10, mods: [{ n: 'Sustained', v: 0 }] }), 10);         // Force Field 10
+  assert.equal(pc({ effect: 'Damage', rank: 4, mods: [{ n: 'Limited', v: -1 }] }), 2);                // 1 point per 2 ranks
+  assert.equal(pc({ effect: 'Damage', rank: 4, mods: [{ n: 'Limited', v: -1 }, { n: 'Tiring', v: -1 }] }), 2); // 1 per 3 ranks
+  assert.equal(pc({ effect: 'Enhanced Trait', target: 'skill:Perception', rank: 8 }), 4);
+  assert.equal(pc({ effect: 'Protection', rank: 12, mods: [{ n: 'Removable', v: -1 }] }), 10);        // −1 per 5 points
+  assert.equal(pc({ effect: 'Feature', rank: 1, mods: [{ n: 'Quirk', v: -1 }] }), 1);                 // never below 1
+  const h = MR.newHero(); h.ab.AGL = 8; h.def.dodge = 6; h.ab.STA = 4; h.powers = [{ id: 'p', effect: 'Protection', rank: 6, mods: [] }];
+  let dd = MR.derive(h); assert.equal(dd.def.dodge, 14); assert.equal(dd.def.tough, 10); assert.ok(dd.warnings.some(w => /Dodge \+ Toughness = 24/.test(w)));
+  assert.equal(dd.pp.total, 16 + 8 + 6 + 6);
+  assert.ok(MR.book().chapters.flatMap(c => c.parts).every(p => p.md.length > 40 && !/undefined/.test(p.md)));
+}
+
 { // books: the free rules load, and the Markdown reader handles headings, tables and quotes
   require('../data/srd-book.js'); require('../js/books.js'); const B = globalThis.BooksUI, book = D.book || globalThis.DND.book;
   assert.ok(book.chapters.length >= 10); const all = book.chapters.flatMap(c => c.parts); assert.ok(all.length > 90);
