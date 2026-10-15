@@ -384,6 +384,11 @@ const sw = fs.readFileSync(path.join(__dirname, '../sw.js'), 'utf8');
   const h = MR.newHero(); h.ab.AGL = 8; h.def.dodge = 6; h.ab.STA = 4; h.powers = [{ id: 'p', effect: 'Protection', rank: 6, mods: [] }];
   let dd = MR.derive(h); assert.equal(dd.def.dodge, 14); assert.equal(dd.def.tough, 10); assert.ok(dd.warnings.some(w => /Dodge \+ Toughness = 24/.test(w)));
   assert.equal(dd.pp.total, 16 + 8 + 6 + 6);
+  const s2 = MR.newHero(); s2.ab.STR = 21; assert.ok(MR.derive(s2).warnings.some(w => /^Strength 21 is over 20: even untrained/.test(w)));   // abilities held to PL + 10 through skills
+  s2.ab.STR = 12; s2.ab.FGT = 10; assert.ok(MR.derive(s2).warnings.some(w => /^Unarmed: attack \+10 and rank 12/.test(w)));                // close attack + Strength ≤ 2 PL
+  s2.ab.STR = 4; s2.ab.FGT = 8; s2.powers = [{ id: 'c', name: 'Claws', effect: 'Damage', rank: 6, str: true, mods: [] }];
+  const cl = MR.derive(s2).attacks.find(a => a.n === 'Claws'); assert.equal(cl.rank, 10); assert.equal(cl.dc, 25); assert.ok(!MR.derive(s2).warnings.some(w => /^Claws/.test(w))); s2.ab.FGT = 12; assert.ok(MR.derive(s2).warnings.some(w => /^Claws: attack \+12 and rank 10/.test(w)));
+  s2.powers = [{ id: 'm', effect: 'Mind Reading', rank: 11, mods: [] }]; assert.ok(MR.derive(s2).warnings.some(w => /rank 11 is above power level 10/.test(w)));
   assert.ok(MR.book().chapters.flatMap(c => c.parts).every(p => p.md.length > 40 && !/undefined/.test(p.md)));
 }
 

@@ -80,11 +80,13 @@
     (h.powers || []).forEach(function (p) {
       var e = FX[p.effect]; if (!e || e[1] !== 'Attack' && modCount(p, 'Attack') === 0) return;
       var range = rangeOf(p), area = modCount(p, 'Area') > 0, acc = 2 * modCount(p, 'Accurate') - 2 * modCount(p, 'Inaccurate');
-      var nm = p.name || p.effect, rank = +p.rank || 0;
+      var nm = p.name || p.effect, strB = p.effect === 'Damage' && p.str && range === 'Close', rank = (+p.rank || 0) + (strB ? out.ab.STR : 0); // Strength-based damage adds Strength
       var bonus = area || range === 'Perception' ? null : (range === 'Ranged' ? rangedBase + spec('Ranged Combat', nm) : closeBase + spec('Close Combat', nm)) + acc;
       var resist = p.effect === 'Damage' ? 'Toughness' : p.effect === 'Affliction' || p.effect === 'Weaken' ? (p.resist || 'Fortitude or Will') : p.effect === 'Nullify' ? 'rank or Will' : '';
       out.attacks.push({ n: nm, range: range + (area ? ', area' : ''), bonus: bonus, rank: rank, kind: p.effect, resist: resist, dc: (p.effect === 'Damage' ? 15 : 10) + rank, power: p.id });
     });
+    // resisted effects with no attack roll (mind reading, illusions): rank ≤ PL
+    (h.powers || []).forEach(function (p) { if (/^(Mind Reading|Illusion)$/.test(p.effect) && (+p.rank || 0) > pl) out.warnings.push((p.name || p.effect) + ': rank ' + p.rank + ' is above power level ' + pl + ' (resisted with no attack roll, so rank ≤ PL).'); });
     // limits
     if (out.pp.total > budget) out.warnings.push('Spent ' + out.pp.total + ' of ' + budget + ' power points (' + (out.pp.total - budget) + ' over).');
     out.attacks.forEach(function (a) {
@@ -93,11 +95,20 @@
     });
     var D = out.def, cap = function (x, y, a, b) { if (x + y > 2 * pl) out.warnings.push(a + ' + ' + b + ' = ' + (x + y) + ', over ' + 2 * pl + ' (2 × PL).'); };
     cap(D.dodge, D.tough, 'Dodge', 'Toughness'); cap(D.parry, D.tough, 'Parry', 'Toughness'); cap(D.fort, D.will, 'Fortitude', 'Will');
-    Object.keys(out.skills).forEach(function (s) { if (out.skills[s].total > pl + 10) out.warnings.push(s + ' +' + out.skills[s].total + ' is over ' + (pl + 10) + ' (PL + 10).'); });
+    var abWarned = {};
+    Object.keys(out.skills).forEach(function (s) {
+      var x = out.skills[s]; if (x.total <= pl + 10) return;
+      if (!x.r) { if (abWarned[x.ab]) return; abWarned[x.ab] = 1; out.warnings.push(M.abilities.filter(function (a) { return a[0] === x.ab; })[0][1] + ' ' + out.ab[x.ab] + ' is over ' + (pl + 10) + ': even untrained, ' + s + ' would be +' + x.total + ' (skills are limited to PL + 10).'); }
+      else out.warnings.push(s + ' +' + x.total + ' is over ' + (pl + 10) + ' (PL + 10).');
+    });
     (h.spec || []).forEach(function (x) { if (x.s === 'Expertise' && x._total > pl + 10) out.warnings.push('Expertise: ' + (x.n || '?') + ' +' + x._total + ' is over ' + (pl + 10) + ' (PL + 10).'); });
     (h.adv || []).forEach(function (a) { var mx = ADV[a.n] && ADV[a.n][2]; if (mx > 0 && (+a.r || 1) > mx) out.warnings.push(a.n + ' goes up to ' + mx + ' ranks.'); if (a.n === 'Luck' && (+a.r || 1) > Math.floor(pl / 2)) out.warnings.push('Luck goes up to half the power level (' + Math.floor(pl / 2) + ').'); });
     var comps = (h.comp || []).filter(function (c) { return String(c.t || '').trim(); });
     if (comps.length < 2) out.warnings.push('Heroes need at least two complications, one of them a Motivation.');
+    out.notes = [];
+    var gap = function (x, y, a, b) { var hi = Math.max(x, y), lo = Math.min(x, y); if (x + y >= pl && hi > 1.5 * Math.max(lo, 1)) out.notes.push(a + ' ' + x + ' and ' + b + ' ' + y + ' are far apart (more than 50%): the rules ask the GM to look at that closely.'); };
+    gap(D.dodge, D.tough, 'Dodge', 'Toughness'); gap(D.parry, D.tough, 'Parry', 'Toughness'); gap(D.fort, D.will, 'Fortitude', 'Will');
+    out.attacks.forEach(function (a) { if (a.bonus != null && a.rank) gap(a.bonus, a.rank, a.n + ' attack', 'rank'); });
     return out;
   }
 
@@ -112,7 +123,7 @@
       P('Hero points and extra effort', '**Hero points:** you start each adventure with 1 and earn more when your complications cause you trouble. Spend one to re-roll a check (a roll of 10 or less becomes 10 + the roll), to recover from a condition, to get an edit to the scene, to gain an instant counter, or to use an advantage that needs one.\n\n' +
         '**Extra effort:** push yourself for a burst: +2 on a check, an extra rank in a power, an extra action, a temporary power stunt, or ignoring a condition. Afterwards you are fatigued (spend a hero point to avoid it).'),
       P('Power level and power points', 'The **power level (PL)** sets how strong heroes are; a typical game is PL 10. Heroes get **15 power points per PL**.\n\n| Trait | Cost |\n|---|---|\n| Ability | 2 per rank |\n| Defense (Dodge, Parry, Fortitude, Will) | 1 per rank |\n| Skill | 1 per 2 ranks |\n| Advantage | 1 per rank |\n| Power | Effect cost + extras − flaws, per rank, plus flat modifiers |\n\n' +
-        '**Limits by power level:**\n\n- Attack bonus + effect rank ≤ 2 × PL (effects with no attack roll: rank ≤ PL)\n- Dodge + Toughness ≤ 2 × PL, and Parry + Toughness ≤ 2 × PL\n- Fortitude + Will ≤ 2 × PL\n- Skill bonus ≤ PL + 10\n\nToughness can’t be bought directly: it comes from Stamina, the Protection effect and the Defensive Roll advantage.'),
+        '**Limits by power level:**\n\n- Attack bonus + effect rank ≤ 2 × PL (resisted effects with no attack roll, like area and perception effects: rank ≤ PL). Unarmed damage is your Strength, so close attack + Strength counts too.\n- Dodge + Toughness ≤ 2 × PL, and Parry + Toughness ≤ 2 × PL\n- Fortitude + Will ≤ 2 × PL\n- Skill bonus ≤ PL + 10, including skills used untrained (ability alone)\n\nThere is no separate cap on abilities: the skill and attack limits hold them in check. Paired traits don’t have to be equal, but the rules ask the GM to look closely at a gap of more than 50%.\n\nToughness can’t be bought directly: it comes from Stamina, the Protection effect and the Defensive Roll advantage.'),
       P('Complications', 'Every hero has at least two complications, one of them a **Motivation**. When a complication makes life harder in play, the GM awards a hero point.\n\n' + M.complications.map(function (c) { return '**' + c[0] + '.** ' + c[1]; }).join('\n\n'))
     ];
     var abil = [P('Abilities', 'Abilities run from −5 to 20; 0 is an average adult, 2 is above average, 5 is the human peak. Each rank costs 2 points.\n\n' + M.abilities.map(function (a) { return '**' + a[1] + ' (' + a[0] + ').** ' + a[2]; }).join('\n\n') +
@@ -186,7 +197,7 @@
         (d.warnings.length ? '<span class="mm-warn">' + d.warnings.length + ' to check</span>' : '<span class="mm-ok">✓ within the limits</span>') + '</div>' +
         '<nav class="steps mm-tabs">' + TABS.map(function (t) { return btn('mmTab', t[1], { v: t[0] }, 'step' + (U.tab === t[0] ? ' on' : '')); }).join('') + '</nav>';
       var body = { basics: basics, abilities: abilities, powers: powers, advantages: advantages, skills: skills, defenses: defenses, complications: complications, sheet: sheet }[U.tab] || basics;
-      return h2 + '<div class="mm-body">' + body(h, d) + '</div>' + (d.warnings.length && U.tab !== 'sheet' ? '<div class="panel mm-warns"><b>To check</b><ul>' + d.warnings.map(function (w) { return '<li>' + esc(w) + '</li>'; }).join('') + '</ul></div>' : '') + '</main>';
+      return h2 + '<div class="mm-body">' + body(h, d) + '</div>' + (d.warnings.length && U.tab !== 'sheet' ? '<div class="panel mm-warns"><b>To check</b><ul>' + d.warnings.map(function (w) { return '<li>' + esc(w) + '</li>'; }).join('') + '</ul></div>' : '') + (d.notes.length && U.tab !== 'sheet' ? '<details class="panel mm-notes"><summary class="small">Worth a look with your GM (' + d.notes.length + ')</summary><ul class="small">' + d.notes.map(function (w) { return '<li>' + esc(w) + '</li>'; }).join('') + '</ul></details>' : '') + '</main>';
     }
     function basics(h, d) {
       return '<h2>Basics</h2><div class="panel"><div class="row">' + txt('name', h.name, 'Hero name', 'Hero name') + txt('identity', h.identity, 'Secret or public identity', 'Identity') + '</div><div class="row">' + txt('player', h.player, '', 'Player') + txt('group', h.group, 'Team, base', 'Group') + '</div>' +
@@ -213,7 +224,7 @@
       var specs = (h.spec || []).map(function (x, i) {
         return '<div class="mm-row"><span class="nm"><b>' + x.s + '</b><input type="text" id="mm-spec-' + i + '" data-mmf="spec.' + i + '.n" value="' + esc(x.n || '') + '" placeholder="' + (x.s === 'Expertise' ? 'Science, Magic, Streetwise…' : 'Unarmed, Swords, Blast…') + '" aria-label="' + x.s + ' specialty"></span>' + step('spec.' + i + '.r', +x.r || 0, 0, 30, x.s + ' ranks') + '<span class="mm-tot">' + fmt(x._total) + '</span>' + btn('mmSpecRm', '✕', { v: i }, 'btn small') + '</div>';
       }).join('');
-      return '<h2>Skills</h2><p class="muted">1 point per 2 ranks. Bonus = ability + ranks, up to PL + 10 (' + (d.pl + 10) + ').</p><div class="mm-rows">' +
+      return '<h2>Skills</h2><p class="muted">1 point per 2 ranks. Bonus = ability + ranks, up to PL + 10 (' + (d.pl + 10) + '), even with no ranks: a skill used untrained counts its ability alone, so this also limits your abilities.</p><div class="mm-rows">' +
         M.skills.filter(function (s) { return !s[3]; }).map(function (s) {
           var x = d.skills[s[0]];
           return '<div class="mm-row"><span class="nm"><b>' + s[0] + '</b> <small class="muted">' + s[1] + '</small></span>' + step('skills.' + s[0], x.r, 0, 30, s[0] + ' ranks') + '<span class="mm-tot' + (x.total > d.pl + 10 ? ' bad' : '') + '">' + fmt(x.total) + '</span></div>';
@@ -245,6 +256,7 @@
         '<optgroup label="Defenses (1 per rank)">' + DEF.map(function (x) { return '<option value="def:' + x[0] + '"' + (p.target === 'def:' + x[0] ? ' selected' : '') + '>' + x[1] + '</option>'; }).join('') + '</optgroup>' +
         '<optgroup label="Skills (½ per rank)">' + M.skills.filter(function (s) { return !s[3]; }).map(function (s) { return '<option value="skill:' + s[0] + '"' + (p.target === 'skill:' + s[0] ? ' selected' : '') + '>' + s[0] + '</option>'; }).join('') + '</optgroup>' +
         '<optgroup label="Advantages (1 per rank)">' + M.advantages.filter(function (a) { return a[2]; }).map(function (a) { return '<option value="adv:' + a[0] + '"' + (p.target === 'adv:' + a[0] ? ' selected' : '') + '>' + a[0] + '</option>'; }).join('') + '</optgroup></select></label>' : '';
+      var strBox = p.effect === 'Damage' && rangeOf(p) === 'Close' ? '<label class="check-line"><input type="checkbox" data-mmchk="powers.' + i + '.str"' + (p.str ? ' checked' : '') + '> <span><b>Adds Strength</b><br><span class="small muted">A punch, a weapon, claws: the damage is Strength + this rank (' + (d.ab.STR + (+p.rank || 0)) + ').</span></span></label>' : '';
       var resist = /^(Affliction|Weaken)$/.test(p.effect) ? '<label class="field"><span>Resisted by</span><select data-mmsel="powers.' + i + '.resist">' + ['Fortitude', 'Will', 'Dodge', 'Fortitude or Will'].map(function (r) { return '<option' + ((p.resist || 'Fortitude or Will') === r ? ' selected' : '') + '>' + r + '</option>'; }).join('') + '</select></label>' : '';
       var mods = (p.mods || []).map(function (m, j) {
         var md = MODS[m.n] || ['', 'flat', [0], 0, ''], isFlaw = M.flaws.some(function (f) { return f[0] === m.n; });
@@ -256,7 +268,7 @@
       }).join('');
       return '<div class="panel mm-power open">' + head + '<p class="small muted">' + esc(e[1] || '') + ' · ' + esc(e[2] || '') + ' · ' + esc(rangeOf(p)) + ' · ' + esc(e[4] || '') + ' — ' + esc(e[6] || '') + '</p>' +
         '<div class="row">' + txt('powers.' + i + '.name', p.name, p.effect, 'Power name') + '<div class="field"><span>Rank</span>' + step('powers.' + i + '.rank', +p.rank || 1, 1, 40, 'rank') + '</div></div>' +
-        (opts || target || resist ? '<div class="row">' + opts + target + resist + '</div>' : '') +
+        (opts || target || resist ? '<div class="row">' + opts + target + resist + '</div>' : '') + strBox +
         txt('powers.' + i + '.desc', p.desc, 'Descriptors and how it looks: fire, magic, a gadget…', 'Description') +
         '<h4>Extras and flaws</h4>' + (mods || '<p class="small muted">None.</p>') +
         '<div class="row"><label class="field"><span>Add an extra</span><select data-mmaddmod="' + i + '"><option value="">— extra —</option>' + M.extras.map(function (m) { return '<option>' + m[0] + '</option>'; }).join('') + '</select></label>' +
@@ -292,7 +304,7 @@
         '<h3>Offense</h3><ul class="lines">' + d.attacks.map(function (a) { return '<li><b>' + esc(a.n) + '</b> — ' + esc(a.range) + ', ' + (a.bonus == null ? 'no attack roll' : 'attack ' + fmt(a.bonus)) + ', ' + esc(a.kind) + ' ' + a.rank + (a.resist ? ' (DC ' + a.dc + ' ' + esc(a.resist) + ')' : '') + '</li>'; }).join('') + '</ul>' +
         '<h3>Powers</h3>' + ((h.powers || []).length ? (h.powers || []).map(function (p) {
           var m = (p.mods || []).map(function (x) { return x.n + (Math.max(1, +x.r || 1) > 1 ? ' ' + x.r : '') + (x.note ? ' (' + x.note + ')' : ''); });
-          return '<div class="feature"><b>' + esc(p.name || p.effect) + ':</b> ' + esc(p.effect) + ' ' + p.rank + (p.target ? ' (' + esc(p.target.split(':')[1]) + ')' : '') + (m.length ? ', ' + esc(m.join(', ')) : '') + ' <span class="lv">' + p._cost + ' pts</span>' + (p.desc ? '<div>' + esc(p.desc) + '</div>' : '') + '</div>';
+          return '<div class="feature"><b>' + esc(p.name || p.effect) + ':</b> ' + esc(p.effect) + ' ' + p.rank + (p.str && p.effect === 'Damage' ? ' (Strength-based)' : '') + (p.target ? ' (' + esc(p.target.split(':')[1]) + ')' : '') + (m.length ? ', ' + esc(m.join(', ')) : '') + ' <span class="lv">' + p._cost + ' pts</span>' + (p.desc ? '<div>' + esc(p.desc) + '</div>' : '') + '</div>';
         }).join('') : '<p class="muted">None.</p>') +
         '<h3>Advantages</h3><p>' + ((h.adv || []).map(function (a) { var def = ADV[a.n]; return esc(a.n + (def && def[2] && (+a.r || 1) > 1 ? ' ' + a.r : '') + (a.note ? ' (' + a.note + ')' : '')); }).join(', ') || '—') + '</p>' +
         '<h3>Skills</h3><p>' + (esc(sk.join(', ')) || '—') + '</p>' +
@@ -335,6 +347,7 @@
       var w = walk(hero(), f); w[0][w[1]] = t.value; return 'save';
     }
     function onChange(t) {
+      var ck = t.getAttribute('data-mmchk'); if (ck != null) { var wc = walk(hero(), ck); wc[0][wc[1]] = t.checked; return 'render'; }
       if (t.getAttribute('data-mmhero')) { S().cur = t.value; U.confirmDel = false; return 'render'; }
       var s = t.getAttribute('data-mmsel'); if (s != null) { var w = walk(hero(), s); w[0][w[1]] = /\.(v|base)$/.test(s) ? +t.value : t.value; return 'render'; }
       var a = t.getAttribute('data-mmaddmod'); if (a != null && t.value) { var m = MODS[t.value]; hero().powers[+a].mods.push({ n: t.value, v: m[2][0], r: 1, note: '' }); return 'render'; }
