@@ -517,7 +517,7 @@ body.has-dock::after { content: ""; display: block; height: 90px; }
 .dice3d { position: fixed; inset: 0; z-index: 60; display: none; background: #d7a868; overscroll-behavior: contain; touch-action: manipulation; }
 .dice3d.on { display: block; }
 html.dice3d-lock, html.dice3d-lock body { overflow: hidden; }
-.dice3d-table { position: absolute; inset: 0; display: block; }
+.dice3d-table { position: absolute; inset: 0; display: block; touch-action: none; }
 .dice3d-top { position: absolute; left: 0; right: 0; top: 0; display: flex; align-items: flex-start; gap: .6rem; padding: max(.6rem, env(safe-area-inset-top)) .8rem .6rem; pointer-events: none; }
 .dice3d-x { pointer-events: auto; font: 600 1.5rem/1 system-ui, sans-serif; width: 2.6rem; height: 2.6rem; border: 0; border-radius: 50%; background: rgba(40,24,10,.35); color: #fff; cursor: pointer; }
 .dice3d-result { pointer-events: none; flex: 1; text-align: center; color: #2b1a0c; text-shadow: 0 1px 0 rgba(255,240,210,.6); padding-right: 2.6rem; }

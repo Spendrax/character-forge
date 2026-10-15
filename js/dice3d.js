@@ -197,25 +197,35 @@
       var d = list[idx], cx = area.x + (slot % cols + 0.5) * cw, cy = area.y + (Math.floor(slot / cols) + 0.5) * chh;
       d.k = k * (d.sides === 100 ? 1.45 : 1); d.fx = cx + (rnd() - 0.5) * cw * 0.35; d.fy = cy + (rnd() - 0.5) * chh * 0.35;
       d.sx = w * (0.2 + rnd() * 0.6); d.sy = h + k * 2.5;
-      var S = shape(d.sides), target;
-      var spin = rnd() * Math.PI * 2;
-      if (d.sides === 4) { // a d4 lands with its result corner on top
-        var corners = [1, 2, 3, 4].sort(function () { return rnd() - 0.5; }); d.cornerValues = corners;
-        target = unit(S.verts[corners.indexOf(d.value)]);
-      } else {
-        var top = S.faces.filter(function (f) { return f.value === d.value; })[0], u = qrot(qfromTo(top.n, [0, 0, 1]), top.up);
-        target = top.n; spin = Math.atan2(u[0], u[1]) + (rnd() - 0.5) * 0.9; // result face lands roughly upright, a little askew
-      }
-      d.qf = qmul(qaxis([0, 0, 1], spin), qfromTo(target, [0, 0, 1]));
-      d.a1 = unit([rnd() - 0.5, rnd() - 0.5, rnd() - 0.5]); d.a2 = unit([rnd() - 0.5, rnd() - 0.5, rnd() - 0.5]);
-      d.s1 = (5 + rnd() * 5) * Math.PI; d.s2 = (2 + rnd() * 3) * Math.PI; d.delay = slot * 45;
+      aim(d, 1); d.h0 = 1.25; d.qc = null; d.delay = slot * 45; d.dur = 1500;
     });
+  }
+  // Where a die ends up: its result face (or a d4's result corner) on top, plus how hard it tumbles on the way.
+  function aim(d, force) {
+    var S = shape(d.sides), target, spin = rnd() * Math.PI * 2;
+    if (d.sides === 4) { // a d4 lands with its result corner on top
+      var corners = [1, 2, 3, 4].sort(function () { return rnd() - 0.5; }); d.cornerValues = corners;
+      target = unit(S.verts[corners.indexOf(d.value)]);
+    } else {
+      var top = S.faces.filter(function (f) { return f.value === d.value; })[0], u = qrot(qfromTo(top.n, [0, 0, 1]), top.up);
+      target = top.n; spin = Math.atan2(u[0], u[1]) + (rnd() - 0.5) * 0.9; // result face lands roughly upright, a little askew
+    }
+    d.qf = qmul(qaxis([0, 0, 1], spin), qfromTo(target, [0, 0, 1]));
+    d.a1 = unit([rnd() - 0.5, rnd() - 0.5, rnd() - 0.5]); d.a2 = unit([rnd() - 0.5, rnd() - 0.5, rnd() - 0.5]);
+    d.s1 = (2 + (3 + rnd() * 5) * force) * Math.PI; d.s2 = (1 + (1 + rnd() * 2) * force) * Math.PI;
+  }
+  function conj(q) { return [q[0], -q[1], -q[2], -q[3]]; }
+  function qangle(q) { // rotation as [axis, angle], the short way round
+    if (q[0] < 0) q = [-q[0], -q[1], -q[2], -q[3]];
+    var a = 2 * Math.acos(Math.min(1, q[0])), s = Math.sqrt(Math.max(0, 1 - q[0] * q[0]));
+    return s < 1e-6 ? [[0, 0, 1], 0] : [[q[1] / s, q[2] / s, q[3] / s], a];
   }
   function ease(t) { return 1 - Math.pow(1 - t, 3); }
   function stateAt(d, t) {
     var e = ease(t), rest = 1 - e;
     var q = qmul(qmul(qaxis(d.a1, d.s1 * rest), qaxis(d.a2, d.s2 * rest * rest)), d.qf);
-    var hgt = 1.25 * Math.pow(1 - t, 1.6) * Math.abs(Math.cos(t * Math.PI * 2.7));
+    if (d.qc) q = qmul(qaxis(d.qc[0], d.qc[1] * rest), q); // a thrown die starts turned the way it was held
+    var hgt = (d.h0 || 1.25) * Math.pow(1 - t, 1.6) * Math.abs(Math.cos(t * Math.PI * 2.7));
     return { q: q, x: d.sx + (d.fx - d.sx) * e, y: d.sy + (d.fy - d.sy) * e, h: hgt };
   }
 
@@ -233,6 +243,8 @@
     document.body.appendChild(el);
     cv = el.querySelector('canvas'); ctx = cv.getContext('2d');
     el.addEventListener('click', onClick);
+    cv.addEventListener('pointerdown', onDown); cv.addEventListener('pointermove', onMove);
+    cv.addEventListener('pointerup', onUp); cv.addEventListener('pointercancel', onUp);
     root.addEventListener('resize', function () { if (open) { size(); draw(performance.now(), true); } });
   }
   function panelHtml() {
@@ -257,12 +269,64 @@
     var dpr = cv._dpr; ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(bg, 0, 0);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     var dur = root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches ? 250 : 1500, done = true;
-    var st = dice.map(function (d) { var t = still ? 1 : Math.max(0, Math.min(1, (now - start - d.delay) / dur)); if (t < 1) done = false; return { d: d, t: t, s: stateAt(d, t) }; });
+    var st = dice.map(function (d) {
+      if (d.held) { done = false; return { d: d, t: 0, s: { q: heldQ(d, now), x: d.hx, y: d.hy, h: 0.55 } }; }
+      var t = still ? 1 : Math.max(0, Math.min(1, (now - (d.t0 != null ? d.t0 : start + d.delay)) / (dur < 1500 ? dur : d.dur || dur)));
+      if (t < 1) done = false; return { d: d, t: t, s: stateAt(d, t) };
+    });
     st.forEach(function (x) { drawShadow(ctx, x.s.x, x.s.y, x.d.k, x.s.h); });
     st.sort(function (a, b) { return a.s.h - b.s.h; }).forEach(function (x) { drawDie(ctx, x.d, x.s.q, x.s.x, x.s.y, x.d.k * (1 + 0.32 * x.s.h), x.s.h < 1e-3 && x.t >= 1); });
     return done;
   }
   function loop(now) { if (draw(now)) { raf = 0; showResult(); return; } raf = root.requestAnimationFrame(loop); }
+  function run() { if (!raf) raf = root.requestAnimationFrame(loop); }
+
+  // ---------- picking a die up and throwing it again ----------
+  // Hold a die: it lifts and turns slowly with its face still up. Fling it to roll it again; set it down gently to just move it.
+  var grab = null, eatClick = false;
+  function heldQ(d, now) { return qmul(qaxis([0, 0, 1], (now - d.heldAt) / 900), d.qf); }
+  function settled(d) { return !d.held && performance.now() - (d.t0 != null ? d.t0 : start + d.delay) >= (d.t0 != null ? d.dur : 1500); }
+  function dieAt(x, y) {
+    var hit = null, best = Infinity;
+    dice.forEach(function (d) { var dd = Math.hypot(x - d.fx, y - d.fy); if (dd < d.k * 1.15 && dd < best && settled(d)) { best = dd; hit = d; } });
+    return hit;
+  }
+  function onDown(e) {
+    if (panelOpen || !dice.length) return;
+    var d = dieAt(e.clientX, e.clientY); if (!d) return;
+    e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch (x) { /* fine */ }
+    grab = { d: d, id: e.pointerId, x0: e.clientX, y0: e.clientY, pts: [[e.clientX, e.clientY, performance.now()]] };
+    d.held = true; d.heldAt = performance.now(); d.hx = d.fx; d.hy = d.fy; run();
+  }
+  function onMove(e) {
+    if (!grab || e.pointerId !== grab.id) return;
+    var d = grab.d, now = performance.now();
+    d.hx = Math.max(d.k, Math.min(cv._w - d.k, e.clientX)); d.hy = Math.max(64 + d.k * 0.5, Math.min(cv._h - d.k, e.clientY));
+    grab.pts.push([e.clientX, e.clientY, now]); while (grab.pts.length > 2 && now - grab.pts[0][2] > 90) grab.pts.shift();
+  }
+  function onUp(e) {
+    if (!grab || e.pointerId !== grab.id) return;
+    var g = grab, d = g.d, now = performance.now(), a = g.pts[0], b = g.pts[g.pts.length - 1], dt = Math.max(16, b[2] - a[2]);
+    var vx = (b[0] - a[0]) / dt, vy = (b[1] - a[1]) / dt, speed = Math.hypot(vx, vy), moved = Math.hypot(e.clientX - g.x0, e.clientY - g.y0);
+    grab = null; eatClick = true;
+    var q = heldQ(d, now); d.held = false;
+    if (moved < 8) { var ang = rnd() * Math.PI * 2; vx = Math.cos(ang) * 0.6; vy = Math.sin(ang) * 0.6; speed = 0.6; } // a tap: a little toss
+    if (speed > 0.35 || moved < 8) throwDie(d, q, vx, vy, speed, now);
+    else { d.qf = q; d.sx = d.fx = d.hx; d.sy = d.fy = d.hy; d.qc = null; d.h0 = 0.3; d.t0 = now; d.dur = 300; d.s1 = d.s2 = 0; } // set it down
+    run();
+  }
+  function throwDie(d, held, vx, vy, speed, now) {
+    var w = cv._w, h = cv._h, far = Math.min(Math.min(w, h) * 0.85, speed * 420), dir = unit([vx, vy, 0]);
+    d.value = 1 + randInt(d.sides);
+    d.sx = d.hx; d.sy = d.hy;
+    d.fx = Math.max(d.k * 1.1, Math.min(w - d.k * 1.1, d.hx + dir[0] * far));
+    d.fy = Math.max(64 + d.k, Math.min(h - d.k * 1.1, d.hy + dir[1] * far));
+    aim(d, Math.min(1.6, 0.4 + speed));
+    var spun = qmul(qmul(qaxis(d.a1, d.s1), qaxis(d.a2, d.s2)), d.qf); // where the tumble would start…
+    d.qc = qangle(qmul(held, conj(spun))); // …turned so it starts exactly as it was held
+    d.h0 = 0.75; d.t0 = now; d.dur = Math.max(700, Math.min(1500, 650 + far * 1.4));
+    el.querySelector('.dice3d-result').innerHTML = '<small>Rolling…</small>';
+  }
   function showResult() {
     var groups = {}, sum = 0;
     dice.forEach(function (d) { var v = d.value; sum += v; (groups[d.group] = groups[d.group] || []).push(v); });
@@ -273,7 +337,7 @@
   }
   function roll() {
     if (!describe()) return;
-    cancel(); dice = makeDice(counts); dice.forEach(function (d) { d.color = color; d.dpr = cv._dpr; });
+    cancel(); grab = null; dice = makeDice(counts); dice.forEach(function (d) { d.color = color; d.dpr = cv._dpr; });
     plan(dice, cv._w, cv._h, 64); start = performance.now();
     el.querySelector('.dice3d-result').innerHTML = '<small>Rolling ' + describe() + '…</small>';
     showPanel(false); raf = root.requestAnimationFrame(loop);
@@ -281,6 +345,7 @@
   function cancel() { if (raf) root.cancelAnimationFrame(raf); raf = 0; }
   function onClick(e) {
     var b = e.target.closest('[data-d]');
+    if (!b && eatClick) { eatClick = false; return; } // that was a die being picked up
     if (!b) { if (!panelOpen && dice.length && e.target === cv) roll(); else if (panelOpen && e.target === cv) showPanel(false); return; } // tap the table to roll again
     var a = b.getAttribute('data-d'), v = b.getAttribute('data-v');
     if (a === 'close') return close();
