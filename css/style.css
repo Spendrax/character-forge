@@ -513,3 +513,40 @@ body.has-dock::after { content: ""; display: block; height: 90px; }
 .sb-sound { margin-left: auto; padding: .2rem .45rem; }
 .sb-sound .ico, .enc-sound .ico { width: 1.3rem; height: 1.3rem; vertical-align: middle; }
 .enc-sound { padding: .1rem .35rem; }
+/* 3D dice roller */
+.dice3d { position: fixed; inset: 0; z-index: 60; display: none; background: #d7a868; overscroll-behavior: contain; touch-action: manipulation; }
+.dice3d.on { display: block; }
+html.dice3d-lock, html.dice3d-lock body { overflow: hidden; }
+.dice3d-table { position: absolute; inset: 0; display: block; }
+.dice3d-top { position: absolute; left: 0; right: 0; top: 0; display: flex; align-items: flex-start; gap: .6rem; padding: max(.6rem, env(safe-area-inset-top)) .8rem .6rem; pointer-events: none; }
+.dice3d-x { pointer-events: auto; font: 600 1.5rem/1 system-ui, sans-serif; width: 2.6rem; height: 2.6rem; border: 0; border-radius: 50%; background: rgba(40,24,10,.35); color: #fff; cursor: pointer; }
+.dice3d-result { pointer-events: none; flex: 1; text-align: center; color: #2b1a0c; text-shadow: 0 1px 0 rgba(255,240,210,.6); padding-right: 2.6rem; }
+.dice3d-result b { display: block; font: 800 2.6rem/1.05 Georgia, serif; }
+.dice3d-result small { display: block; font-size: .9rem; opacity: .85; margin-top: .15rem; }
+.dice3d-crit, .dice3d-fail { display: inline-block; font: 700 .85rem system-ui, sans-serif; padding: .1rem .5rem; border-radius: 1rem; vertical-align: middle; color: #fff; }
+.dice3d-crit { background: #1f7a3f; } .dice3d-fail { background: #8b2a1f; }
+.dice3d-panel { position: absolute; left: 50%; bottom: 0; transform: translate(-50%, 110%); transition: transform .25s ease; width: min(100%, 30rem); background: var(--panel, #fffdf8); color: var(--ink, #222);
+  border-radius: 1rem 1rem 0 0; box-shadow: 0 -8px 30px rgba(0,0,0,.25); padding: .9rem 1rem max(1rem, env(safe-area-inset-bottom)); }
+.dice3d.panel-open .dice3d-panel { transform: translate(-50%, 0); }
+.dice3d-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: .6rem; }
+.dice3d-colors { display: flex; gap: .35rem; }
+.dice3d-sw { width: 1.6rem; height: 1.6rem; border-radius: 50%; border: 2px solid rgba(0,0,0,.15); cursor: pointer; padding: 0; }
+.dice3d-sw.on { outline: 2px solid var(--accent, #8b2a1f); outline-offset: 2px; }
+.dice3d-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .45rem; }
+.dice3d-k { display: flex; align-items: center; justify-content: space-between; border: 1px solid var(--line, #0002); border-radius: .6rem; padding: .25rem; }
+.dice3d-k.on { border-color: var(--accent, #8b2a1f); }
+.dice3d-k button { width: 1.9rem; height: 2.2rem; border: 0; background: none; color: var(--accent, #8b2a1f); font: 700 1.3rem/1 system-ui, sans-serif; cursor: pointer; border-radius: .4rem; }
+.dice3d-k button:active { background: rgba(0,0,0,.06); }
+.dice3d-k span { text-align: center; line-height: 1.05; }
+.dice3d-k b { display: block; font-size: 1.15rem; }
+.dice3d-k small { color: var(--muted, #666); font-size: .78rem; }
+.dice3d-actions { display: flex; gap: .5rem; margin-top: .8rem; }
+.dice3d-actions .primary { flex: 1; }
+.dice3d-fab { position: fixed; right: 14px; z-index: 17; width: 3.4rem; height: 3.4rem; border-radius: 50%; border: 0; display: grid; place-items: center; cursor: pointer;
+  background: var(--accent, #8b2a1f); color: #fff; box-shadow: 0 4px 14px rgba(0,0,0,.3); }
+.dice3d-fab .ico { width: 1.9rem; height: 1.9rem; }
+.dice3d-fab .ico .ia { fill: #fff; fill-opacity: .25; }
+.dice3d-fab.in { position: absolute; bottom: max(1rem, env(safe-area-inset-bottom)); right: 1rem; }
+.dice3d.panel-open .dice3d-fab.in { display: none; }
+@media (max-width: 420px) { .dice3d-grid { grid-template-columns: repeat(3, 1fr); } }
+@media print { .dice3d, .dice3d-fab { display: none !important; } }

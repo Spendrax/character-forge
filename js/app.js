@@ -1105,7 +1105,7 @@
       window.scrollTo(0, narrow ? Math.max(0, row.getBoundingClientRect().top + window.pageYOffset - 6) : 0);
     }
     if (ui.jumpTo) { var jt = document.getElementById(ui.jumpTo); ui.jumpTo = null; if (jt) jt.scrollIntoView({ block: 'start' }); }
-    drawAvatars(); AUD.after(); syncHistory();
+    drawAvatars(); AUD.after(); Dice3D.place(); syncHistory();
     if (fid) { var el = document.getElementById(fid); if (el) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } try { if (pos != null) el.setSelectionRange(pos, pos); } catch (e) { /* not a text field */ } } }
     document.title = title(ch) + ' — Character Forge';
     saveNow();
@@ -1158,7 +1158,7 @@
     if (ui.mon && ui.mon.scrollTop) { ui.mon.scrollTop = false; var r = document.querySelector('.mon-right'); if (r && window.innerWidth < 800) r.scrollIntoView(); else window.scrollTo(0, 0); }
     else restoreScroll(keep);
     if (ui.section === 'books') BOOKS.after();
-    AUD.after(); syncHistory();
+    AUD.after(); Dice3D.place(); syncHistory();
     if (fid) { var el = document.getElementById(fid); if (el) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } try { if (pos != null) el.setSelectionRange(pos, pos); } catch (e) { /* not text */ } } }
     document.title = (ui.section === 'monsters' ? 'Monsters' : ui.section === 'encounters' ? 'Encounters' : ui.section === 'treasure' ? 'Treasures' : ui.section === 'books' ? 'Books' : ui.section === 'audio' ? 'Audio' : ui.section === 'rules' ? 'House rules' : 'Home') + ' — Character Forge';
     saveNow();
