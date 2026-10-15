@@ -135,7 +135,7 @@
           var hpPct = c.max ? Math.max(0, Math.round(c.hp / c.max * 100)) : 100;
           return '<div class="enc-c' + (i === run.turn ? ' turn' : '') + (alive(c) ? '' : ' down') + (c.pc ? ' pc' : '') + '">' +
             '<input type="number" class="enc-init" id="init-' + c.k + '" data-encinit="' + c.k + '" value="' + c.init + '" aria-label="Initiative of ' + esc(c.n) + '">' +
-            '<div class="enc-cn">' + (c.id ? '<button type="button" class="linkbtn enc-name" data-act="encView" data-v="' + esc(c.id) + '">' + esc(c.n) + '</button>' : '<b>' + esc(c.n) + '</b>') + (c.ac ? ' <span class="small muted">AC ' + c.ac + '</span>' : '') +
+            '<div class="enc-cn">' + (c.id ? '<button type="button" class="linkbtn enc-name" data-act="encView" data-v="' + esc(c.id) + '">' + esc(c.n) + '</button>' : '<b>' + esc(c.n) + '</b>') + (c.ac ? ' <span class="small muted">AC ' + c.ac + '</span>' : '') + (c.id && root.Sounds && MON.find(c.id) ? ' ' + root.Sounds.button(MON.find(c.id), 'enc-sound') : '') +
             (c.max ? '<div class="hpbar"><span style="width:' + hpPct + '%"></span></div>' : '') + '</div>' +
             (c.max ? '<span class="enc-hp"><b>' + c.hp + '</b>/' + c.max + '</span><input type="text" inputmode="numeric" class="enc-dmg" id="dmg-' + c.k + '" data-encdmg="' + c.k + '" placeholder="−dmg" aria-label="Damage or healing for ' + esc(c.n) + '">' +
               '<div class="enc-adj">' + ['-10', '-5', '-1', '+1', '+5', '+10'].map(function (v) { return btn('encHp', v.replace('-', '−'), { v: c.k, d: v }, 'btn small'); }).join('') + '</div>' : '<span></span><span></span>') + '</div>';

@@ -187,6 +187,7 @@ To add content, append an entry to the matching file in `data/` following its ne
 
 - The Books section includes material taken from the System Reference Document 5.1 ("SRD 5.1") by Wizards of the Coast LLC, available at https://dnd.wizards.com/resources/systems-reference-document, licensed under the Creative Commons Attribution 4.0 International License (https://creativecommons.org/licenses/by/4.0/legalcode). Markdown text from OldManUmby's SRD v5.1 reForged (https://github.com/OldManUmby/DND.SRD.Wiki).
 - PDF viewing uses Mozilla's pdf.js (Apache License 2.0), in `js/vendor/pdfjs/` with its license.
+- Monster sounds (`sounds/`) are from "80 CC0 Creature SFX" and "80 CC0 Creature SFX #2" by rubberduck on OpenGameArt.org (https://opengameart.org/content/80-cc0-creature-sfx, https://opengameart.org/content/80-cc0-creature-sfx-2), CC0 public domain, converted to MP3. Each monster gets a sound that fits its kind (`js/sounds.js`); tap the speaker beside its name in Monsters or in a running encounter.
 
 Monster stat blocks: this work includes material taken from the System Reference Document 5.1 ("SRD 5.1") by Wizards of the Coast LLC, available at https://dnd.wizards.com/resources/systems-reference-document,
 licensed under the Creative Commons Attribution 4.0 International License (https://creativecommons.org/licenses/by/4.0/). Converted from the 5e-database project (MIT license).

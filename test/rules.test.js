@@ -350,6 +350,14 @@ const sw = fs.readFileSync(path.join(__dirname, '../sw.js'), 'utf8');
   assert.equal(AU.cleanUrl('javascript:alert(1)'), ''); assert.equal(AU.cleanUrl('http://x.com'), ''); assert.ok(AU.cleanUrl(' https://open.qobuz.com/playlist/1 '));
 }
 
+{ // monster sounds: every SRD monster gets a sound file that exists, fitting its kind, always the same one
+  require('../data/sounds.js'); require('../js/sounds.js'); require('../data/monsters.js'); const S = globalThis.Sounds, fs2 = require('fs');
+  D.monsters.forEach(m => { const f = S.soundFor(m); assert.ok(f && fs2.existsSync(__dirname + '/../sounds/' + f + '.mp3'), m.n); });
+  const by = n => S.soundFor(D.monsters.find(m => m.n === n));
+  assert.ok(/^roar/.test(by('Adult Red Dragon'))); assert.ok(/^slime/.test(by('Gelatinous Cube'))); assert.ok(/^(barking|howl)/.test(by('Wolf')));
+  assert.equal(by('Goblin'), by('Goblin')); assert.ok(/^bug/.test(S.soundFor({ n: 'Swarm of Rats', type: 'swarm of Tiny beasts' })));
+}
+
 { // books: the free rules load, and the Markdown reader handles headings, tables and quotes
   require('../data/srd-book.js'); require('../js/books.js'); const B = globalThis.BooksUI, book = D.book || globalThis.DND.book;
   assert.ok(book.chapters.length >= 10); const all = book.chapters.flatMap(c => c.parts); assert.ok(all.length > 90);

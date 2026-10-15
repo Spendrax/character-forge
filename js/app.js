@@ -1251,6 +1251,7 @@
     draftCat: function (v) { ch.notes.draftCat = v; },
     noteOpen: function (v) { ui.noteOpen = ui.noteOpen === v ? null : v; },
     rmNote: function (v) { ch.journal = (ch.journal || []).filter(function (n) { return n.id !== v; }); },
+    monSound: function (v) { Sounds.play(v); return false; }, // just the sound, no redraw
     mySpellsFrom: function (v) { ui.mySpellsFrom = v; },
     optLv: function (v, el) { ui.q[el.getAttribute('data-key') + ':lv'] = v; },
     pick: function (v, el) {

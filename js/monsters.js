@@ -163,7 +163,7 @@
       var line = function (k, v) { return v ? '<div><b>' + k + '</b> ' + esc(v) + '</div>' : ''; };
       var crx = m.cr != null ? crText(+m.cr) + ' (' + (m.xp != null ? m.xp : XP[+m.cr] || 0).toLocaleString('en') + ' XP)' : '';
       var who = m.n || 'Monster';
-      var h = '<article class="statblock"><h2>' + esc(who) + (m.mine ? ' <span class="tag">yours</span>' : '') + '</h2>' +
+      var h = '<article class="statblock"><h2 class="sb-name">' + esc(who) + (m.mine ? ' <span class="tag">yours</span>' : '') + (root.Sounds ? root.Sounds.button(m, 'sb-sound') : '') + '</h2>' +
         '<div class="sb-sub">' + esc([m.size, (m.type || '') + (m.sub ? ' (' + m.sub + ')' : '')].filter(Boolean).join(' ') + (m.al ? ', ' + m.al : '')) + '</div><hr>' +
         '<div><b>Armor Class</b> ' + esc(m.ac || '') + '</div>' +
         '<div><b>Hit Points</b> ' + (m.hp || 0) + (m.hd ? ' (<button type="button" class="roll" data-act="monRoll" data-v="' + esc(String(m.hd).replace(/\s+/g, '')) + '" data-label="' + esc(who) + ': hit points">' + esc(String(m.hd).replace(/([+-])/, ' $1 ')) + '</button>)' : '') + '</div>' +
@@ -186,7 +186,7 @@
     // monsters from other books: what AideDD's list says, and a link to the full stat block there
     function summaryBlock(m) {
       var line = function (k, v) { return v || v === 0 ? '<div><b>' + k + '</b> ' + esc(v) + '</div>' : ''; };
-      return '<article class="statblock"><h2>' + esc(m.n) + '</h2><div class="sb-sub">' + esc(m.size + ' ' + m.type + (m.sub ? ' (' + m.sub + ')' : '') + (m.al ? ', ' + m.al : '')) + '</div><hr>' +
+      return '<article class="statblock"><h2 class="sb-name">' + esc(m.n) + (root.Sounds ? root.Sounds.button(m, 'sb-sound') : '') + '</h2><div class="sb-sub">' + esc(m.size + ' ' + m.type + (m.sub ? ' (' + m.sub + ')' : '') + (m.al ? ', ' + m.al : '')) + '</div><hr>' +
         line('Armor Class', m.acv) + line('Hit Points', m.hp) + line('Movement', 'walk' + (m.mv ? ', ' + m.mv : '')) +
         line('Challenge', m.cr == null ? '— (no CR: a companion or summoned creature)' : crText(m.cr) + ' (' + (XP[m.cr] || 0).toLocaleString('en') + ' XP)') +
         (m.leg1 ? '<div><b>Legendary</b> yes</div>' : '') + line('Book', m.src) + '<hr>' +
