@@ -600,7 +600,7 @@
       var other = dm.parts.filter(function (p) { return p.type !== 'ability'; });
       var dmgBonus = (bestAb ? bestAb.v : 0) + other.reduce(function (s, p) { return s + p.v; }, 0);
       var extra = [];
-      (runes.prop || []).forEach(function (p) { var d = RUNE_DMG[String(p).toLowerCase()]; if (d) extra.push(d + ' (' + p + ')'); });
+      (runes.prop || []).forEach(function (p) { var k = String(p).toLowerCase().replace(/^(.*) \((greater|major|true|lesser|moderate)\)$/, '$2 $1'), d = RUNE_DMG[k] || RUNE_DMG[k.replace(/^(greater|major|true|lesser|moderate) /, '')]; if (d) extra.push(d + ' (' + p + ')'); });
       var cond = [];
       dice.forEach(function (x) {
         var dr = x.r, sel = [].concat(dr.selector || []);

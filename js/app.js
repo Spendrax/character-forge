@@ -1025,7 +1025,7 @@
   }
   // Every tap redraws the page. Remember where the page and each scrolling list were, and put them back,
   // so selecting something never jumps you back to the top.
-  var SCROLLERS = '.mon-list, .optlist, .scroll, .tablewrap, .imp-list, .look-controls, textarea';
+  var SCROLLERS = '.mon-list, .optlist, .scroll, .tablewrap, .imp-list, .look-controls, textarea, .pf-plist, .pf-tabs, .mm-tabs';
   function scrollState() {
     var lists = {}, count = {};
     Array.prototype.forEach.call(document.querySelectorAll(SCROLLERS), function (el) {
@@ -1175,6 +1175,7 @@
     if (ui.section === 'books' || ui.section === 'mm-rules') BOOKS.after();
     var mt = document.querySelector('.mm-tabs .on'); if (mt) mt.parentNode.scrollLeft = Math.max(0, mt.offsetLeft - mt.parentNode.offsetLeft - 24); // keep the open tab in view
     if (ui.section === 'roster') drawRoster();
+    if (/^pf2-/.test(ui.section) && PFV.after) PFV.after();
     AUD.after(); Dice3D.place(); AIHelper.place(); syncHistory();
     if (fid) { var el = document.getElementById(fid); if (el) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } try { if (pos != null) el.setSelectionRange(pos, pos); } catch (e) { /* not text */ } } }
     document.title = (/^pf2-/.test(ui.section) ? PFV.title(ui.section) : /^mm-(home|heroes)$/.test(ui.section) ? MMV.title(ui.section) : ui.section === 'mm-enc' ? 'M&M encounters' : ui.section === 'mm-party' ? 'M&M party' : ui.section === 'mm-rules' ? 'M&M rules' : ui.section === 'monsters' ? 'Monsters' : ui.section === 'encounters' ? 'Encounters' : ui.section === 'party' ? 'Party' : ui.section === 'roster' ? 'Characters' : ui.section === 'treasure' ? 'Treasures' : ui.section === 'books' ? 'Books' : ui.section === 'audio' ? 'Audio' : ui.section === 'rules' ? 'House rules' : 'Home') + ' — Character Forge';

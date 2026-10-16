@@ -751,3 +751,12 @@ html.dice3d-lock, html.dice3d-lock body { overflow: hidden; }
 .pf-erow > .pf-desc { flex-basis: 100%; }
 .pf-econd { width: 100%; font-size: .8rem; margin-top: .2rem; }
 @media print { .pf-tabs, .pf-picker, .enc-adj { display: none !important; } }
+.pf-runes { display: flex; flex-wrap: wrap; gap: .5rem; margin: .4rem 0; }
+.pf-runes .field { flex: 1 1 6rem; margin: 0; }
+.pf-runeslots { display: grid; gap: .35rem; margin: .35rem 0 .5rem; }
+.pf-runeslot { display: flex; gap: .35rem; align-items: stretch; }
+.pf-bigstat > div { display: flex; align-items: center; gap: .6rem; }
+.pf-bigstat > div > b { font: 700 2.2rem var(--serif); }
+.pf-subitem { border-top: 1px solid var(--line); padding-top: .5rem; margin-top: .5rem; }
+.pf-dc { font-size: 1.1rem; min-width: 3.2rem; text-align: center; }
+.pf-prow.cur > .pf-pname b::after { content: ' ✓'; color: var(--ok); }

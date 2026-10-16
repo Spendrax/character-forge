@@ -76,13 +76,13 @@
     }
 
     // ---------- the character page ----------
-    var TABS = [['build', 'Build'], ['sheet', 'Sheet'], ['skills', 'Skills'], ['strikes', 'Strikes'], ['spells', 'Spells'], ['gear', 'Gear'], ['feats', 'Feats'], ['actions', 'Actions'], ['notes', 'Notes']];
+    var TABS = [['build', 'Build'], ['sheet', 'Sheet'], ['defense', 'Defense'], ['offense', 'Offense'], ['skills', 'Skills'], ['spells', 'Spells'], ['gear', 'Gear'], ['feats', 'Feats'], ['actions', 'Actions'], ['notes', 'Notes']];
     function charHtml(ch) {
       var d = PF2.derive(ch);
       var head = '<div class="pf-head"><div><b>' + esc(ch.name || 'Unnamed') + '</b><span class="small muted">' + esc([d.anc && d.anc.n, d.cls && d.cls.n + ' ' + d.level].filter(Boolean).join(' · ')) + '</span></div><span class="spacer"></span>' +
         btn('pfList', 'All characters', {}, 'btn small') + '</div>';
       var tabs = '<nav class="mm-tabs pf-tabs">' + TABS.map(function (t) { return btn('pfTab', t[1] + (t[0] === 'build' && d.warnings.length ? ' <span class="badge">' + d.warnings.length + '</span>' : ''), { v: t[0] }, 'mm-tab' + (U.tab === t[0] ? ' on' : '')); }).join('') + '</nav>';
-      var body = ({ build: buildTab, sheet: sheetTab, skills: skillsTab, strikes: strikesTab, spells: spellsTab, gear: gearTab, feats: featsTab, actions: actionsTab, notes: notesTab })[U.tab] || buildTab;
+      var body = ({ build: buildTab, sheet: sheetTab, defense: defenseTab, offense: offenseTab, strikes: offenseTab, skills: skillsTab, spells: spellsTab, gear: gearTab, feats: featsTab, actions: actionsTab, notes: notesTab })[U.tab] || buildTab;
       return '<main class="pf-main">' + (U.msg ? '<p class="rest-msg small">' + esc(U.msg) + ' ' + btn('pfMsgOk', 'OK', {}, 'btn tiny') + '</p>' : '') + head + tabs + '<div class="pf-body">' + body(ch, d) + '</div>' + (U.pick ? pickerHtml(ch, d) : '') + '</main>';
     }
 
@@ -136,12 +136,15 @@
       h += '<h4>Trained by a feat or feature</h4><p class="small muted">For feats like Natural Skill or Skill Training whose skills aren’t chosen elsewhere.</p><div class="pills">' + PF2.SKILLS.filter(function (k) { return !base[k] && L1.indexOf(k) < 0 || extra.indexOf(k) >= 0; }).map(function (k) { return btn('pfExtra', PF2.SK[k][0], { v: k }, 'pill small' + (extra.indexOf(k) >= 0 ? ' on' : '')); }).join('') + '</div>';
       return h + '</details>';
     }
+    // A "choose one" inside a feature or feat (racket, muse, bloodline, Versatile Heritage's feat…): opens the picker, where each option can be read first.
     function choicesFor(d, filter) {
       return d.open.filter(filter).map(function (o) {
-        return '<label class="field pf-choice"><span>' + esc(o.label) + '</span><select data-pfchoice="' + esc(o.key) + '"><option value="">— choose —</option>' + o.options.map(function (op) { return '<option value="' + esc(op.value) + '"' + (String(op.value) === String(o.value) ? ' selected' : '') + '>' + esc(op.label) + '</option>'; }).join('') + '</select></label>' +
-          (o.value !== '' ? (function () { var sel = o.options.filter(function (op) { return String(op.value) === String(o.value); })[0]; return sel && sel.e && sel.e.d ? '<details class="small pf-desc"><summary>About ' + esc(sel.label) + '</summary>' + md(sel.e.d) + '</details>' : ''; })() : '');
+        var sel = o.options.filter(function (op) { return String(op.value) === String(o.value); })[0];
+        return '<div class="pf-choice"><button type="button" class="pf-pickcard' + (sel && sel.e ? rar(sel.e) : '') + '" data-act="pfPick" data-k="choice" data-key="' + esc(o.key) + '"><small>' + esc(o.label) + '</small><b>' + (sel ? esc(sel.label) : 'Choose…') + '</b></button>' +
+          (sel && sel.e && sel.e.d ? '<details class="small pf-desc"><summary>About ' + esc(sel.label) + '</summary>' + md(sel.e.d) + '</details>' : '') + '</div>';
       }).join('');
     }
+    function choiceEntries(o) { return o.options.map(function (op, i) { var e = op.e || {}; return { id: 'o' + i, n: op.label, d: e.d || '', t: e.t, r: e.r, lv: e.lv, src: e.src, a: e.a, value: op.value, pre: e.pre }; }); }
     function levelHtml(ch, d, L) {
       var rows = [];
       // class features at this level
@@ -198,6 +201,8 @@
       else if (P.k === 'deity') list = X.core.deities;
       else if (P.k === 'feat') { var slot = (d.slots || []).filter(function (s) { return s.key === P.slot; })[0] || { kind: 'gen', lv: d.level }; list = PF2.featsFor(slot, ch, d); }
       else if (P.k === 'spell') list = X.spells.filter(function (s) { return (P.trad ? (s.trad || []).indexOf(P.trad) >= 0 || P.focus : true) && (P.focus ? s.cat === 'focus' : P.rank === 0 ? s.cat === 'cantrip' : s.cat === 'spell' && s.lv <= (P.rank || 10)) && (!P.ritual || s.cat === 'ritual'); });
+      else if (P.k === 'choice') { var o = d.open.filter(function (x) { return x.key === P.key; })[0]; list = o ? choiceEntries(o) : []; }
+      else if (P.k === 'rune') list = X.items.filter(function (i) { return P.which === 'a' ? /^etched-onto-(armor|heavy|med|light|metal|medium|lm)/.test(i.use || '') && !/^(Armor Potency|Resilient)/.test(i.n) : /^etched-onto-(a-weapon|weapon|melee|piercing|slashing|bludgeoning|thrown)/.test(i.use || '') && !/^(Striking|Weapon Potency)/.test(i.n); });
       else if (P.k === 'item') list = X.items.filter(function (i) { return !P.type || (P.type === 'gear' ? /^(equipment|backpack|kit|treasure)$/.test(i.k) : P.type === 'shield' ? i.k === 'armor' && i.cat === 'shield' : P.type === 'armor' ? i.k === 'armor' && i.cat !== 'shield' : i.k === P.type); });
       return list;
     }
@@ -213,22 +218,35 @@
         if (f.lv !== undefined && f.lv !== '' && (e.lv || 0) !== +f.lv) return false;
         return true;
       }).sort(function (a, b) { return (P.k === 'feat' || P.k === 'spell' || P.k === 'item' ? (a.lv || 0) - (b.lv || 0) : 0) || (a.n < b.n ? -1 : 1); });
-      var title = { ancestry: 'Choose an ancestry', heritage: 'Choose a heritage', background: 'Choose a background', 'class': 'Choose a class', feat: 'Choose a feat', spell: 'Add a spell', item: 'Add equipment', deity: 'Choose a deity' }[P.k];
+      var title = P.k === 'choice' ? ((d.open.filter(function (x) { return x.key === P.key; })[0] || {}).label || 'Choose') : { ancestry: 'Choose an ancestry', heritage: 'Choose a heritage', background: 'Choose a background', 'class': 'Choose a class', feat: 'Choose a feat', spell: 'Add a spell', item: P.equip === 'armor' ? 'Choose armor' : P.equip === 'shield' ? 'Choose a shield' : P.equip === 'weapon' ? 'Add a weapon' : 'Add equipment', deity: 'Choose a deity', rune: P.which === 'a' ? 'Choose an armor rune' : 'Choose a weapon rune' }[P.k];
+      var curId = pickCurrent(ch, d);
       var pill = function (k, v, label) { return btn('pfFilt', label, { k: k, v: v }, 'pill small' + ((f[k] || '') === v ? ' on' : '')); };
       var levels = []; all.forEach(function (e) { if (levels.indexOf(e.lv || 0) < 0) levels.push(e.lv || 0); }); levels.sort(function (a, b) { return a - b; });
       var filters = '<div class="pills">' + pill('rar', '', 'All') + pill('rar', 'c', 'Common') + pill('rar', 'u', 'Uncommon') + pill('rar', 'r', 'Rare') + '</div>' +
         '<div class="pills">' + pill('src', '', 'All books') + pill('src', 'core', 'Core') + pill('src', 'exp', 'Expanded') + (P.k === 'feat' ? pill('cat', '', 'Any') + pill('cat', 'cls', 'Class') + pill('cat', 'arch', 'Archetype') : '') + '</div>' +
         (/^(feat|spell|item)$/.test(P.k) && levels.length > 1 ? '<div class="pills pf-lvpills">' + pill('lv', '', 'Any level') + levels.map(function (l) { return pill('lv', String(l), P.k === 'spell' ? (l ? 'Rank ' + l : 'Cantrip') : 'Lv ' + l); }).join('') + '</div>' : '') +
         (P.k === 'item' ? '<div class="pills">' + [['', 'All'], ['weapon', 'Weapons'], ['armor', 'Armor'], ['shield', 'Shields'], ['gear', 'Gear'], ['consumable', 'Consumables']].map(function (t) { return btn('pfItemType', t[1], { v: t[0] }, 'pill small' + ((P.type || '') === t[0] ? ' on' : '')); }).join('') + '</div>' : '');
-      var rows = list.slice(0, 150).map(function (e) {
+      var shown = list.slice(0, 150);
+      if (curId && !shown.some(function (e) { return e.id === curId; })) { var c0 = list.filter(function (e) { return e.id === curId; })[0] || all.filter(function (e) { return e.id === curId; })[0]; if (c0) shown.unshift(c0); }
+      var rows = shown.map(function (e) {
         var open = U.open === 'p:' + e.id;
         var sub = P.k === 'feat' || P.k === 'spell' ? (P.k === 'spell' ? (e.cat === 'cantrip' ? 'Cantrip' : e.cat === 'focus' ? 'Focus ' + e.lv : 'Rank ' + e.lv) : 'Lv ' + (e.lv || 0)) : P.k === 'item' ? 'Lv ' + (e.lv || 0) + ' · ' + price(e.cp) : '';
-        var detail = open ? '<div class="pf-desc">' + entryDetail(e, P.k, ch, d) + '<div class="toolbar">' + btn('pfChoose', P.k === 'item' || P.k === 'spell' ? 'Add' : 'Choose', { v: e.id }, 'btn primary') + '</div></div>' : '';
-        return '<div class="pf-prow' + rar(e) + (open ? ' open' : '') + '"><button type="button" class="pf-pname" data-act="pfOpenRow" data-v="p:' + esc(e.id) + '"><b>' + esc(e.n) + '</b> ' + gl(e.a || (e.time && /^[123rf]$/.test(e.time) ? e.time : '')) + '<span class="spacer"></span><small>' + esc(sub) + (e.src ? ' · ' + esc(e.src) : '') + '</small></button>' + detail + '</div>';
+        var detail = open ? '<div class="pf-desc">' + entryDetail(e, P.k === 'choice' || P.k === 'rune' ? 'item' : P.k, ch, d) + '<div class="toolbar">' + (e.id === curId ? '<span class="small muted">Your current choice</span>' : btn('pfChoose', P.k === 'item' && !P.equip || P.k === 'spell' ? 'Add' : 'Choose', { v: e.id }, 'btn primary')) + '</div></div>' : '';
+        return '<div class="pf-prow' + rar(e) + (open ? ' open' : '') + (e.id === curId ? ' cur' : '') + '"><button type="button" class="pf-pname" data-act="pfOpenRow" data-v="p:' + esc(e.id) + '"><b>' + esc(e.n) + '</b> ' + gl(e.a || (e.time && /^[123rf]$/.test(e.time) ? e.time : '')) + '<span class="spacer"></span><small>' + esc(sub) + (e.src ? ' · ' + esc(e.src) : '') + '</small></button>' + detail + '</div>';
       }).join('');
       return '<div class="pf-picker" role="dialog" aria-label="' + esc(title) + '"><div class="pf-pick-head"><b>' + esc(title) + '</b><span class="spacer"></span>' + btn('pfPickClose', '✕', {}, 'btn small') + '</div>' +
         '<input type="search" id="pf-q" data-pfq="1" placeholder="Search…" value="' + esc(U.q || '') + '" autocomplete="off">' + filters +
         '<div class="small muted pf-count">' + list.length + ' found' + (list.length > 150 ? ', showing 150: search or filter to narrow' : '') + '</div><div class="pf-plist">' + (rows || '<p class="muted">Nothing matches.</p>') + '</div></div>';
+    }
+    // what's chosen now, so the picker opens on it
+    function pickCurrent(ch, d) {
+      var P = U.pick;
+      if (P.k === 'ancestry') return ch.ancestry; if (P.k === 'heritage') return ch.heritage; if (P.k === 'background') return ch.background; if (P.k === 'class') return ch.cls;
+      if (P.k === 'feat') return ch.feats[P.slot];
+      if (P.k === 'choice') { var o = d.open.filter(function (x) { return x.key === P.key; })[0]; if (!o) return ''; var i = -1; o.options.forEach(function (op, j) { if (String(op.value) === String(o.value)) i = j; }); return i >= 0 ? 'o' + i : ''; }
+      if (P.k === 'rune') { var g = ch.gear[P.gi], n = g && ((g.runes || {}).prop || [])[P.slot]; var e = n && PF2.byName('items', n); return e ? e.id : ''; }
+      if (P.k === 'item' && P.equip) { var w = (ch.gear || []).filter(function (g) { var e = PF2.byId('items', g.id); return g.worn && e && e.k === 'armor' && (P.equip === 'shield') === (e.cat === 'shield'); })[0]; return w && P.equip !== 'weapon' ? w.id : ''; }
+      return '';
     }
     function price(cp) { cp = +cp || 0; if (!cp) return '—'; if (cp % 100 === 0) return (cp / 100) + ' gp'; if (cp % 10 === 0) return (cp / 10) + ' sp'; return cp + ' cp'; }
     function entryDetail(e, k, ch, d) {
@@ -238,7 +256,7 @@
       if (k === 'class') h += '<p class="small"><b>HP</b> ' + e.hp + ' + Con per level · <b>Key</b> ' + e.key.map(function (a) { return PF2.ABN[a]; }).join(' or ') + ' · <b>Skills</b> ' + e.addSkills + ' + Int</p>';
       if (k === 'feat' && ch) h += prereqLine(e, ch, d);
       if (k === 'spell') h += spellLine(e);
-      if (k === 'item') h += itemLine(e);
+      if (k === 'item' && e.k) h += itemLine(e);
       return h + md(e.d);
     }
     function spellLine(s) {
@@ -270,7 +288,7 @@
         '<div class="row"><div class="field"><span>Dying</span><span class="mm-step">' + btn('pfTrk', '−', { k: 'dying', d: -1 }, 'mm-b') + '<b>' + (T.dying || 0) + '</b>' + btn('pfTrk', '+', { k: 'dying', d: 1 }, 'mm-b') + '</span></div><div class="field"><span>Wounded</span><span class="mm-step">' + btn('pfTrk', '−', { k: 'wounded', d: -1 }, 'mm-b') + '<b>' + (T.wounded || 0) + '</b>' + btn('pfTrk', '+', { k: 'wounded', d: 1 }, 'mm-b') + '</span></div></div>' + condHtml(ch) + '</div>';
       var stat = function (label, v, rank, sub) { return '<div class="pf-stat"><small>' + label + '</small><b>' + v + '</b>' + (rank != null ? teml(rank) : '') + (sub ? '<span class="small muted">' + sub + '</span>' : '') + '</div>'; };
       h += '<div class="pf-stats">' + stat('AC', d.ac.v, d.ac.rank, (d.armor ? esc(d.armor.e.n) : 'unarmored') + (d.ac.dexCap != null ? ' · Dex cap ' + d.ac.dexCap : '')) +
-        (d.shield ? stat('Shield raised', d.ac.v + d.shield.ac, null, esc(d.shield.e.n) + ' · Hardness ' + d.shield.hard + ' · HP ' + d.shield.hp + ' (BT ' + d.shield.bt + ')') : '') +
+        (d.shield ? stat(T.raised ? 'AC, shield raised' : 'Shield raised', d.ac.v + d.shield.ac, null, esc(d.shield.e.n) + ' · Hardness ' + d.shield.hard + ' · HP ' + ((T.shield || {})[d.shield.g.uid || 'shield'] == null ? d.shield.hp : T.shield[d.shield.g.uid || 'shield']) + '/' + d.shield.hp) : '') +
         ['fortitude', 'reflex', 'will'].map(function (s) { return stat(s[0].toUpperCase() + s.slice(1), fmt(d.saves[s].v), d.saves[s].rank); }).join('') +
         stat('Perception', fmt(d.perception.v), d.perception.rank, d.senses.map(function (s) { return esc(s.type.replace(/-/g, ' ')) + (s.range ? ' ' + s.range + ' ft' : ''); }).join(', ')) +
         (d.classDC ? stat('Class DC', d.classDC.v, d.classDC.rank) : '') + stat('Speed', d.speed.v + ' ft', null, d.speed.other.map(function (s) { return s.type + ' ' + s.v; }).join(', ')) +
@@ -343,8 +361,87 @@
       return '<div class="pf-spell' + rar(s) + '"><button type="button" class="pf-pname" data-act="pfOpenRow" data-v="' + esc(k) + '"><b>' + esc(s.n) + '</b> ' + gl(/^[123rf]$/.test(s.time) ? s.time : '') + '<span class="spacer"></span><small class="muted">' + (from ? esc(from) : s.cat === 'cantrip' ? 'cantrip' : s.cat === 'focus' ? 'focus' : 'rank ' + s.lv) + '</small></button>' +
         (entry ? btn('pfSpellRm', '✕', { v: s.id, e: entry, r: r }, 'mm-b') : '') + (open ? '<div class="pf-desc">' + traits(s.t, s) + spellLine(s) + md(s.d) + '</div>' : '') + '</div>';
     }
+    // ----- runes: fundamental runes as selects, property runes as slots (one per potency rank) that open the rune picker -----
+    function runeEditor(ch, g, i, e) {
+      var R = g.runes || {}, isW = e.k === 'weapon', isArmor = e.k === 'armor' && e.cat !== 'shield';
+      if (!isW && !isArmor && (e.t || []).indexOf('invested') < 0) return '';
+      var h = '<div class="pf-runes"><label class="field"><span>Potency</span><select data-pfrune="' + i + '" data-f="pot">' + [0, 1, 2, 3].map(function (v) { return '<option value="' + v + '"' + ((+R.pot || 0) === v ? ' selected' : '') + '>' + (v ? '+' + v : 'none') + '</option>'; }).join('') + '</select></label>';
+      if (isW) h += '<label class="field"><span>Striking</span><select data-pfrune="' + i + '" data-f="str">' + [['', 'none'], ['striking', 'Striking'], ['greaterStriking', 'Greater'], ['majorStriking', 'Major']].map(function (o) { return '<option value="' + o[0] + '"' + ((R.str || '') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label>';
+      if (isArmor) h += '<label class="field"><span>Resilient</span><select data-pfrune="' + i + '" data-f="res">' + [['', 'none'], ['resilient', 'Resilient'], ['greaterResilient', 'Greater'], ['majorResilient', 'Major']].map(function (o) { return '<option value="' + o[0] + '"' + ((R.res || '') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label>';
+      h += '</div>';
+      if (isW || isArmor || (R.prop || []).length) {
+        var n = Math.max(+R.pot || 0, (R.prop || []).length);
+        h += '<div class="small muted">Property runes: one slot per potency rank (+' + (+R.pot || 0) + ').</div><div class="pf-runeslots">';
+        for (var s = 0; s < n; s++) {
+          var nm = (R.prop || [])[s], re = nm && PF2.byName('items', nm);
+          h += '<span class="pf-runeslot"><button type="button" class="pf-pickcard' + rar(re) + '" data-act="pfPick" data-k="rune" data-gi="' + i + '" data-slot="' + s + '" data-which="' + (isW ? 'w' : 'a') + '"><small>Property rune ' + (s + 1) + '</small><b>' + (nm ? esc(nm) : 'Choose…') + '</b></button>' + (nm ? btn('pfRuneRm', '✕', { v: i, s: s }, 'btn small') : '') + '</span>';
+        }
+        h += (n ? '' : '<span class="small muted">Add a potency rune first.</span>') + '</div>';
+      }
+      return h;
+    }
+    function gearIndex(ch, x) { return (ch.gear || []).indexOf(x); }
+
+    // ----- Defense -----
+    function defenseTab(ch, d) {
+      var T = trk(ch), arm = d.armor, sh = d.shield;
+      var h = '<div class="panel pf-bigstat"><div><small>Armor Class</small><b>' + d.ac.v + '</b>' + teml(d.ac.rank) + '</div>' +
+        (sh ? '<label class="check-line"><input type="checkbox" data-pfraise="1"' + (T.raised ? ' checked' : '') + '> <span>Shield raised: <b>AC ' + (d.ac.v + sh.ac) + '</b> (+' + sh.ac + ' circumstance)</span></label>' : '') +
+        '<p class="small">10 + Dex ' + d.ac.dex + (d.ac.dexCap != null ? ' (cap ' + d.ac.dexCap + ')' : '') + ' + ' + PF2.RANK[d.ac.rank].toLowerCase() + ' in ' + d.ac.cat + ' ' + d.ac.prof + d.ac.parts.map(function (p) { return ' + ' + esc(p.label) + ' ' + p.v; }).join('') + '</p>' +
+        (d.checkPenalty ? '<p class="small bad">Armor check penalty ' + d.checkPenalty + ' on Strength and Dexterity skills (your Strength is below the armor’s).</p>' : '') + (d.armorSpeedPenalty ? '<p class="small">Speed ' + d.armorSpeedPenalty + ' ft from armor.</p>' : '') + '</div>';
+      // armor
+      h += '<section class="panel"><div class="toolbar" style="margin:0"><h3 style="margin:0">Armor</h3><span class="spacer"></span>' + btn('pfPick', arm ? 'Change' : 'Choose armor', { k: 'item', equip: 'armor', type: 'armor' }, 'btn small') + (arm ? btn('pfUnequip', 'Take off', { v: gearIndex(ch, arm.g) }, 'btn small') : '') + '</div>';
+      if (arm) {
+        var e = arm.e, gi = gearIndex(ch, arm.g);
+        h += '<p><b>' + esc(runeTitle(arm.g) + (arm.g.name || e.n)) + '</b></p>' + traits(e.t, e) + itemLine(e) + runeEditor(ch, arm.g, gi, e) +
+          '<details class="small pf-desc"><summary>About ' + esc(e.n) + '</summary>' + md(e.d) + runeDescs(arm.g) + '</details>';
+      } else h += '<p class="small muted">Unarmored' + (d.ac.dexCap != null ? ' (worn items cap Dex at +' + d.ac.dexCap + ')' : '') + '. Explorer’s clothing and bracers of armor count as unarmored; add them from Gear and mark them worn.</p>';
+      var worn = (ch.gear || []).filter(function (g) { var e = PF2.byId('items', g.id); return g.worn && e && e.k !== 'armor' && e.k !== 'weapon' && (e.ru || []).some(function (r) { return r.key === 'FlatModifier' && [].concat(r.selector).indexOf('ac') >= 0; }); });
+      worn.forEach(function (g) { var e = PF2.byId('items', g.id), gi = gearIndex(ch, g); h += '<div class="pf-subitem"><b>' + esc(runeTitle(g) + (g.name || e.n)) + '</b>' + runeEditor(ch, g, gi, e) + '</div>'; });
+      h += '<p class="small">Armor proficiency: ' + ['unarmored', 'light', 'medium', 'heavy'].map(function (k) { return k + ' ' + PF2.RANK[(d.defenseRanks[k] || {}).rank || 0].toLowerCase(); }).join(' · ') + '</p></section>';
+      // shield
+      h += '<section class="panel"><div class="toolbar" style="margin:0"><h3 style="margin:0">Shield</h3><span class="spacer"></span>' + btn('pfPick', sh ? 'Change' : 'Choose a shield', { k: 'item', equip: 'shield', type: 'shield' }, 'btn small') + (sh ? btn('pfUnequip', 'Put away', { v: gearIndex(ch, sh.g) }, 'btn small') : '') + '</div>';
+      if (sh) {
+        var sid = sh.g.uid || 'shield', shp = (T.shield || {})[sid]; shp = shp == null ? sh.hp : shp;
+        var pct = sh.hp ? Math.max(0, Math.round(shp / sh.hp * 100)) : 0, broken = shp <= sh.bt;
+        h += '<p><b>' + esc(sh.g.name || sh.e.n) + '</b> · +' + sh.ac + ' AC raised · Hardness ' + sh.hard + '</p>' +
+          '<div class="pm-hp"><span><b>' + shp + '</b>/' + sh.hp + ' HP' + (broken ? ' · <b class="bad">' + (shp <= 0 ? 'destroyed' : 'broken') + '</b>' : '') + ' (broken at ' + sh.bt + ')</span><div class="hpbar"><span style="width:' + pct + '%"></span></div>' +
+          '<div class="enc-adj">' + ['-10', '-5', '-1', '+1', '+5', '+10'].map(function (v) { return btn('pfShieldHp', v.replace('-', '−'), { v: v }, 'btn small'); }).join('') + '</div></div>' +
+          '<p class="small muted">Shield Block (if you have it): when you take damage with the shield raised, it takes the damage first, reduced by its Hardness; you and the shield both take what’s left.</p>' +
+          '<details class="small pf-desc"><summary>About ' + esc(sh.e.n) + '</summary>' + md(sh.e.d) + '</details>';
+      } else h += '<p class="small muted">No shield.</p>';
+      h += '</section>';
+      // saves
+      h += '<section class="panel"><h3 style="margin-top:0">Saving throws</h3>' + ['fortitude', 'reflex', 'will'].map(function (s) {
+        var x = d.saves[s];
+        return '<div class="pf-skill"><span class="nm"><b>' + s[0].toUpperCase() + s.slice(1) + '</b> <small class="muted">' + x.ab.toUpperCase() + x.parts.filter(function (p) { return p.v; }).map(function (p) { return ' · ' + esc(p.label) + ' ' + fmt(p.v); }).join('') + '</small></span>' + teml(x.rank) + rollBtn(s, x.v) + '</div>';
+      }).join('') + '</section>';
+      if (d.resist.length || d.weak.length || d.immune.length) h += '<section class="panel small"><h3 style="margin-top:0">Resistances and weaknesses</h3>' + (d.resist.length ? '<b>Resistances</b> ' + esc(d.resist.map(function (r) { return r.type + ' ' + r.v + ' (' + r.from + ')'; }).join(', ')) + '<br>' : '') + (d.weak.length ? '<b>Weaknesses</b> ' + esc(d.weak.map(function (r) { return r.type + ' ' + r.v; }).join(', ')) + '<br>' : '') + (d.immune.length ? '<b>Immunities</b> ' + esc(d.immune.map(function (r) { return r.type; }).join(', ')) : '') + '</section>';
+      h += '<section class="panel"><h3 style="margin-top:0">Conditions</h3>' + condHtml(ch) + '</section>';
+      return h;
+    }
+    function runeTitle(g) { var R = g.runes || {}; return (R.pot ? '+' + R.pot + ' ' : '') + (R.str ? { striking: 'Striking ', greaterStriking: 'Greater Striking ', majorStriking: 'Major Striking ' }[R.str] : '') + (R.res ? { resilient: 'Resilient ', greaterResilient: 'Greater Resilient ', majorResilient: 'Major Resilient ' }[R.res] : '') + ((R.prop || []).length ? R.prop.join(' ') + ' ' : ''); }
+    function runeDescs(g) { return ((g.runes || {}).prop || []).map(function (n) { var e = PF2.byName('items', n); return e ? '<p><b>' + esc(e.n) + ':</b> ' + esc(String(e.d || '').split('\n')[0]) + '</p>' : ''; }).join(''); }
+
+    // ----- Offense -----
+    function offenseTab(ch, d) {
+      var at = d.attackRanks, special = Object.keys(at).filter(function (k) { return /^weapon-(base|group)-/.test(k) && at[k].rank > Math.max(at.simple.rank, at.martial.rank); });
+      var h = '<section class="panel"><div class="pf-skill pf-perc"><span class="nm"><b>Perception</b> <small class="muted">initiative</small></span>' + teml(d.perception.rank) + rollBtn('Perception', d.perception.v) + '</div>' +
+        (d.classDC ? '<div class="pf-skill"><span class="nm"><b>Class DC</b> <small class="muted">' + (d.key || '').toUpperCase() + '</small></span>' + teml(d.classDC.rank) + '<b class="pf-dc">' + d.classDC.v + '</b></div>' : '') +
+        d.casters.map(function (c) { return '<div class="pf-skill"><span class="nm"><b>' + esc(c.n) + '</b> <small class="muted">' + esc(c.trad || '') + ' · DC ' + c.dc + '</small></span>' + teml(c.rank) + rollBtn('Spell attack', c.attack) + '</div>'; }).join('') +
+        '<p class="small">Weapons: ' + ['simple', 'martial', 'advanced', 'unarmed'].map(function (k) { return k + ' ' + PF2.RANK[(at[k] || {}).rank || 0].toLowerCase(); }).join(' · ') + (special.length ? ' · ' + special.map(function (k) { return k.replace(/^weapon-(base|group)-/, '').replace(/-/g, ' ') + ' ' + PF2.RANK[at[k].rank].toLowerCase(); }).join(' · ') : '') + '</p>' +
+        '<div class="toolbar">' + btn('pfPick', '+ Add a weapon', { k: 'item', equip: 'weapon', type: 'weapon' }, 'btn primary') + '</div></section>';
+      return h + d.strikes.map(function (s, i) {
+        var a = s.attack, gi = s.g && s.g.uid ? gearIndex(ch, s.g) : -1, k = 'w:' + i, open = U.open === k;
+        return '<div class="panel pf-strike"><div class="pf-strike-head"><b>' + esc((s.g && s.g.runes ? runeTitle(s.g) : '') + s.n) + '</b> ' + teml(s.rank) + '<span class="spacer"></span><small class="muted">' + (s.ranged ? 'Ranged' + (s.range ? ' ' + s.range + ' ft' : '') : 'Melee') + '</small></div>' + traits(s.traits) +
+          '<div class="pf-map">' + rollBtn(s.n, a) + rollBtn(s.n + ' (2nd)', a - s.map[0]) + rollBtn(s.n + ' (3rd)', a - s.map[1]) + '</div>' +
+          '<div class="pf-dmg"><button type="button" class="btn small" data-act="pfDmg" data-v="' + i + '">Damage ' + esc(s.dmg) + (s.extra.length ? ' + ' + esc(s.extra.join(', ')) : '') + '</button>' +
+          (s.cond.length ? '<label class="check-line small"><input type="checkbox" data-pfcondmg="' + i + '"' + ((U.cdmg || {})[i] ? ' checked' : '') + '> Add ' + esc(s.cond.join(', ')) + '</label>' : '') + '</div>' +
+          (gi >= 0 ? '<div class="toolbar">' + btn('pfOpenRow', open ? 'Close' : 'Runes and details', { v: k }, 'btn small') + btn('pfUnequip', 'Stow', { v: gi }, 'btn small') + '</div>' + (open ? runeEditor(ch, s.g, gi, s.w) + '<details class="small pf-desc"><summary>About ' + esc(s.w.n) + '</summary>' + md(s.w.d) + runeDescs(s.g) + '</details>' : '') : '') + '</div>';
+      }).join('') + '<p class="small muted">The three attack buttons are your first, second and third attack this turn (multiple attack penalty). Stowed weapons stay in Gear; mark them Ready there to bring them back.</p>';
+    }
+
     // ----- Gear -----
-    var PROP_W = ['Anarchic', 'Axiomatic', 'Brilliant', 'Corrosive', 'Disrupting', 'Flaming', 'Frost', 'Ghost Touch', 'Holy', 'Impactful', 'Keen', 'Returning', 'Serrating', 'Shifting', 'Shock', 'Speed', 'Thundering', 'Unholy', 'Vorpal', 'Wounding', 'Greater Flaming', 'Greater Frost', 'Greater Shock', 'Greater Corrosive', 'Greater Thundering', 'Greater Impactful'];
     function gearTab(ch, d) {
       var m = ch.money || {}, bulk = 0;
       (ch.gear || []).forEach(function (g) { var e = PF2.byId('items', g.id); var b = e ? e.bulk : 0; bulk += (b === 'L' ? 0.1 : +b || 0) * (g.q || 1) * (b === 'L' ? 1 : 1); });
@@ -359,13 +456,7 @@
         var body = '';
         if (open) {
           body = '<div class="pf-desc">' + (e ? traits(e.t, e) + itemLine(e) + md(e.d) : '') + '<label class="field"><span>Name on the sheet</span><input type="text" id="pf-gn-' + i + '" data-pfgname="' + i + '" value="' + esc(g.name || '') + '" placeholder="' + esc(e ? e.n : '') + '"></label>';
-          if (e && (e.k === 'weapon' || e.k === 'armor' || (e.t || []).indexOf('invested') >= 0)) {
-            body += '<div class="row"><label class="field"><span>Potency rune</span><select data-pfrune="' + i + '" data-f="pot">' + [0, 1, 2, 3].map(function (v) { return '<option value="' + v + '"' + ((+R.pot || 0) === v ? ' selected' : '') + '>' + (v ? '+' + v : 'none') + '</option>'; }).join('') + '</select></label>';
-            if (e.k === 'weapon') body += '<label class="field"><span>Striking</span><select data-pfrune="' + i + '" data-f="str">' + [['', 'none'], ['striking', 'Striking'], ['greaterStriking', 'Greater'], ['majorStriking', 'Major']].map(function (o) { return '<option value="' + o[0] + '"' + ((R.str || '') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label>';
-            if (e.k === 'armor' && e.cat !== 'shield') body += '<label class="field"><span>Resilient</span><select data-pfrune="' + i + '" data-f="res">' + [['', 'none'], ['resilient', 'Resilient'], ['greaterResilient', 'Greater'], ['majorResilient', 'Major']].map(function (o) { return '<option value="' + o[0] + '"' + ((R.res || '') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label>';
-            body += '</div>';
-            if (e.k === 'weapon' || e.k === 'armor') body += '<label class="field"><span>Property runes</span><input type="text" id="pf-gp-' + i + '" data-pfprop="' + i + '" value="' + esc((R.prop || []).join(', ')) + '" placeholder="' + (e.k === 'weapon' ? 'Flaming, Keen…' : 'Shadow, Slick…') + '" list="pf-runes"></label><datalist id="pf-runes">' + PROP_W.map(function (p) { return '<option value="' + p + '">'; }).join('') + '</datalist>';
-          }
+          if (e) body += runeEditor(ch, g, i, e);
           body += '<div class="toolbar">' + btn('pfGearRm', 'Remove', { v: i }, 'btn small danger') + '</div></div>';
         }
         return '<div class="pf-item' + rar(e) + '"><button type="button" class="pf-pname" data-act="pfOpenRow" data-v="' + esc(k) + '"><b>' + esc(runeName + name) + '</b><span class="spacer"></span><small class="muted">' + (e ? (e.bulk || '—') : '') + '</small></button>' +
@@ -490,12 +581,18 @@
       pfLoreAdd: function () { var i = document.getElementById('pf-newlore'), n = i && i.value.trim().replace(/\s+lore$/i, ''); if (!n) return false; chg(function (ch) { (ch.skills.L1 = ch.skills.L1 || []).push('lore:' + n); }); },
       pfPick: function (_, el) {
         var a = function (n) { return el.getAttribute('data-' + n); };
-        U.pick = { k: a('k'), slot: a('slot'), entry: a('entry'), rank: a('rank') == null ? null : +a('rank'), trad: a('trad') || '', focus: !!a('focus') };
+        U.pick = { k: a('k'), slot: a('slot'), entry: a('entry'), rank: a('rank') == null ? null : +a('rank'), trad: a('trad') || '', focus: !!a('focus'), key: a('key'), gi: a('gi') == null ? null : +a('gi'), which: a('which'), equip: a('equip'), type: a('type') || '' };
+        if (U.pick.k === 'rune') U.pick.slot = +a('slot');
         U.q = ''; U.f = {}; U.open = '';
+        var chx = cur(), cid = chx ? pickCurrent(chx, PF2.derive(chx)) : '';
+        if (cid) { U.open = 'p:' + cid; U.scrollPick = true; }
         if (U.pick.k === 'feat') { var ch = cur(), d = PF2.derive(ch), s = (d.slots || []).filter(function (x) { return x.key === U.pick.slot; })[0]; if (s && s.kind === 'cls') U.f.cat = ''; }
         if (U.pick.k === 'spell' && U.pick.rank != null && U.pick.rank > 0 && U.pick.rank < 10) U.f.lv = '';
       },
       pfPickClose: function () { U.pick = null; U.open = ''; },
+      pfRuneRm: function (v, el) { chg(function (ch) { var g = ch.gear[+v]; if (!g || !g.runes) return; g.runes.prop = (g.runes.prop || []).filter(function (_, j) { return j !== +el.getAttribute('data-s'); }); }); },
+      pfUnequip: function (v) { chg(function (ch) { var g = ch.gear[+v]; if (g) g.worn = false; }); },
+      pfShieldHp: function (v) { chg(function (ch) { var T = trk(ch), d = PF2.derive(ch), sh = d.shield; if (!sh) return; var id = sh.g.uid || 'shield'; T.shield = T.shield || {}; var cur0 = T.shield[id] == null ? sh.hp : T.shield[id]; T.shield[id] = Math.max(0, Math.min(sh.hp, cur0 + +v)); }); },
       pfFilt: function (v, el) { U.f = U.f || {}; U.f[el.getAttribute('data-k')] = v; },
       pfItemType: function (v) { U.pick.type = v; U.f.lv = ''; },
       pfOpenRow: function (v) { U.open = U.open === v ? '' : v; },
@@ -508,9 +605,17 @@
           else if (P.k === 'class') { if (ch.cls !== v) { ch.cls = v; var c = PF2.byId('classes', v); ch.key = c && c.key.length === 1 ? c.key[0] : ''; } }
           else if (P.k === 'feat') ch.feats[P.slot] = v;
           else if (P.k === 'spell') { var b = (ch.spells = ch.spells || {})[P.entry] = ch.spells[P.entry] || { known: {} }, s = PF2.byId('spells', v), r = P.focus ? 0 : P.entry === 'innate' ? (s.cat === 'cantrip' ? 0 : s.lv) : P.rank; b.known = b.known || {}; var list = b.known[r] = b.known[r] || []; if (list.indexOf(v) < 0) list.push(v); }
+          else if (P.k === 'choice') { var d0 = PF2.derive(ch), o = d0.open.filter(function (x) { return x.key === P.key; })[0], ent = o && choiceEntries(o).filter(function (x) { return x.id === v; })[0]; if (ent) { ch.choices = ch.choices || {}; ch.choices[P.key] = ent.value; } }
+          else if (P.k === 'rune') { var g = ch.gear[P.gi], re = PF2.byId('items', v); if (g && re) { g.runes = g.runes || {}; var pr = g.runes.prop = (g.runes.prop || []).slice(); pr[P.slot] = re.n; g.runes.prop = pr.filter(Boolean); } }
+          else if (P.k === 'item' && P.equip) {
+            var ie = PF2.byId('items', v);
+            if (P.equip !== 'weapon') ch.gear.forEach(function (g) { var e = PF2.byId('items', g.id); if (e && e.k === 'armor' && (P.equip === 'shield') === (e.cat === 'shield')) g.worn = false; });
+            (ch.gear = ch.gear || []).push({ uid: PF2.uid(), id: v, q: 1, worn: true, runes: {} });
+            U.msg = (P.equip === 'weapon' ? 'Added ' : 'Now using ') + (ie ? ie.n : '') + '.';
+          }
           else if (P.k === 'item') { (ch.gear = ch.gear || []).push({ uid: PF2.uid(), id: v, q: 1, worn: false, runes: {} }); }
         });
-        if (P.k === 'spell' || P.k === 'item') { U.msg = 'Added ' + ((P.k === 'spell' ? PF2.byId('spells', v) : PF2.byId('items', v)) || { n: '' }).n + '.'; U.open = ''; return; }
+        if (P.k === 'spell' || (P.k === 'item' && !P.equip)) { U.msg = 'Added ' + ((P.k === 'spell' ? PF2.byId('spells', v) : PF2.byId('items', v)) || { n: '' }).n + '.'; U.open = ''; return; }
         U.pick = null; U.open = '';
       },
       pfFeatRm: function (v) { chg(function (ch) { delete ch.feats[v]; Object.keys(ch.choices || {}).forEach(function (k) { if (k.indexOf('feat:' + v + '|') === 0 || k.indexOf('feat:' + v + '>') === 0) delete ch.choices[k]; }); }); },
@@ -573,6 +678,7 @@
       if (a('data-pfworn') != null) { ch.gear[+a('data-pfworn')].worn = t.checked; return 'render'; }
       if (a('data-pfrune') != null) { var g = ch.gear[+a('data-pfrune')]; g.runes = g.runes || {}; g.runes[a('data-f')] = a('data-f') === 'pot' ? +t.value : t.value; return 'render'; }
       if (a('data-pfcondadd') && t.value) { trk(ch).conds[t.value] = 1; return 'render'; }
+      if (a('data-pfraise')) { trk(ch).raised = t.checked; return 'render'; }
       if (a('data-pfcondmg') != null) { U.cdmg = U.cdmg || {}; U.cdmg[a('data-pfcondmg')] = t.checked; return 'render'; }
       if (a('data-pff') || a('data-pfmoney') || a('data-pfgname') || a('data-pfprop')) return 'render';
       return ENC.onChange ? ENC.onChange(t) : null;
@@ -619,8 +725,12 @@
       }
       throw new Error('Unknown change “' + verb + '”');
     }
+    function after() {
+      if (U.scrollPick) { U.scrollPick = false; var el = document.querySelector('.pf-plist .pf-prow.open'); if (el && el.scrollIntoView) el.scrollIntoView({ block: 'start' }); }
+      if (U.scrollTo) { var t = document.getElementById(U.scrollTo); U.scrollTo = ''; if (t && t.scrollIntoView) t.scrollIntoView({ block: 'center' }); }
+    }
     function navPart() { return { v: U.view, t: U.tab, p: U.pick ? JSON.stringify(U.pick) : '' }; }
     function restoreNav(p) { if (!p) return; U.view = p.v || 'list'; U.tab = p.t || 'build'; try { U.pick = p.p ? JSON.parse(p.p) : null; } catch (e) { U.pick = null; } }
-    return { html: html, actions: actions, onInput: onInput, onChange: onChange, title: title, context: context, navPart: navPart, restoreNav: restoreNav };
+    return { html: html, actions: actions, onInput: onInput, onChange: onChange, title: title, context: context, navPart: navPart, restoreNav: restoreNav, after: after };
   };
 })(typeof window !== 'undefined' ? window : globalThis);
