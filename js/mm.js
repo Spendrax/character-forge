@@ -178,7 +178,7 @@
     function home() {
       var hs = S().heroes.filter(function (h) { return h.name || (h.powers || []).length; });
       var tile = function (sec, ic, name, text, extra) { return '<div class="home-tile"><button type="button" class="home-main" data-act="section" data-v="' + sec + '"><span class="home-icon" aria-hidden="true">' + root.Icon(ic) + '</span><b>' + name + '</b><span>' + text + '</span></button>' + (extra || '') + '</div>'; };
-      return '<main class="home"><h1>Mutants &amp; Masterminds</h1><p class="muted">Your superhero table companion (3rd edition).</p><div class="home-grid">' +
+      return '<main class="home"><h1>Mutants &amp; Masterminds 3e</h1><p class="muted">Your superhero table companion (3rd edition).</p><div class="home-grid">' +
         tile('mm-heroes', 'bolt', 'Heroes', 'Build heroes with power points: abilities, powers with extras and flaws, advantages, skills and complications, with the power level limits checked as you go.',
           hs.length ? '<div class="home-list">' + hs.slice(0, 6).map(function (h) { var d = derive(h); return '<button type="button" class="home-char" data-act="mmOpen" data-v="' + h.id + '"><b>' + esc(h.name || 'Unnamed hero') + '</b><span class="small muted">PL ' + d.pl + ' · ' + d.pp.total + '/' + d.pp.budget + ' points</span></button>'; }).join('') + '</div>' : '') +
         tile('mm-rules', 'book', 'Rules', 'Every ability, skill, advantage, power effect, extra, flaw and condition, plus the core rules, all searchable. Add your own books (PDF) too.') +

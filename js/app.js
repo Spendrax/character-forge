@@ -1128,23 +1128,17 @@
   }
   function homeHtml() {
     var chars = store.chars.filter(function (c) { return c.name || c.lineage || (c.classes || []).length; });
-    var tile = function (sec, icon, name, text, extra) {
-      return '<div class="home-tile"><button type="button" class="home-main" data-act="section" data-v="' + sec + '"><span class="home-icon" aria-hidden="true">' + icon + '</span><b>' + name + '</b><span>' + text + '</span></button>' + (extra || '') + '</div>';
-    };
-    return '<main class="home"><h1>Character Forge</h1><p class="muted">Your D&amp;D 5e table companion (2014 rules).</p><div class="home-grid">' +
-      tile('chars', Icon('sword'), 'Characters', 'Build characters step by step, print the sheet, and track spells, hit points and rests while you play.',
-        chars.length ? '<div class="home-list">' + chars.slice(0, 6).map(function (c) {
-          var dd = R.derive(c, store.filters);
-          return '<button type="button" class="home-char" data-act="openChar" data-v="' + c.id + '"><b>' + esc(title(c)) + '</b><span class="small muted">' + esc(summaryLine(c, dd)) + '</span></button>';
-        }).join('') + (chars.length > 6 ? '<span class="small muted">and ' + (chars.length - 6) + ' more</span>' : '') + '</div>' : '') +
-      tile('party', Icon('campfire'), 'Party', 'For the DM: your players’ characters with class, level, AC and hit points. Hit points carry over between fights; pick the party in Encounters.') +
-      tile('encounters', Icon('swords'), 'Encounters', 'Build a fight for your party, see how hard it is (2014 rules), roll a random one, then run it with initiative and hit points.') +
-      tile('treasure', Icon('coins'), 'Treasures', 'Quick random loot after a fight: a few coins for bandits, a hoard with gems and magic items for a boss.') +
-      tile('books', Icon('book'), 'Books', 'Every class, race, background, feat and spell, plus the official free rules for play and magic items, all searchable. Add your own books (PDF) too, kept on your device.') +
-      tile('audio', Icon('lute'), 'Audio', 'Music by mood for the table: tavern, dungeon, combat… Find it on Spotify or Qobuz and keep your own playlists for each mood.') +
-      tile('rules', Icon('scroll'), 'House rules', 'Your table’s own rules, written down and quick to find during a game.') +
-      tile('monsters', Icon('dragon'), 'Monsters', 'Every monster from the 2014 SRD with its full stat block, searchable by name, type, size and challenge, with dice you can roll. Add your own too.') +
-      '</div></main>';
+    var parties = (store.parties || []).filter(function (p) { return p.m && p.m.length; });
+    var hub = window.homeHub([['chars', 'sword', 'Characters'], ['party', 'campfire', 'Party'], ['encounters', 'swords', 'Encounters'], ['monsters', 'dragon', 'Monsters'],
+      ['treasure', 'coins', 'Treasures'], ['books', 'book', 'Books'], ['audio', 'lute', 'Audio'], ['rules', 'scroll', 'House rules']]);
+    var recent = chars.slice(0, 8).map(function (c) {
+      var dd = R.derive(c, store.filters);
+      return '<button type="button" class="home-chip" data-act="openChar" data-v="' + c.id + '"><b>' + esc(title(c)) + '</b><span class="small muted">' + esc(summaryLine(c, dd)) + '</span></button>';
+    }).join('') + parties.map(function (p) {
+      return '<button type="button" class="home-chip party" data-act="section" data-v="party"><b>' + esc(p.name || 'Unnamed party') + '</b><span class="small muted">Party · ' + p.m.length + ' characters · HP ' + p.m.reduce(function (a, x) { return a + (+x.cur || 0); }, 0) + '/' + p.m.reduce(function (a, x) { return a + (+x.hp || 0); }, 0) + '</span></button>';
+    }).join('');
+    return '<main class="home"><h1>Dungeons &amp; Dragons 5e</h1><p class="muted">Your table companion (2014 rules). Tap the d20 to roll.</p>' + hub +
+      (recent ? '<h3 class="home-sub">Jump back in</h3><div class="home-chips">' + recent + '</div>' : '<p class="muted home-sub">Start with Characters to build your first hero, or Party if you are the DM.</p>') + '</main>';
   }
   // House rules: short titled notes for the table, searchable; saved with the characters.
   function houseRules() { var k = gameOf() === 'mm' ? 'mmRules' : 'rules'; return store[k] = store[k] || []; }
@@ -1352,6 +1346,7 @@
     draftCat: function (v) { ch.notes.draftCat = v; },
     noteOpen: function (v) { ui.noteOpen = ui.noteOpen === v ? null : v; },
     rmNote: function (v) { ch.journal = (ch.journal || []).filter(function (n) { return n.id !== v; }); },
+    hubDice: function () { Dice3D.open(); return false; },
     monSound: function (v) { Sounds.play(v); return false; }, // just the sound, no redraw
     mySpellsFrom: function (v) { ui.mySpellsFrom = v; },
     optLv: function (v, el) { ui.q[el.getAttribute('data-key') + ':lv'] = v; },

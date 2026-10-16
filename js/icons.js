@@ -33,4 +33,14 @@
     return '<svg class="ico' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' + p + '</svg>';
   };
   root.Icon.names = Object.keys(P);
+  // The home page: sections as coloured round buttons around a big d20 that opens the dice roller.
+  root.homeHub = function (items) {
+    var n = items.length;
+    return '<nav class="hub" aria-label="Sections"><button type="button" class="hub-core" data-act="hubDice" aria-label="Roll dice"><span class="hub-ring" aria-hidden="true"></span>' + root.Icon('d20') + '</button>' +
+      items.map(function (it, i) {
+        var a = -Math.PI / 2 + i * 2 * Math.PI / n, x = 50 + 39 * Math.cos(a), y = 50 + 37 * Math.sin(a) + 2;
+        return '<button type="button" class="hub-item c' + (i % 8) + '" style="left:' + x.toFixed(2) + '%;top:' + y.toFixed(2) + '%;--dx:' + (50 - x).toFixed(2) + ';--dy:' + (50 - y).toFixed(2) + ';animation-delay:' + (i * 45) + 'ms" data-act="section" data-v="' + it[0] + '">' +
+          '<span class="hub-dot">' + root.Icon(it[1]) + '</span><span class="hub-lbl">' + it[2] + '</span></button>';
+      }).join('') + '</nav>';
+  };
 })(typeof window !== 'undefined' ? window : globalThis);
