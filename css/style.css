@@ -642,11 +642,6 @@ html.dice3d-lock, html.dice3d-lock body { overflow: hidden; }
 @keyframes hub-in { from { opacity: 0; transform: translate(calc(-50% + var(--dx) * 1%  * 4), calc(-50% + var(--dy) * 1% * 4)) scale(.3); } }
 @keyframes hub-spin { to { transform: rotate(1turn); } }
 @media (prefers-reduced-motion: reduce) { .hub-item, .hub-ring { animation: none; } }
-.home-sub { margin-top: 1.2rem; }
-.home-chips { display: flex; gap: .6rem; overflow-x: auto; padding: .2rem 0 .6rem; scroll-snap-type: x mandatory; }
-.home-chip { flex: 0 0 auto; max-width: 15rem; scroll-snap-align: start; display: flex; flex-direction: column; text-align: left; gap: .15rem; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: .65rem .9rem; font: inherit; color: inherit; cursor: pointer; }
-.home-chip:hover { border-color: var(--accent); }
-.home-chip.party { border-style: dashed; }
 /* Characters roster */
 .roster-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); gap: .8rem; margin-top: 1rem; }
 .roster-card { display: flex; flex-direction: column; text-align: left; padding: 0; overflow: hidden; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; font: inherit; color: inherit; cursor: pointer; transition: transform .15s, border-color .15s; }

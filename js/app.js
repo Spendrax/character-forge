@@ -1145,18 +1145,9 @@
     }).join('') + '</nav>';
   }
   function homeHtml() {
-    var chars = store.chars.filter(function (c) { return c.name || c.lineage || (c.classes || []).length; });
-    var parties = (store.parties || []).filter(function (p) { return p.m && p.m.length; });
     var hub = window.homeHub([['roster', 'sword', 'Characters'], ['party', 'campfire', 'Party'], ['encounters', 'swords', 'Encounters'], ['monsters', 'dragon', 'Monsters'],
       ['treasure', 'coins', 'Treasures'], ['books', 'book', 'Books'], ['audio', 'lute', 'Audio'], ['rules', 'scroll', 'House rules']]);
-    var recent = chars.slice(0, 8).map(function (c) {
-      var dd = R.derive(c, store.filters);
-      return '<button type="button" class="home-chip" data-act="openChar" data-v="' + c.id + '"><b>' + esc(title(c)) + '</b><span class="small muted">' + esc(summaryLine(c, dd)) + '</span></button>';
-    }).join('') + parties.map(function (p) {
-      return '<button type="button" class="home-chip party" data-act="section" data-v="party"><b>' + esc(p.name || 'Unnamed party') + '</b><span class="small muted">Party · ' + p.m.length + ' characters · HP ' + p.m.reduce(function (a, x) { return a + (+x.cur || 0); }, 0) + '/' + p.m.reduce(function (a, x) { return a + (+x.hp || 0); }, 0) + '</span></button>';
-    }).join('');
-    return '<main class="home"><h1>Dungeons &amp; Dragons 5e</h1><p class="muted">Your table companion (2014 rules). Tap the d20 to roll.</p>' + hub +
-      (recent ? '<h3 class="home-sub">Jump back in</h3><div class="home-chips">' + recent + '</div>' : '<p class="muted home-sub">Start with Characters to build your first hero, or Party if you are the DM.</p>') + '</main>';
+    return '<main class="home"><h1>Dungeons &amp; Dragons 5e</h1><p class="muted">Your table companion (2014 rules). Tap the d20 to roll.</p>' + hub + '</main>';
   }
   // House rules: short titled notes for the table, searchable; saved with the characters.
   function houseRules() { var k = gameOf() === 'mm' ? 'mmRules' : 'rules'; return store[k] = store[k] || []; }
