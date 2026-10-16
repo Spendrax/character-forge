@@ -23,7 +23,7 @@
   var saveTimer;
   // Undo / redo: every saved change keeps a copy of the characters as they were just before.
   var undoStack = [], redoStack = [], lastSnap = null, UNDO_MAX = 40;
-  function snapshot() { return JSON.stringify({ chars: store.chars, current: store.current, mm: store.mm || null }); }
+  function snapshot() { return JSON.stringify({ chars: store.chars, current: store.current, mm: store.mm || null, pf2: store.pf2 || null }); }
   function remember() {
     var now = snapshot();
     if (lastSnap !== null && now !== lastSnap) { undoStack.push(lastSnap); if (undoStack.length > UNDO_MAX) undoStack.shift(); redoStack = []; }
@@ -31,7 +31,7 @@
   }
   function restore(snap) {
     var o = JSON.parse(snap);
-    store.chars = o.chars.map(normalize); store.current = byId(o.current) ? o.current : store.chars[0].id; if (o.mm) store.mm = o.mm;
+    store.chars = o.chars.map(normalize); store.current = byId(o.current) ? o.current : store.chars[0].id; if (o.mm) store.mm = o.mm; if (o.pf2) store.pf2 = o.pf2;
     lastSnap = snapshot(); ui.confirmDelete = false; ui.import5e = null; ui.import5eDone = null;
   }
   function undo() { if (!undoStack.length) return false; flushTyping(); redoStack.push(snapshot()); restore(undoStack.pop()); }
@@ -1060,7 +1060,7 @@
   // Phone back button and back swipe: every page you move to is a step in the browser history,
   // so Back returns to the previous page instead of leaving the app.
   var navLast = null, navRestoring = false;
-  function navState() { return { g: gameOf(), s: ui.section, st: ui.step, m: ui.mode || '', c: store.current, mo: (ui.mon && ui.mon.open) || '' }; }
+  function navState() { return { g: gameOf(), s: ui.section, st: ui.step, m: ui.mode || '', c: store.current, mo: (ui.mon && ui.mon.open) || '', pf: /^pf2-/.test(ui.section) && PFV ? PFV.navPart() : null }; }
   function syncHistory() {
     var st = navState(), k = JSON.stringify(st);
     if (k === navLast) return;
@@ -1072,6 +1072,7 @@
     navRestoring = true;
     if (st.g) store.game = st.g; ui.section = st.s; ui.step = st.st; if (st.m) ui.mode = st.m; if (byId(st.c)) store.current = st.c;
     if (ui.mon) { ui.mon.open = st.mo; ui.mon.edit = ''; }
+    if (st.pf && PFV) PFV.restoreNav(st.pf);
     ui.scrollToStep = true; render();
     if (ui.section !== 'chars') window.scrollTo(0, 0);
   });
@@ -1130,14 +1131,14 @@
 
   // ---------- sections: the home page and the monsters ----------
   // Two games side by side, each with its own sections; Audio, dice and your own books are shared.
-  function gameOf() { return store.game === 'mm' ? 'mm' : 'dnd'; }
+  function gameOf() { return store.game === 'mm' ? 'mm' : store.game === 'pf2' ? 'pf2' : 'dnd'; }
   function gameSwitch() {
-    return '<div class="game-switch" role="group" aria-label="Game">' + [['dnd', 'D&amp;D 5e'], ['mm', 'M&amp;M 3e']].map(function (g) {
+    return '<div class="game-switch" role="group" aria-label="Game">' + [['dnd', 'D&amp;D 5e'], ['pf2', 'PF2'], ['mm', 'M&amp;M 3e']].map(function (g) {
       return '<button type="button" class="' + (gameOf() === g[0] ? 'on' : '') + '" data-act="game" data-v="' + g[0] + '"' + (gameOf() === g[0] ? ' aria-pressed="true"' : ' aria-pressed="false"') + '>' + g[1] + '</button>';
     }).join('') + '</div>';
   }
   function sectionNav() {
-    var list = gameOf() === 'mm' ? [['mm-home', '⌂ Home'], ['mm-heroes', 'Heroes'], ['mm-party', 'Party'], ['mm-enc', 'Encounters'], ['mm-rules', 'Rules'], ['audio', 'Audio'], ['rules', 'House rules']]
+    var list = gameOf() === 'pf2' ? [['pf2-home', '⌂ Home'], ['pf2-chars', 'Characters'], ['pf2-party', 'Party'], ['pf2-enc', 'Encounters'], ['pf2-rules', 'Rules'], ['audio', 'Audio'], ['rules', 'House rules']] : gameOf() === 'mm' ? [['mm-home', '⌂ Home'], ['mm-heroes', 'Heroes'], ['mm-party', 'Party'], ['mm-enc', 'Encounters'], ['mm-rules', 'Rules'], ['audio', 'Audio'], ['rules', 'House rules']]
       : [['home', '⌂ Home'], ['roster', 'Characters'], ['monsters', 'Monsters'], ['party', 'Party'], ['encounters', 'Encounters'], ['treasure', 'Treasures'], ['books', 'Books'], ['audio', 'Audio'], ['rules', 'House rules']];
     return '<nav class="sections" aria-label="Sections">' + list.map(function (x) {
       var on = ui.section === x[0] || (x[0] === 'roster' && ui.section === 'chars');
@@ -1150,7 +1151,7 @@
     return '<main class="home"><h1>Dungeons &amp; Dragons 5e</h1><p class="muted">Your table companion (2014 rules). Tap the d20 to roll.</p>' + hub + '</main>';
   }
   // House rules: short titled notes for the table, searchable; saved with the characters.
-  function houseRules() { var k = gameOf() === 'mm' ? 'mmRules' : 'rules'; return store[k] = store[k] || []; }
+  function houseRules() { var k = gameOf() === 'mm' ? 'mmRules' : gameOf() === 'pf2' ? 'pf2Rules' : 'rules'; return store[k] = store[k] || []; }
   function rulesHtml() {
     var list = houseRules(), q = ui.q.rules || '';
     var shown = list.filter(function (r) { return match(q, r.t + ' ' + r.x); });
@@ -1165,9 +1166,9 @@
   }
   function renderSection(fid, pos) {
     var keep = scrollState();
-    var top = '<header class="top">' + btn('section', 'Character Forge', { v: gameOf() === 'mm' ? 'mm-home' : 'home' }, 'brand linkish') + gameSwitch() + sectionNav() + '<span class="spacer"></span>' +
+    var top = '<header class="top">' + btn('section', 'Character Forge', { v: gameOf() === 'mm' ? 'mm-home' : gameOf() === 'pf2' ? 'pf2-home' : 'home' }, 'brand linkish') + gameSwitch() + sectionNav() + '<span class="spacer"></span>' +
       '<button type="button" class="btn" data-act="undo" title="Undo (Ctrl+Z)"' + (undoStack.length ? '' : ' disabled') + '>↶ Undo</button>' + (isInstalledApp() ? '' : btn('install', 'Install app', {}, installPrompt ? 'btn primary' : 'btn')) + '</header>';
-    var body = /^mm-(home|heroes)$/.test(ui.section) ? MMV.html(ui.section) : ui.section === 'mm-enc' ? MME.html() : ui.section === 'mm-party' ? MME.partyPage() : ui.section === 'mm-rules' ? BOOKS.html() : ui.section === 'monsters' ? '<main class="mon-main">' + MON.html() + '</main>' : ui.section === 'encounters' ? ENC.html() : ui.section === 'party' ? ENC.partyPage() : ui.section === 'roster' ? rosterHtml() : ui.section === 'treasure' ? TRE.html() : ui.section === 'books' ? BOOKS.html() : ui.section === 'audio' ? AUD.html() : ui.section === 'rules' ? rulesHtml() : homeHtml();
+    var body = /^pf2-/.test(ui.section) ? PFV.html(ui.section) : /^mm-(home|heroes)$/.test(ui.section) ? MMV.html(ui.section) : ui.section === 'mm-enc' ? MME.html() : ui.section === 'mm-party' ? MME.partyPage() : ui.section === 'mm-rules' ? BOOKS.html() : ui.section === 'monsters' ? '<main class="mon-main">' + MON.html() + '</main>' : ui.section === 'encounters' ? ENC.html() : ui.section === 'party' ? ENC.partyPage() : ui.section === 'roster' ? rosterHtml() : ui.section === 'treasure' ? TRE.html() : ui.section === 'books' ? BOOKS.html() : ui.section === 'audio' ? AUD.html() : ui.section === 'rules' ? rulesHtml() : homeHtml();
     document.getElementById('app').innerHTML = top + installHelpHtml() + body;
     if (ui.mon && ui.mon.scrollTop) { ui.mon.scrollTop = false; var r = document.querySelector('.mon-right'); if (r && window.innerWidth < 800) r.scrollIntoView(); else window.scrollTo(0, 0); }
     else restoreScroll(keep);
@@ -1176,7 +1177,7 @@
     if (ui.section === 'roster') drawRoster();
     AUD.after(); Dice3D.place(); AIHelper.place(); syncHistory();
     if (fid) { var el = document.getElementById(fid); if (el) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } try { if (pos != null) el.setSelectionRange(pos, pos); } catch (e) { /* not text */ } } }
-    document.title = (/^mm-(home|heroes)$/.test(ui.section) ? MMV.title(ui.section) : ui.section === 'mm-enc' ? 'M&M encounters' : ui.section === 'mm-party' ? 'M&M party' : ui.section === 'mm-rules' ? 'M&M rules' : ui.section === 'monsters' ? 'Monsters' : ui.section === 'encounters' ? 'Encounters' : ui.section === 'party' ? 'Party' : ui.section === 'roster' ? 'Characters' : ui.section === 'treasure' ? 'Treasures' : ui.section === 'books' ? 'Books' : ui.section === 'audio' ? 'Audio' : ui.section === 'rules' ? 'House rules' : 'Home') + ' — Character Forge';
+    document.title = (/^pf2-/.test(ui.section) ? PFV.title(ui.section) : /^mm-(home|heroes)$/.test(ui.section) ? MMV.title(ui.section) : ui.section === 'mm-enc' ? 'M&M encounters' : ui.section === 'mm-party' ? 'M&M party' : ui.section === 'mm-rules' ? 'M&M rules' : ui.section === 'monsters' ? 'Monsters' : ui.section === 'encounters' ? 'Encounters' : ui.section === 'party' ? 'Party' : ui.section === 'roster' ? 'Characters' : ui.section === 'treasure' ? 'Treasures' : ui.section === 'books' ? 'Books' : ui.section === 'audio' ? 'Audio' : ui.section === 'rules' ? 'House rules' : 'Home') + ' — Character Forge';
     saveNow();
   }
 
@@ -1185,6 +1186,7 @@
   function aiApply(verb, a) {
     var r;
     if (gameOf() === 'mm') r = MMV.context(ui.section).apply ? MMV.context(ui.section).apply(verb, a) : null;
+    else if (gameOf() === 'pf2') r = PFV.context(ui.section).apply ? PFV.context(ui.section).apply(verb, a) : null;
     else if (ch && verb !== 'choose') r = aiSet(verb, a);
     else if (verb === 'choose' && ch) {
       var k = String(a[0] || '').trim().toLowerCase(), c = d.choices.filter(function (x) { return x.key.toLowerCase() === k; })[0] || d.choices.filter(function (x) { return x.label.toLowerCase() === k; })[0];
@@ -1223,6 +1225,7 @@
   }
   function aiContext() {
     if (gameOf() === 'mm') { var mx = MMV.context(ui.section); if (mx.apply) mx.apply = aiApply; return mx; }
+    if (gameOf() === 'pf2') { var px = PFV.context(ui.section); if (px.apply) px.apply = aiApply; return px; }
     var head = 'Game: Dungeons & Dragons 5th edition (2014 rules). ';
     if (ui.section === 'chars' && ch) {
       var stepName = (STEPS.filter(function (x) { return x[0] === ui.step; })[0] || ['', ui.step])[1], open = d.choices.filter(function (c) { return c.missing; });
@@ -1253,7 +1256,7 @@
   // ---------- actions ----------
   var actions = {
     section: function (v) { ui.section = v; window.scrollTo(0, 0); },
-    game: function (v) { if (gameOf() === v) return; store.game = v === 'mm' ? 'mm' : 'dnd'; ui.section = v === 'mm' ? 'mm-home' : 'home'; ui.q.rules = ''; window.scrollTo(0, 0); },
+    game: function (v) { if (gameOf() === v) return; store.game = v === 'mm' || v === 'pf2' ? v : 'dnd'; ui.section = v === 'mm' ? 'mm-home' : v === 'pf2' ? 'pf2-home' : 'home'; ui.q.rules = ''; window.scrollTo(0, 0); },
     openChar: function (v) { store.current = v; ui.section = 'chars'; ch = byId(v); openMode(); window.scrollTo(0, 0); },
     editSkills: function () { ui.mode = 'build'; ui.step = 'details'; ui.jumpTo = 'skills-edit'; },
     editChar: function () { ui.mode = 'build'; ui.step = 'lineage'; ui.scrollToStep = true; },
@@ -1516,6 +1519,8 @@
   AIHelper.setContext(aiContext);
   Object.keys(MMV.actions).forEach(function (k) { actions[k] = MMV.actions[k]; });
   var MME = window.MMEnc({ esc: esc, btn: btn, ui: ui, store: store });
+  var PFV = window.PF2UI({ esc: esc, btn: btn, ui: ui, store: store, render: function () { render(); } });
+  Object.keys(PFV.actions).forEach(function (k) { actions[k] = PFV.actions[k]; });
   Object.keys(MME.actions).forEach(function (k) { actions[k] = MME.actions[k]; });
   var AUD = window.AudioUI({ esc: esc, btn: btn, ui: ui, store: store });
   Object.keys(AUD.actions).forEach(function (k) { actions[k] = AUD.actions[k]; });
@@ -1535,6 +1540,7 @@
   document.addEventListener('input', function (e) {
     var t = e.target, a = function (n) { return t.getAttribute(n); };
     if (ui.section === 'books' || ui.section === 'mm-rules') { var bk = BOOKS.onInput(t); if (bk === 'render') render(); if (bk) return; }
+    if (/^pf2-/.test(ui.section)) { var pi = PFV.onInput(t); if (pi === 'render') render(); else if (pi) save(); if (pi) return; }
     if (ui.section === 'mm-enc' || ui.section === 'mm-party') { var me = MME.onInput(t); if (me === 'render') render(); else if (me) save(); if (me) return; }
     if (ui.section === 'mm-heroes') { var mi = MMV.onInput(t); if (mi === 'render') render(); else if (mi) save(); if (mi) return; }
     if (ui.section === 'audio') { var au = AUD.onInput(t); if (au === 'render') render(); if (au) return; }
@@ -1557,6 +1563,7 @@
     var t = e.target, a = function (n) { return t.getAttribute(n); };
     if (t.id === 'bookFile') return BOOKS.importFile(t);
     if (ui.section === 'books' || ui.section === 'mm-rules') { if (BOOKS.onChange(t)) { render(); return; } }
+    if (/^pf2-/.test(ui.section)) { var pc = PFV.onChange(t); if (pc) { requestRender(); return; } }
     if (ui.section === 'mm-enc' || ui.section === 'mm-party') { var mec = MME.onChange(t); if (mec) { requestRender(); return; } }
     if (ui.section === 'mm-heroes') { var mc = MMV.onChange(t); if (mc) { requestRender(); return; } } // wait for the tap that moved focus
     if (ui.section === 'encounters' || ui.section === 'party') { var ec = ENC.onChange(t); if (ec) { render(); return; } if (a('data-enc') != null) return; }
@@ -1755,7 +1762,8 @@
   }
 
   load();
-  if (store.game === 'mm' && ui.section === 'home') ui.section = 'mm-home'; // reopen in the game you were using
+  if (store.game === 'mm' && ui.section === 'home') ui.section = 'mm-home';
+  if (store.game === 'pf2' && ui.section === 'home') ui.section = 'pf2-home'; // reopen in the game you were using
   render();
   takeSharedFile();
   window.Forge = { store: store, ui: ui, render: render, derived: function () { return d; } };

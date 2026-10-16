@@ -406,4 +406,5 @@ const sw = fs.readFileSync(path.join(__dirname, '../sw.js'), 'utf8');
 }
 
 var mmFoes = require('./mm-enc.check.js');
+require('./pf2.test.js');
 console.log('ok —', mmFoes, 'M&M foes within limits;', n, 'builds derived;', D.classes.length, 'classes,', D.subclasses.length, 'subclasses,', D.lineages.length, 'lineages,', D.backgrounds.length, 'backgrounds,', D.feats.length, 'feats,', Object.keys(D.spells).length, 'spells (' + Object.keys(D.spellText).length + ' described),', longF, 'detailed features');

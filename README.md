@@ -177,6 +177,18 @@ Run the fight: initiative for foes and the heroes you pick, then type a hit’s 
 
 The Party page keeps your players’ heroes: power level, Toughness, Dodge, Parry, Fortitude, Will and hero points (or copy one of your heroes in). Damage taken in an encounter is saved back to the party; “New session” heals everyone and resets hero points to 1. “Plan an encounter for them” sets the power level and number of heroes in Encounters. Both games’ home pages show their sections as round buttons around a d20.
 
+## Pathfinder 2e (pre-Remaster)
+
+A third game next to D&D 5e and M&M 3e: tap **PF2** at the top. The rules are the original (pre-Remaster) ones: Core Rulebook, Advanced Player's Guide, Secrets of Magic, Guns & Gears, Dark Archive, Rage of Elements, the Lost Omens books and the Bestiaries.
+
+- **Characters**: build level by level like Pathbuilder: ancestry, heritage, background, class, ability boosts (pre-Remaster scores, +1 above 18), trained skills and skill increases, every ancestry, class, skill and general feat slot, and the choices inside features and feats (rackets, muses, bloodlines, doctrines, Versatile Heritage, General Training…). Pickers have Common/Uncommon/Rare, Core/Expanded and level filters, and check prerequisites.
+- **Sheet**: HP, AC, saves, Perception, class DC, speed, senses and resistances, worked out from the rules data itself (each feat and feature's own rules), with play tracking (HP, temp HP, hero points, focus points, dying, wounded, conditions). Skills and Strikes roll with the 3D dice (multiple attack penalty, runes, sneak attack). Spells: class and multiclass spellcasting with slots, repertoire, focus and innate spells. Gear with runes, worn and invested items, bulk and coins.
+- **Import from Pathbuilder**: paste the text from Pathbuilder's Export JSON link. The tests import two real exports and check that every ability, skill, save, AC, attack, damage bonus and spell slot matches Pathbuilder.
+- **Party and Encounters** for the GM: the XP budget (trivial to extreme), creatures from the Bestiaries with elite and weak versions and full stat blocks, and fights with initiative and hit points that carry over to the party.
+- **Rules**: everything searchable, plus a short page of basics.
+
+Data: `python3 tools/pf2-build.py <foundry-pf2e 5.8.0> <foundry-pf2e 4.12.0>` builds `data/pf2/` from the Foundry VTT pf2e system (rules are Open Game Content, OGL 1.0a; Rage of Elements under the ORC license). Only pre-Remaster entries are kept; a few spells that 5.8.0 had already replaced with Remaster versions come from 4.12.0. This app uses trademarks and/or copyrights owned by Paizo Inc., used under Paizo's Community Use Policy (paizo.com/licenses/communityuse); it is not published, endorsed, or specifically approved by Paizo, and is free to use.
+
 ## The helper (AI)
 
 The round ✦ button above the dice opens a chat that sees what you are working on: the game, the page, your character or hero with its open choices, costs and warnings.
