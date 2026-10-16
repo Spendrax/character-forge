@@ -67,7 +67,7 @@
   }
 
   // ---------- the panel ----------
-  var el, fab, open = false, pushed = false, busy = false, chat = [], view = 'chat', getContext = function () { return { text: '', chips: [] }; };
+  var forced = false, el, fab, open = false, pushed = false, busy = false, chat = [], view = 'chat', getContext = function () { return { text: '', chips: [] }; };
   function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
   function mdHtml(t) { return root.BooksUI && root.BooksUI.md ? root.BooksUI.md(t) : '<p>' + esc(t).replace(/\n/g, '<br>') + '</p>'; }
   function build() {
@@ -81,7 +81,8 @@
     var ctx = getContext(), m = mode();
     var head = '<div class="ai-head"><b>' + (root.Icon ? root.Icon('sparkle') : '') + ' Helper</b><span class="ai-where small muted">' + esc(ctx.where || '') + '</span><span class="spacer"></span>' +
       '<button type="button" class="btn small" data-ai="view" data-v="' + (view === 'chat' ? 'setup' : 'chat') + '">' + (view === 'chat' ? 'Settings' : 'Back to chat') + '</button><button type="button" class="ai-x" data-ai="close" aria-label="Close the helper">✕</button></div>';
-    if (!m) view = 'setup'; // nothing set up yet: stay on the setup screen until Done
+    if (!m) { view = 'setup'; forced = true; } // nothing set up yet: stay on the setup screen until Done…
+    else if (forced && server && cfg.mode === 'auto') { forced = false; view = 'chat'; } // …unless the server turns out to have a key
     if (view === 'setup') { el.innerHTML = head + setupHtml(!m); return; }
     var msgs = chat.length ? chat.map(function (c) { return '<div class="ai-msg ' + c.role + '">' + (c.role === 'user' ? esc(c.content).replace(/\n/g, '<br>') : mdHtml(c.content)) + '</div>'; }).join('')
       : '<div class="ai-empty"><p>Ask me anything about ' + esc(ctx.subject || 'the game') + '. I can see what you are working on.</p></div>';
@@ -97,7 +98,7 @@
     var f = function (k, label, ph, type) { return '<label class="field"><span>' + label + '</span><input type="' + (type || 'text') + '" data-aicfg="' + k + '" value="' + esc(cfg[k] || '') + '" placeholder="' + esc(ph) + '" autocomplete="off"></label>'; };
     return '<div class="ai-setup">' + (first ? '<p>The helper needs an AI to talk to. Pick one:</p>' : '') +
       r('auto', 'Automatic', server ? 'Your server has a key: using it.' : 'Uses your server if it has a key, otherwise the Gemini key below.') +
-      r('server', 'Your server', 'Run the app with <code>node server.js</code> and set <code>ANTHROPIC_API_KEY</code> on that computer. Friends can use it without seeing the key.' + (server === false ? ' <b>Not found on this server right now.</b>' : '')) +
+      r('server', 'Your server', 'One key for everyone: the computer that runs <code>node server.js</code> holds a free <code>GEMINI_API_KEY</code> (or a Claude <code>ANTHROPIC_API_KEY</code>). Friends use the helper without a key of their own.' + (server === false ? ' <b>Not found on this server right now.</b>' : '')) +
       r('gemini', 'Google Gemini (free)', 'Free key from <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> (sign in with Google, “Create API key”). Works on your phone. The free tier has daily limits, and Google may use free-tier questions to improve its products.') +
       r('claude', 'My own Claude key', 'An API key from console.anthropic.com, kept only in this browser. Pay-as-you-go, billed separately from a Claude subscription.') +
       r('ollama', 'Ollama on my network', 'A free AI on your own computer. Start it with <code>OLLAMA_ORIGINS=*</code> so the app may talk to it.') +
@@ -122,7 +123,7 @@
     var b = e.target.closest('[data-ai]'); if (!b) return;
     var a = b.getAttribute('data-ai'), v = b.getAttribute('data-v');
     if (a === 'close') return close();
-    if (a === 'view') { readCfg(); view = v; return draw(); }
+    if (a === 'view') { readCfg(); view = v; forced = false; return draw(); }
     if (a === 'send') return send();
     if (a === 'chip') return send(v);
     if (a === 'clear') { chat = []; return draw(); }
