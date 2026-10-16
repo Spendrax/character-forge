@@ -1137,7 +1137,7 @@
     }).join('') + '</div>';
   }
   function sectionNav() {
-    var list = gameOf() === 'mm' ? [['mm-home', '⌂ Home'], ['mm-heroes', 'Heroes'], ['mm-enc', 'Encounters'], ['mm-rules', 'Rules'], ['audio', 'Audio'], ['rules', 'House rules']]
+    var list = gameOf() === 'mm' ? [['mm-home', '⌂ Home'], ['mm-heroes', 'Heroes'], ['mm-party', 'Party'], ['mm-enc', 'Encounters'], ['mm-rules', 'Rules'], ['audio', 'Audio'], ['rules', 'House rules']]
       : [['home', '⌂ Home'], ['roster', 'Characters'], ['monsters', 'Monsters'], ['party', 'Party'], ['encounters', 'Encounters'], ['treasure', 'Treasures'], ['books', 'Books'], ['audio', 'Audio'], ['rules', 'House rules']];
     return '<nav class="sections" aria-label="Sections">' + list.map(function (x) {
       var on = ui.section === x[0] || (x[0] === 'roster' && ui.section === 'chars');
@@ -1167,7 +1167,7 @@
     var keep = scrollState();
     var top = '<header class="top">' + btn('section', 'Character Forge', { v: gameOf() === 'mm' ? 'mm-home' : 'home' }, 'brand linkish') + gameSwitch() + sectionNav() + '<span class="spacer"></span>' +
       '<button type="button" class="btn" data-act="undo" title="Undo (Ctrl+Z)"' + (undoStack.length ? '' : ' disabled') + '>↶ Undo</button>' + (isInstalledApp() ? '' : btn('install', 'Install app', {}, installPrompt ? 'btn primary' : 'btn')) + '</header>';
-    var body = /^mm-(home|heroes)$/.test(ui.section) ? MMV.html(ui.section) : ui.section === 'mm-enc' ? MME.html() : ui.section === 'mm-rules' ? BOOKS.html() : ui.section === 'monsters' ? '<main class="mon-main">' + MON.html() + '</main>' : ui.section === 'encounters' ? ENC.html() : ui.section === 'party' ? ENC.partyPage() : ui.section === 'roster' ? rosterHtml() : ui.section === 'treasure' ? TRE.html() : ui.section === 'books' ? BOOKS.html() : ui.section === 'audio' ? AUD.html() : ui.section === 'rules' ? rulesHtml() : homeHtml();
+    var body = /^mm-(home|heroes)$/.test(ui.section) ? MMV.html(ui.section) : ui.section === 'mm-enc' ? MME.html() : ui.section === 'mm-party' ? MME.partyPage() : ui.section === 'mm-rules' ? BOOKS.html() : ui.section === 'monsters' ? '<main class="mon-main">' + MON.html() + '</main>' : ui.section === 'encounters' ? ENC.html() : ui.section === 'party' ? ENC.partyPage() : ui.section === 'roster' ? rosterHtml() : ui.section === 'treasure' ? TRE.html() : ui.section === 'books' ? BOOKS.html() : ui.section === 'audio' ? AUD.html() : ui.section === 'rules' ? rulesHtml() : homeHtml();
     document.getElementById('app').innerHTML = top + installHelpHtml() + body;
     if (ui.mon && ui.mon.scrollTop) { ui.mon.scrollTop = false; var r = document.querySelector('.mon-right'); if (r && window.innerWidth < 800) r.scrollIntoView(); else window.scrollTo(0, 0); }
     else restoreScroll(keep);
@@ -1176,7 +1176,7 @@
     if (ui.section === 'roster') drawRoster();
     AUD.after(); Dice3D.place(); AIHelper.place(); syncHistory();
     if (fid) { var el = document.getElementById(fid); if (el) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } try { if (pos != null) el.setSelectionRange(pos, pos); } catch (e) { /* not text */ } } }
-    document.title = (/^mm-(home|heroes)$/.test(ui.section) ? MMV.title(ui.section) : ui.section === 'mm-enc' ? 'M&M encounters' : ui.section === 'mm-rules' ? 'M&M rules' : ui.section === 'monsters' ? 'Monsters' : ui.section === 'encounters' ? 'Encounters' : ui.section === 'party' ? 'Party' : ui.section === 'roster' ? 'Characters' : ui.section === 'treasure' ? 'Treasures' : ui.section === 'books' ? 'Books' : ui.section === 'audio' ? 'Audio' : ui.section === 'rules' ? 'House rules' : 'Home') + ' — Character Forge';
+    document.title = (/^mm-(home|heroes)$/.test(ui.section) ? MMV.title(ui.section) : ui.section === 'mm-enc' ? 'M&M encounters' : ui.section === 'mm-party' ? 'M&M party' : ui.section === 'mm-rules' ? 'M&M rules' : ui.section === 'monsters' ? 'Monsters' : ui.section === 'encounters' ? 'Encounters' : ui.section === 'party' ? 'Party' : ui.section === 'roster' ? 'Characters' : ui.section === 'treasure' ? 'Treasures' : ui.section === 'books' ? 'Books' : ui.section === 'audio' ? 'Audio' : ui.section === 'rules' ? 'House rules' : 'Home') + ' — Character Forge';
     saveNow();
   }
 
@@ -1535,7 +1535,7 @@
   document.addEventListener('input', function (e) {
     var t = e.target, a = function (n) { return t.getAttribute(n); };
     if (ui.section === 'books' || ui.section === 'mm-rules') { var bk = BOOKS.onInput(t); if (bk === 'render') render(); if (bk) return; }
-    if (ui.section === 'mm-enc') { var me = MME.onInput(t); if (me === 'render') render(); else if (me) save(); if (me) return; }
+    if (ui.section === 'mm-enc' || ui.section === 'mm-party') { var me = MME.onInput(t); if (me === 'render') render(); else if (me) save(); if (me) return; }
     if (ui.section === 'mm-heroes') { var mi = MMV.onInput(t); if (mi === 'render') render(); else if (mi) save(); if (mi) return; }
     if (ui.section === 'audio') { var au = AUD.onInput(t); if (au === 'render') render(); if (au) return; }
     if (ui.section === 'treasure') { var tr = TRE.onInput(t); if (tr === 'render') render(); else if (tr) save(); if (tr) return; }
@@ -1557,7 +1557,7 @@
     var t = e.target, a = function (n) { return t.getAttribute(n); };
     if (t.id === 'bookFile') return BOOKS.importFile(t);
     if (ui.section === 'books' || ui.section === 'mm-rules') { if (BOOKS.onChange(t)) { render(); return; } }
-    if (ui.section === 'mm-enc') { var mec = MME.onChange(t); if (mec) { requestRender(); return; } }
+    if (ui.section === 'mm-enc' || ui.section === 'mm-party') { var mec = MME.onChange(t); if (mec) { requestRender(); return; } }
     if (ui.section === 'mm-heroes') { var mc = MMV.onChange(t); if (mc) { requestRender(); return; } } // wait for the tap that moved focus
     if (ui.section === 'encounters' || ui.section === 'party') { var ec = ENC.onChange(t); if (ec) { render(); return; } if (a('data-enc') != null) return; }
     if (a('data-mon') != null) return;

@@ -173,6 +173,10 @@ Pick the heroes’ power level and how many there are, then the kind of fight (v
 Each villain is built like a hero, with abilities, powers, skills, advantages, tactics and a motivation, and stays within the power level limits (checked for every role and level in the tests). Make a new one, remove it, or copy it to your heroes to edit.
 Run the fight: initiative for foes and the heroes you pick, then type a hit’s damage rank and the app rolls the Toughness check and fills in the damage track (−1 Toughness, dazed, staggered, incapacitated; minions drop after any failed check).
 
+## M&M party
+
+The Party page keeps your players’ heroes: power level, Toughness, Dodge, Parry, Fortitude, Will and hero points (or copy one of your heroes in). Damage taken in an encounter is saved back to the party; “New session” heals everyone and resets hero points to 1. “Plan an encounter for them” sets the power level and number of heroes in Encounters. Both games’ home pages show their sections as round buttons around a d20.
+
 ## The helper (AI)
 
 The round ✦ button above the dice opens a chat that sees what you are working on: the game, the page, your character or hero with its open choices, costs and warnings.

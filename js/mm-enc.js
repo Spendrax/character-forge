@@ -187,11 +187,44 @@
         '<div class="toolbar">' + btn('mmeReroll', '↻ New one', { v: h.id }, 'btn small') + btn('mmeSave', 'Copy to my heroes', { v: h.id }, 'btn small') + btn('mmeRm', 'Remove', { v: h.id }, 'btn small') + '</div></div>';
     }
 
+    // ---------- the party: the GM's list of heroes with their defenses, hero points and damage ----------
+    function teams() { return store.mmTeams = store.mmTeams || []; }
+    function teamById(id) { return teams().filter(function (x) { return x.id === id; })[0]; }
+    function curTeam() { return teamById(U.team) || teams()[0] || null; }
+    function newMember(pl) { return { id: uid(), n: '', pl: pl || 10, tough: 0, dodge: 0, parry: 0, fort: 0, will: 0, hp: 1, bruise: 0, cond: '' }; }
+    function teamLine(t) {
+      if (!t.m.length) return 'No heroes yet.';
+      var pls = t.m.map(function (x) { return +x.pl || 1; }), lo = Math.min.apply(null, pls), hi = Math.max.apply(null, pls), hurt = t.m.filter(function (x) { return x.bruise || x.cond; }).length;
+      return t.m.length + ' hero' + (t.m.length === 1 ? '' : 'es') + ', PL ' + (lo === hi ? lo : lo + '–' + hi) + ' · ' + t.m.reduce(function (a, x) { return a + (+x.hp || 0); }, 0) + ' hero points' + (hurt ? ' · ' + hurt + ' hurt' : '');
+    }
+    function teamPL(t) { var c = {}; t.m.forEach(function (x) { c[x.pl] = (c[x.pl] || 0) + 1; }); return +Object.keys(c).sort(function (a, b) { return c[b] - c[a] || b - a; })[0] || 10; }
+    function partyPage() {
+      var t = curTeam(), list = teams();
+      if (!t) return '<main class="mon-main"><h2>Party</h2><p class="muted">Keep your players’ heroes here: power level, defenses, hero points and the damage they’ve taken. Encounters uses them to set the power level, and damage carries over from fight to fight.</p>' + btn('mmtNew', '+ New party', {}, 'btn primary') + '</main>';
+      var mine = (store.mm && store.mm.heroes || []).filter(function (h) { return h.name; });
+      var f = function (m, k, label, w) { return '<label class="pm-f' + (w ? ' wide' : '') + '"><span>' + label + '</span><input type="' + (w ? 'text' : 'number') + '"' + (w ? '' : ' inputmode="numeric"') + ' id="mmt-' + k + '-' + m.id + '" data-mmt="' + m.id + '" data-f="' + k + '" value="' + esc(m[k] == null ? '' : m[k]) + '"></label>'; };
+      var rows = t.m.map(function (m) {
+        return '<div class="panel pm' + (m.cond === 'Incapacitated' ? ' down' : '') + '"><div class="pm-row">' + f(m, 'n', 'Name', 1) + f(m, 'pl', 'PL') + btn('mmtRm', '✕', { v: m.id }, 'btn small') + '</div>' +
+          '<div class="pm-row pm-def">' + f(m, 'tough', 'Tough') + f(m, 'dodge', 'Dodge') + f(m, 'parry', 'Parry') + f(m, 'fort', 'Fort') + f(m, 'will', 'Will') + '</div>' +
+          '<div class="pm-hp"><span>Hero points <span class="mm-step">' + btn('mmtHp', '−', { v: m.id, d: -1 }, 'mm-b') + '<b>' + (+m.hp || 0) + '</b>' + btn('mmtHp', '+', { v: m.id, d: 1 }, 'mm-b') + '</span></span>' +
+          '<span class="small">' + (m.bruise ? 'Toughness −' + m.bruise : 'Unhurt') + '</span>' + (m.cond ? '<span class="mme-cond">' + esc(m.cond) + '</span>' : '') + (m.bruise || m.cond ? btn('mmtHeal', 'Recover', { v: m.id }, 'btn small') : '') + '</div></div>';
+      }).join('');
+      return '<main class="mon-main"><h2>Party</h2>' +
+        '<div class="toolbar">' + (list.length > 1 ? '<select data-mmtpick="1" aria-label="Choose a party">' + list.map(function (x) { return '<option value="' + x.id + '"' + (x === t ? ' selected' : '') + '>' + esc(x.name || 'Unnamed party') + '</option>'; }).join('') + '</select>' : '') + btn('mmtNew', '+ New party', {}, 'btn small') + '</div>' +
+        '<div class="panel"><label class="field"><span>Party name</span><input type="text" id="mmt-name" data-mmtname="1" value="' + esc(t.name || '') + '" placeholder="The Liberty Squad"></label><p class="small muted" style="margin:.4rem 0 0">' + esc(teamLine(t)) + '</p>' +
+        '<div class="toolbar">' + btn('mmtPlan', (root.Icon ? root.Icon('swords') : '') + ' Plan an encounter for them', {}, 'btn primary') + btn('mmtRest', 'New session', {}, 'btn small') + '</div>' +
+        '<p class="small muted" style="margin:0">New session: damage healed and everyone back to 1 hero point.</p></div>' +
+        rows + '<div class="toolbar">' + btn('mmtAdd', '+ Add a hero', {}, 'btn') +
+        (mine.length ? '<select data-mmtmine="1" aria-label="Add one of my heroes"><option value="">+ One of my heroes…</option>' + mine.map(function (h) { return '<option value="' + h.id + '">' + esc(h.name) + '</option>'; }).join('') + '</select>' : '') + '</div>' +
+        '<div class="toolbar">' + (U.delTeam ? '<span>Delete “' + esc(t.name || 'this party') + '”?</span>' + btn('mmtDel', 'Yes, delete', {}, 'btn small danger') + btn('mmtDelNo', 'No', {}, 'btn small') : btn('mmtDelAsk', 'Delete this party', {}, 'btn small')) + '</div></main>';
+    }
+
     // ---------- the fight ----------
     var DMG = ['', 'Bruised', 'Dazed', 'Staggered', 'Incapacitated'];
     function startRun() {
       var e = E(), list = [];
       e.foes.forEach(function (h) { var d = MR.derive(h); list.push({ k: h.id, n: h.name, foe: true, minion: h.minion, init: 1 + R(20) + d.init, mod: d.init, tough: d.def.tough, bruise: 0, cond: '', dodge: d.def.dodge, parry: d.def.parry }); });
+      var t = teamById(e.team); if (t) t.m.forEach(function (m) { list.push({ k: m.id, n: m.n || 'Hero', team: t.id, init: 1 + R(20), mod: 0, tough: +m.tough || 0, bruise: +m.bruise || 0, cond: m.cond || '', dodge: +m.dodge || 0, parry: +m.parry || 0 }); });
       (store.mm && store.mm.heroes || []).filter(function (h) { return (U.fighting || {})[h.id]; }).forEach(function (h) { var d = MR.derive(h); list.push({ k: h.id, n: h.name || 'Hero', init: 1 + R(20) + d.init, mod: d.init, tough: d.def.tough, bruise: 0, cond: '', dodge: d.def.dodge, parry: d.def.parry }); });
       list.sort(function (x, y) { return y.init - x.init || y.mod - x.mod; });
       e.run = { list: list, turn: 0, round: 1, log: '' };
@@ -208,6 +241,7 @@
       if (deg >= 2 && DMG.indexOf(res) > DMG.indexOf(c.cond)) c.cond = res;
       return c.n + ' fails by ' + deg + ' degree' + (deg > 1 ? 's ' : ' ') + how + ': ' + (c.minion ? 'a minion, so out.' : deg === 1 ? '−1 Toughness.' : res + (deg < 4 ? ' and −1 Toughness.' : '.'));
     }
+    function writeBack(c) { var t = c && c.team && teamById(c.team), m = t && t.m.filter(function (x) { return x.id === c.k; })[0]; if (m) { m.bruise = c.bruise; m.cond = c.cond; } }
     function runHtml() {
       var run = E().run;
       return '<div class="panel enc-run"><div class="toolbar" style="margin:0"><h3 style="margin:0">Round ' + run.round + '</h3><span class="spacer"></span>' + btn('mmeNext', 'Next turn ▶', {}, 'btn primary') + btn('mmeStop', 'End fight', {}, 'btn') + '</div>' +
@@ -228,14 +262,15 @@
       if (e.run) return '<main class="mon-main"><h2>Encounters</h2>' + runHtml() + '</main>';
       var kinds = [['bossmin', 'Villain + minions'], ['boss', 'One big villain'], ['team', 'Villain team'], ['minions', 'Only minions']];
       return '<main class="mon-main mme"><h2>Encounters</h2><p class="muted">Pick the heroes’ power level and how many there are: the app makes villains and minions with their own powers, skills and tactics, built within the power level limits.</p>' +
-        '<div class="panel"><div class="row"><div class="field"><span>Heroes’ power level</span><span class="mm-step">' + btn('mmeSet', '−', { k: 'pl', d: -1 }, 'mm-b') + '<b>' + e.pl + '</b>' + btn('mmeSet', '+', { k: 'pl', d: 1 }, 'mm-b') + '</span></div>' +
+        '<div class="panel">' + (teams().length ? '<label class="field"><span>Party</span><select data-mmeteam="1"><option value="">— none —</option>' + teams().map(function (x) { return '<option value="' + x.id + '"' + (e.team === x.id ? ' selected' : '') + '>' + esc(x.name || 'Unnamed party') + ' (' + teamLine(x) + ')</option>'; }).join('') + '</select></label>' : '<p class="small muted">Tip: add your players on the Party page and choose them here.</p>') +
+        '<div class="row"><div class="field"><span>Heroes’ power level</span><span class="mm-step">' + btn('mmeSet', '−', { k: 'pl', d: -1 }, 'mm-b') + '<b>' + e.pl + '</b>' + btn('mmeSet', '+', { k: 'pl', d: 1 }, 'mm-b') + '</span></div>' +
         '<div class="field"><span>Number of heroes</span><span class="mm-step">' + btn('mmeSet', '−', { k: 'n', d: -1 }, 'mm-b') + '<b>' + e.n + '</b>' + btn('mmeSet', '+', { k: 'n', d: 1 }, 'mm-b') + '</span></div></div>' +
         '<div class="pills">' + kinds.map(function (k) { return btn('mmeKind', k[1], { v: k[0] }, 'pill' + (e.kind === k[0] ? ' on' : '')); }).join('') + '</div>' +
         (e.kind !== 'minions' ? '<label class="field"><span>Villain type</span><select data-mmerole="1"><option value="">Any (a mix)</option>' + Object.keys(ROLES).map(function (r) { return '<option value="' + r + '"' + (e.role === r ? ' selected' : '') + '>' + ROLES[r].label + '</option>'; }).join('') + '</select></label>' : '') +
         '<p class="small muted">' + ({ boss: 'One villain at PL ' + Math.min(20, e.pl + 2) + ', strong enough to face the whole team alone.', bossmin: 'A villain at PL ' + Math.min(20, e.pl + 1) + ' with ' + e.n * 2 + ' minions at PL ' + Math.max(1, e.pl - 4) + '.', team: e.n + ' villains at PL ' + e.pl + ', one for each hero.', minions: e.n * 3 + ' minions at PL ' + Math.max(1, e.pl - 3) + ': a warm-up fight.' })[e.kind] + '</p>' +
         '<div class="toolbar">' + btn('mmeGen', (root.Icon ? root.Icon('d20') : '') + ' Make the encounter', {}, 'btn primary') + '</div></div>' +
         (e.msg ? '<p class="rest-msg small">' + esc(e.msg) + '</p>' : '') + (e.foes.length ? '<h3>Foes</h3>' + e.foes.map(statBlock).join('') +
-          '<div class="panel"><h4 style="margin-top:0">Who fights?</h4>' + (heroes.length ? '<div class="pills">' + heroes.map(function (h) { return btn('mmeFight', esc(h.name), { v: h.id }, 'pill' + ((U.fighting || {})[h.id] ? ' on' : '')); }).join('') + '</div>' : '<p class="small muted">Your heroes from the Heroes page can join the initiative list.</p>') +
+          '<div class="panel"><h4 style="margin-top:0">Who fights?</h4>' + (teamById(e.team) ? '<p class="small">' + esc(teamById(e.team).name || 'The party') + ': ' + esc(teamById(e.team).m.map(function (m) { return m.n || 'Hero'; }).join(', ')) + '</p>' : '') + (heroes.length ? '<div class="pills">' + heroes.map(function (h) { return btn('mmeFight', esc(h.name), { v: h.id }, 'pill' + ((U.fighting || {})[h.id] ? ' on' : '')); }).join('') + '</div>' : '<p class="small muted">Your heroes from the Heroes page can join the initiative list.</p>') +
           '<div class="toolbar">' + btn('mmeRun', (root.Icon ? root.Icon('swords') : '') + ' Run the fight', {}, 'btn primary') + '</div></div>' : '') + '</main>';
     }
     function foe(id) { return E().foes.filter(function (x) { return x.id === id; })[0]; }
@@ -256,16 +291,33 @@
       mmeRun: function () { startRun(); root.scrollTo(0, 0); },
       mmeNext: function () { var r = E().run; for (var i = 0; i < r.list.length; i++) { r.turn++; if (r.turn >= r.list.length) { r.turn = 0; r.round++; } if (r.list[r.turn].cond !== 'Incapacitated') break; } r.log = ''; },
       mmeStop: function () { E().run = null; },
-      mmeHit: function (v) { var c = cur(v), box = document.getElementById('mmr-' + v), rank = Math.round(+(box && box.value)); if (!c) return; if (!rank) { E().run.log = 'Type the damage rank first.'; return; } E().run.log = hit(c, rank); },
-      mmeHeal: function (v) { var c = cur(v); if (!c) return; if (c.cond) c.cond = DMG[DMG.indexOf(c.cond) - 1] === 'Bruised' ? '' : DMG[DMG.indexOf(c.cond) - 1]; else if (c.bruise) c.bruise--; E().run.log = c.n + ' recovers a step.'; }
+      mmeHit: function (v) { var c = cur(v), box = document.getElementById('mmr-' + v), rank = Math.round(+(box && box.value)); if (!c) return; if (!rank) { E().run.log = 'Type the damage rank first.'; return; } E().run.log = hit(c, rank); writeBack(c); },
+      mmeHeal: function (v) { var c = cur(v); if (!c) return; if (c.cond) c.cond = DMG[DMG.indexOf(c.cond) - 1] === 'Bruised' ? '' : DMG[DMG.indexOf(c.cond) - 1]; else if (c.bruise) c.bruise--; E().run.log = c.n + ' recovers a step.'; writeBack(c); },
+      mmtNew: function () { var t = { id: uid(), name: '', m: [newMember(E().pl)] }; teams().push(t); U.team = t.id; U.delTeam = false; },
+      mmtAdd: function () { var t = curTeam(); t.m.push(newMember(t.m[0] ? t.m[0].pl : E().pl)); },
+      mmtRm: function (v) { var t = curTeam(); t.m = t.m.filter(function (x) { return x.id !== v; }); },
+      mmtHp: function (v, el) { var m = tm(v); if (m) m.hp = clamp((+m.hp || 0) + +el.getAttribute('data-d'), 0, 99); },
+      mmtHeal: function (v) { var m = tm(v); if (!m) return; if (m.cond) m.cond = m.cond === 'Dazed' ? '' : DMG[DMG.indexOf(m.cond) - 1]; else if (m.bruise) m.bruise--; },
+      mmtRest: function () { curTeam().m.forEach(function (m) { m.bruise = 0; m.cond = ''; m.hp = 1; }); },
+      mmtPlan: function () { var t = curTeam(), e = E(); if (t.m.length) { e.pl = teamPL(t); e.n = clamp(t.m.length, 1, 8); } e.team = t.id; ui.section = 'mm-enc'; root.scrollTo(0, 0); },
+      mmtDelAsk: function () { U.delTeam = true; }, mmtDelNo: function () { U.delTeam = false; },
+      mmtDel: function () { var id = curTeam().id; store.mmTeams = teams().filter(function (x) { return x.id !== id; }); U.team = ''; U.delTeam = false; if (E().team === id) E().team = ''; }
     };
-    function onInput(t) { if (t.getAttribute('data-mmeinit')) { var c = cur(t.getAttribute('data-mmeinit')); if (c) c.init = +t.value || 0; return 'save'; } return null; }
+    function tm(id) { var t = curTeam(); return t && t.m.filter(function (x) { return x.id === id; })[0]; }
+    function onInput(t) {
+      if (t.getAttribute('data-mmtname')) { curTeam().name = t.value; return 'save'; }
+      if (t.getAttribute('data-mmt')) { var m = tm(t.getAttribute('data-mmt')), k = t.getAttribute('data-f'); if (m) m[k] = k === 'n' ? t.value : clamp(Math.round(+t.value) || 0, k === 'pl' ? 1 : 0, 99); return 'save'; }
+      if (t.getAttribute('data-mmeinit')) { var c = cur(t.getAttribute('data-mmeinit')); if (c) c.init = +t.value || 0; return 'save'; } return null; }
     function onChange(t) {
       if (t.getAttribute('data-mmerole')) { E().role = t.value; return 'render'; }
+      if (t.getAttribute('data-mmtpick')) { U.team = t.value; U.delTeam = false; return 'render'; }
+      if (t.getAttribute('data-mmtname') || t.getAttribute('data-mmt')) return 'render';
+      if (t.getAttribute('data-mmtmine') && t.value) { var h = (store.mm.heroes || []).filter(function (x) { return x.id === t.value; })[0]; if (h) { var d = MR.derive(h); curTeam().m.push({ id: uid(), n: h.name, pl: d.pl, tough: d.def.tough, dodge: d.def.dodge, parry: d.def.parry, fort: d.def.fort, will: d.def.will, hp: 1, bruise: 0, cond: '' }); } return 'render'; }
+      if (t.getAttribute('data-mmeteam') != null) { var e = E(), tt = teamById(t.value); e.team = t.value; if (tt && tt.m.length) { e.pl = teamPL(tt); e.n = clamp(tt.m.length, 1, 8); } return 'render'; }
       if (t.getAttribute('data-mmeinit')) { var r = E().run, k = r.list[r.turn] && r.list[r.turn].k; r.list.sort(function (x, y) { return y.init - x.init || y.mod - x.mod; }); r.turn = Math.max(0, r.list.map(function (x) { return x.k; }).indexOf(k)); return 'render'; }
       return null;
     }
-    return { html: html, actions: actions, onInput: onInput, onChange: onChange, _build: build };
+    return { html: html, partyPage: partyPage, actions: actions, onInput: onInput, onChange: onChange, _build: build };
   }
   MMEnc.ROLES = ROLES; MMEnc.MINIONS = MINIONS;
   root.MMEnc = MMEnc;
