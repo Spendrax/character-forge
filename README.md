@@ -165,7 +165,9 @@ spells known or prepared per class; Unarmored Defense only from whichever class 
 ## The helper (AI)
 
 The round ✦ button above the dice opens a chat that sees what you are working on: the game, the page, your character or hero with its open choices, costs and warnings.
-Ask it things like “what should I pick for this?”, “why is my hero over the limit?” or tap one of the suggested questions. It gives advice; you make the changes.
+Ask it things like “what should I pick for this?”, “why is my hero over the limit?” or tap one of the suggested questions.
+Ask it to add something (“add Power Attack”, “make me a high elf wizard”) and its answer comes with **Apply** buttons: nothing changes until you tap one, every change is checked against the rules data, and Undo takes it back.
+D&D: lineage, class (level, subclass), background, name and any open choice (spells, skills, feats…). M&M: abilities, defenses, skills, advantages, powers (with extras and flaws), complications, name and power level.
 
 It needs an AI to talk to. Pick one in its Settings:
 

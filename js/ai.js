@@ -25,7 +25,8 @@
     'You help the user build characters and run games inside this app. Below is what the user is looking at right now. Use it: refer to their actual character, their open choices and their warnings. ' +
     'Give practical, specific advice: name the exact options they can pick in the app and why. Keep answers short and easy to read on a phone (a few sentences or a short list). ' +
     'Follow the official rules of the game they are playing; if something depends on the GM or you are not sure, say so instead of inventing rules. ' +
-    'You can’t change their character yourself: tell them what to tap or pick. Reply in the language the user writes in.';
+    'If the page info ends with “Changes you can propose” and the user asks you to add or change something (or says yes to your suggestion), write each change on its own line in exactly that [[…]] format, using exact names. The app turns each line into an Apply button; nothing changes until the user taps it, so never say you already did it. Only propose changes that follow the rules and fit their points or choices. ' +
+    'Without that list, tell them what to tap or pick. Reply in the language the user writes in.';
 
   function ask(messages, context) {
     var sys = SYSTEM + '\n\n--- What the user is looking at ---\n' + context;
@@ -104,7 +105,7 @@
     if (!m) { view = 'setup'; forced = true; } // nothing set up yet: stay on the setup screen until Done…
     else if (forced && m === 'server') { forced = false; view = 'chat'; } // …unless the server turns out to have a key
     if (view === 'setup') { el.innerHTML = head + setupHtml(!m); return; }
-    var msgs = chat.length ? chat.map(function (c) { return '<div class="ai-msg ' + c.role + '">' + (c.role === 'user' ? esc(c.content).replace(/\n/g, '<br>') : mdHtml(c.content)) + '</div>'; }).join('')
+    var msgs = chat.length ? chat.map(function (c, mi) { return '<div class="ai-msg ' + c.role + '">' + (c.role === 'user' ? esc(c.content).replace(/\n/g, '<br>') : mdHtml(c.content.replace(CMD, '').replace(/\n{3,}/g, '\n\n').trim() || '…') + applyHtml(c, mi)) + '</div>'; }).join('')
       : '<div class="ai-empty"><p>Ask me anything about ' + esc(ctx.subject || 'the game') + '. I can see what you are working on.</p></div>';
     var chips = (ctx.chips || []).map(function (c) { return '<button type="button" class="pill small" data-ai="chip" data-v="' + esc(c) + '">' + esc(c) + '</button>'; }).join('');
     el.innerHTML = head + '<div class="ai-msgs" aria-live="polite">' + msgs + (busy ? '<div class="ai-msg assistant ai-busy">Thinking…</div>' : '') + '</div>' +
@@ -112,6 +113,28 @@
       '<div class="ai-send"><textarea id="ai-in" rows="2" placeholder="Ask about your character or the rules…"' + (busy ? ' disabled' : '') + '></textarea><button type="button" class="btn primary" data-ai="send"' + (busy ? ' disabled' : '') + '>Send</button></div>' +
       '<div class="ai-foot small muted">' + (chat.length ? '<button type="button" class="linkbtn" data-ai="clear">New conversation</button> · ' : '') + 'Uses ' + (m === 'server' ? 'your server' : m === 'claude' ? 'Claude with your key' : m === 'gemini' ? 'Gemini (free)' : 'Ollama') + '. Answers can be wrong: check the rules.</div>';
     var list = el.querySelector('.ai-msgs'); list.scrollTop = list.scrollHeight;
+  }
+  // Changes the AI proposes come as [[verb: a | b]] lines: shown as Apply buttons, run by the page's apply() only when tapped.
+  var CMD = /\[\[\s*([a-z_]+)\s*:([^\]]*)\]\]/gi;
+  function cmds(t) { var out = []; String(t).replace(CMD, function (_, v, a) { out.push({ verb: v.toLowerCase(), args: a.split('|').map(function (x) { return x.trim(); }) }); }); return out; }
+  function applyHtml(c, mi) {
+    var list = cmds(c.content); if (!list.length) return '';
+    var done = c.done || {}, left = list.filter(function (_, i) { return !done[i]; }).length;
+    return '<div class="ai-apply">' + list.map(function (x, i) {
+      var r = done[i], label = x.verb.replace(/_/g, ' ') + ': ' + x.args.filter(Boolean).join(' · ');
+      return r ? '<div class="ai-did small' + (r.ok ? '' : ' bad') + '">' + (r.ok ? '✓ ' : '✗ ') + esc(r.t) + '</div>' : '<button type="button" class="btn small" data-ai="apply" data-m="' + mi + '" data-v="' + i + '">Apply — ' + esc(label) + '</button>';
+    }).join('') + (left > 1 ? '<button type="button" class="btn small primary" data-ai="apply" data-m="' + mi + '" data-v="all">Apply all ' + left + '</button>' : '') +
+      (c.note ? '<div class="small bad">' + esc(c.note) + '</div>' : '') + (list.some(function (_, i) { return done[i] && done[i].ok; }) ? '<div class="small muted">Not right? Undo at the top of the page.</div>' : '') + '</div>';
+  }
+  function applyCmds(mi, which) {
+    var c = chat[mi], list = cmds(c.content), ctx = getContext(); c.done = c.done || {};
+    list.forEach(function (x, i) {
+      if (c.done[i] || (which !== 'all' && String(i) !== which)) return;
+      if (!ctx.apply) { c.note = 'Open the character or hero this is for, then tap Apply again.'; return; } // buttons stay
+      try { c.done[i] = { ok: true, t: ctx.apply(x.verb, x.args) || 'Done' }; c.note = ''; } catch (e) { c.done[i] = { ok: false, t: e.message }; }
+      ctx = getContext();
+    });
+    draw();
   }
   function setupHtml(first) {
     var r = function (v, t, d) { return '<label class="check-line"><input type="radio" name="ai-mode" data-aicfg="mode" value="' + v + '"' + (cfg.mode === v ? ' checked' : '') + '> <span><b>' + t + '</b><br><span class="small muted">' + d + '</span></span></label>'; };
@@ -148,6 +171,7 @@
     if (a === 'send') return send();
     if (a === 'chip') return send(v);
     if (a === 'clear') { chat = []; return draw(); }
+    if (a === 'apply') return applyCmds(+b.getAttribute('data-m'), v);
   }
   function readCfg() {
     el.querySelectorAll('[data-aicfg]').forEach(function (i) { var k = i.getAttribute('data-aicfg'); if (i.type === 'radio') { if (i.checked) cfg[k] = i.value; } else cfg[k] = i.value.trim(); });

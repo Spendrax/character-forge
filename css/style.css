@@ -610,3 +610,6 @@ html.dice3d-lock, html.dice3d-lock body { overflow: hidden; }
 .ai-setup code { font-size: .85em; }
 @media print { .ai-fab, .ai-panel { display: none !important; } }
 .ai-more { margin: .4rem 0 .6rem; } .ai-more summary { cursor: pointer; padding: .3rem 0; }
+.ai-apply { display: flex; flex-direction: column; align-items: flex-start; gap: .35rem; margin-top: .5rem; }
+.ai-apply .btn { text-align: left; white-space: normal; }
+.ai-did { color: var(--ok, #5a9); } .ai-did.bad, .ai-apply .bad { color: var(--warn); }
