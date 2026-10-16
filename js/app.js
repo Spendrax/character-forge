@@ -750,6 +750,23 @@
     if (!ch.picture) return '';
     return '<div class="pic-box ' + (cls || '') + '"><img class="char-pic' + (ch.pictureFit === 'contain' ? ' whole' : '') + '" src="' + ch.picture + '" alt="Picture of ' + esc(title(ch)) + '" draggable="false" style="transform:' + picTransform(ch.pictureView) + '"></div>';
   }
+  // All characters to choose from, each with its picture (or its drawn figure).
+  function rosterHtml() {
+    var cards = store.chars.filter(function (c) { return c.id === store.current || c.name || c.lineage || (c.classes || []).length || c.picture; }).map(function (c) {
+      var dd = R.derive(c, store.filters);
+      var pic = c.picture ? '<div class="pic-box roster-pic"><img class="char-pic' + (c.pictureFit === 'contain' ? ' whole' : '') + '" src="' + c.picture + '" alt="" draggable="false" style="transform:' + picTransform(c.pictureView) + '"></div>'
+        : '<div class="roster-pic roster-fig"><canvas class="avatar figure" data-roster="' + c.id + '" width="48" height="58" aria-hidden="true"></canvas></div>';
+      return '<button type="button" class="roster-card' + (c.id === store.current ? ' cur' : '') + '" data-act="openChar" data-v="' + c.id + '">' + pic +
+        '<span class="roster-txt"><b>' + esc(title(c)) + '</b><span class="small muted">' + esc(summaryLine(c, dd)) + '</span>' +
+        ((c.classes || []).length ? '<span class="roster-stats small"><span>Lv ' + dd.level + '</span><span>AC ' + dd.ac + '</span><span>HP ' + (c.track && c.track.hp != null ? c.track.hp + '/' : '') + dd.hp + '</span></span>' : '') + '</span></button>';
+    }).join('');
+    return '<main class="home roster"><div class="toolbar"><h2 style="margin:0">Characters</h2><span class="spacer"></span>' + btn('rosterNew', '+ New character', {}, 'btn primary') + btn('import', 'Import', {}, 'btn') + '</div>' +
+      '<div class="roster-grid">' + cards + '</div><input type="file" id="importFile" hidden></main>';
+  }
+  function drawRoster() {
+    if (!window.Avatar) return;
+    document.querySelectorAll('canvas[data-roster]').forEach(function (cv) { var c = byId(cv.getAttribute('data-roster')); if (!c) return; var dd = R.derive(c, store.filters); Avatar.draw(cv, lookOf(c, dd), gearOf(c)); });
+  }
   function drawAvatars() {
     if (!window.Avatar) return;
     var look = lookOf(ch, d), gear = gearOf(ch);
@@ -1121,15 +1138,16 @@
   }
   function sectionNav() {
     var list = gameOf() === 'mm' ? [['mm-home', '⌂ Home'], ['mm-heroes', 'Heroes'], ['mm-rules', 'Rules'], ['audio', 'Audio'], ['rules', 'House rules']]
-      : [['home', '⌂ Home'], ['chars', 'Characters'], ['monsters', 'Monsters'], ['party', 'Party'], ['encounters', 'Encounters'], ['treasure', 'Treasures'], ['books', 'Books'], ['audio', 'Audio'], ['rules', 'House rules']];
+      : [['home', '⌂ Home'], ['roster', 'Characters'], ['monsters', 'Monsters'], ['party', 'Party'], ['encounters', 'Encounters'], ['treasure', 'Treasures'], ['books', 'Books'], ['audio', 'Audio'], ['rules', 'House rules']];
     return '<nav class="sections" aria-label="Sections">' + list.map(function (x) {
-      return '<button type="button" class="sec' + (ui.section === x[0] ? ' on' : '') + '" data-act="section" data-v="' + x[0] + '"' + (ui.section === x[0] ? ' aria-current="page"' : '') + '>' + x[1] + '</button>';
+      var on = ui.section === x[0] || (x[0] === 'roster' && ui.section === 'chars');
+      return '<button type="button" class="sec' + (on ? ' on' : '') + '" data-act="section" data-v="' + x[0] + '"' + (on ? ' aria-current="page"' : '') + '>' + x[1] + '</button>';
     }).join('') + '</nav>';
   }
   function homeHtml() {
     var chars = store.chars.filter(function (c) { return c.name || c.lineage || (c.classes || []).length; });
     var parties = (store.parties || []).filter(function (p) { return p.m && p.m.length; });
-    var hub = window.homeHub([['chars', 'sword', 'Characters'], ['party', 'campfire', 'Party'], ['encounters', 'swords', 'Encounters'], ['monsters', 'dragon', 'Monsters'],
+    var hub = window.homeHub([['roster', 'sword', 'Characters'], ['party', 'campfire', 'Party'], ['encounters', 'swords', 'Encounters'], ['monsters', 'dragon', 'Monsters'],
       ['treasure', 'coins', 'Treasures'], ['books', 'book', 'Books'], ['audio', 'lute', 'Audio'], ['rules', 'scroll', 'House rules']]);
     var recent = chars.slice(0, 8).map(function (c) {
       var dd = R.derive(c, store.filters);
@@ -1158,15 +1176,16 @@
     var keep = scrollState();
     var top = '<header class="top">' + btn('section', 'Character Forge', { v: gameOf() === 'mm' ? 'mm-home' : 'home' }, 'brand linkish') + gameSwitch() + sectionNav() + '<span class="spacer"></span>' +
       '<button type="button" class="btn" data-act="undo" title="Undo (Ctrl+Z)"' + (undoStack.length ? '' : ' disabled') + '>↶ Undo</button>' + (isInstalledApp() ? '' : btn('install', 'Install app', {}, installPrompt ? 'btn primary' : 'btn')) + '</header>';
-    var body = /^mm-(home|heroes)$/.test(ui.section) ? MMV.html(ui.section) : ui.section === 'mm-rules' ? BOOKS.html() : ui.section === 'monsters' ? '<main class="mon-main">' + MON.html() + '</main>' : ui.section === 'encounters' ? ENC.html() : ui.section === 'party' ? ENC.partyPage() : ui.section === 'treasure' ? TRE.html() : ui.section === 'books' ? BOOKS.html() : ui.section === 'audio' ? AUD.html() : ui.section === 'rules' ? rulesHtml() : homeHtml();
+    var body = /^mm-(home|heroes)$/.test(ui.section) ? MMV.html(ui.section) : ui.section === 'mm-rules' ? BOOKS.html() : ui.section === 'monsters' ? '<main class="mon-main">' + MON.html() + '</main>' : ui.section === 'encounters' ? ENC.html() : ui.section === 'party' ? ENC.partyPage() : ui.section === 'roster' ? rosterHtml() : ui.section === 'treasure' ? TRE.html() : ui.section === 'books' ? BOOKS.html() : ui.section === 'audio' ? AUD.html() : ui.section === 'rules' ? rulesHtml() : homeHtml();
     document.getElementById('app').innerHTML = top + installHelpHtml() + body;
     if (ui.mon && ui.mon.scrollTop) { ui.mon.scrollTop = false; var r = document.querySelector('.mon-right'); if (r && window.innerWidth < 800) r.scrollIntoView(); else window.scrollTo(0, 0); }
     else restoreScroll(keep);
     if (ui.section === 'books' || ui.section === 'mm-rules') BOOKS.after();
     var mt = document.querySelector('.mm-tabs .on'); if (mt) mt.parentNode.scrollLeft = Math.max(0, mt.offsetLeft - mt.parentNode.offsetLeft - 24); // keep the open tab in view
+    if (ui.section === 'roster') drawRoster();
     AUD.after(); Dice3D.place(); AIHelper.place(); syncHistory();
     if (fid) { var el = document.getElementById(fid); if (el) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } try { if (pos != null) el.setSelectionRange(pos, pos); } catch (e) { /* not text */ } } }
-    document.title = (/^mm-(home|heroes)$/.test(ui.section) ? MMV.title(ui.section) : ui.section === 'mm-rules' ? 'M&M rules' : ui.section === 'monsters' ? 'Monsters' : ui.section === 'encounters' ? 'Encounters' : ui.section === 'party' ? 'Party' : ui.section === 'treasure' ? 'Treasures' : ui.section === 'books' ? 'Books' : ui.section === 'audio' ? 'Audio' : ui.section === 'rules' ? 'House rules' : 'Home') + ' — Character Forge';
+    document.title = (/^mm-(home|heroes)$/.test(ui.section) ? MMV.title(ui.section) : ui.section === 'mm-rules' ? 'M&M rules' : ui.section === 'monsters' ? 'Monsters' : ui.section === 'encounters' ? 'Encounters' : ui.section === 'party' ? 'Party' : ui.section === 'roster' ? 'Characters' : ui.section === 'treasure' ? 'Treasures' : ui.section === 'books' ? 'Books' : ui.section === 'audio' ? 'Audio' : ui.section === 'rules' ? 'House rules' : 'Home') + ' — Character Forge';
     saveNow();
   }
 
@@ -1253,6 +1272,7 @@
       if (ch.classes.length === 1 && d.level < 20) { ch.classes[0].level++; ui.clsTab = ch.classes[0].cls; } // several classes: pick which one on the Class step
     },
     step: function (v) { ui.step = v; ui.picEdit = false; ui.packAdded = null; ui.editArmor = null; ui.editWeapon = null; ui.partImport = null; ui.partImportDone = null; ui.partImportError = null; ui.scrollToStep = true; },
+    rosterNew: function () { actions['new'](); ui.section = 'chars'; window.scrollTo(0, 0); },
     'new': function () { var c = R.newChar(); store.chars.push(c); store.current = c.id; ui.step = 'lineage'; ui.mode = 'build'; },
     dup: function () { var c = JSON.parse(JSON.stringify(ch)); c.id = R.uid(); c.name = title(ch) + ' (copy)'; store.chars.push(c); store.current = c.id; },
     askDelete: function () { ui.confirmDelete = true; },

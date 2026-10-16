@@ -647,3 +647,16 @@ html.dice3d-lock, html.dice3d-lock body { overflow: hidden; }
 .home-chip { flex: 0 0 auto; max-width: 15rem; scroll-snap-align: start; display: flex; flex-direction: column; text-align: left; gap: .15rem; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: .65rem .9rem; font: inherit; color: inherit; cursor: pointer; }
 .home-chip:hover { border-color: var(--accent); }
 .home-chip.party { border-style: dashed; }
+/* Characters roster */
+.roster-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); gap: .8rem; margin-top: 1rem; }
+.roster-card { display: flex; flex-direction: column; text-align: left; padding: 0; overflow: hidden; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; font: inherit; color: inherit; cursor: pointer; transition: transform .15s, border-color .15s; }
+.roster-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.roster-card:active { transform: scale(.98); }
+.roster-card.cur { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.roster-pic { width: 100%; aspect-ratio: 1; }
+.roster-fig { display: grid; place-items: center; background: radial-gradient(circle at 50% 40%, var(--panel), var(--soft)); }
+.roster-fig canvas { width: 72%; height: auto; image-rendering: pixelated; }
+.roster-txt { display: flex; flex-direction: column; gap: .2rem; padding: .6rem .75rem .75rem; }
+.roster-txt b { font: 700 1.05rem var(--serif); }
+.roster-stats { display: flex; gap: .45rem; flex-wrap: wrap; margin-top: .15rem; }
+.roster-stats span { background: var(--soft); border-radius: 6px; padding: .05rem .4rem; }
