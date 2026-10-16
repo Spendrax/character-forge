@@ -181,6 +181,7 @@
       return '<main class="home"><h1>Mutants &amp; Masterminds 3e</h1><p class="muted">Your superhero table companion (3rd edition).</p><div class="home-grid">' +
         tile('mm-heroes', 'bolt', 'Heroes', 'Build heroes with power points: abilities, powers with extras and flaws, advantages, skills and complications, with the power level limits checked as you go.',
           hs.length ? '<div class="home-list">' + hs.slice(0, 6).map(function (h) { var d = derive(h); return '<button type="button" class="home-char" data-act="mmOpen" data-v="' + h.id + '"><b>' + esc(h.name || 'Unnamed hero') + '</b><span class="small muted">PL ' + d.pl + ' · ' + d.pp.total + '/' + d.pp.budget + ' points</span></button>'; }).join('') + '</div>' : '') +
+        tile('mm-enc', 'swords', 'Encounters', 'Pick the heroes’ power level: get villains and minions with their own powers, skills and tactics, built within the limits. Then run the fight with initiative and the damage track.') +
         tile('mm-rules', 'book', 'Rules', 'Every ability, skill, advantage, power effect, extra, flaw and condition, plus the core rules, all searchable. Add your own books (PDF) too.') +
         tile('audio', 'lute', 'Audio', 'Music by mood for the table, shared with D&D.') +
         tile('rules', 'scroll', 'House rules', 'Your table’s own rules for M&M, kept apart from the D&D ones.') +

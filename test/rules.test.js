@@ -405,4 +405,5 @@ const sw = fs.readFileSync(path.join(__dirname, '../sw.js'), 'utf8');
   assert.ok(!/<script/.test(B.md('<script>alert(1)</script>'))); assert.equal(B.splitText('X', '# A\na\n# B\nb').chapters[0].parts.length, 2);
 }
 
-console.log('ok —', n, 'builds derived;', D.classes.length, 'classes,', D.subclasses.length, 'subclasses,', D.lineages.length, 'lineages,', D.backgrounds.length, 'backgrounds,', D.feats.length, 'feats,', Object.keys(D.spells).length, 'spells (' + Object.keys(D.spellText).length + ' described),', longF, 'detailed features');
+var mmFoes = require('./mm-enc.check.js');
+console.log('ok —', mmFoes, 'M&M foes within limits;', n, 'builds derived;', D.classes.length, 'classes,', D.subclasses.length, 'subclasses,', D.lineages.length, 'lineages,', D.backgrounds.length, 'backgrounds,', D.feats.length, 'feats,', Object.keys(D.spells).length, 'spells (' + Object.keys(D.spellText).length + ' described),', longF, 'detailed features');

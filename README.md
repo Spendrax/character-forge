@@ -167,6 +167,12 @@ spells known or prepared per class; Unarmored Defense only from whichever class 
 The Party page keeps your players’ characters: name, class, level, AC and hit points (or add one of your own characters and its numbers are copied in). Damage and healing in a fight carry over to the party; “Long rest” fills everyone back up.
 In Encounters, choose the party and the difficulty meter uses their levels; it also warns when one monster is far above their level or when a character is badly hurt. When you run the fight, the party shows with its AC and current hit points.
 
+## M&M encounters
+
+Pick the heroes’ power level and how many there are, then the kind of fight (villain + minions, one big villain, a villain team, only minions) and optionally the villain type (brute, blaster, speedster, martial artist, mentalist, armored villain, controller, infiltrator).
+Each villain is built like a hero, with abilities, powers, skills, advantages, tactics and a motivation, and stays within the power level limits (checked for every role and level in the tests). Make a new one, remove it, or copy it to your heroes to edit.
+Run the fight: initiative for foes and the heroes you pick, then type a hit’s damage rank and the app rolls the Toughness check and fills in the damage track (−1 Toughness, dazed, staggered, incapacitated; minions drop after any failed check).
+
 ## The helper (AI)
 
 The round ✦ button above the dice opens a chat that sees what you are working on: the game, the page, your character or hero with its open choices, costs and warnings.

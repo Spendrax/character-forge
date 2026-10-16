@@ -655,3 +655,11 @@ html.dice3d-lock, html.dice3d-lock body { overflow: hidden; }
 .roster-txt b { font: 700 1.05rem var(--serif); }
 .roster-stats { display: flex; gap: .45rem; flex-wrap: wrap; margin-top: .15rem; }
 .roster-stats span { background: var(--soft); border-radius: 6px; padding: .05rem .4rem; }
+/* M&M encounters */
+.mme-quick { margin-top: .3rem; color: var(--muted); }
+.mme-quick b { color: var(--ink); }
+.mme-list { margin: .2rem 0 .5rem; padding-left: 1.1rem; }
+.mme-c { grid-template-columns: 3.6rem minmax(0, 1fr); }
+.mme-hit { grid-column: 1 / -1; display: flex; gap: .4rem; align-items: center; flex-wrap: wrap; }
+.mme-hit input { width: 5rem; }
+.mme-cond { display: inline-block; margin-top: .2rem; background: var(--accent); color: var(--accent-ink); border-radius: 6px; padding: 0 .45rem; font-size: .8rem; font-weight: 600; }
