@@ -613,3 +613,13 @@ html.dice3d-lock, html.dice3d-lock body { overflow: hidden; }
 .ai-apply { display: flex; flex-direction: column; align-items: flex-start; gap: .35rem; margin-top: .5rem; }
 .ai-apply .btn { text-align: left; white-space: normal; }
 .ai-did { color: var(--ok, #5a9); } .ai-did.bad, .ai-apply .bad { color: var(--warn); }
+/* Party (DM) */
+.pm-row { display: flex; flex-wrap: wrap; gap: .4rem; align-items: flex-end; }
+.pm-f { display: flex; flex-direction: column; font-size: .8rem; color: var(--muted); width: 4.2rem; }
+.pm-f.wide { flex: 1 1 8rem; width: auto; }
+.pm-f input { width: 100%; color: var(--ink); }
+.pm-hp { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-top: .5rem; }
+.pm-hp .hpbar { flex: 1 1 6rem; }
+.pm.down { opacity: .65; }
+.enc-danger { margin: .3rem 0; padding-left: 1.2rem; color: var(--warn); }
+.enc-c.pc.down { opacity: .55; }

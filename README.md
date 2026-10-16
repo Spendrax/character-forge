@@ -162,6 +162,11 @@ the reduced proficiency list for each added class; features, subclass and abilit
 shared spell slots from the combined caster level (full + half + third, artificer rounded up) with pact slots kept separate;
 spells known or prepared per class; Unarmored Defense only from whichever class granted it first. Ability score prerequisites are shown as warnings, not enforced.
 
+## Party (for the DM)
+
+The Party page keeps your players’ characters: name, class, level, AC and hit points (or add one of your own characters and its numbers are copied in). Damage and healing in a fight carry over to the party; “Long rest” fills everyone back up.
+In Encounters, choose the party and the difficulty meter uses their levels; it also warns when one monster is far above their level or when a character is badly hurt. When you run the fight, the party shows with its AC and current hit points.
+
 ## The helper (AI)
 
 The round ✦ button above the dice opens a chat that sees what you are working on: the game, the page, your character or hero with its open choices, costs and warnings.

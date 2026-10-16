@@ -1121,7 +1121,7 @@
   }
   function sectionNav() {
     var list = gameOf() === 'mm' ? [['mm-home', '⌂ Home'], ['mm-heroes', 'Heroes'], ['mm-rules', 'Rules'], ['audio', 'Audio'], ['rules', 'House rules']]
-      : [['home', '⌂ Home'], ['chars', 'Characters'], ['monsters', 'Monsters'], ['encounters', 'Encounters'], ['treasure', 'Treasures'], ['books', 'Books'], ['audio', 'Audio'], ['rules', 'House rules']];
+      : [['home', '⌂ Home'], ['chars', 'Characters'], ['monsters', 'Monsters'], ['party', 'Party'], ['encounters', 'Encounters'], ['treasure', 'Treasures'], ['books', 'Books'], ['audio', 'Audio'], ['rules', 'House rules']];
     return '<nav class="sections" aria-label="Sections">' + list.map(function (x) {
       return '<button type="button" class="sec' + (ui.section === x[0] ? ' on' : '') + '" data-act="section" data-v="' + x[0] + '"' + (ui.section === x[0] ? ' aria-current="page"' : '') + '>' + x[1] + '</button>';
     }).join('') + '</nav>';
@@ -1137,6 +1137,7 @@
           var dd = R.derive(c, store.filters);
           return '<button type="button" class="home-char" data-act="openChar" data-v="' + c.id + '"><b>' + esc(title(c)) + '</b><span class="small muted">' + esc(summaryLine(c, dd)) + '</span></button>';
         }).join('') + (chars.length > 6 ? '<span class="small muted">and ' + (chars.length - 6) + ' more</span>' : '') + '</div>' : '') +
+      tile('party', Icon('campfire'), 'Party', 'For the DM: your players’ characters with class, level, AC and hit points. Hit points carry over between fights; pick the party in Encounters.') +
       tile('encounters', Icon('swords'), 'Encounters', 'Build a fight for your party, see how hard it is (2014 rules), roll a random one, then run it with initiative and hit points.') +
       tile('treasure', Icon('coins'), 'Treasures', 'Quick random loot after a fight: a few coins for bandits, a hoard with gems and magic items for a boss.') +
       tile('books', Icon('book'), 'Books', 'Every class, race, background, feat and spell, plus the official free rules for play and magic items, all searchable. Add your own books (PDF) too, kept on your device.') +
@@ -1163,7 +1164,7 @@
     var keep = scrollState();
     var top = '<header class="top">' + btn('section', 'Character Forge', { v: gameOf() === 'mm' ? 'mm-home' : 'home' }, 'brand linkish') + gameSwitch() + sectionNav() + '<span class="spacer"></span>' +
       '<button type="button" class="btn" data-act="undo" title="Undo (Ctrl+Z)"' + (undoStack.length ? '' : ' disabled') + '>↶ Undo</button>' + (isInstalledApp() ? '' : btn('install', 'Install app', {}, installPrompt ? 'btn primary' : 'btn')) + '</header>';
-    var body = /^mm-(home|heroes)$/.test(ui.section) ? MMV.html(ui.section) : ui.section === 'mm-rules' ? BOOKS.html() : ui.section === 'monsters' ? '<main class="mon-main">' + MON.html() + '</main>' : ui.section === 'encounters' ? ENC.html() : ui.section === 'treasure' ? TRE.html() : ui.section === 'books' ? BOOKS.html() : ui.section === 'audio' ? AUD.html() : ui.section === 'rules' ? rulesHtml() : homeHtml();
+    var body = /^mm-(home|heroes)$/.test(ui.section) ? MMV.html(ui.section) : ui.section === 'mm-rules' ? BOOKS.html() : ui.section === 'monsters' ? '<main class="mon-main">' + MON.html() + '</main>' : ui.section === 'encounters' ? ENC.html() : ui.section === 'party' ? ENC.partyPage() : ui.section === 'treasure' ? TRE.html() : ui.section === 'books' ? BOOKS.html() : ui.section === 'audio' ? AUD.html() : ui.section === 'rules' ? rulesHtml() : homeHtml();
     document.getElementById('app').innerHTML = top + installHelpHtml() + body;
     if (ui.mon && ui.mon.scrollTop) { ui.mon.scrollTop = false; var r = document.querySelector('.mon-right'); if (r && window.innerWidth < 800) r.scrollIntoView(); else window.scrollTo(0, 0); }
     else restoreScroll(keep);
@@ -1171,7 +1172,7 @@
     var mt = document.querySelector('.mm-tabs .on'); if (mt) mt.parentNode.scrollLeft = Math.max(0, mt.offsetLeft - mt.parentNode.offsetLeft - 24); // keep the open tab in view
     AUD.after(); Dice3D.place(); AIHelper.place(); syncHistory();
     if (fid) { var el = document.getElementById(fid); if (el) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } try { if (pos != null) el.setSelectionRange(pos, pos); } catch (e) { /* not text */ } } }
-    document.title = (/^mm-(home|heroes)$/.test(ui.section) ? MMV.title(ui.section) : ui.section === 'mm-rules' ? 'M&M rules' : ui.section === 'monsters' ? 'Monsters' : ui.section === 'encounters' ? 'Encounters' : ui.section === 'treasure' ? 'Treasures' : ui.section === 'books' ? 'Books' : ui.section === 'audio' ? 'Audio' : ui.section === 'rules' ? 'House rules' : 'Home') + ' — Character Forge';
+    document.title = (/^mm-(home|heroes)$/.test(ui.section) ? MMV.title(ui.section) : ui.section === 'mm-rules' ? 'M&M rules' : ui.section === 'monsters' ? 'Monsters' : ui.section === 'encounters' ? 'Encounters' : ui.section === 'party' ? 'Party' : ui.section === 'treasure' ? 'Treasures' : ui.section === 'books' ? 'Books' : ui.section === 'audio' ? 'Audio' : ui.section === 'rules' ? 'House rules' : 'Home') + ' — Character Forge';
     saveNow();
   }
 
@@ -1239,7 +1240,7 @@
         '[[choose: ' + (open[0] ? open[0].key : 'choice-key') + ' | Option name]] for an open choice: its key in brackets above, then the option’s exact name; several picks = several lines. New choices appear after a lineage, class or background is set, so propose those first and the choices in a later answer.');
       return { where: title(ch) + ' · ' + stepName, subject: 'your character', text: L.filter(Boolean).join('\n'), chips: chips.slice(0, 4), apply: aiApply };
     }
-    var names = { home: 'the home page', monsters: 'the monster list', encounters: 'the encounter builder', treasure: 'treasures', books: 'the rules book', audio: 'music', rules: 'house rules' };
+    var names = { home: 'the home page', monsters: 'the monster list', encounters: 'the encounter builder', party: 'the party list', treasure: 'treasures', books: 'the rules book', audio: 'music', rules: 'house rules' };
     var t = head + 'Page: ' + (names[ui.section] || ui.section) + '.';
     if (ui.section === 'monsters' && ui.mon && ui.mon.open) { var m = MON.find(ui.mon.open); if (m) t += '\nOpen monster: ' + m.n + ' (' + m.size + ' ' + m.type + ', CR ' + m.cr + ', AC ' + (m.acv || m.ac) + ', HP ' + m.hp + ').'; }
     return { where: names[ui.section] || '', subject: 'D&D', text: t, chips: ui.section === 'monsters' ? ['How do I run this monster well?', 'Give me a fun twist for this fight'] : ['Explain a rule for me', 'Give me an NPC for tonight', 'Help me plan a session'] };
@@ -1529,7 +1530,7 @@
     if (ui.section === 'mm-heroes') { var mi = MMV.onInput(t); if (mi === 'render') render(); else if (mi) save(); if (mi) return; }
     if (ui.section === 'audio') { var au = AUD.onInput(t); if (au === 'render') render(); if (au) return; }
     if (ui.section === 'treasure') { var tr = TRE.onInput(t); if (tr === 'render') render(); else if (tr) save(); if (tr) return; }
-    if (ui.section === 'encounters') { var er = ENC.onInput(t); if (er === 'render') render(); else if (er) save(); if (er) return; }
+    if (ui.section === 'encounters' || ui.section === 'party') { var er = ENC.onInput(t); if (er === 'render') render(); else if (er) save(); if (er) return; }
     if (a('data-mon') != null || a('data-mymon') != null) { var mr = MON.onInput(t); if (mr === 'render') render(); else save(); return; }
     if (a('data-q') != null) { ui.q[a('data-q')] = t.value; render(); }
     else if (a('data-piczoom')) { ch.pictureView = Object.assign({}, ch.pictureView, { zoom: +t.value }); livePicture(); save(); }
@@ -1548,7 +1549,7 @@
     if (t.id === 'bookFile') return BOOKS.importFile(t);
     if (ui.section === 'books' || ui.section === 'mm-rules') { if (BOOKS.onChange(t)) { render(); return; } }
     if (ui.section === 'mm-heroes') { var mc = MMV.onChange(t); if (mc) { requestRender(); return; } } // wait for the tap that moved focus
-    if (ui.section === 'encounters') { var ec = ENC.onChange(t); if (ec) { render(); return; } if (a('data-enc') != null) return; }
+    if (ui.section === 'encounters' || ui.section === 'party') { var ec = ENC.onChange(t); if (ec) { render(); return; } if (a('data-enc') != null) return; }
     if (a('data-mon') != null) return;
     if (a('data-mymon') != null) { if (t.tagName === 'SELECT') return; return setTimeout(function () { var f = document.activeElement; if (!f || !f.getAttribute || f.getAttribute('data-mymon') == null) requestRender(); }, 0); }
     if (t.id === 'importFile') return importFile(t);

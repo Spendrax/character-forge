@@ -59,6 +59,7 @@
       var out = [];
       enc.party.forEach(function (p) {
         if (p.charId) { var c = store.chars.filter(function (x) { return x.id === p.charId; })[0]; if (c) out.push(R.derive(c, store.filters).level); }
+        else if (p.partyId) { var pt = partyById(p.partyId); if (pt) pt.m.forEach(function (m) { out.push(+m.lvl || 1); }); }
         else for (var i = 0; i < (p.n | 0); i++) out.push(p.lvl | 0 || 1);
       });
       return out;
@@ -67,6 +68,37 @@
       var xps = [];
       enc.mons.forEach(function (x) { var m = MON.find(x.id); if (m) for (var i = 0; i < x.count; i++) xps.push(xpOf(m)); });
       return rate(partyLevels(enc), xps);
+    }
+
+    // ----- parties: the DM's list of player characters (name, class, level, AC, hit points) -----
+    function parties() { return store.parties = store.parties || []; }
+    function partyById(id) { return parties().filter(function (x) { return x.id === id; })[0]; }
+    function curParty() { var l = parties(); return partyById(E.party) || l[0] || null; }
+    function newMember() { return { id: R.uid(), n: '', cls: '', lvl: 1, ac: 10, hp: 10, cur: 10 }; }
+    function summary(pt) {
+      var m = pt.m, lv = m.map(function (x) { return +x.lvl || 1; });
+      if (!m.length) return 'No characters yet.';
+      return m.length + ' character' + (m.length === 1 ? '' : 's') + ', level ' + (Math.min.apply(null, lv) === Math.max.apply(null, lv) ? lv[0] : Math.min.apply(null, lv) + '–' + Math.max.apply(null, lv)) +
+        ' · average AC ' + Math.round(m.reduce(function (a, x) { return a + (+x.ac || 0); }, 0) / m.length) + ' · HP ' + m.reduce(function (a, x) { return a + (+x.cur || 0); }, 0) + '/' + m.reduce(function (a, x) { return a + (+x.hp || 0); }, 0);
+    }
+    function partyPage() {
+      var l = parties(), pt = curParty();
+      if (!pt) return '<main class="mon-main"><h2>Party</h2><p class="muted">Keep your players’ characters here (name, class, level, AC, hit points). The encounter builder uses them to tell how hard a fight is, and their hit points carry over from fight to fight.</p>' + btn('partyNew', '+ New party', {}, 'btn primary') + '</main>';
+      var classes = (root.DND && root.DND.classes || []).map(function (c) { return '<option value="' + esc(c.name) + '">'; }).join('');
+      var chars = store.chars.filter(function (c) { return c.classes && c.classes.length; });
+      var f = function (m, k, type, label, w) { return '<label class="pm-f' + (w ? ' ' + w : '') + '"><span>' + label + '</span><input type="' + type + '"' + (type === 'number' ? ' inputmode="numeric" min="0"' : '') + (k === 'cls' ? ' list="pm-classes"' : '') + ' id="pm-' + k + '-' + m.id + '" data-pm="' + m.id + '" data-f="' + k + '" value="' + esc(m[k] == null ? '' : m[k]) + '"></label>'; };
+      var rows = pt.m.map(function (m) {
+        var pct = m.hp ? Math.max(0, Math.min(100, Math.round(m.cur / m.hp * 100))) : 0;
+        return '<div class="panel pm' + (m.hp && m.cur <= 0 ? ' down' : '') + '"><div class="pm-row">' + f(m, 'n', 'text', 'Name', 'wide') + f(m, 'cls', 'text', 'Class', 'wide') + f(m, 'lvl', 'number', 'Level') + f(m, 'ac', 'number', 'AC') + f(m, 'hp', 'number', 'Max HP') + btn('partyRm', '✕', { v: m.id }, 'btn small') + '</div>' +
+          '<div class="pm-hp"><span><b>' + m.cur + '</b>/' + m.hp + ' HP</span><div class="hpbar"><span style="width:' + pct + '%"></span></div><div class="enc-adj">' + ['-10', '-5', '-1', '+1', '+5', '+10'].map(function (v) { return btn('partyHp', v.replace('-', '−'), { v: m.id, d: v }, 'btn small'); }).join('') + '</div></div></div>';
+      }).join('');
+      return '<main class="mon-main"><h2>Party</h2><datalist id="pm-classes">' + classes + '</datalist>' +
+        '<div class="toolbar">' + (l.length > 1 ? '<select data-partypick="1" aria-label="Choose a party">' + l.map(function (x) { return '<option value="' + x.id + '"' + (x === pt ? ' selected' : '') + '>' + esc(x.name || 'Unnamed party') + '</option>'; }).join('') + '</select>' : '') + btn('partyNew', '+ New party', {}, 'btn small') + '</div>' +
+        '<div class="panel"><label class="field"><span>Party name</span><input type="text" id="party-name" data-partyname="1" value="' + esc(pt.name || '') + '" placeholder="The Brave Fools"></label><p class="small muted" style="margin:.4rem 0 0">' + esc(summary(pt)) + '</p>' +
+        '<div class="toolbar">' + btn('partyPlan', root.Icon('swords') + ' Plan an encounter for them', {}, 'btn primary') + btn('partyRest', 'Long rest: full HP', {}, 'btn small') + '</div></div>' +
+        rows + '<div class="toolbar">' + btn('partyAdd', '+ Add a character', {}, 'btn') +
+        (chars.length ? '<select data-partychar="1" aria-label="Add one of my characters"><option value="">+ One of my characters…</option>' + chars.map(function (c) { return '<option value="' + c.id + '">' + esc(c.name || 'Unnamed character') + '</option>'; }).join('') + '</select>' : '') + '</div>' +
+        '<div class="toolbar">' + (E.delParty ? '<span>Delete “' + esc(pt.name || 'this party') + '”?</span>' + btn('partyDel', 'Yes, delete', {}, 'btn small danger') + btn('partyDelNo', 'No', {}, 'btn small') : btn('partyDelAsk', 'Delete this party', {}, 'btn small')) + '</div></main>';
     }
 
     // ----- building -----
@@ -87,16 +119,28 @@
     }
     function partyHtml(enc) {
       var chars = store.chars.filter(function (c) { return c.classes && c.classes.length; });
-      return '<div class="panel"><h3>Party</h3>' + enc.party.map(function (p, i) {
+      var pl = parties().filter(function (x) { return x.m.length; });
+      return '<div class="panel"><h3>Party</h3>' + (pl.length ? '<select data-encusep="1" aria-label="Choose a party"><option value="">Choose a party…</option>' + pl.map(function (x) { return '<option value="' + x.id + '">' + esc(x.name || 'Unnamed party') + ' (' + x.m.length + ')</option>'; }).join('') + '</select>' : '<p class="small muted">Tip: add your players on the Party page, then choose them here.</p>') + enc.party.map(function (p, i) {
+        if (p.partyId) { var pt = partyById(p.partyId); return '<div class="enc-party"><b>' + esc(pt ? pt.name || 'Unnamed party' : 'Removed party') + '</b> <span class="small muted">' + esc(pt ? summary(pt) : '') + '</span>' + btn('encPartyRm', '✕', { v: i }, 'btn tiny') + '</div>'; }
         if (p.charId) { var c = store.chars.filter(function (x) { return x.id === p.charId; })[0]; return '<div class="enc-party"><b>' + esc(c ? (c.name || 'Unnamed') : 'Removed character') + '</b> <span class="small muted">level ' + (c ? R.derive(c, store.filters).level : '?') + '</span>' + btn('encPartyRm', '✕', { v: i }, 'btn tiny') + '</div>'; }
         return '<div class="enc-party"><label><input type="number" min="1" max="20" id="encp-n-' + i + '" data-encparty="' + i + '" data-f="n" value="' + p.n + '"> players</label><label>at level <input type="number" min="1" max="20" id="encp-l-' + i + '" data-encparty="' + i + '" data-f="lvl" value="' + p.lvl + '"></label>' + btn('encPartyRm', '✕', { v: i }, 'btn tiny') + '</div>';
       }).join('') + '<div class="toolbar">' + btn('encPartyAdd', '+ Group of players', {}, 'btn small') +
         (chars.length ? '<select data-encchar="1" aria-label="Add one of my characters"><option value="">+ One of my characters…</option>' + chars.map(function (c) { return '<option value="' + c.id + '">' + esc(c.name || 'Unnamed character') + '</option>'; }).join('') + '</select>' : '') + '</div></div>';
     }
+    // Beyond the XP maths: a single monster far above the party's level, or one that can drop a character in a round.
+    function dangerHtml(enc, levels) {
+      if (!levels.length) return '';
+      var avg = levels.reduce(function (a, b) { return a + b; }, 0) / levels.length, out = [];
+      var pcs = []; enc.party.forEach(function (p) { var pt = p.partyId && partyById(p.partyId); if (pt) pcs = pcs.concat(pt.m); });
+      var lowHp = pcs.filter(function (m) { return +m.hp; }).sort(function (a, b) { return a.cur - b.cur; })[0];
+      enc.mons.forEach(function (x) { var m = MON.find(x.id); if (m && +m.cr > avg + 2) out.push(m.n + ' (CR ' + MON.crText(m.cr) + ') is well above the party’s level: it may down a character in one round.'); });
+      if (lowHp && lowHp.cur < lowHp.hp / 2) out.push((lowHp.n || 'A character') + ' is at ' + lowHp.cur + '/' + lowHp.hp + ' HP: the fight is harder than the numbers say.');
+      return out.length ? '<ul class="small enc-danger">' + out.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>' : '';
+    }
     function encounterHtml(enc) {
       var r = rated(enc), levels = partyLevels(enc);
       var bar = '<div class="enc-diff"><div class="enc-meter">' + LABELS.map(function (l, i) { return '<span class="' + (r.level >= i ? 'on lv' + i : '') + '">' + l + '<small>' + r.thresholds[i].toLocaleString('en') + '</small></span>'; }).join('') + '</div>' +
-        '<p class="enc-verdict lv' + r.level + '"><b>' + r.label + '</b> for ' + levels.length + ' character' + (levels.length === 1 ? '' : 's') + ' · adjusted XP <b>' + r.adjusted.toLocaleString('en') + '</b> <span class="small muted">(' + r.base.toLocaleString('en') + ' XP × ' + r.mult + ')</span></p></div>';
+        dangerHtml(enc, levels) + '<p class="enc-verdict lv' + r.level + '"><b>' + r.label + '</b> for ' + levels.length + ' character' + (levels.length === 1 ? '' : 's') + ' · adjusted XP <b>' + r.adjusted.toLocaleString('en') + '</b> <span class="small muted">(' + r.base.toLocaleString('en') + ' XP × ' + r.mult + ')</span></p></div>';
       var rows = enc.mons.map(function (x, i) {
         var m = MON.find(x.id); if (!m) return '';
         return '<div class="enc-row"><span class="enc-count">' + btn('encCount', '−', { v: i, d: -1 }, 'btn tiny') + '<b>' + x.count + '</b>' + btn('encCount', '+', { v: i, d: 1 }, 'btn tiny') + '</span>' +
@@ -120,11 +164,13 @@
       });
       enc.party.forEach(function (p, g) {
         if (p.charId) { var c = store.chars.filter(function (y) { return y.id === p.charId; })[0]; if (c) { var d = R.derive(c, store.filters); list.push({ k: 'p' + c.id, n: c.name || 'Unnamed', pc: true, hp: d.hp, max: d.hp, ac: d.ac, init: roll(d.init), mod: d.init }); } }
+        else if (p.partyId) { var pt = partyById(p.partyId); if (pt) pt.m.forEach(function (m) { list.push({ k: 'p' + m.id, n: m.n || 'Player', pc: true, hp: +m.cur || 0, max: +m.hp || 0, ac: +m.ac || 0, init: 10, mod: 0, pm: [pt.id, m.id] }); }); }
         else for (var i = 0; i < (p.n | 0); i++) list.push({ k: 'p' + g + '-' + i, n: 'Player ' + (list.filter(function (z) { return z.pc; }).length + 1), pc: true, init: 10, mod: 0 });
       });
       list.sort(function (a, b) { return b.init - a.init || b.mod - a.mod; });
       store.encRun = { list: list, turn: 0, round: 1 };
     }
+    function writeBack(c) { if (!c || !c.pm) return; var pt = partyById(c.pm[0]), m = pt && pt.m.filter(function (x) { return x.id === c.pm[1]; })[0]; if (m) m.cur = c.hp; }
     function runHtml() {
       var run = store.encRun, alive = function (c) { return c.pc || c.hp > 0; };
       var left = run.list.filter(function (c) { return !c.pc && c.hp > 0; }).length;
@@ -133,7 +179,7 @@
         '<p class="small muted">Initiative was rolled for the monsters (and your characters). Type the players’ rolls in the boxes; the order updates. Type damage as a number (−) or healing with + (e.g. +5).</p>' +
         run.list.map(function (c, i) {
           var hpPct = c.max ? Math.max(0, Math.round(c.hp / c.max * 100)) : 100;
-          return '<div class="enc-c' + (i === run.turn ? ' turn' : '') + (alive(c) ? '' : ' down') + (c.pc ? ' pc' : '') + '">' +
+          return '<div class="enc-c' + (i === run.turn ? ' turn' : '') + (alive(c) ? '' : ' down') + (c.pc ? ' pc' : '') + (c.pc && c.max && c.hp <= 0 ? ' down' : '') + '">' +
             '<input type="number" class="enc-init" id="init-' + c.k + '" data-encinit="' + c.k + '" value="' + c.init + '" aria-label="Initiative of ' + esc(c.n) + '">' +
             '<div class="enc-cn">' + (c.id ? '<button type="button" class="linkbtn enc-name" data-act="encView" data-v="' + esc(c.id) + '">' + esc(c.n) + '</button>' : '<b>' + esc(c.n) + '</b>') + (c.ac ? ' <span class="small muted">AC ' + c.ac + '</span>' : '') + (c.id && root.Sounds && MON.find(c.id) ? ' ' + root.Sounds.button(MON.find(c.id), 'enc-sound') : '') +
             (c.max ? '<div class="hpbar"><span style="width:' + hpPct + '%"></span></div>' : '') + '</div>' +
@@ -164,7 +210,17 @@
       }
       return 'Couldn’t find a fit; try again or change the filters.';
     }
+    function member(id) { var pt = curParty(); return pt && pt.m.filter(function (x) { return x.id === id; })[0]; }
     var actions = {
+      partyNew: function () { var pt = { id: R.uid(), name: '', m: [newMember()] }; parties().push(pt); E.party = pt.id; E.delParty = false; },
+      partyAdd: function () { curParty().m.push(newMember()); },
+      partyRm: function (v) { var pt = curParty(); pt.m = pt.m.filter(function (x) { return x.id !== v; }); },
+      partyHp: function (v, el) { var m = member(v); if (m) m.cur = Math.max(0, Math.min(+m.hp || 0, (+m.cur || 0) + +el.getAttribute('data-d'))); },
+      partyRest: function () { curParty().m.forEach(function (m) { m.cur = +m.hp || 0; }); },
+      partyPlan: function () { var pt = curParty(); cur().party = [{ partyId: pt.id }]; ui.section = 'encounters'; root.scrollTo(0, 0); },
+      partyDelAsk: function () { E.delParty = true; },
+      partyDelNo: function () { E.delParty = false; },
+      partyDel: function () { var id = curParty().id; store.parties = parties().filter(function (x) { return x.id !== id; }); E.party = ''; E.delParty = false; },
       encAdd: function (v) { var enc = cur(), x = enc.mons.filter(function (y) { return y.id === v; })[0]; if (x) x.count++; else enc.mons.push({ id: v, count: 1 }); E.msg = ''; },
       encCount: function (v, el) { var enc = cur(), x = enc.mons[+v]; if (!x) return; x.count += +el.getAttribute('data-d'); if (x.count < 1) enc.mons.splice(+v, 1); },
       encClear: function () { cur().mons = []; },
@@ -180,7 +236,7 @@
       encView: function (v) { E.open = v; },
       encViewClose: function () { E.open = ''; },
       encRun: function () { var enc = cur(); if (!enc.mons.length) { E.msg = 'Add some monsters first.'; return; } startRun(enc); E.msg = ''; },
-      encHp: function (v, el) { var c = store.encRun.list.filter(function (x) { return x.k === v; })[0]; if (c) c.hp = Math.max(0, Math.min(c.max, c.hp + +el.getAttribute('data-d'))); },
+      encHp: function (v, el) { var c = store.encRun.list.filter(function (x) { return x.k === v; })[0]; if (c) c.hp = Math.max(0, Math.min(c.max, c.hp + +el.getAttribute('data-d'))); writeBack(c); },
       encNext: function () { var run = store.encRun; run.turn++; if (run.turn >= run.list.length) { run.turn = 0; run.round++; } },
       encStop: function () { store.encRun = null; E.askLoot = true; },
       encLootNo: function () { E.askLoot = false; },
@@ -193,6 +249,8 @@
     function onInput(t) {
       var a = function (n) { return t.getAttribute(n); };
       if (a('data-enc') != null) { E[a('data-enc')] = t.value; return 'render'; }
+      if (a('data-partyname')) { curParty().name = t.value; return 'save'; }
+      if (a('data-pm')) { var m = member(a('data-pm')), k = a('data-f'); if (!m) return 'save'; if (k === 'n' || k === 'cls') m[k] = t.value; else { var was = +m.hp || 0; m[k] = Math.max(0, Math.round(+t.value) || 0); if (k === 'lvl') m.lvl = Math.max(1, Math.min(20, m.lvl)); if (k === 'hp' && (+m.cur || 0) >= was) m.cur = m.hp; if (k === 'hp') m.cur = Math.min(m.cur, m.hp); } return 'save'; }
       if (a('data-encname')) { cur().name = t.value; return 'save'; }
       if (a('data-encparty') != null) { var p = cur().party[+a('data-encparty')]; if (p) p[a('data-f')] = Math.max(1, Math.min(20, Math.round(+t.value) || 1)); return 'save'; }
       if (a('data-encinit')) { var c = store.encRun.list.filter(function (x) { return x.k === a('data-encinit'); })[0]; if (c) c.init = +t.value || 0; return 'save'; }
@@ -200,18 +258,23 @@
     }
     function onChange(t) {
       var a = function (n) { return t.getAttribute(n); };
+      if (a('data-partypick')) { E.party = t.value; E.delParty = false; return 'render'; }
+      if (a('data-partychar') && t.value) { var ch = store.chars.filter(function (x) { return x.id === t.value; })[0]; if (ch) { var d = R.derive(ch, store.filters), cl = (ch.classes || []).map(function (e) { var k = R.cls(e.cls); return k ? k.name : e.cls; }).join(' / ');
+        curParty().m.push({ id: R.uid(), n: ch.name || 'Unnamed', cls: cl, lvl: d.level, ac: d.ac, hp: d.hp, cur: d.hp }); } return 'render'; }
+      if (a('data-partyname') || a('data-pm')) return 'render';
+      if (a('data-encusep') && t.value) { cur().party = [{ partyId: t.value }]; return 'render'; }
       if (a('data-encchar') && t.value) { cur().party.push({ charId: t.value }); return 'render'; }
       if (a('data-encload') && t.value) { var s = (store.encounters || []).filter(function (x) { return x.id === t.value; })[0]; if (s) store.encounter = JSON.parse(JSON.stringify(s)); return 'render'; }
       if (a('data-encparty') != null || a('data-encname')) return 'render';
       if (a('data-encinit')) { var run = store.encRun, k = run.list[run.turn] && run.list[run.turn].k; run.list.sort(function (x, y) { return y.init - x.init || y.mod - x.mod; }); run.turn = Math.max(0, run.list.map(function (x) { return x.k; }).indexOf(k)); return 'render'; }
       if (a('data-encdmg')) {
         var c = store.encRun.list.filter(function (x) { return x.k === a('data-encdmg'); })[0], v = String(t.value).trim();
-        if (c && /^[+-]?\d+$/.test(v)) { var n = parseInt(v, 10); c.hp = Math.max(0, Math.min(c.max, v[0] === '+' ? c.hp + n : c.hp - Math.abs(n))); }
+        if (c && /^[+-]?\d+$/.test(v)) { var n = parseInt(v, 10); c.hp = Math.max(0, Math.min(c.max, v[0] === '+' ? c.hp + n : c.hp - Math.abs(n))); writeBack(c); }
         return 'render';
       }
       return null;
     }
-    return { html: html, actions: actions, onInput: onInput, onChange: onChange };
+    return { html: html, partyPage: partyPage, actions: actions, onInput: onInput, onChange: onChange };
   };
   root.EncounterUI.rate = rate;
   root.EncounterUI.fits = fits;
