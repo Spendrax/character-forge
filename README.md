@@ -172,6 +172,7 @@ It needs an AI to talk to. Pick one in its Settings:
 - **Your server (recommended for a group):** start the app with a Claude API key on the computer that hosts it, and everyone using that server gets the helper without seeing the key:
   `ANTHROPIC_API_KEY=sk-ant-… node server.js` (add `AI_CODE=something` to require an access code, typed once in the helper's settings, and `AI_MODEL=…` to pick another model).
   Keys come from console.anthropic.com and are billed per use, separately from a Claude subscription.
+- **Google Gemini (free):** get a free key at aistudio.google.com/apikey and paste it into the helper's settings (kept only in that browser). Works on a phone with no server; the app picks the newest free Flash model for the key. The free tier has daily limits, and Google may use free-tier questions to improve its products.
 - **Your own Claude key:** pasted into the helper's settings; kept only in that browser.
 - **Ollama:** a free AI on a computer on your network. Start it with `OLLAMA_ORIGINS=*` and give the helper its address and model.
 

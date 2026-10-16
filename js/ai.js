@@ -2,10 +2,11 @@
 // open choices and warnings) and helps you decide. It talks to one of:
 //   • your server (node server.js with ANTHROPIC_API_KEY set): friends use it without seeing the key
 //   • Claude with your own API key, kept in this browser only
+//   • Google Gemini's free tier, with a free key (works on a phone)
 //   • Ollama, a free AI running on a computer on your network
 (function (root) {
   'use strict';
-  var KEY = 'cf-ai', cfg = { mode: 'auto', key: '', model: 'claude-sonnet-5-5', ollama: 'http://localhost:11434', omodel: 'llama3.1', code: '' };
+  var KEY = 'cf-ai', cfg = { mode: 'auto', key: '', gkey: '', gmodel: '', model: 'claude-sonnet-5-5', ollama: 'http://localhost:11434', omodel: 'llama3.1', code: '' };
   try { cfg = Object.assign(cfg, JSON.parse(root.localStorage.getItem(KEY) || '{}')); } catch (e) { /* storage off */ }
   function saveCfg() { try { root.localStorage.setItem(KEY, JSON.stringify(cfg)); } catch (e) { /* storage off */ } }
   var server = null; // does the server this app came from have a key? (checked once)
@@ -13,7 +14,7 @@
     if (server !== null || !root.fetch || location.protocol === 'file:') return Promise.resolve(server = server || false);
     return fetch('api/ai', { method: 'GET' }).then(function (r) { return r.ok ? r.json() : { ok: false }; }).then(function (j) { server = !!(j && j.ok); return server; }, function () { server = false; return false; });
   }
-  function mode() { return cfg.mode === 'auto' ? (server ? 'server' : cfg.key ? 'claude' : '') : cfg.mode; }
+  function mode() { return cfg.mode === 'auto' ? (server ? 'server' : cfg.gkey ? 'gemini' : cfg.key ? 'claude' : '') : cfg.mode; }
 
   var SYSTEM = 'You are the helper inside Character Forge, a table companion app for Dungeons & Dragons 5th edition (2014 rules only) and Mutants & Masterminds 3rd edition. ' +
     'You help the user build characters and run games inside this app. Below is what the user is looking at right now. Use it: refer to their actual character, their open choices and their warnings. ' +
@@ -28,9 +29,33 @@
     if (m === 'claude') return post('https://api.anthropic.com/v1/messages', { model: cfg.model || 'claude-sonnet-5-5', max_tokens: 1200, system: sys, messages: messages },
       { 'x-api-key': cfg.key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' })
       .then(function (j) { if (j.error) throw new Error(j.error.message || 'error'); return (j.content || []).map(function (c) { return c.text || ''; }).join(''); });
+    if (m === 'gemini') return geminiModel().then(function (model) {
+      return post(GEM + 'models/' + model + ':generateContent', {
+        system_instruction: { parts: [{ text: sys }] },
+        contents: messages.map(function (x) { return { role: x.role === 'assistant' ? 'model' : 'user', parts: [{ text: x.content }] }; }),
+        generationConfig: { maxOutputTokens: 1200 }
+      }, { 'x-goog-api-key': cfg.gkey });
+    }).then(function (j) {
+      var c = j.candidates && j.candidates[0]; if (!c) throw new Error((j.promptFeedback && j.promptFeedback.blockReason) || 'no answer');
+      return ((c.content && c.content.parts) || []).map(function (p) { return p.text || ''; }).join('');
+    }, function (e) { if (e.status === 404) { cfg.gmodel = ''; saveCfg(); } throw e; });
     if (m === 'ollama') return post(String(cfg.ollama || '').replace(/\/+$/, '') + '/api/chat', { model: cfg.omodel || 'llama3.1', stream: false, messages: [{ role: 'system', content: sys }].concat(messages) }, {})
       .then(function (j) { if (j.error) throw new Error(j.error); return (j.message && j.message.content) || ''; });
     return Promise.reject(new Error('setup'));
+  }
+  // Gemini: ask Google which models this key may use and take the newest plain "Flash" one (names change often).
+  var GEM = 'https://generativelanguage.googleapis.com/v1beta/';
+  function geminiModel() {
+    if (cfg.gmodel) return Promise.resolve(cfg.gmodel);
+    return fetch(GEM + 'models?pageSize=200', { headers: { 'x-goog-api-key': cfg.gkey } }).then(function (r) {
+      return r.json().then(function (j) { if (!r.ok) { var e = new Error((j.error && j.error.message) || 'HTTP ' + r.status); e.status = r.status; throw e; } return j; });
+    }).then(function (j) {
+      var ok = (j.models || []).filter(function (x) { return (x.supportedGenerationMethods || []).indexOf('generateContent') >= 0 && /flash/.test(x.name) && !/lite|tts|image|live|audio|embed|thinking|exp/.test(x.name); });
+      var ver = function (n) { var v = (n.match(/(\d+(?:\.\d+)?)/) || [0, 0])[1]; return +v - (/preview/.test(n) ? 0.01 : 0); };
+      ok.sort(function (a, b) { return ver(b.name) - ver(a.name); });
+      if (!ok.length) throw new Error('no free Flash model found for this key');
+      cfg.gmodel = ok[0].name.replace(/^models\//, ''); saveCfg(); return cfg.gmodel;
+    });
   }
   function post(url, body, headers) {
     return fetch(url, { method: 'POST', headers: Object.assign({ 'content-type': 'application/json' }, headers), body: JSON.stringify(body) }).then(function (r) {
@@ -56,25 +81,28 @@
     var ctx = getContext(), m = mode();
     var head = '<div class="ai-head"><b>' + (root.Icon ? root.Icon('sparkle') : '') + ' Helper</b><span class="ai-where small muted">' + esc(ctx.where || '') + '</span><span class="spacer"></span>' +
       '<button type="button" class="btn small" data-ai="view" data-v="' + (view === 'chat' ? 'setup' : 'chat') + '">' + (view === 'chat' ? 'Settings' : 'Back to chat') + '</button><button type="button" class="ai-x" data-ai="close" aria-label="Close the helper">✕</button></div>';
-    if (view === 'setup' || !m) { el.innerHTML = head + setupHtml(!m); return; }
+    if (!m) view = 'setup'; // nothing set up yet: stay on the setup screen until Done
+    if (view === 'setup') { el.innerHTML = head + setupHtml(!m); return; }
     var msgs = chat.length ? chat.map(function (c) { return '<div class="ai-msg ' + c.role + '">' + (c.role === 'user' ? esc(c.content).replace(/\n/g, '<br>') : mdHtml(c.content)) + '</div>'; }).join('')
       : '<div class="ai-empty"><p>Ask me anything about ' + esc(ctx.subject || 'the game') + '. I can see what you are working on.</p></div>';
     var chips = (ctx.chips || []).map(function (c) { return '<button type="button" class="pill small" data-ai="chip" data-v="' + esc(c) + '">' + esc(c) + '</button>'; }).join('');
     el.innerHTML = head + '<div class="ai-msgs" aria-live="polite">' + msgs + (busy ? '<div class="ai-msg assistant ai-busy">Thinking…</div>' : '') + '</div>' +
       (chips && !busy ? '<div class="ai-chips">' + chips + '</div>' : '') +
       '<div class="ai-send"><textarea id="ai-in" rows="2" placeholder="Ask about your character or the rules…"' + (busy ? ' disabled' : '') + '></textarea><button type="button" class="btn primary" data-ai="send"' + (busy ? ' disabled' : '') + '>Send</button></div>' +
-      '<div class="ai-foot small muted">' + (chat.length ? '<button type="button" class="linkbtn" data-ai="clear">New conversation</button> · ' : '') + 'Uses ' + (m === 'server' ? 'your server' : m === 'claude' ? 'Claude with your key' : 'Ollama') + '. Answers can be wrong: check the rules.</div>';
+      '<div class="ai-foot small muted">' + (chat.length ? '<button type="button" class="linkbtn" data-ai="clear">New conversation</button> · ' : '') + 'Uses ' + (m === 'server' ? 'your server' : m === 'claude' ? 'Claude with your key' : m === 'gemini' ? 'Gemini (free)' : 'Ollama') + '. Answers can be wrong: check the rules.</div>';
     var list = el.querySelector('.ai-msgs'); list.scrollTop = list.scrollHeight;
   }
   function setupHtml(first) {
     var r = function (v, t, d) { return '<label class="check-line"><input type="radio" name="ai-mode" data-aicfg="mode" value="' + v + '"' + (cfg.mode === v ? ' checked' : '') + '> <span><b>' + t + '</b><br><span class="small muted">' + d + '</span></span></label>'; };
     var f = function (k, label, ph, type) { return '<label class="field"><span>' + label + '</span><input type="' + (type || 'text') + '" data-aicfg="' + k + '" value="' + esc(cfg[k] || '') + '" placeholder="' + esc(ph) + '" autocomplete="off"></label>'; };
     return '<div class="ai-setup">' + (first ? '<p>The helper needs an AI to talk to. Pick one:</p>' : '') +
-      r('auto', 'Automatic', server ? 'Your server has a key: using it.' : 'Uses your server if it has a key, otherwise your own key below.') +
+      r('auto', 'Automatic', server ? 'Your server has a key: using it.' : 'Uses your server if it has a key, otherwise the Gemini key below.') +
       r('server', 'Your server', 'Run the app with <code>node server.js</code> and set <code>ANTHROPIC_API_KEY</code> on that computer. Friends can use it without seeing the key.' + (server === false ? ' <b>Not found on this server right now.</b>' : '')) +
+      r('gemini', 'Google Gemini (free)', 'Free key from <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> (sign in with Google, “Create API key”). Works on your phone. The free tier has daily limits, and Google may use free-tier questions to improve its products.') +
       r('claude', 'My own Claude key', 'An API key from console.anthropic.com, kept only in this browser. Pay-as-you-go, billed separately from a Claude subscription.') +
       r('ollama', 'Ollama on my network', 'A free AI on your own computer. Start it with <code>OLLAMA_ORIGINS=*</code> so the app may talk to it.') +
-      (cfg.mode === 'claude' || cfg.mode === 'auto' ? f('key', 'Claude API key', 'sk-ant-…', 'password') + f('model', 'Model', 'claude-sonnet-5-5') : '') +
+      (cfg.mode === 'gemini' || cfg.mode === 'auto' ? f('gkey', 'Gemini API key', 'AIza…', 'password') + (cfg.gmodel ? '<p class="small muted">Model: ' + esc(cfg.gmodel) + '</p>' : '') : '') +
+      (cfg.mode === 'claude' ? f('key', 'Claude API key', 'sk-ant-…', 'password') + f('model', 'Model', 'claude-sonnet-5-5') : '') +
       (cfg.mode === 'server' || cfg.mode === 'auto' ? f('code', 'Access code (if your server asks for one)', 'optional', 'password') : '') +
       (cfg.mode === 'ollama' ? f('ollama', 'Ollama address', 'http://192.168.1.20:11434') + f('omodel', 'Model', 'llama3.1') : '') +
       '<div class="toolbar"><button type="button" class="btn primary" data-ai="view" data-v="chat">Done</button></div>' +
@@ -85,7 +113,7 @@
     chat.push({ role: 'user', content: text }); busy = true; draw();
     ask(chat.slice(-12), getContext().text).then(function (reply) { chat.push({ role: 'assistant', content: reply || '(no answer)' }); },
       function (e) {
-        var why = e.message === 'setup' ? 'Set up the helper first (Settings).' : e.status === 401 ? 'The key was refused. Check it in Settings.' : e.status === 403 ? 'Your server refused: check the access code in Settings.' :
+        var why = e.message === 'setup' ? 'Set up the helper first (Settings).' : e.status === 401 || e.status === 400 && /key/i.test(e.message) ? 'The key was refused. Check it in Settings.' : e.status === 429 ? 'The free limit is used up for now. Try again in a minute (or tomorrow if it’s the daily limit).' : e.status === 403 ? 'Your server refused: check the access code in Settings.' :
           /Failed to fetch|NetworkError|Load failed/.test(e.message) ? 'Couldn’t reach the AI. Check your connection' + (mode() === 'ollama' ? ', that Ollama is running and started with OLLAMA_ORIGINS=*' : '') + '.' : 'The AI answered with an error: ' + e.message;
         chat.push({ role: 'assistant', content: '⚠ ' + why, err: true });
       }).then(function () { chat = chat.filter(function (c, i) { return !c.err || i === chat.length - 1; }); busy = false; if (open) draw(); });
@@ -101,8 +129,10 @@
   }
   function readCfg() {
     el.querySelectorAll('[data-aicfg]').forEach(function (i) { var k = i.getAttribute('data-aicfg'); if (i.type === 'radio') { if (i.checked) cfg[k] = i.value; } else cfg[k] = i.value.trim(); });
+    if (cfg.gkey !== lastG) { cfg.gmodel = ''; lastG = cfg.gkey; }
     saveCfg();
   }
+  var lastG = cfg.gkey;
   function openPanel() {
     build(); if (open) return; open = true; el.classList.add('on'); checkServer().then(function () { if (open) draw(); }); draw();
     try { root.history.pushState({ ai: 1 }, ''); pushed = true; } catch (e) { pushed = false; }
