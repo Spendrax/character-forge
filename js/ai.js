@@ -34,32 +34,47 @@
     if (m === 'claude') return post('https://api.anthropic.com/v1/messages', { model: cfg.model || 'claude-sonnet-5-5', max_tokens: 1200, system: sys, messages: messages },
       { 'x-api-key': cfg.key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' })
       .then(function (j) { if (j.error) throw new Error(j.error.message || 'error'); return (j.content || []).map(function (c) { return c.text || ''; }).join(''); });
-    if (m === 'gemini') return geminiModel().then(function (model) {
-      return post(GEM + 'models/' + model + ':generateContent', {
-        system_instruction: { parts: [{ text: sys }] },
-        contents: messages.map(function (x) { return { role: x.role === 'assistant' ? 'model' : 'user', parts: [{ text: x.content }] }; }),
-        generationConfig: { maxOutputTokens: 1200 }
-      }, { 'x-goog-api-key': cfg.gkey });
+    // Free models are often busy (503) or out of quota (429): wait a moment and try the next free model.
+    if (m === 'gemini') return geminiModels().then(function (list) {
+      var i = 0;
+      function attempt() {
+        var model = list[i];
+        return post(GEM + 'models/' + model + ':generateContent', {
+          system_instruction: { parts: [{ text: sys }] },
+          contents: messages.map(function (x) { return { role: x.role === 'assistant' ? 'model' : 'user', parts: [{ text: x.content }] }; }),
+          generationConfig: { maxOutputTokens: 1200 }
+        }, { 'x-goog-api-key': cfg.gkey }).then(function (j) { if (cfg.gmodel !== model) { cfg.gmodel = model; saveCfg(); } return j; }, function (e) {
+          if (e.status === 404) gList = null;
+          if (/^(404|429|500|503)$/.test(e.status) && ++i < list.length) return new Promise(function (ok) { setTimeout(ok, 700); }).then(attempt);
+          if (e.status === 429) e.message = 'The free limit is used up for now. Try again in a minute (or tomorrow if the daily limit is reached).';
+          else if (e.status === 503) e.message = 'Google’s free AI is very busy right now. Try again in a minute.';
+          throw e;
+        });
+      }
+      return attempt();
     }).then(function (j) {
       var c = j.candidates && j.candidates[0]; if (!c) throw new Error((j.promptFeedback && j.promptFeedback.blockReason) || 'no answer');
       return ((c.content && c.content.parts) || []).map(function (p) { return p.text || ''; }).join('');
-    }, function (e) { if (e.status === 404) { cfg.gmodel = ''; saveCfg(); } throw e; });
+    });
     if (m === 'ollama') return post(String(cfg.ollama || '').replace(/\/+$/, '') + '/api/chat', { model: cfg.omodel || 'llama3.1', stream: false, messages: [{ role: 'system', content: sys }].concat(messages) }, {})
       .then(function (j) { if (j.error) throw new Error(j.error); return (j.message && j.message.content) || ''; });
     return Promise.reject(new Error('setup'));
   }
-  // Gemini: ask Google which models this key may use and take the newest plain "Flash" one (names change often).
-  var GEM = 'https://generativelanguage.googleapis.com/v1beta/';
-  function geminiModel() {
-    if (cfg.gmodel) return Promise.resolve(cfg.gmodel);
+  // Gemini: ask Google which models this key may use (names change often). Newest Flash first, then Flash-Lite as backups;
+  // the one that answered last time goes first.
+  var GEM = 'https://generativelanguage.googleapis.com/v1beta/', gList = null;
+  function geminiModels() {
+    if (gList) return Promise.resolve(gList);
     return fetch(GEM + 'models?pageSize=200', { headers: { 'x-goog-api-key': cfg.gkey } }).then(function (r) {
       return r.json().then(function (j) { if (!r.ok) { var e = new Error((j.error && j.error.message) || 'HTTP ' + r.status); e.status = r.status; throw e; } return j; });
     }).then(function (j) {
-      var ok = (j.models || []).filter(function (x) { return (x.supportedGenerationMethods || []).indexOf('generateContent') >= 0 && /flash/.test(x.name) && !/lite|tts|image|live|audio|embed|thinking|exp/.test(x.name); });
-      var ver = function (n) { var v = (n.match(/(\d+(?:\.\d+)?)/) || [0, 0])[1]; return +v - (/preview/.test(n) ? 0.01 : 0); };
+      var ok = (j.models || []).filter(function (x) { return (x.supportedGenerationMethods || []).indexOf('generateContent') >= 0 && /flash/.test(x.name) && !/tts|image|live|audio|embed|thinking|exp/.test(x.name); });
+      var ver = function (n) { var v = (n.match(/(\d+(?:\.\d+)?)/) || [0, 0])[1]; return +v - (/preview/.test(n) ? 0.01 : 0) - (/lite/.test(n) ? 100 : 0); };
       ok.sort(function (a, b) { return ver(b.name) - ver(a.name); });
       if (!ok.length) throw new Error('no free Flash model found for this key');
-      cfg.gmodel = ok[0].name.replace(/^models\//, ''); saveCfg(); return cfg.gmodel;
+      var names = ok.map(function (x) { return x.name.replace(/^models\//, ''); });
+      if (cfg.gmodel && names.indexOf(cfg.gmodel) > 0) names.unshift(names.splice(names.indexOf(cfg.gmodel), 1)[0]);
+      return (gList = names.slice(0, 5));
     });
   }
   function post(url, body, headers) {
@@ -136,7 +151,7 @@
   }
   function readCfg() {
     el.querySelectorAll('[data-aicfg]').forEach(function (i) { var k = i.getAttribute('data-aicfg'); if (i.type === 'radio') { if (i.checked) cfg[k] = i.value; } else cfg[k] = i.value.trim(); });
-    if (cfg.gkey !== lastG) { cfg.gmodel = ''; lastG = cfg.gkey; }
+    if (cfg.gkey !== lastG) { cfg.gmodel = ''; gList = null; lastG = cfg.gkey; }
     saveCfg();
   }
   var lastG = cfg.gkey;
