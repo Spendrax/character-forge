@@ -609,3 +609,4 @@ html.dice3d-lock, html.dice3d-lock body { overflow: hidden; }
 .ai-setup { padding: .8rem .9rem; overflow-y: auto; }
 .ai-setup code { font-size: .85em; }
 @media print { .ai-fab, .ai-panel { display: none !important; } }
+.ai-more { margin: .4rem 0 .6rem; } .ai-more summary { cursor: pointer; padding: .3rem 0; }

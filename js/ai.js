@@ -6,7 +6,7 @@
 //   • Ollama, a free AI running on a computer on your network
 (function (root) {
   'use strict';
-  var KEY = 'cf-ai', cfg = { mode: 'auto', key: '', gkey: '', gmodel: '', model: 'claude-sonnet-5-5', ollama: 'http://localhost:11434', omodel: 'llama3.1', code: '' };
+  var KEY = 'cf-ai', cfg = { mode: 'gemini', key: '', gkey: '', gmodel: '', model: 'claude-sonnet-5-5', ollama: 'http://localhost:11434', omodel: 'llama3.1', code: '' };
   try { cfg = Object.assign(cfg, JSON.parse(root.localStorage.getItem(KEY) || '{}')); } catch (e) { /* storage off */ }
   function saveCfg() { try { root.localStorage.setItem(KEY, JSON.stringify(cfg)); } catch (e) { /* storage off */ } }
   var server = null; // does the server this app came from have a key? (checked once)
@@ -14,7 +14,12 @@
     if (server !== null || !root.fetch || location.protocol === 'file:') return Promise.resolve(server = server || false);
     return fetch('api/ai', { method: 'GET' }).then(function (r) { return r.ok ? r.json() : { ok: false }; }).then(function (j) { server = !!(j && j.ok); return server; }, function () { server = false; return false; });
   }
-  function mode() { return cfg.mode === 'auto' ? (server ? 'server' : cfg.gkey ? 'gemini' : cfg.key ? 'claude' : '') : cfg.mode; }
+  function mode() {
+    if (server && cfg.mode !== 'claude' && cfg.mode !== 'ollama' && !(cfg.mode === 'gemini' && cfg.gkey)) return 'server'; // a key on the server works for everyone
+    if (cfg.mode === 'auto') return cfg.gkey ? 'gemini' : cfg.key ? 'claude' : '';
+    if (cfg.mode === 'gemini' && !cfg.gkey || cfg.mode === 'claude' && !cfg.key) return ''; // not set up yet
+    return cfg.mode;
+  }
 
   var SYSTEM = 'You are the helper inside Character Forge, a table companion app for Dungeons & Dragons 5th edition (2014 rules only) and Mutants & Masterminds 3rd edition. ' +
     'You help the user build characters and run games inside this app. Below is what the user is looking at right now. Use it: refer to their actual character, their open choices and their warnings. ' +
@@ -82,7 +87,7 @@
     var head = '<div class="ai-head"><b>' + (root.Icon ? root.Icon('sparkle') : '') + ' Helper</b><span class="ai-where small muted">' + esc(ctx.where || '') + '</span><span class="spacer"></span>' +
       '<button type="button" class="btn small" data-ai="view" data-v="' + (view === 'chat' ? 'setup' : 'chat') + '">' + (view === 'chat' ? 'Settings' : 'Back to chat') + '</button><button type="button" class="ai-x" data-ai="close" aria-label="Close the helper">✕</button></div>';
     if (!m) { view = 'setup'; forced = true; } // nothing set up yet: stay on the setup screen until Done…
-    else if (forced && server && cfg.mode === 'auto') { forced = false; view = 'chat'; } // …unless the server turns out to have a key
+    else if (forced && m === 'server') { forced = false; view = 'chat'; } // …unless the server turns out to have a key
     if (view === 'setup') { el.innerHTML = head + setupHtml(!m); return; }
     var msgs = chat.length ? chat.map(function (c) { return '<div class="ai-msg ' + c.role + '">' + (c.role === 'user' ? esc(c.content).replace(/\n/g, '<br>') : mdHtml(c.content)) + '</div>'; }).join('')
       : '<div class="ai-empty"><p>Ask me anything about ' + esc(ctx.subject || 'the game') + '. I can see what you are working on.</p></div>';
@@ -96,12 +101,13 @@
   function setupHtml(first) {
     var r = function (v, t, d) { return '<label class="check-line"><input type="radio" name="ai-mode" data-aicfg="mode" value="' + v + '"' + (cfg.mode === v ? ' checked' : '') + '> <span><b>' + t + '</b><br><span class="small muted">' + d + '</span></span></label>'; };
     var f = function (k, label, ph, type) { return '<label class="field"><span>' + label + '</span><input type="' + (type || 'text') + '" data-aicfg="' + k + '" value="' + esc(cfg[k] || '') + '" placeholder="' + esc(ph) + '" autocomplete="off"></label>'; };
-    return '<div class="ai-setup">' + (first ? '<p>The helper needs an AI to talk to. Pick one:</p>' : '') +
+    return '<div class="ai-setup">' + (first ? '<p>The helper needs an AI to talk to. The free Google Gemini option takes 2 minutes:</p>' : '') +
+      r('gemini', 'Google Gemini (free) — recommended', '1. Open <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> and sign in with Google.<br>2. Tap “Create API key” and copy it.<br>3. Paste it below and tap Done. Works on your phone, no card needed. The free tier has daily limits, and Google may use free-tier questions to improve its products.') +
+      '<details class="ai-more"' + (/^(gemini)$/.test(cfg.mode) || (cfg.mode === 'auto' && !server) ? '' : ' open') + '><summary class="small">Other options</summary>' +
       r('auto', 'Automatic', server ? 'Your server has a key: using it.' : 'Uses your server if it has a key, otherwise the Gemini key below.') +
       r('server', 'Your server', 'One key for everyone: the computer that runs <code>node server.js</code> holds a free <code>GEMINI_API_KEY</code> (or a Claude <code>ANTHROPIC_API_KEY</code>). Friends use the helper without a key of their own.' + (server === false ? ' <b>Not found on this server right now.</b>' : '')) +
-      r('gemini', 'Google Gemini (free)', 'Free key from <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> (sign in with Google, “Create API key”). Works on your phone. The free tier has daily limits, and Google may use free-tier questions to improve its products.') +
       r('claude', 'My own Claude key', 'An API key from console.anthropic.com, kept only in this browser. Pay-as-you-go, billed separately from a Claude subscription.') +
-      r('ollama', 'Ollama on my network', 'A free AI on your own computer. Start it with <code>OLLAMA_ORIGINS=*</code> so the app may talk to it.') +
+      r('ollama', 'Ollama on my network', 'A free AI on your own computer. Start it with <code>OLLAMA_ORIGINS=*</code> so the app may talk to it.') + '</details>' +
       (cfg.mode === 'gemini' || cfg.mode === 'auto' ? f('gkey', 'Gemini API key', 'AIza…', 'password') + (cfg.gmodel ? '<p class="small muted">Model: ' + esc(cfg.gmodel) + '</p>' : '') : '') +
       (cfg.mode === 'claude' ? f('key', 'Claude API key', 'sk-ant-…', 'password') + f('model', 'Model', 'claude-sonnet-5-5') : '') +
       (cfg.mode === 'server' || cfg.mode === 'auto' ? f('code', 'Access code (if your server asks for one)', 'optional', 'password') : '') +
