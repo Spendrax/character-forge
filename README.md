@@ -162,6 +162,21 @@ the reduced proficiency list for each added class; features, subclass and abilit
 shared spell slots from the combined caster level (full + half + third, artificer rounded up) with pact slots kept separate;
 spells known or prepared per class; Unarmored Defense only from whichever class granted it first. Ability score prerequisites are shown as warnings, not enforced.
 
+## The helper (AI)
+
+The round ✦ button above the dice opens a chat that sees what you are working on: the game, the page, your character or hero with its open choices, costs and warnings.
+Ask it things like “what should I pick for this?”, “why is my hero over the limit?” or tap one of the suggested questions. It gives advice; you make the changes.
+
+It needs an AI to talk to. Pick one in its Settings:
+
+- **Your server (recommended for a group):** start the app with a Claude API key on the computer that hosts it, and everyone using that server gets the helper without seeing the key:
+  `ANTHROPIC_API_KEY=sk-ant-… node server.js` (add `AI_CODE=something` to require an access code, typed once in the helper's settings, and `AI_MODEL=…` to pick another model).
+  Keys come from console.anthropic.com and are billed per use, separately from a Claude subscription.
+- **Your own Claude key:** pasted into the helper's settings; kept only in that browser.
+- **Ollama:** a free AI on a computer on your network. Start it with `OLLAMA_ORIGINS=*` and give the helper its address and model.
+
+Only your question and a summary of the page you are on are sent to the AI you pick.
+
 ## Mutants & Masterminds 3e
 
 The switch at the top (D&D 5e | M&M 3e) moves between the two games; each has its own home page, characters and house rules (Audio, dice and your own books are shared).

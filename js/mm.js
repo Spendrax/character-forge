@@ -354,9 +354,34 @@
       if (t.getAttribute('data-mmf') != null) return 'render'; // names show in the lists
       return null;
     }
+    // What the helper sees: the hero being built, with costs, limits and what's left to spend.
+    function context(section) {
+      if (section !== 'mm-heroes') return { where: section === 'mm-rules' ? 'M&M rules' : 'M&M', subject: 'Mutants & Masterminds 3e',
+        text: 'Game: Mutants & Masterminds 3rd edition. Page: ' + (section === 'mm-rules' ? 'the rules book.' : 'the M&M home page.'),
+        chips: ['Help me come up with a hero concept', 'How do power points work?', 'Explain power level limits'] };
+      var h = hero(), d = derive(h), tab = (TABS.filter(function (t) { return t[0] === U.tab; })[0] || ['', ''])[1], left = d.pp.budget - d.pp.total;
+      var L = ['Game: Mutants & Masterminds 3rd edition. Page: hero builder, “' + tab + '” tab.',
+        'Hero: ' + (h.name || 'unnamed') + (h.identity ? ' (' + h.identity + ')' : '') + '. Power level ' + d.pl + '. Points: ' + d.pp.total + ' of ' + d.pp.budget + ' spent (' + (left >= 0 ? left + ' left' : -left + ' over') + '); abilities ' + d.pp.abilities + ', powers ' + d.pp.powers + ', advantages ' + d.pp.advantages + ', skills ' + d.pp.skills + ', defenses ' + d.pp.defenses + '.',
+        'Abilities: ' + AB.map(function (a) { return a + ' ' + d.ab[a]; }).join(', ') + '.',
+        'Defenses: ' + DEF.map(function (x) { return x[1] + ' ' + d.def[x[0]]; }).join(', ') + '. Initiative ' + d.init + '.',
+        'Powers: ' + ((h.powers || []).map(function (p) { return (p.name || p.effect) + ' = ' + p.effect + ' ' + p.rank + (p.target ? ' (' + p.target + ')' : '') + ((p.mods || []).length ? ' with ' + p.mods.map(function (m) { return m.n + (m.r > 1 ? ' ' + m.r : ''); }).join(', ') : '') + ', ' + rangeOf(p) + ', ' + powerCost(p).cost + ' points' + (p.desc ? ' — ' + p.desc : ''); }).join('; ') || 'none') + '.',
+        'Attacks: ' + d.attacks.map(function (a) { return a.n + ' ' + (a.bonus == null ? 'no attack roll' : 'attack +' + a.bonus) + ', ' + a.kind + ' ' + a.rank; }).join('; ') + '.',
+        'Advantages: ' + ((h.adv || []).map(function (a) { return a.n + (a.r > 1 ? ' ' + a.r : '') + (a.note ? ' (' + a.note + ')' : ''); }).join(', ') || 'none') + '.',
+        'Skills with ranks: ' + (Object.keys(d.skills).filter(function (k) { return d.skills[k].r; }).map(function (k) { return k + ' ' + d.skills[k].r + ' (+' + d.skills[k].total + ')'; }).concat((h.spec || []).filter(function (x) { return +x.r; }).map(function (x) { return x.s + ' (' + x.n + ') ' + x.r; })).join(', ') || 'none') + '.',
+        'Complications: ' + ((h.comp || []).filter(function (c) { return c.t; }).map(function (c) { return c.k + ': ' + c.t; }).join('; ') || 'none yet') + '.',
+        d.warnings.length ? 'Problems the app flags: ' + d.warnings.join(' | ') : 'The app flags no problems.',
+        d.notes && d.notes.length ? 'Notes for the GM: ' + d.notes.join(' | ') : '', h.notes ? 'Player notes: ' + h.notes : ''];
+      var chips = [];
+      if (!(h.powers || []).length) chips.push('Help me come up with a hero concept');
+      if (left > 0) chips.push('How should I spend my last ' + left + ' points?');
+      if (d.warnings.length) chips.push('Explain what the app is warning me about');
+      if (U.tab === 'powers') chips.push('Suggest powers that fit my hero');
+      else chips.push('Is my hero built well for PL ' + d.pl + '?');
+      return { where: (h.name || 'Hero') + ' · ' + tab, subject: 'your hero', text: L.filter(Boolean).join('\n'), chips: chips.slice(0, 4) };
+    }
     function html(section) { return section === 'mm-home' ? home() : heroes(); }
     function title(section) { return section === 'mm-home' ? 'M&M 3e' : (hero().name || 'Heroes') + ' — M&M'; }
-    return { html: html, actions: actions, onInput: onInput, onChange: onChange, title: title };
+    return { html: html, actions: actions, onInput: onInput, onChange: onChange, title: title, context: context };
   };
   root.MMRules = { derive: derive, powerCost: powerCost, newHero: newHero, book: book, rangeOf: rangeOf };
 })(typeof window !== 'undefined' ? window : globalThis);

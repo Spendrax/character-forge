@@ -1105,7 +1105,7 @@
       window.scrollTo(0, narrow ? Math.max(0, row.getBoundingClientRect().top + window.pageYOffset - 6) : 0);
     }
     if (ui.jumpTo) { var jt = document.getElementById(ui.jumpTo); ui.jumpTo = null; if (jt) jt.scrollIntoView({ block: 'start' }); }
-    drawAvatars(); AUD.after(); Dice3D.place(); syncHistory();
+    drawAvatars(); AUD.after(); Dice3D.place(); AIHelper.place(); syncHistory();
     if (fid) { var el = document.getElementById(fid); if (el) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } try { if (pos != null) el.setSelectionRange(pos, pos); } catch (e) { /* not a text field */ } } }
     document.title = title(ch) + ' — Character Forge';
     saveNow();
@@ -1169,10 +1169,38 @@
     else restoreScroll(keep);
     if (ui.section === 'books' || ui.section === 'mm-rules') BOOKS.after();
     var mt = document.querySelector('.mm-tabs .on'); if (mt) mt.parentNode.scrollLeft = Math.max(0, mt.offsetLeft - mt.parentNode.offsetLeft - 24); // keep the open tab in view
-    AUD.after(); Dice3D.place(); syncHistory();
+    AUD.after(); Dice3D.place(); AIHelper.place(); syncHistory();
     if (fid) { var el = document.getElementById(fid); if (el) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } try { if (pos != null) el.setSelectionRange(pos, pos); } catch (e) { /* not text */ } } }
     document.title = (/^mm-(home|heroes)$/.test(ui.section) ? MMV.title(ui.section) : ui.section === 'mm-rules' ? 'M&M rules' : ui.section === 'monsters' ? 'Monsters' : ui.section === 'encounters' ? 'Encounters' : ui.section === 'treasure' ? 'Treasures' : ui.section === 'books' ? 'Books' : ui.section === 'audio' ? 'Audio' : ui.section === 'rules' ? 'House rules' : 'Home') + ' — Character Forge';
     saveNow();
+  }
+
+  // ---------- what the helper (AI) sees ----------
+  function aiContext() {
+    if (gameOf() === 'mm') return MMV.context(ui.section);
+    var head = 'Game: Dungeons & Dragons 5th edition (2014 rules). ';
+    if (ui.section === 'chars' && ch) {
+      var stepName = (STEPS.filter(function (x) { return x[0] === ui.step; })[0] || ['', ui.step])[1], open = d.choices.filter(function (c) { return c.missing; });
+      var L = [head + 'Page: ' + (ui.mode === 'play' ? 'playing the character' : 'building the character') + ', “' + stepName + '” step.',
+        'Character: ' + title(ch) + ' — ' + summaryLine(ch, d) + ', level ' + d.level + (d.bg ? ', background ' + d.bg.n : '') + (ch.alignment ? ', ' + ch.alignment : '') + '.',
+        'Abilities: ' + AB.map(function (a) { return a + ' ' + d.abilities[a].total; }).join(', ') + '. AC ' + d.ac + ', HP ' + d.hp + ', speed ' + d.speed + ' ft.',
+        'Proficient skills: ' + (Object.keys(d.skills).filter(function (k) { return d.skills[k].prof; }).join(', ') || 'none') + '.',
+        'Features: ' + d.features.map(function (f) { return f.n; }).slice(0, 40).join(', ') + '.',
+        d.casters.length ? 'Spells: ' + d.casters.map(function (S) { return S.name + ' — cantrips ' + (S.cantrips.join(', ') || 'none') + '; spells ' + (S.known.join(', ') || 'none'); }).join(' | ') : '',
+        open.length ? 'Choices still open: ' + open.map(function (c) { return c.label + ' (' + c.step + ' step, pick ' + c.missing + ' more; options: ' + c.options.filter(function (o) { return !o.disabled; }).slice(0, 30).map(function (o) { return o.label; }).join(', ') + ')'; }).join(' | ') : 'No choices left open.',
+        d.warnings.length ? 'Warnings: ' + d.warnings.join(' | ') : '', ch.notes && ch.notes.backstory ? 'Backstory: ' + ch.notes.backstory.slice(0, 1500) : ''];
+      var chips = [];
+      if (!ch.lineage && !ch.classes.length) chips.push('Help me come up with a character idea');
+      var here = open.filter(function (c) { return c.step === ui.step; })[0];
+      if (here) chips.push('What should I pick for “' + here.label + '”?'); else if (open.length) chips.push('What do I still need to choose?');
+      if (d.warnings.length) chips.push('Explain my warnings');
+      chips.push(ui.mode === 'play' ? 'What are my best options in a fight?' : 'Is my character built well?');
+      return { where: title(ch) + ' · ' + stepName, subject: 'your character', text: L.filter(Boolean).join('\n'), chips: chips.slice(0, 4) };
+    }
+    var names = { home: 'the home page', monsters: 'the monster list', encounters: 'the encounter builder', treasure: 'treasures', books: 'the rules book', audio: 'music', rules: 'house rules' };
+    var t = head + 'Page: ' + (names[ui.section] || ui.section) + '.';
+    if (ui.section === 'monsters' && ui.mon && ui.mon.open) { var m = MON.find(ui.mon.open); if (m) t += '\nOpen monster: ' + m.n + ' (' + m.size + ' ' + m.type + ', CR ' + m.cr + ', AC ' + (m.acv || m.ac) + ', HP ' + m.hp + ').'; }
+    return { where: names[ui.section] || '', subject: 'D&D', text: t, chips: ui.section === 'monsters' ? ['How do I run this monster well?', 'Give me a fun twist for this fight'] : ['Explain a rule for me', 'Give me an NPC for tonight', 'Help me plan a session'] };
   }
 
   // ---------- actions ----------
@@ -1436,6 +1464,7 @@
   var BOOKS = window.BooksUI({ esc: esc, btn: btn, ui: ui, store: store, render: render });
   Object.keys(BOOKS.actions).forEach(function (k) { actions[k] = BOOKS.actions[k]; });
   var MMV = window.MMUI({ esc: esc, btn: btn, ui: ui, store: store });
+  AIHelper.setContext(aiContext);
   Object.keys(MMV.actions).forEach(function (k) { actions[k] = MMV.actions[k]; });
   var AUD = window.AudioUI({ esc: esc, btn: btn, ui: ui, store: store });
   Object.keys(AUD.actions).forEach(function (k) { actions[k] = AUD.actions[k]; });

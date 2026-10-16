@@ -1,0 +1,127 @@
+// The helper: a chat that knows what you are doing in the app (the game, the page, your character with its
+// open choices and warnings) and helps you decide. It talks to one of:
+//   • your server (node server.js with ANTHROPIC_API_KEY set): friends use it without seeing the key
+//   • Claude with your own API key, kept in this browser only
+//   • Ollama, a free AI running on a computer on your network
+(function (root) {
+  'use strict';
+  var KEY = 'cf-ai', cfg = { mode: 'auto', key: '', model: 'claude-sonnet-5-5', ollama: 'http://localhost:11434', omodel: 'llama3.1', code: '' };
+  try { cfg = Object.assign(cfg, JSON.parse(root.localStorage.getItem(KEY) || '{}')); } catch (e) { /* storage off */ }
+  function saveCfg() { try { root.localStorage.setItem(KEY, JSON.stringify(cfg)); } catch (e) { /* storage off */ } }
+  var server = null; // does the server this app came from have a key? (checked once)
+  function checkServer() {
+    if (server !== null || !root.fetch || location.protocol === 'file:') return Promise.resolve(server = server || false);
+    return fetch('api/ai', { method: 'GET' }).then(function (r) { return r.ok ? r.json() : { ok: false }; }).then(function (j) { server = !!(j && j.ok); return server; }, function () { server = false; return false; });
+  }
+  function mode() { return cfg.mode === 'auto' ? (server ? 'server' : cfg.key ? 'claude' : '') : cfg.mode; }
+
+  var SYSTEM = 'You are the helper inside Character Forge, a table companion app for Dungeons & Dragons 5th edition (2014 rules only) and Mutants & Masterminds 3rd edition. ' +
+    'You help the user build characters and run games inside this app. Below is what the user is looking at right now. Use it: refer to their actual character, their open choices and their warnings. ' +
+    'Give practical, specific advice: name the exact options they can pick in the app and why. Keep answers short and easy to read on a phone (a few sentences or a short list). ' +
+    'Follow the official rules of the game they are playing; if something depends on the GM or you are not sure, say so instead of inventing rules. ' +
+    'You can’t change their character yourself: tell them what to tap or pick. Reply in the language the user writes in.';
+
+  function ask(messages, context) {
+    var sys = SYSTEM + '\n\n--- What the user is looking at ---\n' + context;
+    var m = mode();
+    if (m === 'server') return post('api/ai', { system: sys, messages: messages }, cfg.code ? { 'x-ai-code': cfg.code } : {}).then(function (j) { if (j.error) throw new Error(j.error); return j.text; });
+    if (m === 'claude') return post('https://api.anthropic.com/v1/messages', { model: cfg.model || 'claude-sonnet-5-5', max_tokens: 1200, system: sys, messages: messages },
+      { 'x-api-key': cfg.key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' })
+      .then(function (j) { if (j.error) throw new Error(j.error.message || 'error'); return (j.content || []).map(function (c) { return c.text || ''; }).join(''); });
+    if (m === 'ollama') return post(String(cfg.ollama || '').replace(/\/+$/, '') + '/api/chat', { model: cfg.omodel || 'llama3.1', stream: false, messages: [{ role: 'system', content: sys }].concat(messages) }, {})
+      .then(function (j) { if (j.error) throw new Error(j.error); return (j.message && j.message.content) || ''; });
+    return Promise.reject(new Error('setup'));
+  }
+  function post(url, body, headers) {
+    return fetch(url, { method: 'POST', headers: Object.assign({ 'content-type': 'application/json' }, headers), body: JSON.stringify(body) }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (j) {
+        if (!r.ok) { var msg = (j.error && (j.error.message || j.error)) || ('HTTP ' + r.status); var e = new Error(msg); e.status = r.status; throw e; }
+        return j;
+      });
+    });
+  }
+
+  // ---------- the panel ----------
+  var el, fab, open = false, pushed = false, busy = false, chat = [], view = 'chat', getContext = function () { return { text: '', chips: [] }; };
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function mdHtml(t) { return root.BooksUI && root.BooksUI.md ? root.BooksUI.md(t) : '<p>' + esc(t).replace(/\n/g, '<br>') + '</p>'; }
+  function build() {
+    if (el) return;
+    el = document.createElement('div'); el.className = 'ai-panel noprint'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'Helper');
+    document.body.appendChild(el);
+    el.addEventListener('click', onClick);
+    el.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey && e.target.id === 'ai-in') { e.preventDefault(); send(); } });
+  }
+  function draw() {
+    var ctx = getContext(), m = mode();
+    var head = '<div class="ai-head"><b>' + (root.Icon ? root.Icon('sparkle') : '') + ' Helper</b><span class="ai-where small muted">' + esc(ctx.where || '') + '</span><span class="spacer"></span>' +
+      '<button type="button" class="btn small" data-ai="view" data-v="' + (view === 'chat' ? 'setup' : 'chat') + '">' + (view === 'chat' ? 'Settings' : 'Back to chat') + '</button><button type="button" class="ai-x" data-ai="close" aria-label="Close the helper">✕</button></div>';
+    if (view === 'setup' || !m) { el.innerHTML = head + setupHtml(!m); return; }
+    var msgs = chat.length ? chat.map(function (c) { return '<div class="ai-msg ' + c.role + '">' + (c.role === 'user' ? esc(c.content).replace(/\n/g, '<br>') : mdHtml(c.content)) + '</div>'; }).join('')
+      : '<div class="ai-empty"><p>Ask me anything about ' + esc(ctx.subject || 'the game') + '. I can see what you are working on.</p></div>';
+    var chips = (ctx.chips || []).map(function (c) { return '<button type="button" class="pill small" data-ai="chip" data-v="' + esc(c) + '">' + esc(c) + '</button>'; }).join('');
+    el.innerHTML = head + '<div class="ai-msgs" aria-live="polite">' + msgs + (busy ? '<div class="ai-msg assistant ai-busy">Thinking…</div>' : '') + '</div>' +
+      (chips && !busy ? '<div class="ai-chips">' + chips + '</div>' : '') +
+      '<div class="ai-send"><textarea id="ai-in" rows="2" placeholder="Ask about your character or the rules…"' + (busy ? ' disabled' : '') + '></textarea><button type="button" class="btn primary" data-ai="send"' + (busy ? ' disabled' : '') + '>Send</button></div>' +
+      '<div class="ai-foot small muted">' + (chat.length ? '<button type="button" class="linkbtn" data-ai="clear">New conversation</button> · ' : '') + 'Uses ' + (m === 'server' ? 'your server' : m === 'claude' ? 'Claude with your key' : 'Ollama') + '. Answers can be wrong: check the rules.</div>';
+    var list = el.querySelector('.ai-msgs'); list.scrollTop = list.scrollHeight;
+  }
+  function setupHtml(first) {
+    var r = function (v, t, d) { return '<label class="check-line"><input type="radio" name="ai-mode" data-aicfg="mode" value="' + v + '"' + (cfg.mode === v ? ' checked' : '') + '> <span><b>' + t + '</b><br><span class="small muted">' + d + '</span></span></label>'; };
+    var f = function (k, label, ph, type) { return '<label class="field"><span>' + label + '</span><input type="' + (type || 'text') + '" data-aicfg="' + k + '" value="' + esc(cfg[k] || '') + '" placeholder="' + esc(ph) + '" autocomplete="off"></label>'; };
+    return '<div class="ai-setup">' + (first ? '<p>The helper needs an AI to talk to. Pick one:</p>' : '') +
+      r('auto', 'Automatic', server ? 'Your server has a key: using it.' : 'Uses your server if it has a key, otherwise your own key below.') +
+      r('server', 'Your server', 'Run the app with <code>node server.js</code> and set <code>ANTHROPIC_API_KEY</code> on that computer. Friends can use it without seeing the key.' + (server === false ? ' <b>Not found on this server right now.</b>' : '')) +
+      r('claude', 'My own Claude key', 'An API key from console.anthropic.com, kept only in this browser. Pay-as-you-go, billed separately from a Claude subscription.') +
+      r('ollama', 'Ollama on my network', 'A free AI on your own computer. Start it with <code>OLLAMA_ORIGINS=*</code> so the app may talk to it.') +
+      (cfg.mode === 'claude' || cfg.mode === 'auto' ? f('key', 'Claude API key', 'sk-ant-…', 'password') + f('model', 'Model', 'claude-sonnet-5-5') : '') +
+      (cfg.mode === 'server' || cfg.mode === 'auto' ? f('code', 'Access code (if your server asks for one)', 'optional', 'password') : '') +
+      (cfg.mode === 'ollama' ? f('ollama', 'Ollama address', 'http://192.168.1.20:11434') + f('omodel', 'Model', 'llama3.1') : '') +
+      '<div class="toolbar"><button type="button" class="btn primary" data-ai="view" data-v="chat">Done</button></div>' +
+      '<p class="small muted">What you ask, plus a summary of the page you are on (your character’s name, choices and stats), is sent to the AI you pick. Nothing else leaves your device.</p></div>';
+  }
+  function send(text) {
+    var box = el.querySelector('#ai-in'); text = String(text || (box && box.value) || '').trim(); if (!text || busy) return;
+    chat.push({ role: 'user', content: text }); busy = true; draw();
+    ask(chat.slice(-12), getContext().text).then(function (reply) { chat.push({ role: 'assistant', content: reply || '(no answer)' }); },
+      function (e) {
+        var why = e.message === 'setup' ? 'Set up the helper first (Settings).' : e.status === 401 ? 'The key was refused. Check it in Settings.' : e.status === 403 ? 'Your server refused: check the access code in Settings.' :
+          /Failed to fetch|NetworkError|Load failed/.test(e.message) ? 'Couldn’t reach the AI. Check your connection' + (mode() === 'ollama' ? ', that Ollama is running and started with OLLAMA_ORIGINS=*' : '') + '.' : 'The AI answered with an error: ' + e.message;
+        chat.push({ role: 'assistant', content: '⚠ ' + why, err: true });
+      }).then(function () { chat = chat.filter(function (c, i) { return !c.err || i === chat.length - 1; }); busy = false; if (open) draw(); });
+  }
+  function onClick(e) {
+    var b = e.target.closest('[data-ai]'); if (!b) return;
+    var a = b.getAttribute('data-ai'), v = b.getAttribute('data-v');
+    if (a === 'close') return close();
+    if (a === 'view') { readCfg(); view = v; return draw(); }
+    if (a === 'send') return send();
+    if (a === 'chip') return send(v);
+    if (a === 'clear') { chat = []; return draw(); }
+  }
+  function readCfg() {
+    el.querySelectorAll('[data-aicfg]').forEach(function (i) { var k = i.getAttribute('data-aicfg'); if (i.type === 'radio') { if (i.checked) cfg[k] = i.value; } else cfg[k] = i.value.trim(); });
+    saveCfg();
+  }
+  function openPanel() {
+    build(); if (open) return; open = true; el.classList.add('on'); checkServer().then(function () { if (open) draw(); }); draw();
+    try { root.history.pushState({ ai: 1 }, ''); pushed = true; } catch (e) { pushed = false; }
+    setTimeout(function () { var i = el.querySelector('#ai-in'); if (i && root.innerWidth > 800) i.focus(); }, 50);
+  }
+  function close(fromBack) {
+    if (!open) return; if (view === 'setup') readCfg(); open = false; el.classList.remove('on');
+    if (pushed && !fromBack) { pushed = false; try { root.history.back(); } catch (e) { /* ignore */ } } pushed = false;
+  }
+  if (root.addEventListener) {
+    root.addEventListener('popstate', function () { if (open) close(true); });
+    root.addEventListener('keydown', function (e) { if (open && e.key === 'Escape') close(); });
+    root.addEventListener('change', function (e) { if (open && e.target.getAttribute && e.target.getAttribute('data-aicfg') === 'mode') { readCfg(); draw(); } });
+  }
+  // The round helper button sits just above the dice button.
+  function place() {
+    if (!fab) { fab = document.createElement('button'); fab.type = 'button'; fab.className = 'ai-fab noprint'; fab.title = 'Helper'; fab.setAttribute('aria-label', 'Open the helper'); fab.innerHTML = root.Icon ? root.Icon('sparkle') : '?'; fab.addEventListener('click', openPanel); document.body.appendChild(fab); }
+    var dice = document.querySelector('.dice3d-fab.out'); fab.style.bottom = ((dice ? parseFloat(dice.style.bottom) || 14 : 14) + 64) + 'px';
+    if (open && !busy) { var a = document.activeElement; if (!a || !el.contains(a)) draw(); } // the page changed behind it
+  }
+  root.AIHelper = { open: openPanel, close: close, place: place, setContext: function (f) { getContext = f; }, _ask: ask, _cfg: cfg };
+})(typeof window !== 'undefined' ? window : globalThis);
