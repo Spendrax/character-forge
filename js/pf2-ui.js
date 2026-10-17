@@ -21,6 +21,28 @@
     function teml(rank) { return '<span class="pf-teml" aria-label="' + PF2.RANK[rank || 0] + '">' + ['T', 'E', 'M', 'L'].map(function (l, i) { return '<i' + (rank > i ? ' class="on"' : '') + '>' + l + '</i>'; }).join('') + '</span>'; }
     function traits(t, e) { var x = (t || []).slice(); if (e && e.r) x.unshift({ u: 'uncommon', r: 'rare', q: 'unique' }[e.r]); return x.length ? '<div class="pf-traits">' + x.map(function (s) { return '<span class="pf-trait' + (/^(uncommon|rare|unique)$/.test(s) ? ' pf-' + s.slice(0, 4) : '') + '">' + esc(s.replace(/-/g, ' ')) + '</span>'; }).join('') + '</div>' : ''; }
 
+    // ---------- the character's picture: shrunk to 640 px so it fits in the browser's storage ----------
+    function picHtml(ch, cls) { return ch.picture ? '<img class="pf-pic ' + (cls || '') + (ch.picFit === 'contain' ? ' whole' : '') + '" src="' + ch.picture + '" alt="Picture of ' + esc(ch.name || 'the character') + '">' : ''; }
+    function loadPic(file, done) {
+      if (!file || !/^image\//.test(file.type)) { done(null); return; }
+      var r = new FileReader();
+      r.onload = function () {
+        var img = new Image();
+        img.onload = function () {
+          var max = 640, k = Math.min(1, max / Math.max(img.width, img.height)), cv = document.createElement('canvas');
+          cv.width = Math.max(1, Math.round(img.width * k)); cv.height = Math.max(1, Math.round(img.height * k));
+          var x = cv.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(img, 0, 0, cv.width, cv.height);
+          var data = cv.toDataURL('image/webp', 0.85);
+          if (data.indexOf('data:image/webp') !== 0) { x.globalCompositeOperation = 'destination-over'; x.fillStyle = '#fff'; x.fillRect(0, 0, cv.width, cv.height); data = cv.toDataURL('image/jpeg', 0.85); }
+          done(data);
+        };
+        img.onerror = function () { done(null); };
+        img.src = r.result;
+      };
+      r.onerror = function () { done(null); };
+      r.readAsDataURL(file);
+    }
+
     // ---------- loading the data ----------
     var loading = {}, failed = '';
     function loadScript(src) { return new Promise(function (ok, no) { var s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = no; document.head.appendChild(s); }); }
@@ -41,7 +63,7 @@
       var s = S();
       var cards = s.chars.map(function (c) {
         var d = PF2.derive(c), sub = [d.anc ? (d.her ? d.her.n : d.anc.n) : '', d.cls ? d.cls.n + ' ' + d.level : ''].filter(Boolean).join(' · ') || 'Nothing chosen yet';
-        return '<button type="button" class="roster-card pf-card' + (c.id === s.cur ? ' cur' : '') + '" data-act="pfOpen" data-v="' + c.id + '"><span class="pf-init">' + esc((c.name || '?').trim().slice(0, 1).toUpperCase()) + '</span>' +
+        return '<button type="button" class="roster-card pf-card' + (c.id === s.cur ? ' cur' : '') + '" data-act="pfOpen" data-v="' + c.id + '">' + (c.picture ? '<span class="pf-init pf-picbox">' + picHtml(c) + '</span>' : '<span class="pf-init">' + esc((c.name || '?').trim().slice(0, 1).toUpperCase()) + '</span>') +
           '<span class="roster-txt"><b>' + esc(c.name || 'Unnamed') + '</b><span class="small muted">' + esc(sub) + '</span>' +
           (d.cls ? '<span class="roster-stats small"><span>AC ' + d.ac.v + '</span><span>HP ' + (c.track && c.track.hp != null ? c.track.hp + '/' : '') + d.hp.max + '</span><span>Perc ' + fmt(d.perception.v) + '</span></span>' : '') + '</span></button>';
       }).join('');
@@ -79,7 +101,7 @@
     var TABS = [['build', 'Build'], ['sheet', 'Sheet'], ['defense', 'Defense'], ['offense', 'Offense'], ['skills', 'Skills'], ['spells', 'Spells'], ['gear', 'Gear'], ['feats', 'Feats'], ['actions', 'Actions'], ['notes', 'Notes']];
     function charHtml(ch) {
       var d = PF2.derive(ch);
-      var head = '<div class="pf-head"><div><b>' + esc(ch.name || 'Unnamed') + '</b><span class="small muted">' + esc([d.anc && d.anc.n, d.cls && d.cls.n + ' ' + d.level].filter(Boolean).join(' · ')) + '</span></div><span class="spacer"></span>' +
+      var head = '<div class="pf-head">' + '<label class="pf-face" title="' + (ch.picture ? 'Change the picture' : 'Add a picture') + '">' + (ch.picture ? picHtml(ch) : '<span>' + (root.Icon ? root.Icon('sword') : '+') + '</span>') + '<input type="file" accept="image/*" data-pfpic="1" hidden></label><div><b>' + esc(ch.name || 'Unnamed') + '</b><span class="small muted">' + esc([d.anc && d.anc.n, d.cls && d.cls.n + ' ' + d.level].filter(Boolean).join(' · ')) + '</span></div><span class="spacer"></span>' +
         btn('pfList', 'All characters', {}, 'btn small') + '</div>';
       var tabs = '<nav class="mm-tabs pf-tabs">' + TABS.map(function (t) { return btn('pfTab', t[1] + (t[0] === 'build' && d.warnings.length ? ' <span class="badge">' + d.warnings.length + '</span>' : ''), { v: t[0] }, 'mm-tab' + (U.tab === t[0] ? ' on' : '')); }).join('') + '</nav>';
       var body = ({ build: buildTab, sheet: sheetTab, defense: defenseTab, offense: offenseTab, strikes: offenseTab, skills: skillsTab, spells: spellsTab, gear: gearTab, feats: featsTab, actions: actionsTab, notes: notesTab })[U.tab] || buildTab;
@@ -490,7 +512,10 @@
     // ----- Notes -----
     function notesTab(ch, d) {
       var langs = ch.langs || [], sug = d.anc ? (d.anc.langs || []).concat(d.anc.addLangs || []) : [];
-      return '<div class="panel"><div class="row"><label class="field"><span>Alignment</span><select data-pff="alignment"><option value="">—</option>' + ALIGN.map(function (a) { return '<option' + (ch.alignment === a ? ' selected' : '') + '>' + a + '</option>'; }).join('') + '</select></label>' +
+      return '<div class="panel pf-picpanel"><h3 style="margin-top:0">Picture</h3>' + (ch.picture ? '<div class="pf-picbig">' + picHtml(ch) + '</div>' : '<p class="small muted">A portrait or any image of your character, from your photos or files. It stays on this device.</p>') +
+        '<div class="toolbar"><label class="btn primary">' + (ch.picture ? 'Change picture' : 'Add a picture') + '<input type="file" accept="image/*" data-pfpic="1" hidden></label>' +
+        (ch.picture ? btn('pfPicFit', ch.picFit === 'contain' ? 'Fill the frame' : 'Show the whole picture', {}, 'btn') + btn('pfPicRm', 'Remove', {}, 'btn') : '') + '</div>' + (U.picErr ? '<p class="small bad">' + esc(U.picErr) + '</p>' : '') + '</div>' +
+        '<div class="panel"><div class="row"><label class="field"><span>Alignment</span><select data-pff="alignment"><option value="">—</option>' + ALIGN.map(function (a) { return '<option' + (ch.alignment === a ? ' selected' : '') + '>' + a + '</option>'; }).join('') + '</select></label>' +
         '<label class="field"><span>Deity</span><input type="text" id="pf-deity" data-pff="deity" value="' + esc(ch.deity || '') + '" list="pf-deities"></label><datalist id="pf-deities">' + PF2.index().core.deities.map(function (x) { return '<option value="' + esc(x.n) + '">'; }).join('') + '</datalist></div>' +
         '<div class="row"><label class="field"><span>Age</span><input type="text" id="pf-age" data-pff="age" value="' + esc(ch.age || '') + '"></label><label class="field"><span>Gender / pronouns</span><input type="text" id="pf-gender" data-pff="gender" value="' + esc(ch.gender || '') + '"></label><label class="field"><span>XP</span><input type="number" id="pf-xp" data-pff="xp" value="' + (ch.xp || 0) + '"></label></div>' +
         '<div class="field"><span>Languages</span><div class="pills">' + langs.map(function (l, i) { return '<span class="pill small on">' + esc(l) + ' ' + btn('pfLangRm', '✕', { v: i }, 'mm-b') + '</span>'; }).join('') + '</div><div class="row"><input type="text" id="pf-lang" list="pf-langs" placeholder="Add a language"><datalist id="pf-langs">' + sug.map(function (l) { return '<option value="' + esc(l[0].toUpperCase() + l.slice(1)) + '">'; }).join('') + '</datalist>' + btn('pfLangAdd', '+', {}, 'btn small') + '</div></div>' +
@@ -649,6 +674,8 @@
       pfDelAsk: function () { U.delAsk = true; }, pfDelNo: function () { U.delAsk = false; },
       pfDel: function () { var s = S(), id = s.cur; s.chars = s.chars.filter(function (c) { return c.id !== id; }); s.cur = s.chars[0] ? s.chars[0].id : ''; U.view = 'list'; U.delAsk = false; },
       pfPrint: function () { root.print(); return false; },
+      pfPicRm: function () { chg(function (ch) { delete ch.picture; delete ch.picFit; }); },
+      pfPicFit: function () { chg(function (ch) { ch.picFit = ch.picFit === 'contain' ? '' : 'contain'; }); },
       pfExport: function () { var ch = cur(); if (!ch) return false; var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify({ app: 'character-forge', game: 'pf2', char: ch }, null, 1)], { type: 'application/json' })); a.download = (ch.name || 'character').replace(/[^\w-]+/g, '_') + '.pf2.json'; a.click(); return false; },
       pfRCat: function (v) { U.rules.cat = v; U.rules.open = ''; U.rules.q = ''; root.scrollTo(0, 0); },
       pfROpen: function (v) { U.rules.open = U.rules.open === v ? '' : v; }
@@ -672,6 +699,7 @@
       var a = function (n) { return t.getAttribute(n); }, ch = cur();
       if (t.id === 'pf-imp-file') { var f = t.files && t.files[0]; if (f) f.text().then(function (x) { doImport(x); }); return null; }
       if (!ch) return ENC.onChange ? ENC.onChange(t) : null;
+      if (a('data-pfpic')) { var pf = t.files && t.files[0]; U.picErr = ''; loadPic(pf, function (data) { var c2 = cur(); if (data && c2) { c2.picture = data; } else U.picErr = 'That file couldn’t be read as a picture.'; render(); }); return null; }
       if (a('data-pfchoice') != null) { ch.choices = ch.choices || {}; if (t.value) ch.choices[a('data-pfchoice')] = t.value; else delete ch.choices[a('data-pfchoice')]; return 'render'; }
       if (a('data-pfinc')) { ch.skills.inc = ch.skills.inc || {}; if (t.value) ch.skills.inc[a('data-pfinc')] = t.value; else delete ch.skills.inc[a('data-pfinc')]; return 'render'; }
       if (a('data-pfchk') === 'ancAlt') { ch.boosts.ancAlt = t.checked; ch.boosts.anc = []; return 'render'; }
