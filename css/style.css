@@ -766,3 +766,5 @@ html.dice3d-lock, html.dice3d-lock body { overflow: hidden; }
 .pf-pic.whole { object-fit: contain; background: var(--soft); }
 .pf-picbox { padding: 0; overflow: hidden; }
 .pf-picbig { width: min(100%, 16rem); aspect-ratio: 1; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); margin-bottom: .5rem; }
+.theme-btn { padding: .35rem .55rem; line-height: 0; }
+.theme-btn .ico { width: 1.3rem; height: 1.3rem; }

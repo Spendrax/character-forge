@@ -1089,7 +1089,7 @@
     var body = { lineage: stepLineage, 'class': stepClass, abilities: stepAbilities, background: stepBackground, spells: stepSpells, myspells: stepMySpells, equipment: stepEquipment, items: stepItems, appearance: stepAppearance, details: stepDetails, sheet: stepSheet, notes: stepNotes, play: stepPlay }[ui.step]();
     var top = '<header class="top">' + btn('section', 'Character Forge', { v: 'home' }, 'brand linkish') + gameSwitch() + sectionNav() + '<select data-ui="current" aria-label="Character">' + store.chars.map(function (c) {
       return '<option value="' + c.id + '"' + (c.id === ch.id ? ' selected' : '') + '>' + esc(title(c)) + '</option>';
-    }).join('') + '</select>' + '<button type="button" class="btn" data-act="undo" title="Undo (Ctrl+Z)"' + (undoStack.length ? '' : ' disabled') + '>↶ Undo</button><button type="button" class="btn" data-act="redo" title="Redo (Ctrl+Y)"' + (redoStack.length ? '' : ' disabled') + '>↷ Redo</button>' + btn('new', 'New') + btn('dup', 'Duplicate') + btn('import', 'Import') + btn('export', 'Export') +
+    }).join('') + '</select>' + themeBtn() + '<button type="button" class="btn" data-act="undo" title="Undo (Ctrl+Z)"' + (undoStack.length ? '' : ' disabled') + '>↶ Undo</button><button type="button" class="btn" data-act="redo" title="Redo (Ctrl+Y)"' + (redoStack.length ? '' : ' disabled') + '>↷ Redo</button>' + btn('new', 'New') + btn('dup', 'Duplicate') + btn('import', 'Import') + btn('export', 'Export') +
       (ui.confirmDelete ? btn('delete', 'Really delete?', {}, 'btn primary') + btn('cancelDelete', 'Cancel') : btn('askDelete', 'Delete', {}, 'btn danger')) +
       (ui.importError ? '<span class="count" style="color:var(--warn)">' + esc(ui.importError === true ? 'That file is not a Character Forge export, a 5th Spellbook backup or a 5e Companion character.' : ui.importError) + '</span>' : '') + (isInstalledApp() ? '' : btn('install', 'Install app', {}, installPrompt ? 'btn primary' : 'btn')) + '<span class="spacer"></span><span class="filters"><b>Sources:</b>' + TAGS.map(function (t) {
         return '<label><input type="checkbox" data-filter="' + t[0] + '"' + (store.filters[t[0]] !== false ? ' checked' : '') + '> ' + t[1] + '</label>';
@@ -1131,6 +1131,14 @@
 
   // ---------- sections: the home page and the monsters ----------
   // Two games side by side, each with its own sections; Audio, dice and your own books are shared.
+  // Light, dark, or follow the phone (auto). Kept on this device.
+  function themeNow() { try { return localStorage.getItem('cf-theme') || 'auto'; } catch (e) { return 'auto'; } }
+  function applyTheme(t) {
+    var el = document.documentElement; if (t === 'light' || t === 'dark') el.setAttribute('data-theme', t); else el.removeAttribute('data-theme');
+    var dark = t === 'dark' || (t === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    var m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute('content', dark ? '#17161a' : '#8b2e23');
+  }
+  function themeBtn() { var t = themeNow(), lab = { auto: 'Theme: follows your phone', light: 'Theme: light', dark: 'Theme: dark' }[t]; return '<button type="button" class="btn theme-btn" data-act="theme" title="' + lab + ' (tap to change)" aria-label="' + lab + '">' + Icon(t === 'auto' ? 'auto' : t === 'light' ? 'sun' : 'moon') + '</button>'; }
   function gameOf() { return store.game === 'mm' ? 'mm' : store.game === 'pf2' ? 'pf2' : 'dnd'; }
   function gameSwitch() {
     return '<div class="game-switch" role="group" aria-label="Game">' + [['dnd', 'D&amp;D 5e'], ['pf2', 'PF2'], ['mm', 'M&amp;M 3e']].map(function (g) {
@@ -1167,7 +1175,7 @@
   function renderSection(fid, pos) {
     var keep = scrollState();
     var top = '<header class="top">' + btn('section', 'Character Forge', { v: gameOf() === 'mm' ? 'mm-home' : gameOf() === 'pf2' ? 'pf2-home' : 'home' }, 'brand linkish') + gameSwitch() + sectionNav() + '<span class="spacer"></span>' +
-      '<button type="button" class="btn" data-act="undo" title="Undo (Ctrl+Z)"' + (undoStack.length ? '' : ' disabled') + '>↶ Undo</button>' + (isInstalledApp() ? '' : btn('install', 'Install app', {}, installPrompt ? 'btn primary' : 'btn')) + '</header>';
+      themeBtn() + '<button type="button" class="btn" data-act="undo" title="Undo (Ctrl+Z)"' + (undoStack.length ? '' : ' disabled') + '>↶ Undo</button>' + (isInstalledApp() ? '' : btn('install', 'Install app', {}, installPrompt ? 'btn primary' : 'btn')) + '</header>';
     var body = /^pf2-/.test(ui.section) ? PFV.html(ui.section) : /^mm-(home|heroes)$/.test(ui.section) ? MMV.html(ui.section) : ui.section === 'mm-enc' ? MME.html() : ui.section === 'mm-party' ? MME.partyPage() : ui.section === 'mm-rules' ? BOOKS.html() : ui.section === 'monsters' ? '<main class="mon-main">' + MON.html() + '</main>' : ui.section === 'encounters' ? ENC.html() : ui.section === 'party' ? ENC.partyPage() : ui.section === 'roster' ? rosterHtml() : ui.section === 'treasure' ? TRE.html() : ui.section === 'books' ? BOOKS.html() : ui.section === 'audio' ? AUD.html() : ui.section === 'rules' ? rulesHtml() : homeHtml();
     document.getElementById('app').innerHTML = top + installHelpHtml() + body;
     if (ui.mon && ui.mon.scrollTop) { ui.mon.scrollTop = false; var r = document.querySelector('.mon-right'); if (r && window.innerWidth < 800) r.scrollIntoView(); else window.scrollTo(0, 0); }
@@ -1436,6 +1444,7 @@
     partImportCancel: function () { ui.partImport = null; },
     partImportClose: function () { ui.partImportDone = null; },
     undo: function () { return undo(); },
+    theme: function () { var t = { auto: 'light', light: 'dark', dark: 'auto' }[themeNow()]; try { localStorage.setItem('cf-theme', t); } catch (e) { /* storage off */ } applyTheme(t); },
     redo: function () { return redo(); },
     picEdit: function () { ui.picEdit = true; },
     picDone: function () { ui.picEdit = false; },
@@ -1764,7 +1773,8 @@
 
   load();
   if (store.game === 'mm' && ui.section === 'home') ui.section = 'mm-home';
-  if (store.game === 'pf2' && ui.section === 'home') ui.section = 'pf2-home'; // reopen in the game you were using
+  if (store.game === 'pf2' && ui.section === 'home') ui.section = 'pf2-home';
+  applyTheme(themeNow()); // reopen in the game you were using
   render();
   takeSharedFile();
   window.Forge = { store: store, ui: ui, render: render, derived: function () { return d; } };
