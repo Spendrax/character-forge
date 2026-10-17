@@ -768,3 +768,5 @@ html.dice3d-lock, html.dice3d-lock body { overflow: hidden; }
 .pf-picbig { width: min(100%, 16rem); aspect-ratio: 1; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); margin-bottom: .5rem; }
 .theme-btn { padding: .35rem .55rem; line-height: 0; }
 .theme-btn .ico { width: 1.3rem; height: 1.3rem; }
+.magic-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: .5rem; }
+.boost-line { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .5rem; padding: .5rem 0; border-top: 1px solid var(--line); }

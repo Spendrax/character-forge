@@ -752,6 +752,23 @@
     out.hpMax = diceMax + level * perLevel + hooks.hpFlat;
     out.hp = Math.max(level, ch.hpMode === 'manual' && ch.hpManual > 0 ? (ch.hpManual | 0) : ch.hpMode === 'max' ? out.hpMax : out.hpAvg) + xn('hp');
 
+    // ----- magic bonuses on gear: magic items (+1, +2, +3) and the infusions or invocations that enchant one item -----
+    var picked = {}; out.choices.forEach(function (c) { arr(c.picked).forEach(function (p) { picked[p] = 1; }); });
+    var artLv = has('artificer') ? has('artificer').level : 0, eb = artLv >= 10 ? 2 : 1;
+    var BOOSTS = [['Enhanced Weapon', 'weapon', eb, 'attack and damage rolls'], ['Radiant Weapon', 'weapon', 1, 'attack and damage rolls'], ['Returning Weapon', 'weapon', 1, 'attack and damage rolls (a thrown weapon)'],
+      ['Improved Pact Weapon', 'weapon', 1, 'attack and damage rolls (your pact weapon, if it has no bonus of its own)'], ['Enhanced Defense', 'armor', eb, 'AC (armor or shield)'], ['Repulsion Shield', 'shield', 1, 'AC (a shield)'],
+      ['Enhanced Arcane Focus', 'focus', eb, 'spell attack rolls (a rod, staff or wand you use as a focus)']];
+    var magic = ch.magic || {}, boostOn = ch.boostOn || {};
+    var weaponKeys = arr(ch.weapons).map(function (n) { return 'w:' + n; }).concat(arr(ch.customWeapons).map(function (w) { return 'c:' + w.id; }));
+    out.gearBoosts = BOOSTS.filter(function (b) { return picked[b[0]]; }).map(function (b) {
+      var cands = b[1] === 'weapon' ? weaponKeys : b[1] === 'armor' ? (ch.armor && !/^spell:/.test(ch.armor) ? ['armor'] : []).concat(ch.shield ? ['shield'] : []) : b[1] === 'shield' ? (ch.shield ? ['shield'] : []) : ['focus'];
+      var t = boostOn[b[0]]; if (cands.indexOf(t) < 0) t = cands.length === 1 ? cands[0] : ''; // only one place it can go: it goes there by itself
+      return { n: b[0], kind: b[1], bonus: b[2], what: b[3], target: t, cands: cands };
+    });
+    // magic bonuses don't add up on one item: the best one counts
+    function gearBonus(key) { var v = +magic[key] || 0, src = v ? 'magic' : ''; out.gearBoosts.forEach(function (b) { if (b.target === key && b.bonus > v) { v = b.bonus; src = b.n; } }); return { v: v, src: src }; }
+    out.gearBonus = gearBonus;
+
     // ----- armor class -----
     var armor = D.armor.filter(function (a) { return a[0] === ch.armor; })[0];
     // armour the player made: ch.armor is "custom:<id>"
@@ -795,10 +812,12 @@
       cands.sort(function (a, b) { return b[0] - a[0]; });
       ac = cands[0][0]; acNote = cands[0][1];
     }
+    if (armor || custA) { var gA = gearBonus('armor'); if (gA.v) { ac += gA.v; acNote += ' +' + gA.v + (gA.src !== 'magic' ? ' (' + gA.src + ')' : ''); } }
     if (L && L.fixedAC) { ac = L.fixedAC; acNote = 'Natural armor'; }
     if (ch.shield) {
       var sb = ch.shieldBonus != null && ch.shieldBonus !== '' ? +ch.shieldBonus : 2;
       ac += sb; acNote += ', shield' + (sb !== 2 ? ' (' + R.fmt(sb) + ')' : '');
+      var gS = gearBonus('shield'); if (gS.v) { ac += gS.v; acNote += ' +' + gS.v + (gS.src !== 'magic' ? ' (' + gS.src + ')' : ''); }
       if (!prof.armor.some(function (a) { return /^Shields/.test(a); })) out.warnings.push('Not proficient with shields.');
     }
     if (L && L.acBonus) ac += L.acBonus;
@@ -834,23 +853,25 @@
         p = p.toLowerCase();
         return p === plural || (p === 'simple weapons' && /^Simple/.test(w[1])) || (p === 'martial weapons' && /^Martial/.test(w[1]));
       });
-      var hit = M(ab) + (ok ? pb : 0), dmgB = M(ab);
+      var gW = gearBonus('w:' + w[0]);
+      var hit = M(ab) + (ok ? pb : 0) + gW.v, dmgB = M(ab) + gW.v;
       if (ranged && styles.indexOf('Archery') >= 0) hit += 2;
       if (!ranged && styles.indexOf('Dueling') >= 0 && !/two-handed/.test(props)) dmgB += 2;
       var dmg = w[3];
       if (/^\d+d\d+/.test(dmg)) dmg = dmg.replace(/^(\d+d\d+)/, '$1' + (dmgB ? (dmgB > 0 ? ' + ' : ' - ') + Math.abs(dmgB) : ''));
-      return { name: w[0], hit: hit, damage: dmg, props: w[5], proficient: ok };
+      return { name: w[0], hit: hit, damage: dmg, props: w[5], proficient: ok, plus: gW.v, plusFrom: gW.src };
     }).filter(Boolean);
     // weapons the player made
     arr(ch.customWeapons).forEach(function (w) {
       var ranged = !!w.ranged, props = String(w.props || '');
       var ab = w.ability === 'finesse' ? (M('DEX') > M('STR') ? 'DEX' : 'STR') : AB.indexOf(w.ability) >= 0 ? w.ability : ranged ? 'DEX' : 'STR';
-      var hit = M(ab) + (w.prof !== false ? pb : 0) + (+w.hit || 0), dmgB = M(ab) + (+w.dmgBonus || 0);
+      var gC = gearBonus('c:' + w.id);
+      var hit = M(ab) + (w.prof !== false ? pb : 0) + (+w.hit || 0) + gC.v, dmgB = M(ab) + (+w.dmgBonus || 0) + gC.v;
       if (ranged && styles.indexOf('Archery') >= 0) hit += 2;
       if (!ranged && styles.indexOf('Dueling') >= 0 && !/two-handed/i.test(props)) dmgB += 2;
       var dice = String(w.dmg || '1d4').trim();
       var dmg = dice + (dmgB ? (dmgB > 0 ? ' + ' : ' - ') + Math.abs(dmgB) : '') + (w.type ? ' ' + String(w.type).toLowerCase() : '');
-      out.attacks.push({ name: w.n || 'Custom weapon', hit: hit, damage: dmg, props: [ranged ? 'Ranged' + (w.range ? ' (' + w.range + ')' : '') : 'Melee', props].filter(Boolean).join(', '), proficient: w.prof !== false, custom: w.id, ability: ab });
+      out.attacks.push({ name: w.n || 'Custom weapon', hit: hit, damage: dmg, props: [ranged ? 'Ranged' + (w.range ? ' (' + w.range + ')' : '') : 'Melee', props].filter(Boolean).join(', '), proficient: w.prof !== false, custom: w.id, ability: ab, plus: gC.v, plusFrom: gC.src });
     });
 
     // ----- spellcasting: one entry per class that casts, plus shared slots -----
@@ -864,7 +885,7 @@
       if (cast.kind === 'half' && clv < 2) active = false;
       if (!active) return;
       var S = { clsId: cls.id, name: cast === cls.casting ? cls.name : sc.name, ability: cast.ability, kind: cast.kind, note: cast.note || '', level: clv };
-      S.dc = 8 + pb + M(cast.ability) + xn('spellDC'); S.atk = pb + M(cast.ability) + xn('spellAtk');
+      S.dc = 8 + pb + M(cast.ability) + xn('spellDC'); S.atk = pb + M(cast.ability) + xn('spellAtk') + gearBonus('focus').v;
       S.ownSlots = R.slotsFor(cast.kind, clv);
       if (cast.kind === 'pact') {
         S.pact = { n: cast.pactSlots[clv - 1], level: cast.pactLevel[clv - 1] }; S.maxLevel = S.pact.level;

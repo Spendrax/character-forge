@@ -606,7 +606,7 @@
   }
   function stepEquipment() {
     var h = '<h2>Equipment</h2>' + partImportHtml('equipment') + packAddedHtml();
-    if (d.cls) {
+    if (d.cls && ui.mode !== 'play') {
       var chosenText = d.cls.equipment.map(function (line, i) { var o = R.parseEquip(line); return o.length < 2 ? line : o[ch.eq[i] | 0] || ''; }).join(' ') + ' ' + (d.bg && d.bg.eq || '');
       var startPacks = Object.keys(D.packContents || {}).filter(function (n) { return new RegExp(n.replace(/['’]/g, ".").replace(/ Pack$/, '') + '.? pack', 'i').test(chosenText); });
       h += '<div class="panel"><h3>Starting equipment — ' + esc(d.cls.name) + '</h3>' + d.cls.equipment.map(function (line, i) {
@@ -661,12 +661,32 @@
       }).join('') : '') + '</div>';
     h += '<div class="panel"><h3>Other notes</h3><label class="field"><span>Anything else worth writing down about your gear</span><textarea id="gear" data-text="gear">' + esc(ch.gear) + '</textarea></label>' +
       '<p class="small muted">Magic items, adventuring gear, coins and carried weight are on the ' + btn('step', 'Items', { v: 'items' }, 'btn tiny') + ' step.</p></div>';
+    h += magicPanel();
     return h;
+  }
+  // Magic +1/+2/+3 on armor, shield, weapons and focus, and the infusions and invocations that enchant one of them.
+  function magicPanel() {
+    var mg = ch.magic || {}, keys = [];
+    if (ch.armor && !/^spell:/.test(ch.armor)) keys.push(['armor', 'Armor: ' + (/^custom:/.test(ch.armor) ? ((ch.customArmor || []).filter(function (a) { return 'custom:' + a.id === ch.armor; })[0] || {}).n || 'your armor' : ch.armor)]);
+    if (ch.shield) keys.push(['shield', 'Shield']);
+    (ch.weapons || []).forEach(function (n) { keys.push(['w:' + n, n]); });
+    (ch.customWeapons || []).forEach(function (w) { keys.push(['c:' + w.id, w.n || 'Your weapon']); });
+    keys.push(['focus', 'Spellcasting focus (spell attacks)']);
+    var label = {}; keys.forEach(function (k) { label[k[0]] = k[1]; });
+    var h = '<div class="panel"><h3>Magic bonuses</h3><p class="small muted">A +1, +2 or +3 item (a +1 longsword, +1 armor, a +1 shield, a wand of the war mage…). The bonus is added to attack and damage, AC or spell attacks. Bonuses on one item don’t add up: the best counts.</p><div class="magic-grid">' +
+      keys.map(function (k) { return '<label class="field"><span>' + esc(k[1]) + '</span><select data-magic="' + esc(k[0]) + '">' + [0, 1, 2, 3].map(function (v) { return '<option value="' + v + '"' + ((+mg[k[0]] || 0) === v ? ' selected' : '') + '>' + (v ? '+' + v : 'none') + '</option>'; }).join('') + '</select></label>'; }).join('') + '</div>';
+    if (d.gearBoosts.length) {
+      h += '<h4>From your infusions and invocations</h4>' + d.gearBoosts.map(function (b) {
+        return '<div class="boost-line"><div><b>' + esc(b.n) + '</b> <span class="tag">+' + b.bonus + '</span><div class="small muted">+' + b.bonus + ' to ' + esc(b.what) + '</div></div>' +
+          (b.cands.length ? '<select data-booston="' + esc(b.n) + '"><option value="">Not on an item</option>' + b.cands.map(function (c) { return '<option value="' + esc(c) + '"' + (b.target === c ? ' selected' : '') + '>' + esc(label[c] || c) + '</option>'; }).join('') + '</select>' : '<span class="small muted">Add ' + (b.kind === 'weapon' ? 'a weapon' : b.kind === 'shield' ? 'a shield' : 'armor or a shield') + ' first.</span>') + '</div>';
+      }).join('');
+    }
+    return h + '</div>';
   }
   function attacksHtml(edit) {
     if (!d.attacks.length) return edit ? '<p class="muted">No weapons added yet.</p>' : '';
     return '<div class="tablewrap"><table><tr><th>Weapon</th><th class="num">To hit</th><th>Damage</th><th>Properties</th>' + (edit ? '<th></th>' : '') + '</tr>' + d.attacks.map(function (a) {
-      return '<tr><td><b>' + esc(a.name) + '</b>' + (a.proficient ? '' : ' <span class="small muted">(not proficient)</span>') + '</td><td class="num">' + R.fmt(a.hit) + '</td><td>' + esc(a.damage) + '</td><td class="small">' + esc(a.props) + '</td>' +
+      return '<tr><td><b>' + (a.plus ? '+' + a.plus + ' ' : '') + esc(a.name) + '</b>' + (a.plus && a.plusFrom !== 'magic' ? ' <span class="small muted">(' + esc(a.plusFrom) + ')</span>' : '') + (a.proficient ? '' : ' <span class="small muted">(not proficient)</span>') + '</td><td class="num">' + R.fmt(a.hit) + '</td><td>' + esc(a.damage) + '</td><td class="small">' + esc(a.props) + '</td>' +
         (edit ? '<td class="row-actions">' + (a.custom ? btn('editCWeapon', 'Edit', { v: a.custom }, 'btn tiny') + btn('rmCWeapon', 'Remove', { v: a.custom }, 'btn tiny') : btn('rmWeapon', 'Remove', { v: a.name }, 'btn tiny')) + '</td>' : '') + '</tr>';
     }).join('') + '</table></div>';
   }
@@ -1050,7 +1070,7 @@
     if (window.pageYOffset !== st.y || window.pageXOffset !== st.x) window.scrollTo(st.x, st.y);
   }
   // A finished character opens on Play with only the play pages; the building steps come back with Edit or Level up.
-  var PLAY_STEPS = ['play', 'myspells', 'items', 'sheet', 'notes'];
+  var PLAY_STEPS = ['play', 'myspells', 'equipment', 'items', 'sheet', 'notes'];
   function complete(c, dd) { return !!(c.lineage && c.classes.length && c.background) && !Object.keys(dd.todo).some(function (k) { return dd.todo[k]; }); }
   function openMode() { ui.mode = complete(ch, R.derive(ch, store.filters)) ? 'play' : 'build'; ui.step = ui.mode === 'play' ? 'play' : (ui.step === 'play' ? 'lineage' : ui.step); }
   function visibleSteps() {
@@ -1572,6 +1592,8 @@
   document.addEventListener('change', function (e) {
     var t = e.target, a = function (n) { return t.getAttribute(n); };
     if (t.id === 'bookFile') return BOOKS.importFile(t);
+    if (t.getAttribute && t.getAttribute('data-magic') != null && ch) { ch.magic = ch.magic || {}; var mv = +t.value || 0; if (mv) ch.magic[t.getAttribute('data-magic')] = mv; else delete ch.magic[t.getAttribute('data-magic')]; render(); return; }
+    if (t.getAttribute && t.getAttribute('data-booston') != null && ch) { ch.boostOn = ch.boostOn || {}; ch.boostOn[t.getAttribute('data-booston')] = t.value; render(); return; }
     if (ui.section === 'books' || ui.section === 'mm-rules') { if (BOOKS.onChange(t)) { render(); return; } }
     if (/^pf2-/.test(ui.section)) { var pc = PFV.onChange(t); if (pc) { requestRender(); return; } }
     if (ui.section === 'mm-enc' || ui.section === 'mm-party') { var mec = MME.onChange(t); if (mec) { requestRender(); return; } }
