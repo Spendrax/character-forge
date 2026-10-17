@@ -571,6 +571,9 @@
         return '<span>' + (k === 'deathOk' ? 'Successes' : 'Failures') + ' <span class="pips">' + b + '</span></span>';
       }).join(' ') + '</div>' : '') +
       trackRow({ key: 'hd', name: 'Hit dice (' + d.hitDice + ')', max: d.level, left: d.level - hdUsed, used: hdUsed, rest: 'long', note: 'Spend them on a short rest to heal; a long rest gives back half.' }) + '</div>';
+    var stat = function (x) { return '<div class="stat"><b>' + x[1] + '</b><span>' + x[0] + '</span></div>'; };
+    h += '<div class="panel"><h3>Combat</h3><div class="slots combat-stats">' + [['Armor class', d.ac], ['Initiative', R.fmt(d.init)], ['Speed', d.speed + ' ft'], ['Passive Perception', d.passive], ['Proficiency', R.fmt(d.pb)]].concat(d.casters.map(function (S) { return [(d.casters.length > 1 ? S.name + ' s' : 'S') + 'pell DC / attack', S.dc + ' / ' + R.fmt(S.atk)]; })).map(stat).join('') + '</div>' +
+      '<h4>Saving throws</h4><div class="slots combat-stats">' + AB.map(function (a) { var s = d.saves[a]; return stat([D.abilityNames[a] + (s.prof ? ' ●' : ''), R.fmt(s.total)]); }).join('') + '</div></div>';
     if (d.attacks.length) h += '<div class="panel"><h3>Weapons</h3>' + attacksHtml(false) + '</div>';
     var quick = ch.items.filter(function (i) { return i.quick; });
     h += '<div class="panel"><h3>Quick access</h3>' + (quick.length ? quick.map(function (it) {
@@ -589,6 +592,7 @@
         return trackRow(x) + '<div class="row ctr-edit"><label>Name <input id="ctr-' + c.id + '-n" data-ctr="' + c.id + '" data-f="n" value="' + esc(c.n || '') + '"></label><label>Uses <input type="number" min="1" max="99" id="ctr-' + c.id + '-max" data-ctr="' + c.id + '" data-f="max" value="' + (+c.max || 1) + '"></label>' +
           '<label>Comes back on <select data-ctr="' + c.id + '" data-f="rest">' + [['short', 'Short or long rest'], ['long', 'Long rest'], ['', 'Never (by hand)']].map(function (o) { return '<option value="' + o[0] + '"' + ((c.rest || '') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label>' + btn('rmCounter', 'Remove', { v: c.id }, 'btn small danger') + '</div>';
       }).join('') + btn('addCounter', '+ Add a counter') + '</div>';
+    h += '<div class="panel"><h3>Skills</h3><ul class="lines play-skills">' + Object.keys(d.skills).map(function (k) { var s = d.skills[k]; return '<li><span class="dot' + (s.expertise ? ' e' : s.prof ? ' p' : '') + '"></span><span class="v">' + R.fmt(s.total) + '</span><span>' + k + ' <small class="muted">' + s.ability + '</small></span></li>'; }).join('') + '</ul></div>';
     return h;
   }
   function foldBtn(n, open) { return '<button type="button" class="fold" data-act="spellFold" data-v="' + esc(n) + '" aria-expanded="' + !!open + '" aria-label="' + (open ? 'Hide' : 'Show') + ' the description of ' + esc(n) + '">' + (open ? '▾' : '▸') + '</button>'; }
