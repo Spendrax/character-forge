@@ -191,8 +191,8 @@
       if (g) {
         var have = ch.items.filter(function (x) { return x.k === 'gear' && x.n === g[0]; })[0];
         if (have) have.qty += qty; else ch.items.push({ id: R.uid(), k: 'gear', n: g[0], cat: g[1], cost: g[2], qty: qty, w: g[3], note: '' });
-      } else if (mi) ch.items.push({ id: R.uid(), k: 'magic', n: mi[0], r: mi[1][0], type: mi[2], att: !!mi[3], attuned: !!e.isAttuned, slug: mi[4], qty: qty, w: 0, note: '' });
-      else ch.items.push({ id: R.uid(), k: 'custom', n: n, qty: qty, w: 0, att: !!(it.requiresAttunement), attuned: !!e.isAttuned, note: e.description || it.description || '' });
+      } else if (mi) ch.items.push({ id: R.uid(), k: 'magic', n: mi[0], r: mi[1][0], type: mi[2], att: !!mi[3], attuned: !!e.isAttuned, slug: mi[4], qty: qty, w: 0, note: '', desc: e.desc || '' });
+      else ch.items.push({ id: R.uid(), k: 'custom', n: n, qty: qty, w: 0, att: !!(it.requiresAttunement), attuned: !!e.isAttuned, note: e.description || it.description || '', desc: e.desc || '' });
     });
     ch.money = { pp: +c.platinum || 0, gp: +c.gold || 0, ep: +c.electrum || 0, sp: +c.silver || 0, cp: +c.copper || 0 };
 

@@ -773,3 +773,6 @@ html.dice3d-lock, html.dice3d-lock body { overflow: hidden; }
 .combat-stats .stat { padding: .3rem .7rem; }
 .play-skills { columns: 2 12rem; column-gap: 1.5rem; }
 .play-skills li { break-inside: avoid; }
+.item-desc { margin: .4rem 0 .2rem; padding: .5rem .7rem; border-left: 3px solid var(--accent); background: var(--panel2, rgba(127,127,127,.06)); border-radius: 4px; font-size: .9rem; max-width: 46rem; }
+.item-desc p { margin: .3rem 0; }
+.item-desc textarea { width: 100%; font: inherit; }

@@ -577,7 +577,7 @@
     if (d.attacks.length) h += '<div class="panel"><h3>Weapons</h3>' + attacksHtml(false) + '</div>';
     var quick = ch.items.filter(function (i) { return i.quick; });
     h += '<div class="panel"><h3>Quick access</h3>' + (quick.length ? quick.map(function (it) {
-      return '<div class="trk-row"><div class="trk-name"><b>' + itemName(it) + '</b>' + (it.qty > 1 ? ' ×' + it.qty : '') + ' <span class="small muted">' + esc(itemMeta(it)) + (it.att ? (it.attuned ? ' · attuned' : ' · not attuned') : '') + '</span>' + (it.note ? '<div class="small">' + esc(it.note) + '</div>' : '') + '</div>' + btn('quickItem', '✕', { v: it.id }, 'btn tiny') + '</div>';
+      var op = (ui.itemOpen || {})[it.id]; return '<div class="trk-row"><div class="trk-name"><button type="button" class="fold" data-act="itemOpen" data-v="' + it.id + '" aria-expanded="' + !!op + '">' + (op ? '▾' : '▸') + '</button> <b>' + esc(it.n) + '</b>' + (it.qty > 1 ? ' ×' + it.qty : '') + ' <span class="small muted">' + esc(itemMeta(it)) + (it.att ? (it.attuned ? ' · attuned' : ' · not attuned') : '') + '</span>' + (it.note ? '<div class="small">' + esc(it.note) + '</div>' : '') + (op ? itemDescHtml(it) : '') + '</div>' + btn('quickItem', '✕', { v: it.id }, 'btn tiny') + '</div>';
     }).join('') : '<p class="small muted">Tap ☆ Quick next to an item on the ' + btn('step', 'Items', { v: 'items' }, 'linkbtn') + ' page to keep it here during combat.</p>') + '</div>';
     var slots = d.trackers.filter(function (x) { return x.group === 'slots'; });
     if (slots.length) h += '<div class="panel"><h3>Spell slots</h3>' + slots.map(trackRow).join('') + '</div>';
@@ -705,6 +705,34 @@
     if (it.k === 'magic') return (it.type || 'Magic item') + (it.r ? ', ' + it.r.toLowerCase() : '') + (it.att ? ' (requires attunement)' : '');
     return it.k === 'gear' ? (it.cat || 'Gear') + (it.cost ? ' · ' + it.cost : '') : 'Custom item';
   }
+  // ---------- magic item text from the free rules (SRD 5.1, in data/srd-book.js, loaded when first needed) ----------
+  var srdLoading = false, srdItems = null;
+  var ITEM_ALIAS = { 'apparatus of kwalish': 'apparatus of the crab', 'iron bands of bilarro': 'iron bands of binding', 'quiver of ehlonna': 'efficient quiver', 'daerns instant fortress': 'instant fortress',
+    'hewards handy haversack': 'handy haversack', 'keoghtoms ointment': 'restorative ointment', 'nolzurs marvelous pigments': 'marvelous pigments' };
+  function inorm(n) { return String(n || '').toLowerCase().replace(/[’']/g, '').replace(/\bor\b/g, ' ').replace(/[^a-z0-9+]+/g, ' ').trim(); }
+  function srdItemText(name) {
+    if (!D.book) { if (!srdLoading) { srdLoading = true; var sc = document.createElement('script'); sc.src = 'data/srd-book.js'; sc.onload = function () { render(); }; sc.onerror = function () { srdLoading = false; }; document.head.appendChild(sc); } return null; }
+    if (!srdItems) {
+      srdItems = {};
+      var ch2 = D.book.chapters.filter(function (c) { return /^Magic items/i.test(c.t); })[0];
+      (ch2 ? ch2.parts : []).filter(function (p) { return /^Items /.test(p.t); }).forEach(function (p) {
+        p.md.split(/\n(?=### )/).forEach(function (blk) { var m = blk.match(/^### (.+)\n([\s\S]*)$/); if (m) srdItems[inorm(m[1])] = m[2].trim(); });
+      });
+    }
+    var k = inorm(name);
+    return srdItems[k] || srdItems[ITEM_ALIAS[k] || ''] || srdItems[k.replace(/^\w+s /, '')] || '';
+  }
+  // the description panel under an item: the free rules' text, else the text that came with it, else your own
+  function itemDescHtml(it, readOnly) {
+    var srd = it.k === 'magic' ? srdItemText(it.n) : '';
+    if (srd === null) return '<div class="item-desc small muted">Loading the description…</div>';
+    var link = it.k === 'magic' && it.slug ? ' <a href="' + esc(D.magicItemUrl(it.slug)) + '" target="_blank" rel="noopener">Wiki ↗</a>' : '';
+    if (srd) return '<div class="item-desc">' + BOOKS_MD(srd) + '<p class="small muted">From the free rules (SRD 5.1, CC-BY-4.0).' + link + '</p></div>';
+    if (readOnly) return '<div class="item-desc small muted">Not in the free rules, so its text can’t be built in.' + link + ' Once it’s in your inventory, you can paste its description into it.</div>';
+    return '<div class="item-desc">' + (it.desc ? BOOKS_MD(it.desc) : '<p class="small muted">' + (it.k === 'magic' ? 'This item isn’t in the free rules, so its text can’t be built in.' + link + ' ' : '') + 'Paste or write its description here to keep it with the character:</p>') +
+      '<textarea id="desc-' + it.id + '" data-itemdesc="' + it.id + '" rows="' + (it.desc ? 3 : 4) + '" placeholder="Description" aria-label="Description of ' + esc(it.n) + '">' + esc(it.desc || '') + '</textarea></div>';
+  }
+  function BOOKS_MD(t) { return window.BooksUI && BooksUI.md ? BooksUI.md(t) : '<p>' + esc(t).replace(/\n/g, '<br>') + '</p>'; }
   function itemName(it) { return it.k === 'magic' && it.slug ? '<a href="' + esc(D.magicItemUrl(it.slug)) + '" target="_blank" rel="noopener">' + esc(it.n) + '</a>' : esc(it.n); }
   function stepItems() {
     var inv = d.inv, over = inv.weight > inv.capacity, m = ch.money;
@@ -719,7 +747,8 @@
     h += '<div class="panel"><h3>Inventory</h3><input type="text" id="quick-item" class="quick-item" placeholder="Type an item and press Enter (e.g. 3 torches)" aria-label="Add an item">';
     if (!ch.items.length) h += '<p class="muted">Nothing yet. Add items from the lists below.</p>';
     else h += '<div class="tablewrap"><table><tr><th>Item</th><th>Qty</th><th>Lb each</th><th>Attuned</th><th></th></tr>' + ch.items.map(function (it) {
-      return '<tr><td><b>' + itemName(it) + '</b><div class="small muted">' + esc(itemMeta(it)) + '</div>' +
+      var open = (ui.itemOpen || {})[it.id];
+      return '<tr><td><button type="button" class="fold" data-act="itemOpen" data-v="' + it.id + '" aria-expanded="' + !!open + '" aria-label="' + (open ? 'Hide' : 'Show') + ' the description of ' + esc(it.n) + '">' + (open ? '▾' : '▸') + '</button> <b>' + esc(it.n) + '</b><div class="small muted">' + esc(itemMeta(it)) + '</div>' + (open ? itemDescHtml(it) : '') +
         '<input type="text" class="note" id="note-' + it.id + '" data-itemtext="' + it.id + '" value="' + esc(it.note || '') + '" placeholder="Note (charges, where it is kept…)" aria-label="Note for ' + esc(it.n) + '"></td>' +
         '<td><input type="number" min="0" id="qty-' + it.id + '" data-item="' + it.id + '" data-f="qty" value="' + (+it.qty || 0) + '" aria-label="Quantity"></td>' +
         '<td><input type="number" min="0" step="0.25" id="w-' + it.id + '" data-item="' + it.id + '" data-f="w" value="' + (+it.w || 0) + '" aria-label="Weight each"></td>' +
@@ -738,10 +767,12 @@
       var list = D.magicItems.filter(function (x) { return match(q, x[0]) && (!ui.rarity || x[1].indexOf(ui.rarity) >= 0) && (!ui.itemType || x[2] === ui.itemType); });
       h += '<div class="toolbar">' + search('magic', 'Search magic items…') + sel('rarity', 'Any rarity', D.rarities) + sel('itemType', 'Any type', types.sort()) + '<span class="muted small">' + list.length + ' of ' + D.magicItems.length + '</span></div><div class="optlist">' +
         list.slice(0, 80).map(function (x) {
-          return '<div class="spell"><div><b><a href="' + esc(D.magicItemUrl(x[4])) + '" target="_blank" rel="noopener">' + esc(x[0]) + '</a></b> <span class="small muted">' + esc(x[2]) + (x[3] ? ' · attunement' : '') + '</span></div>' +
+          var op = ui.magicOpen === x[0];
+          return '<div class="spell"><div><button type="button" class="fold" data-act="magicOpen" data-v="' + esc(x[0]) + '" aria-expanded="' + op + '">' + (op ? '▾' : '▸') + '</button> <b>' + esc(x[0]) + '</b> <span class="small muted">' + esc(x[2]) + (x[3] ? ' · attunement' : '') + '</span>' +
+            (op ? itemDescHtml({ k: 'magic', n: x[0], slug: x[4], id: 'pick' }, true) : '') + '</div>' +
             '<div class="pills" style="flex:none">' + x[1].map(function (r) { return btn('addMagic', '+ ' + r, { v: x[0], r: r }, 'btn tiny'); }).join('') + '</div></div>';
         }).join('') + '</div>' + (list.length > 80 ? '<p class="small muted">Showing the first 80. Search or filter to narrow the list.</p>' : '') + (list.length ? '' : '<p class="muted">No items match.</p>') +
-        '<p class="small muted">Item names link to the full description on the wiki. Set the weight yourself after adding; the wiki does not list one for most magic items.</p>';
+        '<p class="small muted">Tap ▸ to read an item. Items from the free rules (SRD) show their full text; for the others there is a link to the wiki, and you can paste the text into the item once it is in your inventory. Set the weight yourself after adding.</p>';
     } else if (ui.itemTab === 'gear') {
       var gq = ui.q.gear || '', cats = [];
       D.gear.forEach(function (x) { if (cats.indexOf(x[1]) < 0) cats.push(x[1]); });
@@ -1337,6 +1368,8 @@
     closeInstallHelp: function () { ui.installHelp = false; },
     import5eParts: function (v, el) { var I = ui.import5e; if (!I) return false; var id = +el.getAttribute('data-e'), e = I.entries.filter(function (x) { return x.id === id; })[0];
       I.parts[id] = el.getAttribute('data-all') ? PART_ORDER.filter(function (k) { return e.source === 'companion' || PARTS[k].spellbook; }) : []; },
+    itemOpen: function (v) { ui.itemOpen = ui.itemOpen || {}; ui.itemOpen[v] = !ui.itemOpen[v]; },
+    magicOpen: function (v) { ui.magicOpen = ui.magicOpen === v ? '' : v; },
     import5eClose: function () { ui.import5e = null; ui.import5eDone = null; },
     ddbOpen: function () { ui.ddb = ui.ddb || { v: '', msg: '' }; ui.importError = false; },
     ddbClose: function () { ui.ddb = null; },
@@ -1621,6 +1654,7 @@
     else if (a('data-rule')) { var ru = houseRules().filter(function (r) { return r.id === a('data-rule'); })[0]; if (ru) { ru[a('data-f')] = t.value; save(); } }
     else if (a('data-jnote')) { var jn = (ch.journal || []).filter(function (x) { return x.id === a('data-jnote'); })[0]; if (jn) { jn[a('data-f')] = t.value; save(); } }
     else if (a('data-espell')) { var esx = (ch.extraSpells || []).filter(function (x) { return x.id === a('data-espell'); })[0]; if (esx) { esx[a('data-f')] = t.value; save(); } }
+    else if (a('data-itemdesc')) { var idc = ch.items.filter(function (i) { return i.id === a('data-itemdesc'); })[0]; if (idc) { idc.desc = t.value; save(); } }
     else if (a('data-itemtext')) { var itx = ch.items.filter(function (i) { return i.id === a('data-itemtext'); })[0]; if (itx) { itx.note = t.value; save(); } }
     else if ((a('data-carmor') || a('data-cweapon')) && t.tagName === 'INPUT' && t.type !== 'checkbox') { applyCustomField(t); save(); }
     else if (a('data-text')) { var path = a('data-text').split('.'); if (path.length > 1) ch[path[0]][path[1]] = t.value; else ch[path[0]] = t.value; save(); }
@@ -1646,7 +1680,7 @@
     if (a('data-check') === 'pictureWhole') { ch.pictureFit = t.checked ? 'contain' : ''; return requestRender(); }
     // fields edited one after another: redraw only once the focus has left that group, so nothing typed is lost
     if (a('data-ctr') && t.tagName === 'INPUT') return setTimeout(function () { var f = document.activeElement; if (!f || !f.getAttribute || !f.getAttribute('data-ctr')) requestRender(); }, 0);
-    if (a('data-text') || a('data-itemtext') || a('data-espell') || a('data-trk')) return requestRender();
+    if (a('data-text') || a('data-itemtext') || a('data-itemdesc') || a('data-espell') || a('data-trk')) return requestRender();
     if (a('data-ctr')) { var cs = (ch.counters || []).filter(function (c) { return c.id === a('data-ctr'); })[0]; if (cs) cs.rest = t.value; return requestRender(); }
     if (a('data-ui')) { if (a('data-ui') === 'current') { store.current = t.value; ch = byId(t.value); openMode(); ui.confirmDelete = false; ui.partImport = null; ui.partImportDone = null; } else ui[a('data-ui')] = t.value; }
     else if (a('data-filter')) store.filters[a('data-filter')] = t.checked;

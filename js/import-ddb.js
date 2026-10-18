@@ -9,6 +9,11 @@
   var SKILLS = ['acrobatics', 'animal-handling', 'arcana', 'athletics', 'deception', 'history', 'insight', 'intimidation', 'investigation', 'medicine', 'nature', 'perception', 'performance', 'persuasion', 'religion', 'sleight-of-hand', 'stealth', 'survival'];
   var NOT_TOOL = /saving-throws|^(simple|martial)-weapons|armor$|^shields$|^self$|^(dagger|dart|sling|quarterstaff|club|javelin|mace|sickle|spear|handaxe|light-hammer|greatclub|crossbow-light|crossbow-hand|crossbow-heavy|shortbow|longbow|longsword|shortsword|rapier|scimitar|battleaxe|warhammer|greataxe|greatsword|glaive|halberd|lance|maul|morningstar|pike|trident|war-pick|whip|flail|blowgun|net)$/;
 
+  // D&D Beyond item text is HTML: keep paragraphs, bold and italics as Markdown, drop the rest
+  function plainText(h) {
+    return String(h || '').replace(/<\/?(strong|b)>/gi, '**').replace(/<\/?(em|i)>/gi, '*').replace(/<li[^>]*>/gi, '\n- ').replace(/<\/(p|div|h\d|tr)>|<br\s*\/?>/gi, '\n\n').replace(/<[^>]+>/g, '')
+      .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;|&rsquo;/g, '’').replace(/\*\*\s*\*\*/g, '').replace(/\n{3,}/g, '\n\n').trim();
+  }
   function unwrap(o) { return o && o.data && o.data.classes ? o.data : o; }
   function isDDB(o) { o = unwrap(o); return !!o && typeof o === 'object' && Array.isArray(o.classes) && Array.isArray(o.stats) && !!o.race && !!o.modifiers; }
   function detect(o) { return isDDB(o) || (o && o.success === false && o.data == null && /character/i.test(o.message || '')); }
@@ -50,15 +55,15 @@
       var magic = !!df.magic, shield = df.armorTypeId === 4 || df.type === 'Shield' || df.baseArmorName === 'Shield';
       if (df.filterType === 'Armor' && it.equipped) {
         c.armors.push({ name: shield ? 'Shield' : (df.baseArmorName || n), category: shield ? 'Shield' : ['', 'Light', 'Medium', 'Heavy'][df.armorTypeId] || '', armor: shield ? 2 : +df.armorClass || 10, equipped: true, weight: df.weight });
-        if (magic) c.equipment.push({ name: n, amount: 1, isAttuned: !!it.isAttuned, description: '' });
+        if (magic) c.equipment.push({ name: n, amount: 1, isAttuned: !!it.isAttuned, description: '', desc: plainText(df.description) });
         return;
       }
       if (df.filterType === 'Weapon' && it.equipped) {
         c.weapons.push({ name: magic && df.type ? df.type : n, isProficient: true });
-        if (magic) c.equipment.push({ name: n, amount: 1, isAttuned: !!it.isAttuned, description: '' });
+        if (magic) c.equipment.push({ name: n, amount: 1, isAttuned: !!it.isAttuned, description: '', desc: plainText(df.description) });
         return;
       }
-      c.equipment.push({ name: n, amount: qty, isAttuned: !!it.isAttuned, item: { requiresAttunement: !!df.canAttune }, description: '' });
+      c.equipment.push({ name: n, amount: qty, isAttuned: !!it.isAttuned, item: { requiresAttunement: !!df.canAttune }, description: '', desc: magic || df.filterType !== 'Other Gear' ? plainText(df.description) : '' });
     });
     var cur = d.currencies || {};
     c.platinum = +cur.pp || 0; c.gold = +cur.gp || 0; c.electrum = +cur.ep || 0; c.silver = +cur.sp || 0; c.copper = +cur.cp || 0;
@@ -87,7 +92,7 @@
       classes: classes, loose: loose, raw: raw, bgName: (bg.definition || {}).name || (bg.customBackground || {}).name || '', avatar: (d.decorations || {}).avatarUrl || race.avatarUrl || '' }];
   }
 
-  root.ImportDDB = { detect: detect, isDDB: isDDB, read: read, idFrom: idFrom, scores: scores,
+  root.ImportDDB = { detect: detect, isDDB: isDDB, read: read, idFrom: idFrom, scores: scores, plainText: plainText,
     url: function (id) { return 'https://character-service.dndbeyond.com/character/v5/character/' + id; } };
   if (typeof module !== 'undefined') module.exports = root.ImportDDB;
 })(typeof window !== 'undefined' ? window : globalThis);

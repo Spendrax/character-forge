@@ -162,6 +162,7 @@ assert(dd2.prof.languages.includes('Elvish') && dd2.prof.languages.includes('Gia
 assert.equal(dc.armor, 'Chain Shirt'); assert(dc.shield); assert.equal(dc.money.gp, 1208);
 assert(dc.items.some(i => i.n === 'Robe of Stars') && dc.items.some(i => /Elven Chain/.test(i.n)));
 assert(dd2.casters[0].cantrips.includes('Fire Bolt') && dd2.casters[0].known.includes('Fireball'));
+assert(/your Wisdom|Perception|surprised/i.test((dc.items.find(i => /Ioun Stone of Awareness/.test(i.n)) || {}).desc || '') && !/<[a-z]/.test(dc.items.map(i => i.desc || '').join(''))); // item text from D&D Beyond, as plain text
 assert(/Imported from D&D Beyond/.test(dc.notes.other) && /cult of giants/.test(dc.notes.backstory));
 
 // limits switched off, and extras
