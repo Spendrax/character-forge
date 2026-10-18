@@ -177,7 +177,7 @@
 
     function home() {
       return '<main class="home"><h1>Mutants &amp; Masterminds 3e</h1><p class="muted">Your superhero table companion. Tap the d20 to roll.</p>' +
-        root.homeHub([['mm-heroes', 'bolt', 'Heroes'], ['mm-party', 'campfire', 'Party'], ['mm-enc', 'swords', 'Encounters'], ['mm-rules', 'book', 'Rules'], ['audio', 'lute', 'Audio'], ['rules', 'scroll', 'House rules']]) + '</main>';
+        root.homeHub([['mm-heroes', 'bolt', 'Heroes'], ['mm-party', 'campfire', 'Party'], ['mm-enc', 'swords', 'Encounters'], ['mm-foes', 'mask', 'Villains'], ['mm-loot', 'coins', 'Rewards'], ['mm-rules', 'book', 'Rules'], ['audio', 'lute', 'Audio'], ['rules', 'scroll', 'House rules']]) + '</main>';
     }
 
     function heroes() {

@@ -166,7 +166,25 @@
 
     // ---------- showing a villain ----------
     var fmt = function (n) { return (n >= 0 ? '+' : '') + n; };
+    function preFoe(id) { return (root.MMFoes || []).filter(function (f) { return f.id === id; })[0]; }
+    function defOf(v) { return typeof v === 'number' ? v : parseInt(v, 10) || 0; }
+    var ABN = ['STR', 'STA', 'AGL', 'DEX', 'FGT', 'INT', 'AWE', 'PRE'], DEFN = ['Dodge', 'Parry', 'Fortitude', 'Toughness', 'Will'];
+    // a ready-made foe's stat block; h is the encounter entry (or null on the Villains page)
+    function preBlock(f, h, open, tools) {
+      var key = h ? h.id : 'f:' + f.id;
+      var head = '<button type="button" class="mm-phead" data-act="mmeOpen" data-v="' + esc(key) + '"><b>' + esc(h ? h.name : f.n) + '</b> <span class="small muted">' + esc(f.kind) + ' · PL ' + f.pl + (f.minion ? ' · minion' : '') + '</span><span class="spacer"></span><span aria-hidden="true">' + (open ? '▾' : '▸') + '</span></button>';
+      var att = function (a) { return '<b>' + esc(a[0]) + '</b> ' + (a[1] == null ? 'no roll' : fmt(a[1])) + ', rank ' + a[2] + ' (DC ' + (15 + a[2]) + ')' + (a[3] ? ' <span class="muted">' + esc(a[3]) + '</span>' : ''); };
+      var line = '<div class="small mme-quick">' + f.att.map(att).join(' · ') + '<br>' + DEFN.map(function (n, i) { return n + ' ' + f.def[i]; }).join(' · ') + ' · Init ' + fmt(f.init) + '</div>';
+      if (!open) return '<div class="panel mm-power mme-foe">' + head + line + '</div>';
+      return '<div class="panel mm-power open mme-foe">' + head + '<p class="small muted">' + esc(f.about) + '</p><p class="small">' + ABN.map(function (n, i) { return n + ' ' + (f.ab[i] == null ? '—' : f.ab[i]); }).join(' · ') + '</p>' +
+        '<h4>Offense</h4><ul class="small mme-list">' + f.att.map(function (a) { return '<li>' + att(a) + '</li>'; }).join('') + '</ul>' +
+        '<h4>Defense</h4><p class="small">' + DEFN.map(function (n, i) { return n + ' ' + f.def[i]; }).join(' · ') + ' · Initiative ' + fmt(f.init) + '</p>' +
+        (f.pow ? '<h4>Powers</h4><ul class="small mme-list">' + f.pow.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '') +
+        (f.adv ? '<p class="small"><b>Advantages:</b> ' + esc(f.adv) + '</p>' : '') + (f.sk ? '<p class="small"><b>Skills:</b> ' + esc(f.sk) + '</p>' : '') + (f.eq ? '<p class="small"><b>Equipment:</b> ' + esc(f.eq) + '</p>' : '') +
+        '<div class="toolbar">' + tools + '</div></div>';
+    }
     function statBlock(h) {
+      if (h.pre) { var f = preFoe(h.pre); return f ? preBlock(f, h, U.open[h.id], btn('mmeRm', 'Remove', { v: h.id }, 'btn small')) : ''; }
       var d = MR.derive(h), open = U.open[h.id];
       var att = d.attacks.filter(function (x) { return x.n !== 'Unarmed' || h.attackName || h.ab.STR >= Math.round(h.pl / 2); }).map(function (x) { return x.n === 'Unarmed' && h.attackName ? Object.assign({}, x, { n: h.attackName }) : x; });
       var head = '<button type="button" class="mm-phead" data-act="mmeOpen" data-v="' + h.id + '"><b>' + esc(h.name) + '</b> <span class="small muted">' + esc(h.role) + ' · PL ' + h.pl + (h.minion ? ' · minion' : '') + '</span><span class="spacer"></span><span aria-hidden="true">' + (open ? '▾' : '▸') + '</span></button>';
@@ -223,7 +241,7 @@
     var DMG = ['', 'Bruised', 'Dazed', 'Staggered', 'Incapacitated'];
     function startRun() {
       var e = E(), list = [];
-      e.foes.forEach(function (h) { var d = MR.derive(h); list.push({ k: h.id, n: h.name, foe: true, minion: h.minion, init: 1 + R(20) + d.init, mod: d.init, tough: d.def.tough, bruise: 0, cond: '', dodge: d.def.dodge, parry: d.def.parry }); });
+      e.foes.forEach(function (h) { if (h.pre) { var f = preFoe(h.pre); if (f) list.push({ k: h.id, n: h.name, foe: true, minion: h.minion, init: 1 + R(20) + f.init, mod: f.init, tough: defOf(f.def[3]), bruise: 0, cond: '', dodge: defOf(f.def[0]), parry: defOf(f.def[1]) }); return; } var d = MR.derive(h); list.push({ k: h.id, n: h.name, foe: true, minion: h.minion, init: 1 + R(20) + d.init, mod: d.init, tough: d.def.tough, bruise: 0, cond: '', dodge: d.def.dodge, parry: d.def.parry }); });
       var t = teamById(e.team); if (t) t.m.forEach(function (m) { list.push({ k: m.id, n: m.n || 'Hero', team: t.id, init: 1 + R(20), mod: 0, tough: +m.tough || 0, bruise: +m.bruise || 0, cond: m.cond || '', dodge: +m.dodge || 0, parry: +m.parry || 0 }); });
       (store.mm && store.mm.heroes || []).filter(function (h) { return (U.fighting || {})[h.id]; }).forEach(function (h) { var d = MR.derive(h); list.push({ k: h.id, n: h.name || 'Hero', init: 1 + R(20) + d.init, mod: d.init, tough: d.def.tough, bruise: 0, cond: '', dodge: d.def.dodge, parry: d.def.parry }); });
       list.sort(function (x, y) { return y.init - x.init || y.mod - x.mod; });
@@ -273,6 +291,43 @@
           '<div class="panel"><h4 style="margin-top:0">Who fights?</h4>' + (teamById(e.team) ? '<p class="small">' + esc(teamById(e.team).name || 'The party') + ': ' + esc(teamById(e.team).m.map(function (m) { return m.n || 'Hero'; }).join(', ')) + '</p>' : '') + (heroes.length ? '<div class="pills">' + heroes.map(function (h) { return btn('mmeFight', esc(h.name), { v: h.id }, 'pill' + ((U.fighting || {})[h.id] ? ' on' : '')); }).join('') + '</div>' : '<p class="small muted">Your heroes from the Heroes page can join the initiative list.</p>') +
           '<div class="toolbar">' + btn('mmeRun', (root.Icon ? root.Icon('swords') : '') + ' Run the fight', {}, 'btn primary') + '</div></div>' : '') + '</main>';
     }
+    // ---------- Villains: ready-made foes from the rules ----------
+    function foesPage() {
+      var F = U.ff = U.ff || { q: '', lo: '', hi: '', kind: '' }, q = F.q.toLowerCase(), all = root.MMFoes || [];
+      var list = all.filter(function (f) { return (!q || (f.n + ' ' + f.kind).toLowerCase().indexOf(q) >= 0) && (F.lo === '' || f.pl >= +F.lo) && (F.hi === '' || f.pl <= +F.hi) && (!F.kind || f.kind === F.kind); });
+      var kinds = all.map(function (f) { return f.kind; }).filter(function (k, i, a) { return a.indexOf(k) === i; }).sort();
+      var pls = []; for (var i = 1; i <= 12; i++) pls.push(i);
+      var sel = function (k, label, opts) { return '<label class="mon-f">' + label + ' <select data-mmff="' + k + '"><option value="">Any</option>' + opts.map(function (o) { return '<option' + (String(F[k]) === String(o) ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('') + '</select></label>'; };
+      var n = E().foes.length;
+      return '<main class="mon-main mme"><h2>Villains</h2><p class="muted">Ready-made foes from the M&amp;M rules: thugs, cops, robots and named villains. Add them to an encounter, or use them next to the ones the generator makes.</p>' +
+        '<div class="panel"><div class="mon-tools"><input type="search" id="mmff-q" data-mmff="q" placeholder="Search villains…" value="' + esc(F.q) + '">' + sel('lo', 'PL from', pls) + sel('hi', 'to', pls) + sel('kind', 'Kind', kinds) + '</div>' +
+        '<div class="small muted mon-count">' + list.length + ' foes</div>' + (U.added ? '<p class="small rest-msg">' + esc(U.added) + ' added: ' + n + ' in the encounter. <button type="button" class="linkbtn" data-act="section" data-v="mm-enc">Go to Encounters</button></p>' : '') + '</div>' +
+        list.map(function (f) { return preBlock(f, null, U.open['f:' + f.id], btn('mmfAdd', '+ Add to encounter', { v: f.id }, 'btn small primary')); }).join('') +
+        '<p class="small muted">Stat blocks from the Mutants &amp; Masterminds 3e SRD (Open Game Content, d20herosrd.com), shortened. Damage rank: the target makes a Toughness check against DC 15 + rank.</p></main>';
+    }
+
+    // ---------- Rewards: what the heroes find ----------
+    function lootState() { return store.mmLoot = store.mmLoot || { pl: E().pl || 10, theme: '', last: null }; }
+    function rollLoot() {
+      var L = lootState(), T = root.MMLoot, th = L.theme || pick(T.themes)[0], pl = L.pl;
+      var fill = function (t) { return t.replace(/\{r\}/g, pl).replace(/\{r-2\}/g, Math.max(1, pl - 2)).replace(/\{h\}/g, Math.max(1, Math.ceil(pl / 2))); };
+      var devs = T.devices[th].slice().sort(function () { return Math.random() - 0.5; }).slice(0, 2).map(function (d) { return [d[0], fill(d[1]), d[2]]; });
+      L.last = { theme: th, pl: pl, items: devs, clue: pick(T.clues), cash: Math.random() < 0.5 };
+    }
+    function lootPage() {
+      var L = lootState(), T = root.MMLoot, t = L.last;
+      var h = '<main class="mon-main tre-main mme"><h2>Rewards</h2><div class="panel"><p class="small muted">Heroes don’t loot bodies, but beaten villains leave things behind: gadgets, evidence, leads. Roll something to find after a fight.</p>' +
+        '<div class="row"><div class="field"><span>Power level</span><span class="mm-step">' + btn('mmlSet', '−', { d: -1 }, 'mm-b') + '<b>' + L.pl + '</b>' + btn('mmlSet', '+', { d: 1 }, 'mm-b') + '</span></div>' +
+        '<label class="field"><span>Villain’s style</span><select data-mmltheme="1"><option value="">Any</option>' + T.themes.map(function (x) { return '<option value="' + x[0] + '"' + (L.theme === x[0] ? ' selected' : '') + '>' + x[1] + '</option>'; }).join('') + '</select></label></div>' +
+        '<div class="toolbar">' + btn('mmlRoll', (root.Icon ? root.Icon('d20') : '') + ' What did they leave?', {}, 'btn primary') + '</div></div>';
+      if (t) h += '<div class="panel tre-result"><h3>Found <small class="muted">' + esc((T.themes.filter(function (x) { return x[0] === t.theme; })[0] || ['', ''])[1]) + ' · PL ' + t.pl + '</small></h3><ul class="tre-list">' +
+        t.items.map(function (d) { return '<li><b>' + esc(d[0]) + '</b> — ' + esc(d[2]) + '<div class="small">' + esc(d[1]) + '</div></li>'; }).join('') +
+        '<li><b>A lead</b> — ' + esc(t.clue) + '</li>' + (t.cash ? '<li><b>Evidence and stolen goods</b> — enough to put the minions away and return what was taken; the grateful owners may become Contacts.</li>' : '') + '</ul></div>';
+      return h + '<div class="panel"><h3>Power points and hero points</h3><ul class="small">' +
+        '<li>Give each hero <b>1 power point</b> per adventure (2 for a big finale); they spend them like the ones they started with.</li>' +
+        '<li>Hero points go back to 1 at the start of each adventure; give one more for each complication that comes up in play.</li>' +
+        '<li>A hero who wants to keep a found device for good pays for it: as Equipment, or as a power with Removable (−1 point per 5) or Easily Removable (−2 per 5). Otherwise it’s gone by the next adventure: broken, confiscated, or stolen back.</li></ul></div></main>';
+    }
     function foe(id) { return E().foes.filter(function (x) { return x.id === id; })[0]; }
     function cur(k) { var r = E().run; return r && r.list.filter(function (x) { return x.k === k; })[0]; }
     var actions = {
@@ -291,6 +346,9 @@
       mmeRun: function () { startRun(); root.scrollTo(0, 0); },
       mmeNext: function () { var r = E().run; for (var i = 0; i < r.list.length; i++) { r.turn++; if (r.turn >= r.list.length) { r.turn = 0; r.round++; } if (r.list[r.turn].cond !== 'Incapacitated') break; } r.log = ''; },
       mmeStop: function () { E().run = null; },
+      mmfAdd: function (v) { var f = preFoe(v), e = E(); if (!f) return; var same = e.foes.filter(function (x) { return x.pre === v; }); if (same.length === 1 && same[0].name === f.n) same[0].name = f.n + ' 1'; e.foes.push({ id: uid(), pre: v, name: f.n + (same.length ? ' ' + (same.length + 1) : ''), minion: !!f.minion, pl: f.pl }); U.added = f.n; },
+      mmlSet: function (_, el) { var L = lootState(); L.pl = clamp(L.pl + +el.getAttribute('data-d'), 1, 20); },
+      mmlRoll: function () { rollLoot(); },
       mmeHit: function (v) { var c = cur(v), box = document.getElementById('mmr-' + v), rank = Math.round(+(box && box.value)); if (!c) return; if (!rank) { E().run.log = 'Type the damage rank first.'; return; } E().run.log = hit(c, rank); writeBack(c); },
       mmeHeal: function (v) { var c = cur(v); if (!c) return; if (c.cond) c.cond = DMG[DMG.indexOf(c.cond) - 1] === 'Bruised' ? '' : DMG[DMG.indexOf(c.cond) - 1]; else if (c.bruise) c.bruise--; E().run.log = c.n + ' recovers a step.'; writeBack(c); },
       mmtNew: function () { var t = { id: uid(), name: '', m: [newMember(E().pl)] }; teams().push(t); U.team = t.id; U.delTeam = false; },
@@ -305,10 +363,13 @@
     };
     function tm(id) { var t = curTeam(); return t && t.m.filter(function (x) { return x.id === id; })[0]; }
     function onInput(t) {
+      if (t.getAttribute('data-mmff') != null) { U.ff[t.getAttribute('data-mmff')] = t.value; U.added = ''; return 'render'; }
       if (t.getAttribute('data-mmtname')) { curTeam().name = t.value; return 'save'; }
       if (t.getAttribute('data-mmt')) { var m = tm(t.getAttribute('data-mmt')), k = t.getAttribute('data-f'); if (m) m[k] = k === 'n' ? t.value : clamp(Math.round(+t.value) || 0, k === 'pl' ? 1 : 0, 99); return 'save'; }
       if (t.getAttribute('data-mmeinit')) { var c = cur(t.getAttribute('data-mmeinit')); if (c) c.init = +t.value || 0; return 'save'; } return null; }
     function onChange(t) {
+      if (t.getAttribute('data-mmltheme')) { lootState().theme = t.value; return 'render'; }
+      if (t.getAttribute('data-mmff') != null) return 'render';
       if (t.getAttribute('data-mmerole')) { E().role = t.value; return 'render'; }
       if (t.getAttribute('data-mmtpick')) { U.team = t.value; U.delTeam = false; return 'render'; }
       if (t.getAttribute('data-mmtname') || t.getAttribute('data-mmt')) return 'render';
@@ -317,7 +378,7 @@
       if (t.getAttribute('data-mmeinit')) { var r = E().run, k = r.list[r.turn] && r.list[r.turn].k; r.list.sort(function (x, y) { return y.init - x.init || y.mod - x.mod; }); r.turn = Math.max(0, r.list.map(function (x) { return x.k; }).indexOf(k)); return 'render'; }
       return null;
     }
-    return { html: html, partyPage: partyPage, actions: actions, onInput: onInput, onChange: onChange, _build: build };
+    return { html: html, partyPage: partyPage, foesPage: foesPage, lootPage: lootPage, actions: actions, onInput: onInput, onChange: onChange, _build: build };
   }
   MMEnc.ROLES = ROLES; MMEnc.MINIONS = MINIONS;
   root.MMEnc = MMEnc;
