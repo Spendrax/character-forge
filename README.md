@@ -42,6 +42,10 @@ Five dice colours; your last choice is remembered. Results come from the browser
 
 ### Share from 5e Companion
 
+### From D&D Beyond
+
+On the Characters page, tap **From D&D Beyond** and paste a character's link (the character must be set to Public in its D&D Beyond settings). Everything on the sheet comes across like a 5e Companion import: race, background, classes and subclasses, ability scores, skills, languages, tools, feats, armour, weapons, inventory, coins, personality, notes and spells. If the browser can't reach D&D Beyond directly, the app tries its own server (`node server.js` serves `/api/ddb/<id>`), and otherwise shows a link to the character's data to copy and paste instead. A saved D&D Beyond JSON file also works with Import. This uses the data D&D Beyond's own character page loads; it is not an official export and may stop working if D&D Beyond changes it.
+
 Once Character Forge is installed as an app on Android, it appears in the share menu: in 5e Companion, share a character and pick Character Forge,
 and the import opens by itself (the file is handed over through the service worker, `share_target` in `manifest.webmanifest`). iPhone and iPad don't support sharing into web apps; save the file and use Import there.
 

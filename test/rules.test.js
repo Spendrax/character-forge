@@ -148,6 +148,22 @@ assert(!cr.skipped.some(x => x[0] === 'Fireball') && cc.extraSpells.some(x => x.
 const cu = I5.spellsInto(ce, mk({ name: 'Other', classes: [C('cleric', 4, 'cleric:life')], background: 'Acolyte' }), R, D).ch;
 assert.equal(cu.background, 'Acolyte'); assert.equal(cu.classes[0].subclass, 'cleric:life'); assert(cu.spells.cleric.c.includes('Guidance') && !cu.spells.cleric.k.includes('Bless')); // Bless is already a Life Domain spell assert(/from 5e Companion/.test(cu.notes.other));
 
+// D&D Beyond import: the public character JSON (fixture from github.com/alchemyrpg/ddb2alchemy, MIT licence)
+const IDDB = require('../js/import-ddb.js');
+const dj = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures/ddb-sample.json'), 'utf8'));
+assert(IDDB.detect(dj) && IDDB.detect({ success: true, data: dj }) && !IDDB.detect(cj));
+assert.equal(IDDB.idFrom('https://www.dndbeyond.com/characters/25188288/xyz'), '25188288'); assert.equal(IDDB.idFrom('25188288'), '25188288');
+const de = IDDB.read({ success: true, data: dj })[0], dr = IC.toCharacter(de, R, D), dc = dr.ch, dd2 = R.derive(dc, {});
+assert.equal(dc.name, 'Declan Truefire'); assert.equal(dc.lineage, 'half-elf'); assert.equal(dc.background, 'Inheritor'); assert.equal(dc.alignment, 'Neutral Good');
+assert.deepEqual(dc.classes.map(c => [c.cls, c.level]), [['sorcerer', 10]]);
+assert.deepEqual(AB_TOTALS(dd2), { STR: 10, DEX: 14, CON: 13, INT: 15, WIS: 8, CHA: 20 });
+['Perception', 'History', 'Deception', 'Persuasion', 'Survival', 'Arcana'].forEach(k => assert(dd2.skills[k].prof, 'ddb ' + k));
+assert(dd2.prof.languages.includes('Elvish') && dd2.prof.languages.includes('Giant'));
+assert.equal(dc.armor, 'Chain Shirt'); assert(dc.shield); assert.equal(dc.money.gp, 1208);
+assert(dc.items.some(i => i.n === 'Robe of Stars') && dc.items.some(i => /Elven Chain/.test(i.n)));
+assert(dd2.casters[0].cantrips.includes('Fire Bolt') && dd2.casters[0].known.includes('Fireball'));
+assert(/Imported from D&D Beyond/.test(dc.notes.other) && /cult of giants/.test(dc.notes.backstory));
+
 // limits switched off, and extras
 const wiz1 = ['Magic Missile', 'Shield', 'Sleep', 'Burning Hands', 'Charm Person', 'Detect Magic', 'Feather Fall', 'Mage Armor'];
 const fr = mk({ lineage: 'human', classes: [C('wizard', 1)], method: 'manual', base: { STR: 20, DEX: 10, CON: 10, INT: 16, WIS: 10, CHA: 10 }, spells: { wizard: { c: [], k: wiz1.concat(['Cure Wounds', 'Fireball']), p: [] } } });

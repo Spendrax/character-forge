@@ -65,6 +65,11 @@ http.createServer((req, res) => {
   let rel;
   try { rel = decodeURIComponent(req.url.split('?')[0]); } catch (e) { res.writeHead(400); return res.end('Bad request'); }
   if (rel === '/api/ai') return helper(req, res);
+  // D&D Beyond: fetch a public character's data for the importer (the browser can't read it directly)
+  var ddb = rel.match(/^\/api\/ddb\/(\d{1,12})$/);
+  if (ddb) return fetch('https://character-service.dndbeyond.com/character/v5/character/' + ddb[1], { headers: { 'User-Agent': 'CharacterForge' } })
+    .then(function (r) { return r.text().then(function (t) { res.writeHead(r.status, { 'Content-Type': 'application/json' }); res.end(t); }); })
+    .catch(function () { json(res, 502, { error: 'Could not reach D&D Beyond.' }); });
   const file = path.join(root, path.normalize(rel === '/' ? '/index.html' : rel));
   if (file !== root && !file.startsWith(root + path.sep)) { res.writeHead(403); return res.end('Forbidden'); }
   fs.readFile(file, (err, buf) => {

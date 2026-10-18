@@ -204,13 +204,14 @@
     // spells: one list in the app, placed on whichever class has each spell
     var placed = I5.placeSpells(entry, ch, R, D);
 
-    var lines = ['Imported from 5e Companion' + (entry.race ? ' (' + entry.race + (entry.subrace ? ', ' + entry.subrace : '') + ')' : '') + '.'];
-    lines.push('Ability scores are the totals from 5e Companion. Which ability each improvement went to is not in the file, so those choices were filled to match the totals.');
-    if (c.hp) lines.push('Hit points in 5e Companion: ' + c.hp + (c.baseHp ? ' (base ' + c.baseHp + ')' : '') + '. This app works out hit points from your class and Constitution.');
+    var SRC = entry.label || '5e Companion';
+    var lines = ['Imported from ' + SRC + (entry.race ? ' (' + entry.race + (entry.subrace ? ', ' + entry.subrace : '') + ')' : '') + '.'];
+    lines.push('Ability scores are the totals from ' + SRC + '. Which ability each improvement went to is not in the file, so those choices were filled to match the totals.');
+    if (c.hp || c.baseHp) lines.push('Hit points in ' + SRC + ': ' + (c.hp ? c.hp + (c.baseHp ? ' (base ' + c.baseHp + ')' : '') : 'base ' + c.baseHp) + '. This app works out hit points from your class and Constitution.');
     notes.forEach(function (n) { lines.push(n); });
-    if (unplaced.length) lines.push('On the 5e Companion sheet but no matching choice here (add them by hand if they came from a house rule or a trait this app doesn\'t offer): ' + unplaced.join(', ') + '.');
+    if (unplaced.length) lines.push('On the ' + SRC + ' sheet but no matching choice here (add them by hand if they came from a house rule or a trait this app doesn\'t offer): ' + unplaced.join(', ') + '.');
     if (placed.skipped.length) lines.push('Spells not added: ' + placed.skipped.map(function (s) { return s[0] + ' (' + s[1] + ')'; }).join('; ') + '.');
-    if (kept.length) lines.push('Notes from 5e Companion:\n' + kept.join('\n'));
+    if (kept.length) lines.push('Notes from ' + SRC + ':\n' + kept.join('\n'));
     ch.notes.other = lines.join('\n');
 
     var picture = c.image ? 'data:image/jpeg;base64,' + String(c.image).replace(/\s+/g, '') : (/^https?:/.test(c.imageUrl || '') ? '' : '');

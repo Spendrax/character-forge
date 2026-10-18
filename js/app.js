@@ -784,8 +784,20 @@
         '<span class="roster-txt"><b>' + esc(title(c)) + '</b><span class="small muted">' + esc(summaryLine(c, dd)) + '</span>' +
         ((c.classes || []).length ? '<span class="roster-stats small"><span>Lv ' + dd.level + '</span><span>AC ' + dd.ac + '</span><span>HP ' + (c.track && c.track.hp != null ? c.track.hp + '/' : '') + dd.hp + '</span></span>' : '') + '</span></button>';
     }).join('');
-    return '<main class="home roster"><div class="toolbar"><h2 style="margin:0">Characters</h2><span class="spacer"></span>' + btn('rosterNew', '+ New character', {}, 'btn primary') + btn('import', 'Import', {}, 'btn') + '</div>' +
-      '<div class="roster-grid">' + cards + '</div><input type="file" id="importFile" hidden></main>';
+    return '<main class="home roster"><div class="toolbar"><h2 style="margin:0">Characters</h2><span class="spacer"></span>' + btn('rosterNew', '+ New character', {}, 'btn primary') + btn('import', 'Import', {}, 'btn') + btn('ddbOpen', 'From D&D Beyond', {}, 'btn') + '</div>' +
+      (ui.importError ? '<p class="small" style="color:var(--warn)">' + esc(ui.importError === true ? 'That file is not a Character Forge export, a 5th Spellbook backup, a 5e Companion character or D&D Beyond data.' : ui.importError) + '</p>' : '') +
+      ddbHtml() + import5eHtml() + '<div class="roster-grid">' + cards + '</div><input type="file" id="importFile" hidden></main>';
+  }
+  // D&D Beyond: paste a public character's link (or its data) and bring it in like a 5e Companion character
+  function ddbHtml() {
+    var B = ui.ddb; if (!B) return '';
+    var id = window.ImportDDB && ImportDDB.idFrom(B.v), raw = id ? ImportDDB.url(id) : '';
+    return '<div class="panel import5e noprint"><h3>Import from D&amp;D Beyond</h3>' +
+      '<p class="small muted">On D&amp;D Beyond, open the character, set its privacy to <b>Public</b> (character settings), then copy its address (like dndbeyond.com/characters/12345678) and paste it here.</p>' +
+      '<label class="field"><span>Character link</span><input type="text" id="ddb-v" data-ddb="1" value="' + esc(B.v) + '" placeholder="https://www.dndbeyond.com/characters/…"></label>' +
+      '<div class="toolbar">' + btn('ddbGo', B.busy ? 'Getting it…' : 'Import', {}, 'btn primary') + btn('ddbClose', 'Cancel') + '</div>' +
+      (B.msg ? '<p class="small" style="color:var(--warn)">' + esc(B.msg) + '</p>' : '') +
+      (B.manual && raw ? '<p class="small"><b>Another way:</b> open <a href="' + esc(raw) + '" target="_blank" rel="noopener">this character’s data</a> in a new tab, select everything (Ctrl+A or ⌘A), copy it, and paste it in the box above instead of the link.</p>' : '') + '</div>';
   }
   function drawRoster() {
     if (!window.Avatar) return;
@@ -817,12 +829,13 @@
     reader.readAsDataURL(file);
   }
   function importerOf(e) { return e && e.source === 'companion' ? window.ImportCompanion : window.Import5e; }
-  function sourceName(e) { return e && e.source === 'companion' ? '5e Companion' : '5th Spellbook'; }
+  function sourceName(e) { return e && e.label ? e.label : e && e.source === 'companion' ? '5e Companion' : '5th Spellbook'; }
   // Read any import file: a 5th Spellbook backup (SQLite) or a 5e Companion character (JSON). Returns entries or null.
   function readImportFile(buf) {
     if (window.SqliteFile && SqliteFile.isSqlite(buf)) return Import5e.read(new SqliteFile(buf));
     var o; try { o = JSON.parse(new TextDecoder('utf-8').decode(buf)); } catch (e) { return null; }
     if (window.ImportCompanion && ImportCompanion.detect(o)) return ImportCompanion.read(o);
+    if (window.ImportDDB && ImportDDB.isDDB(o && o.data ? o.data : o)) return ImportDDB.read(o);
     return { json: o };
   }
   function shrinkPicture(src, done) {
@@ -1325,6 +1338,25 @@
     import5eParts: function (v, el) { var I = ui.import5e; if (!I) return false; var id = +el.getAttribute('data-e'), e = I.entries.filter(function (x) { return x.id === id; })[0];
       I.parts[id] = el.getAttribute('data-all') ? PART_ORDER.filter(function (k) { return e.source === 'companion' || PARTS[k].spellbook; }) : []; },
     import5eClose: function () { ui.import5e = null; ui.import5eDone = null; },
+    ddbOpen: function () { ui.ddb = ui.ddb || { v: '', msg: '' }; ui.importError = false; },
+    ddbClose: function () { ui.ddb = null; },
+    ddbGo: function () {
+      var B = ui.ddb; if (!B || B.busy) return false;
+      var v = String(B.v || '').trim(), fail = function (m, manual) { B.busy = false; B.msg = m; B.manual = !!manual; render(); };
+      var take = function (o) {
+        if (o && o.success === false) return fail('D&D Beyond says this character is private or doesn’t exist. Set it to Public in its character settings and try again.');
+        var entries = window.ImportDDB.read(o);
+        if (!entries.length) return fail('That isn’t a D&D Beyond character.', true);
+        B.busy = false; ui.ddb = null; startImport(entries); render();
+      };
+      if (/^\s*\{/.test(v)) { try { take(JSON.parse(v)); } catch (e) { fail('That text isn’t complete: copy everything on the data page and paste it again.', true); } return false; }
+      var id = window.ImportDDB.idFrom(v);
+      if (!id) { B.msg = 'Paste the character’s address from D&D Beyond, like https://www.dndbeyond.com/characters/12345678.'; return; }
+      B.busy = true; B.msg = '';
+      var get = function (u) { return fetch(u).then(function (r) { if (r.status === 403 || r.status === 404) return { success: false }; if (!r.ok) throw new Error(r.status); return r.json(); }); };
+      // straight from D&D Beyond, else through this app's own server (node server.js), else the copy-and-paste way
+      get(window.ImportDDB.url(id)).catch(function () { return get('api/ddb/' + id); }).then(take, function () { fail('Your browser can’t fetch D&D Beyond from here.', true); });
+    },
     import5eAll: function () { var I = ui.import5e; if (I) I.pick = I.pick.length === I.entries.length ? [] : I.entries.map(function (e) { return e.id; }); },
     import5eGo: function () {
       var I = ui.import5e; if (!I || !I.pick.length) return false;
@@ -1345,7 +1377,7 @@
           done.push({ name: c.name, added: r.added, skipped: r.skipped.length });
         }
       });
-      done.source = I.source;
+      done.source = I.source; ui.section = 'chars';
       if (!done.length) return false;
       store.current = first; ui.step = done.length === 1 && done[0].update && done[0].parts.length === 1 && done[0].parts[0] === 'spells' ? 'spells' : 'sheet'; ui.import5e = null; ui.import5eDone = done; window.scrollTo(0, 0);
       // pictures from 5e Companion: shrink them like any added picture, then show them
@@ -1577,6 +1609,7 @@
     if (/^pf2-/.test(ui.section)) { var pi = PFV.onInput(t); if (pi === 'render') render(); else if (pi) save(); if (pi) return; }
     if (/^mm-(enc|party|foes|loot)$/.test(ui.section)) { var me = MME.onInput(t); if (me === 'render') render(); else if (me) save(); if (me) return; }
     if (ui.section === 'mm-heroes') { var mi = MMV.onInput(t); if (mi === 'render') render(); else if (mi) save(); if (mi) return; }
+    if (t.getAttribute && t.getAttribute('data-ddb')) { if (ui.ddb) ui.ddb.v = t.value; return; }
     if (ui.section === 'audio') { var au = AUD.onInput(t); if (au === 'render') render(); if (au) return; }
     if (ui.section === 'treasure') { var tr = TRE.onInput(t); if (tr === 'render') render(); else if (tr) save(); if (tr) return; }
     if (ui.section === 'encounters' || ui.section === 'party') { var er = ENC.onInput(t); if (er === 'render') render(); else if (er) save(); if (er) return; }
@@ -1730,6 +1763,14 @@
     reader.onload = function () { handleImportBuffer(reader.result); input.value = ''; render(); };
     reader.readAsArrayBuffer(file);
   }
+  function startImport(entries) {
+    var nm = function (x) { return String(x || '').trim().toLowerCase(); }, target = {};
+    entries.forEach(function (e) { var same = store.chars.filter(function (c) { return nm(c.name) && nm(c.name) === nm(e.name); })[0]; target[e.id] = same ? same.id : 'new'; });
+    var anyMatch = entries.some(function (e) { return target[e.id] !== 'new'; });
+    // with a matching character, start with just those ticked: the rest are probably not wanted again
+    var parts = {}; entries.forEach(function (e) { parts[e.id] = ['spells']; });
+    ui.import5e = { source: sourceName(entries[0]), entries: entries, target: target, parts: parts, pick: entries.filter(function (e) { return !anyMatch || target[e.id] !== 'new'; }).map(function (e) { return e.id; }) }; ui.import5eDone = null;
+  }
   function handleImportBuffer(buf) {
     ui.importError = false;
       try {
@@ -1737,17 +1778,12 @@
         if (got && !got.json) {
           var entries = got;
           if (!entries.length) throw new Error('That file has no characters (5th Spellbook or 5e Companion).');
-          var nm = function (x) { return String(x || '').trim().toLowerCase(); }, target = {};
-          entries.forEach(function (e) { var same = store.chars.filter(function (c) { return nm(c.name) && nm(c.name) === nm(e.name); })[0]; target[e.id] = same ? same.id : 'new'; });
-          var anyMatch = entries.some(function (e) { return target[e.id] !== 'new'; });
-          // with a matching character, start with just those ticked: the rest are probably not wanted again
-          var parts = {}; entries.forEach(function (e) { parts[e.id] = ['spells']; });
-          ui.import5e = { source: sourceName(entries[0]), entries: entries, target: target, parts: parts, pick: entries.filter(function (e) { return !anyMatch || target[e.id] !== 'new'; }).map(function (e) { return e.id; }) }; ui.import5eDone = null;
+          startImport(entries);
         } else {
           if (!got) throw new Error('not json');
           var o = got.json, list = Array.isArray(o) ? o : (o && Array.isArray(o.chars) ? o.chars : [o]);
           list.forEach(function (c) { if (!c || typeof c !== 'object' || !(('classes' in c) || ('level' in c)) || !c.base) throw new Error('not a character'); c = normalize(c); c.id = R.uid(); store.chars.push(c); store.current = c.id; });
-          ui.step = 'sheet';
+          ui.step = 'sheet'; ui.section = 'chars';
         }
       } catch (err) { ui.importError = /5th Spellbook|5e Companion/.test(err.message) ? err.message : true; window.console.error('Import failed', err); }
   }
@@ -1757,9 +1793,9 @@
     if (done) return '<div class="panel import5e noprint"><h3>Imported from ' + esc(done.source || '5th Spellbook') + '</h3><ul>' + done.map(function (r) {
       if (r.update) return '<li><b>' + esc(r.name) + '</b> — updated: ' + esc(r.parts.join(', ') || 'nothing') + (r.spellNote ? ' (' + esc(r.spellNote) + ')' : '') + '. Everything else kept.</li>';
       return '<li><b>' + esc(r.name) + '</b> — new character, ' + r.added + ' spell' + (r.added === 1 ? '' : 's') + ' added' + (r.skipped ? ', ' + r.skipped + ' listed in Details → Other notes instead' : '') + '</li>';
-    }).join('') + '</ul>' + (done.some(function (r) { return !r.update; }) ? '<p class="small muted">' + (done.source === '5e Companion' ? 'New characters come with everything 5e Companion stores. Step badges show any choice still open, and Details → Other notes lists anything that had no match here.' : 'New characters: ability scores other than the spellcasting one weren\'t in the backup, so they start at 10. Step badges show what is still open (skills, background, equipment…).') + '</p>' : '') + '<p class="small muted">Changed your mind? Press Undo at the top.</p>' + btn('import5eClose', 'Close', {}, 'btn primary') + '</div>';
+    }).join('') + '</ul>' + (done.some(function (r) { return !r.update; }) ? '<p class="small muted">' + (done.source !== '5th Spellbook' ? 'New characters come with everything ' + esc(done.source) + ' stores. Step badges show any choice still open, and Details → Other notes lists anything that had no match here.' : 'New characters: ability scores other than the spellcasting one weren\'t in the backup, so they start at 10. Step badges show what is still open (skills, background, equipment…).') + '</p>' : '') + '<p class="small muted">Changed your mind? Press Undo at the top.</p>' + btn('import5eClose', 'Close', {}, 'btn primary') + '</div>';
     if (!I) return '';
-    return '<div class="panel import5e noprint" role="dialog" aria-label="Import from ' + esc(I.source) + '"><h3>Import from ' + esc(I.source) + '</h3><p class="muted">Found ' + I.entries.length + ' character' + (I.entries.length === 1 ? '' : 's') + '. ' + (I.source === '5e Companion' ? 'A new character comes in with everything on its sheet: race, background, classes, ability scores, skills, feats, equipment, coins, personality, notes, spells and picture.' : 'A new character comes in with its race, classes and levels, subclasses and spells.') + ' To bring only some parts into a character you already made, choose “Update my character” and tick the parts you want.</p><div class="imp-list">' +
+    return '<div class="panel import5e noprint" role="dialog" aria-label="Import from ' + esc(I.source) + '"><h3>Import from ' + esc(I.source) + '</h3><p class="muted">Found ' + I.entries.length + ' character' + (I.entries.length === 1 ? '' : 's') + '. ' + (I.source !== '5th Spellbook' ? 'A new character comes in with everything on its sheet: race, background, classes, ability scores, skills, feats, equipment, coins, personality, notes, spells' + (I.source === 'D&D Beyond' ? '' : ' and picture') + '.' : 'A new character comes in with its race, classes and levels, subclasses and spells.') + ' To bring only some parts into a character you already made, choose “Update my character” and tick the parts you want.</p><div class="imp-list">' +
       I.entries.map(function (e) {
         var n = e.classes.reduce(function (t, c) { return t + c.spells.length; }, e.loose.length);
         var tg = I.target[e.id] || 'new';
