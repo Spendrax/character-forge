@@ -741,6 +741,31 @@
       .map(function (x) { return [x.n, [x.r || 'Unknown'], x.type || 'Imported item', x.att ? 1 : 0, '']; }) : [];
     return extra.length ? D.magicItems.concat(extra).sort(function (a, b) { return a[0].localeCompare(b[0]); }) : D.magicItems;
   }
+  function itemImportBar() {
+    var nImp = window.ItemTexts ? ItemTexts.list().length : 0;
+    return '<div class="toolbar"><label class="btn small' + (ui.section === 'items' ? ' primary' : '') + '">Import item texts<input type="file" id="itemTextFile" multiple accept=".md,.markdown,.txt,.json,.zip" hidden></label>' +
+      (nImp ? (ui.confirmClearItems ? '<span class="small">Remove all ' + nImp + ' imported texts from this device?</span>' + btn('clearItemTexts', 'Remove', {}, 'btn small danger') + btn('clearItemTextsNo', 'Keep', {}, 'btn small') : btn('clearItemTextsAsk', 'Remove imported (' + nImp + ')', {}, 'btn small')) : '') +
+      '<span class="small muted">Have item descriptions of your own (your notes, an Obsidian vault, a JSON list)? Import them and they show with the items.</span></div>' +
+      (ui.itemMsg ? '<p class="small rest-msg">' + esc(ui.itemMsg) + '</p>' : '');
+  }
+  // the Magic items section: every item to read, your imported texts, and giving an item to a character
+  function itemsPage() {
+    var AM = allMagic(), q = ui.q.mi || '', types = [];
+    AM.forEach(function (x) { if (types.indexOf(x[2]) < 0) types.push(x[2]); });
+    var list = AM.filter(function (x) { return match(q, x[0]) && (!ui.miRarity || x[1].indexOf(ui.miRarity) >= 0) && (!ui.miType || x[2] === ui.miType) && (!ui.miOnly || (ui.miOnly === 'srd' ? srdItemText(x[0]) : ui.miOnly === 'mine' ? window.ItemTexts && ItemTexts.get(x[0]) : 1)); });
+    var sel = function (key, label, opts) { return '<select data-ui="' + key + '" aria-label="' + label + '"><option value="">' + label + '</option>' + opts.map(function (o) { o = [].concat(o); return '<option value="' + esc(o[0]) + '"' + (ui[key] === o[0] ? ' selected' : '') + '>' + esc(o[1] || o[0]) + '</option>'; }).join('') + '</select>'; };
+    var chars = store.chars, to = byId(ui.miTo) ? ui.miTo : store.current;
+    var shown = list.slice(0, 120);
+    return '<main class="mon-main"><h2>Magic items</h2><p class="muted">' + AM.length + ' magic items. Tap ▸ to read one: items from the free rules (SRD) have their full text, and the ones you import show yours.</p>' +
+      '<div class="panel">' + itemImportBar() + '<div class="toolbar">' + search('mi', 'Search magic items…') + sel('miRarity', 'Any rarity', D.rarities) + sel('miType', 'Any type', types.sort()) +
+      sel('miOnly', 'All items', [['srd', 'With text from the free rules'], ['mine', 'With your imported text']]) + '<span class="muted small">' + list.length + ' found</span></div></div>' +
+      '<div class="optlist mi-list">' + shown.map(function (x) {
+        var op = ui.magicOpen === x[0];
+        return '<div class="spell"><div style="flex:1"><button type="button" class="fold" data-act="magicOpen" data-v="' + esc(x[0]) + '" aria-expanded="' + op + '">' + (op ? '▾' : '▸') + '</button> <b>' + esc(x[0]) + '</b> <span class="small muted">' + esc(x[2]) + ' · ' + esc(x[1].join(', ').toLowerCase()) + (x[3] ? ' · attunement' : '') + (!x[4] ? ' · imported' : '') + '</span>' +
+          (op ? itemDescHtml({ k: 'magic', n: x[0], slug: x[4], id: 'pick' }, true) + (chars.length ? '<div class="toolbar">Give it to <select data-ui="miTo" aria-label="Character">' + chars.map(function (c) { return '<option value="' + c.id + '"' + (c.id === to ? ' selected' : '') + '>' + esc(title(c)) + '</option>'; }).join('') + '</select>' +
+            x[1].map(function (r) { return btn('giveMagic', '+ ' + r, { v: x[0], r: r }, 'btn small'); }).join('') + '</div>' : '') : '') + '</div></div>';
+      }).join('') + '</div>' + (list.length > shown.length ? '<p class="small muted">Showing ' + shown.length + ' of ' + list.length + '. Search or filter to narrow the list.</p>' : '') + (list.length ? '' : '<p class="muted">No items match.</p>') + '</main>';
+  }
   function importItemTexts(input) {
     var files = [].slice.call(input.files || []); input.value = ''; if (!files.length) return;
     ui.itemMsg = 'Reading ' + files.length + ' file' + (files.length === 1 ? '' : 's') + '…'; render();
@@ -783,10 +808,7 @@
       AM.forEach(function (x) { if (types.indexOf(x[2]) < 0) types.push(x[2]); });
       var list = AM.filter(function (x) { return match(q, x[0]) && (!ui.rarity || x[1].indexOf(ui.rarity) >= 0) && (!ui.itemType || x[2] === ui.itemType); });
       h += '<div class="toolbar">' + search('magic', 'Search magic items…') + sel('rarity', 'Any rarity', D.rarities) + sel('itemType', 'Any type', types.sort()) + '<span class="muted small">' + list.length + ' of ' + AM.length + '</span></div>' +
-        '<div class="toolbar"><label class="btn small">Import item texts<input type="file" id="itemTextFile" multiple accept=".md,.markdown,.txt,.json,.zip" hidden></label>' +
-        (nImp ? (ui.confirmClearItems ? '<span class="small">Remove all ' + nImp + ' imported texts from this device?</span>' + btn('clearItemTexts', 'Remove', {}, 'btn small danger') + btn('clearItemTextsNo', 'Keep', {}, 'btn small') : btn('clearItemTextsAsk', 'Remove imported (' + nImp + ')', {}, 'btn small')) : '') +
-        '<span class="small muted">Have item descriptions of your own (your notes, an Obsidian vault, a JSON list)? Import them and they show here and in your inventory.</span></div>' +
-        (ui.itemMsg ? '<p class="small rest-msg">' + esc(ui.itemMsg) + '</p>' : '') + '<div class="optlist">' +
+        itemImportBar() + '<div class="optlist">' +
         list.slice(0, 80).map(function (x) {
           var op = ui.magicOpen === x[0];
           return '<div class="spell"><div><button type="button" class="fold" data-act="magicOpen" data-v="' + esc(x[0]) + '" aria-expanded="' + op + '">' + (op ? '▾' : '▸') + '</button> <b>' + esc(x[0]) + '</b> <span class="small muted">' + esc(x[2]) + (x[3] ? ' · attunement' : '') + (!x[4] ? ' · imported' : '') + '</span>' +
@@ -1236,7 +1258,7 @@
   }
   function sectionNav() {
     var list = gameOf() === 'pf2' ? [['pf2-home', '⌂ Home'], ['pf2-chars', 'Characters'], ['pf2-party', 'Party'], ['pf2-enc', 'Encounters'], ['pf2-mon', 'Monsters'], ['pf2-loot', 'Treasures'], ['books', 'Books'], ['pf2-rules', 'Rules'], ['audio', 'Audio'], ['rules', 'House rules']] : gameOf() === 'mm' ? [['mm-home', '⌂ Home'], ['mm-heroes', 'Heroes'], ['mm-party', 'Party'], ['mm-enc', 'Encounters'], ['mm-foes', 'Villains'], ['mm-loot', 'Rewards'], ['mm-rules', 'Rules'], ['audio', 'Audio'], ['rules', 'House rules']]
-      : [['home', '⌂ Home'], ['roster', 'Characters'], ['monsters', 'Monsters'], ['party', 'Party'], ['encounters', 'Encounters'], ['treasure', 'Treasures'], ['books', 'Books'], ['audio', 'Audio'], ['rules', 'House rules']];
+      : [['home', '⌂ Home'], ['roster', 'Characters'], ['monsters', 'Monsters'], ['party', 'Party'], ['encounters', 'Encounters'], ['treasure', 'Treasures'], ['items', 'Magic items'], ['books', 'Books'], ['audio', 'Audio'], ['rules', 'House rules']];
     return '<nav class="sections" aria-label="Sections">' + list.map(function (x) {
       var on = ui.section === x[0] || (x[0] === 'roster' && ui.section === 'chars');
       return '<button type="button" class="sec' + (on ? ' on' : '') + '" data-act="section" data-v="' + x[0] + '"' + (on ? ' aria-current="page"' : '') + '>' + x[1] + '</button>';
@@ -1244,7 +1266,7 @@
   }
   function homeHtml() {
     var hub = window.homeHub([['roster', 'sword', 'Characters'], ['party', 'campfire', 'Party'], ['encounters', 'swords', 'Encounters'], ['monsters', 'dragon', 'Monsters'],
-      ['treasure', 'coins', 'Treasures'], ['books', 'book', 'Books'], ['audio', 'lute', 'Audio'], ['rules', 'scroll', 'House rules']]);
+      ['treasure', 'coins', 'Treasures'], ['items', 'potion', 'Magic items'], ['books', 'book', 'Books'], ['audio', 'lute', 'Audio'], ['rules', 'scroll', 'House rules']]);
     return '<main class="home"><h1>Dungeons &amp; Dragons 5e</h1><p class="muted">Your table companion (2014 rules). Tap the d20 to roll.</p>' + hub + '</main>';
   }
   // House rules: short titled notes for the table, searchable; saved with the characters.
@@ -1265,7 +1287,7 @@
     var keep = scrollState();
     var top = '<header class="top">' + btn('section', 'Character Forge', { v: gameOf() === 'mm' ? 'mm-home' : gameOf() === 'pf2' ? 'pf2-home' : 'home' }, 'brand linkish') + gameSwitch() + sectionNav() + '<span class="spacer"></span>' +
       themeBtn() + '<button type="button" class="btn" data-act="undo" title="Undo (Ctrl+Z)"' + (undoStack.length ? '' : ' disabled') + '>↶ Undo</button>' + (isInstalledApp() ? '' : btn('install', 'Install app', {}, installPrompt ? 'btn primary' : 'btn')) + '</header>';
-    var body = /^pf2-/.test(ui.section) ? PFV.html(ui.section) : /^mm-(home|heroes)$/.test(ui.section) ? MMV.html(ui.section) : ui.section === 'mm-enc' ? MME.html() : ui.section === 'mm-party' ? MME.partyPage() : ui.section === 'mm-foes' ? MME.foesPage() : ui.section === 'mm-loot' ? MME.lootPage() : ui.section === 'mm-rules' ? BOOKS.html() : ui.section === 'monsters' ? '<main class="mon-main">' + MON.html() + '</main>' : ui.section === 'encounters' ? ENC.html() : ui.section === 'party' ? ENC.partyPage() : ui.section === 'roster' ? rosterHtml() : ui.section === 'treasure' ? TRE.html() : ui.section === 'books' ? BOOKS.html() : ui.section === 'audio' ? AUD.html() : ui.section === 'rules' ? rulesHtml() : homeHtml();
+    var body = /^pf2-/.test(ui.section) ? PFV.html(ui.section) : /^mm-(home|heroes)$/.test(ui.section) ? MMV.html(ui.section) : ui.section === 'mm-enc' ? MME.html() : ui.section === 'mm-party' ? MME.partyPage() : ui.section === 'mm-foes' ? MME.foesPage() : ui.section === 'mm-loot' ? MME.lootPage() : ui.section === 'mm-rules' ? BOOKS.html() : ui.section === 'monsters' ? '<main class="mon-main">' + MON.html() + '</main>' : ui.section === 'encounters' ? ENC.html() : ui.section === 'party' ? ENC.partyPage() : ui.section === 'roster' ? rosterHtml() : ui.section === 'treasure' ? TRE.html() : ui.section === 'items' ? itemsPage() : ui.section === 'books' ? BOOKS.html() : ui.section === 'audio' ? AUD.html() : ui.section === 'rules' ? rulesHtml() : homeHtml();
     document.getElementById('app').innerHTML = top + installHelpHtml() + body;
     if (ui.mon && ui.mon.scrollTop) { ui.mon.scrollTop = false; var r = document.querySelector('.mon-right'); if (r && window.innerWidth < 800) r.scrollIntoView(); else window.scrollTo(0, 0); }
     else restoreScroll(keep);
@@ -1275,7 +1297,7 @@
     if (/^pf2-/.test(ui.section) && PFV.after) PFV.after();
     AUD.after(); Dice3D.place(); AIHelper.place(); syncHistory();
     if (fid) { var el = document.getElementById(fid); if (el) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } try { if (pos != null) el.setSelectionRange(pos, pos); } catch (e) { /* not text */ } } }
-    document.title = (/^pf2-/.test(ui.section) ? PFV.title(ui.section) : /^mm-(home|heroes)$/.test(ui.section) ? MMV.title(ui.section) : ui.section === 'mm-enc' ? 'M&M encounters' : ui.section === 'mm-party' ? 'M&M party' : ui.section === 'mm-foes' ? 'M&M villains' : ui.section === 'mm-loot' ? 'M&M rewards' : ui.section === 'mm-rules' ? 'M&M rules' : ui.section === 'monsters' ? 'Monsters' : ui.section === 'encounters' ? 'Encounters' : ui.section === 'party' ? 'Party' : ui.section === 'roster' ? 'Characters' : ui.section === 'treasure' ? 'Treasures' : ui.section === 'books' ? 'Books' : ui.section === 'audio' ? 'Audio' : ui.section === 'rules' ? 'House rules' : 'Home') + ' — Character Forge';
+    document.title = (/^pf2-/.test(ui.section) ? PFV.title(ui.section) : /^mm-(home|heroes)$/.test(ui.section) ? MMV.title(ui.section) : ui.section === 'mm-enc' ? 'M&M encounters' : ui.section === 'mm-party' ? 'M&M party' : ui.section === 'mm-foes' ? 'M&M villains' : ui.section === 'mm-loot' ? 'M&M rewards' : ui.section === 'mm-rules' ? 'M&M rules' : ui.section === 'monsters' ? 'Monsters' : ui.section === 'encounters' ? 'Encounters' : ui.section === 'party' ? 'Party' : ui.section === 'roster' ? 'Characters' : ui.section === 'treasure' ? 'Treasures' : ui.section === 'items' ? 'Magic items' : ui.section === 'books' ? 'Books' : ui.section === 'audio' ? 'Audio' : ui.section === 'rules' ? 'House rules' : 'Home') + ' — Character Forge';
     saveNow();
   }
 
@@ -1389,6 +1411,12 @@
     closeInstallHelp: function () { ui.installHelp = false; },
     import5eParts: function (v, el) { var I = ui.import5e; if (!I) return false; var id = +el.getAttribute('data-e'), e = I.entries.filter(function (x) { return x.id === id; })[0];
       I.parts[id] = el.getAttribute('data-all') ? PART_ORDER.filter(function (k) { return e.source === 'companion' || PARTS[k].spellbook; }) : []; },
+    giveMagic: function (v, el) {
+      var x = allMagic().filter(function (i) { return i[0] === v; })[0], c = byId(byId(ui.miTo) ? ui.miTo : store.current);
+      if (!x || !c) return;
+      c.items.push({ id: R.uid(), k: 'magic', n: x[0], r: el.getAttribute('data-r'), type: x[2], att: !!x[3], attuned: false, slug: x[4], qty: 1, w: 0, note: '' });
+      ui.itemMsg = x[0] + ' added to ' + title(c) + '’s items.';
+    },
     clearItemTextsAsk: function () { ui.confirmClearItems = true; },
     clearItemTextsNo: function () { ui.confirmClearItems = false; },
     clearItemTexts: function () { ui.confirmClearItems = false; ItemTexts.clear().then(function () { ui.itemMsg = 'Imported item texts removed.'; render(); }); },

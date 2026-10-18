@@ -44,7 +44,7 @@ Five dice colours; your last choice is remembered. Results come from the browser
 
 ### Magic item texts of your own
 
-Items → Add items → Magic items → **Import item texts** reads item descriptions you have yourself: `.md` / `.txt` files (one item per file with a front-matter header or a `# Name` heading, or several items under `#` headings), a `.zip` of them, or a JSON item list (`[{name, rarity, type, entries or description}]`, or `{"item": [...]}`). They are kept in this browser only (IndexedDB), show when you tap ▸ on an item, and items not already in the app's list are added to it.
+The **Magic items** section on the home page (or Items → Add items → Magic items) has **Import item texts**: it reads item descriptions you have yourself: `.md` / `.txt` files (one item per file with a front-matter header or a `# Name` heading, or several items under `#` headings), a `.zip` of them, or a JSON item list (`[{name, rarity, type, entries or description}]`, or `{"item": [...]}`). They are kept in this browser only (IndexedDB), show when you tap ▸ on an item, and items not already in the app's list are added to it.
 
 ### From D&D Beyond
 
