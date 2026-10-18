@@ -64,7 +64,9 @@
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function tag(t) { return t && t !== 'official' ? ' <span class="tag ' + t + '">' + (t === 'ua' ? 'UA' : t) + '</span>' : ''; }
   function ok(t) { return R.tagOk(t, store.filters); }
-  function match(q, s) { return !q || s.toLowerCase().indexOf(q.toLowerCase()) >= 0; }
+  // search that ignores case, accents and punctuation ("moon touched" finds Moon-Touched Sword)
+  function loose(s) { return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[’']/g, '').replace(/[^a-z0-9+]+/g, ' ').trim(); }
+  function match(q, s) { return !q || loose(s).indexOf(loose(q)) >= 0; }
   function btn(act, label, attrs, cls) { return '<button type="button" class="' + (cls || 'btn') + '" data-act="' + act + '"' + data(attrs) + '>' + label + '</button>'; }
   function data(o) { var s = ''; for (var k in o || {}) s += ' data-' + k + '="' + esc(o[k]) + '"'; return s; }
   function search(id, ph) { return '<input type="search" id="q-' + id + '" data-q="' + id + '" placeholder="' + ph + '" value="' + esc(ui.q[id] || '') + '">'; }
@@ -1225,7 +1227,7 @@
       '<span class="mini-ab">' + AB.map(function (a) { return a + ' <b>' + R.fmt(d.abilities[a].mod) + '</b>'; }).join(' ') + '</span></div>';
     var oldNav = document.querySelector('.steps'), navX = oldNav ? oldNav.scrollLeft : 0;
     var keep = scrollState();
-    document.getElementById('app').innerHTML = top + installHelpHtml() + import5eHtml() + '<div class="shell">' + nav + '<main>' + body + foot + '</main>' + side + '</div>' + mini;
+    setApp(top + installHelpHtml() + import5eHtml() + '<div class="shell">' + nav + '<main>' + body + foot + '</main>' + side + '</div>' + mini);
     keepStepInView(navX);
     if (!ui.scrollToStep) restoreScroll(keep);
     if (ui.scrollToStep) { // a new step starts at its top; on a phone the step row stays visible above it
@@ -1235,7 +1237,7 @@
     }
     if (ui.jumpTo) { var jt = document.getElementById(ui.jumpTo); ui.jumpTo = null; if (jt) jt.scrollIntoView({ block: 'start' }); }
     drawAvatars(); AUD.after(); Dice3D.place(); AIHelper.place(); syncHistory();
-    if (fid) { var el = document.getElementById(fid); if (el) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } try { if (pos != null) el.setSelectionRange(pos, pos); } catch (e) { /* not a text field */ } } }
+    if (fid) { var el = document.getElementById(fid); if (el && el !== document.activeElement) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } try { if (pos != null) el.setSelectionRange(pos, pos); } catch (e) { /* not a text field */ } } }
     document.title = title(ch) + ' — Character Forge';
     saveNow();
   }
@@ -1283,12 +1285,40 @@
         return '<div class="panel rule"><div class="toolbar" style="margin:0"><h3 style="margin:0">' + esc(r.t || 'Untitled rule') + '</h3><span class="spacer"></span>' + btn('ruleEdit', 'Edit', { v: r.id }, 'btn tiny') + '</div>' + (r.x ? '<p class="rule-text">' + esc(r.x).replace(/\n/g, '<br>') + '</p>' : '') + '</div>';
       }).join('') + '</main>';
   }
+  // Redraw the page, but keep the box being typed in as the very same element: replacing it on every key
+  // made phone keyboards lose letters (their word-in-progress is tied to that element).
+  function setApp(html) {
+    var app = document.getElementById('app'), keep = document.activeElement;
+    var typing = keep && keep.id && app.contains(keep) && (keep.tagName === 'TEXTAREA' || (keep.tagName === 'INPUT' && /^(text|search|url|email|number|)$/.test(keep.type)));
+    if (!typing) { app.innerHTML = html; return; }
+    var tpl = document.createElement('div'); tpl.innerHTML = html;
+    var twin = tpl.querySelector('#' + (window.CSS && CSS.escape ? CSS.escape(keep.id) : keep.id));
+    if (!twin || twin.tagName !== keep.tagName) { app.innerHTML = html; return; }
+    patchAround(app, tpl, keep, twin);
+  }
+  function syncAttrs(a, b, skipValue) {
+    [].slice.call(a.attributes).forEach(function (x) { if (!b.hasAttribute(x.name)) a.removeAttribute(x.name); });
+    [].slice.call(b.attributes).forEach(function (x) { if (skipValue && x.name === 'value') return; if (a.getAttribute(x.name) !== x.value) a.setAttribute(x.name, x.value); });
+  }
+  // old contains keep, neu contains twin: swap everything around the path down to keep, and keep itself stays
+  function patchAround(old, neu, keep, twin) {
+    if (old === keep) { syncAttrs(keep, twin, true); return; }
+    if (old !== document.getElementById('app')) syncAttrs(old, neu);
+    var oc = [].slice.call(old.childNodes), nc = [].slice.call(neu.childNodes);
+    var oi = oc.findIndex(function (n) { return n === keep || (n.contains && n.contains(keep)); }), ni = nc.findIndex(function (n) { return n === twin || (n.contains && n.contains(twin)); });
+    var oNode = oc[oi], nNode = nc[ni];
+    if (oNode !== keep && (oNode.tagName !== nNode.tagName)) { old.innerHTML = ''; nc.forEach(function (n) { old.appendChild(n); }); return; }
+    oc.forEach(function (n, k) { if (k !== oi) old.removeChild(n); });
+    nc.slice(0, ni).forEach(function (n) { old.insertBefore(n, oNode); });
+    nc.slice(ni + 1).forEach(function (n) { old.appendChild(n); });
+    patchAround(oNode, nNode, keep, twin);
+  }
   function renderSection(fid, pos) {
     var keep = scrollState();
     var top = '<header class="top">' + btn('section', 'Character Forge', { v: gameOf() === 'mm' ? 'mm-home' : gameOf() === 'pf2' ? 'pf2-home' : 'home' }, 'brand linkish') + gameSwitch() + sectionNav() + '<span class="spacer"></span>' +
       themeBtn() + '<button type="button" class="btn" data-act="undo" title="Undo (Ctrl+Z)"' + (undoStack.length ? '' : ' disabled') + '>↶ Undo</button>' + (isInstalledApp() ? '' : btn('install', 'Install app', {}, installPrompt ? 'btn primary' : 'btn')) + '</header>';
     var body = /^pf2-/.test(ui.section) ? PFV.html(ui.section) : /^mm-(home|heroes)$/.test(ui.section) ? MMV.html(ui.section) : ui.section === 'mm-enc' ? MME.html() : ui.section === 'mm-party' ? MME.partyPage() : ui.section === 'mm-foes' ? MME.foesPage() : ui.section === 'mm-loot' ? MME.lootPage() : ui.section === 'mm-rules' ? BOOKS.html() : ui.section === 'monsters' ? '<main class="mon-main">' + MON.html() + '</main>' : ui.section === 'encounters' ? ENC.html() : ui.section === 'party' ? ENC.partyPage() : ui.section === 'roster' ? rosterHtml() : ui.section === 'treasure' ? TRE.html() : ui.section === 'items' ? itemsPage() : ui.section === 'books' ? BOOKS.html() : ui.section === 'audio' ? AUD.html() : ui.section === 'rules' ? rulesHtml() : homeHtml();
-    document.getElementById('app').innerHTML = top + installHelpHtml() + body;
+    setApp(top + installHelpHtml() + body);
     if (ui.mon && ui.mon.scrollTop) { ui.mon.scrollTop = false; var r = document.querySelector('.mon-right'); if (r && window.innerWidth < 800) r.scrollIntoView(); else window.scrollTo(0, 0); }
     else restoreScroll(keep);
     if (ui.section === 'books' || ui.section === 'mm-rules') BOOKS.after();
@@ -1296,7 +1326,7 @@
     if (ui.section === 'roster') drawRoster();
     if (/^pf2-/.test(ui.section) && PFV.after) PFV.after();
     AUD.after(); Dice3D.place(); AIHelper.place(); syncHistory();
-    if (fid) { var el = document.getElementById(fid); if (el) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } try { if (pos != null) el.setSelectionRange(pos, pos); } catch (e) { /* not text */ } } }
+    if (fid) { var el = document.getElementById(fid); if (el && el !== document.activeElement) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } try { if (pos != null) el.setSelectionRange(pos, pos); } catch (e) { /* not text */ } } }
     document.title = (/^pf2-/.test(ui.section) ? PFV.title(ui.section) : /^mm-(home|heroes)$/.test(ui.section) ? MMV.title(ui.section) : ui.section === 'mm-enc' ? 'M&M encounters' : ui.section === 'mm-party' ? 'M&M party' : ui.section === 'mm-foes' ? 'M&M villains' : ui.section === 'mm-loot' ? 'M&M rewards' : ui.section === 'mm-rules' ? 'M&M rules' : ui.section === 'monsters' ? 'Monsters' : ui.section === 'encounters' ? 'Encounters' : ui.section === 'party' ? 'Party' : ui.section === 'roster' ? 'Characters' : ui.section === 'treasure' ? 'Treasures' : ui.section === 'items' ? 'Magic items' : ui.section === 'books' ? 'Books' : ui.section === 'audio' ? 'Audio' : ui.section === 'rules' ? 'House rules' : 'Home') + ' — Character Forge';
     saveNow();
   }
