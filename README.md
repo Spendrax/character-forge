@@ -185,6 +185,9 @@ A third game next to D&D 5e and M&M 3e: tap **PF2** at the top. The rules are th
 - **Sheet**: HP, AC, saves, Perception, class DC, speed, senses and resistances, worked out from the rules data itself (each feat and feature's own rules), with play tracking (HP, temp HP, hero points, focus points, dying, wounded, conditions). Skills and Strikes roll with the 3D dice (multiple attack penalty, runes, sneak attack). Spells: class and multiclass spellcasting with slots, repertoire, focus and innate spells. Gear with runes, worn and invested items, bulk and coins.
 - **Import from Pathbuilder**: paste the text from Pathbuilder's Export JSON link. The tests import two real exports and check that every ability, skill, save, AC, attack, damage bonus and spell slot matches Pathbuilder.
 - **Party and Encounters** for the GM: the XP budget (trivial to extreme), creatures from the Bestiaries with elite and weak versions and full stat blocks, and fights with initiative and hit points that carry over to the party.
+- **Monsters**: all 1,500+ creatures with filters (level, trait, size, book), full stat blocks, a sound, and + Add to encounter.
+- **Treasures**: the Core Rulebook's Party Treasure by Level: a whole level's worth or one fight's share, with real permanent items, consumables, gems and money (the Treasure button in a running fight rolls one for that party).
+- **Books**: a readable Pathfinder rules book (basics, conditions, actions, ancestries, heritages, backgrounds, classes with all their features, deities), next to your own books.
 - **Rules**: everything searchable, plus a short page of basics.
 
 Data: `python3 tools/pf2-build.py <foundry-pf2e 5.8.0> <foundry-pf2e 4.12.0>` builds `data/pf2/` from the Foundry VTT pf2e system (rules are Open Game Content, OGL 1.0a; Rage of Elements under the ORC license). Only pre-Remaster entries are kept; a few spells that 5.8.0 had already replaced with Remaster versions come from 4.12.0. This app uses trademarks and/or copyrights owned by Paizo Inc., used under Paizo's Community Use Policy (paizo.com/licenses/communityuse); it is not published, endorsed, or specifically approved by Paizo, and is free to use.
@@ -209,7 +212,7 @@ Only your question and a summary of the page you are on are sent to the AI you p
 
 ## Mutants & Masterminds 3e
 
-The switch at the top (D&D 5e | M&M 3e) moves between the two games; each has its own home page, characters and house rules (Audio, dice and your own books are shared).
+The switch at the top (D&D 5e | M&M 3e) moves between the two games; each has its own home page, characters and house rules (dice and your own books are shared; Audio has modern moods for M&M: headquarters, city at night, chase, villain, hacking, noir…).
 
 - **Heroes:** build heroes on power points (15 per power level, plus points earned in play): abilities, defenses, skills (with Close/Ranged Combat and Expertise specialties), advantages, powers built from the 40 effects with any extras and flaws, and complications. Costs are worked out as you go (per-rank and flat modifiers, 1 point per 2+ ranks when cheap, Removable per 5 points), and the power level limits are checked: attack + effect, Dodge/Parry + Toughness, Fortitude + Will, skills ≤ PL + 10. A printable sheet lists everything, with each attack's bonus and DC.
 - **Rules:** a searchable book of summaries: core rules, abilities and defenses, skills, all advantages, every power effect with its action, range, duration and cost, every extra and flaw, combat and conditions. Add your own copy of the Hero's Handbook (PDF) to read it alongside.

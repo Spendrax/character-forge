@@ -1170,7 +1170,7 @@
     }).join('') + '</div>';
   }
   function sectionNav() {
-    var list = gameOf() === 'pf2' ? [['pf2-home', '⌂ Home'], ['pf2-chars', 'Characters'], ['pf2-party', 'Party'], ['pf2-enc', 'Encounters'], ['pf2-rules', 'Rules'], ['audio', 'Audio'], ['rules', 'House rules']] : gameOf() === 'mm' ? [['mm-home', '⌂ Home'], ['mm-heroes', 'Heroes'], ['mm-party', 'Party'], ['mm-enc', 'Encounters'], ['mm-rules', 'Rules'], ['audio', 'Audio'], ['rules', 'House rules']]
+    var list = gameOf() === 'pf2' ? [['pf2-home', '⌂ Home'], ['pf2-chars', 'Characters'], ['pf2-party', 'Party'], ['pf2-enc', 'Encounters'], ['pf2-mon', 'Monsters'], ['pf2-loot', 'Treasures'], ['books', 'Books'], ['pf2-rules', 'Rules'], ['audio', 'Audio'], ['rules', 'House rules']] : gameOf() === 'mm' ? [['mm-home', '⌂ Home'], ['mm-heroes', 'Heroes'], ['mm-party', 'Party'], ['mm-enc', 'Encounters'], ['mm-rules', 'Rules'], ['audio', 'Audio'], ['rules', 'House rules']]
       : [['home', '⌂ Home'], ['roster', 'Characters'], ['monsters', 'Monsters'], ['party', 'Party'], ['encounters', 'Encounters'], ['treasure', 'Treasures'], ['books', 'Books'], ['audio', 'Audio'], ['rules', 'House rules']];
     return '<nav class="sections" aria-label="Sections">' + list.map(function (x) {
       var on = ui.section === x[0] || (x[0] === 'roster' && ui.section === 'chars');
@@ -1547,7 +1547,7 @@
 
   var MON = window.MonsterUI({ esc: esc, btn: btn, ui: ui, store: store, render: render });
   Object.keys(MON.actions).forEach(function (k) { actions[k] = MON.actions[k]; });
-  var BOOKS = window.BooksUI({ esc: esc, btn: btn, ui: ui, store: store, render: render });
+  var BOOKS = window.BooksUI({ esc: esc, btn: btn, ui: ui, store: store, render: render, pf2Book: function () { return PFV.book(); } });
   Object.keys(BOOKS.actions).forEach(function (k) { actions[k] = BOOKS.actions[k]; });
   var MMV = window.MMUI({ esc: esc, btn: btn, ui: ui, store: store });
   AIHelper.setContext(aiContext);
@@ -1556,7 +1556,7 @@
   var PFV = window.PF2UI({ esc: esc, btn: btn, ui: ui, store: store, render: function () { render(); } });
   Object.keys(PFV.actions).forEach(function (k) { actions[k] = PFV.actions[k]; });
   Object.keys(MME.actions).forEach(function (k) { actions[k] = MME.actions[k]; });
-  var AUD = window.AudioUI({ esc: esc, btn: btn, ui: ui, store: store });
+  var AUD = window.AudioUI({ esc: esc, btn: btn, ui: ui, store: store, game: gameOf });
   Object.keys(AUD.actions).forEach(function (k) { actions[k] = AUD.actions[k]; });
   var TRE = window.TreasureUI({ esc: esc, btn: btn, ui: ui, store: store });
   Object.keys(TRE.actions).forEach(function (k) { actions[k] = TRE.actions[k]; });

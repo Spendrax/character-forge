@@ -29,6 +29,29 @@
     victory: [['43f1nm2QS6UHLm4TvktpBk', 'Triumphant Scenes'], ['5QvlKRARFeT2SQXVTA6zQ0', 'D&D Victory']],
     magic: [['1yYMz2aZf9qyUcQmeiYjip', 'Feywild Ambience'], ['1WUw0WdF59lT81yPGBwWgL', 'The Feywild']]
   };
+  // Mutants & Masterminds is set in our time: modern moods instead of taverns and dungeons.
+  var MOODS_MM = [
+    ['hq', 'Headquarters', 'house', 'lofi chill beats'], ['city', 'City at night', 'city', 'synthwave night drive'],
+    ['hero', 'Hero moment', 'bolt', 'epic heroic cinematic music'], ['chase', 'Action and chase', 'car', 'action movie chase music'],
+    ['villain', 'Villain', 'mask', 'villain theme dark'], ['tech', 'Tech and hacking', 'laptop', 'cyberpunk hacker music'],
+    ['noir', 'Investigation', 'eye', 'noir detective jazz'], ['tension', 'Tension', 'candle', 'suspense thriller soundtrack'],
+    ['mfight', 'Big fight', 'swords', 'superhero battle music'], ['space', 'Space and cosmic', 'rocket', 'space ambient sci-fi'],
+    ['msad', 'Sad moment', 'rain', 'sad emotional music'], ['mwin', 'Victory', 'trophy', 'triumphant superhero music']
+  ];
+  Object.assign(PICKS, {
+    hq: [['37i9dQZF1DWWQRwui0ExPn', 'lofi beats']],
+    city: [['0iAeUtwINlqfjwAyQ4ykur', 'Synthwave - Night Drive'], ['2CiqzE8dKtmgpWAR6TbTIF', 'Blade Runner Vibes / Night Driving']],
+    hero: [['4JdBmthvT9VSfpuDu3itVq', 'Heroic Cinematic Music'], ['0dQJTXwu3ZEL7ZyWI3YYQp', 'Best Epic Heroic Musics']],
+    chase: [['37i9dQZF1DX76Wlfdnj7AP', 'Beast Mode'], ['1CnAtW2mIejhmERcoQN9Yx', 'Drive Soundtrack']],
+    villain: [['4R2fMrgc2tkyKD5bwEXlDa', 'Songs that make you feel like the villain'], ['17V25rm8DeYNsU4YaZfYUK', 'Feel like a villain']],
+    tech: [['3UkdZt86rkqMOFvuWrt92O', 'Cyberpunk Radar'], ['11WEQezlbeZ7O5k7r6A64r', 'Cyberpunk: Edgerunners']],
+    noir: [['0Bhwoi6JTUFqjzmZoABfqP', 'Jazz Noir'], ['1FDVy3qAIVCiBkFV8TdRDj', 'Beat It, Toots - Noir Jazz']],
+    tension: [['37i9dQZF1DX2pSTOxoPbx9', 'Dark & Stormy']],
+    mfight: [['2FjygbVJiTiKaTlpiyuPIn', 'Superhero music'], ['1bbIcqTRI5oCXeXMCV8nij', 'Epic Combat']],
+    space: [['6Hui516oyyhckcM744zX8L', 'Space Sounds']],
+    msad: [['37i9dQZF1DX3YSRoSdA634', 'Life Sucks'], ['1Mbdl2LIOk9MvpadoBXNG8', 'Sad & Melancholic']],
+    mwin: [['0dQJTXwu3ZEL7ZyWI3YYQp', 'Best Epic Heroic Musics'], ['43f1nm2QS6UHLm4TvktpBk', 'Triumphant Scenes']]
+  });
   var PL = 'https://open.spotify.com/playlist/';
 
   // Spotify links that can play inside the app: open.spotify.com/{playlist|album|track|episode|show|artist}/{id}
@@ -45,9 +68,12 @@
   }
 
   root.AudioUI = function (api) {
-    var esc = api.esc, btn = api.btn, ui = api.ui, store = api.store;
+    var esc = api.esc, btn = api.btn, ui = api.ui, store = api.store, gameFn = api.game;
     var A = function () { return store.audio = store.audio || { lists: {} }; };
-    var S = ui.audio = ui.audio || { mood: 'tavern', add: '', msg: '' };
+    var S = ui.audio = ui.audio || { mood: 'tavern', moodMM: 'hq', add: '', msg: '' };
+    function modern() { return !!gameFn && gameFn() === 'mm'; }
+    function moods() { return modern() ? MOODS_MM : MOODS; }
+    var MK = function () { return modern() ? 'moodMM' : 'mood'; };
     var playing = null; // { u, t } shown in the dock
 
     // The dock lives outside the app's page, so redrawing pages never stops the music.
@@ -97,15 +123,15 @@
         '<a class="btn small" href="' + esc(x.u) + '" target="_blank" rel="noopener">' + (sp ? 'Spotify ↗' : 'Open ↗') + '</a>' + (mine ? btn('audRm', '✕', { v: i }, 'btn small') : '') + '</div>';
     }
     function html() {
-      var mood = MOODS.filter(function (m) { return m[0] === S.mood; })[0] || MOODS[0], lists = A().lists;
+      var MS = moods(), mood = MS.filter(function (m) { return m[0] === S[MK()]; })[0] || MS[0], lists = A().lists;
       var sr = searches(mood), mine = lists[mood[0]] || [], picks = (PICKS[mood[0]] || []).map(function (p) { return { u: PL + p[0], t: p[1] }; });
       var h = '<main class="mon-main audio-main"><h2>Audio</h2><p class="muted">Pick a mood, then ▶ Play here: the music starts in the player at the bottom and keeps going while you use the rest of the app. Switching playlists starts the new one right away.</p>';
-      h += '<div class="audio-moods">' + MOODS.map(function (m) {
+      h += '<div class="audio-moods">' + MS.map(function (m) {
         var n = (lists[m[0]] || []).length;
         return '<button type="button" class="audio-mood' + (m[0] === mood[0] ? ' on' : '') + '" data-act="audMood" data-v="' + m[0] + '">' + root.Icon(m[2]) + ' ' + esc(m[1]) + (n ? ' <small>+' + n + '</small>' : '') + '</button>';
       }).join('') + '</div>';
       h += '<div class="panel"><h3 class="ico-h">' + root.Icon(mood[2]) + ' ' + esc(mood[1]) + '</h3><div class="audio-list">' + picks.map(function (x) { return row(x, 0, false); }).join('') + '</div>' +
-        '<p class="small muted">Suggested public D&D playlists on Spotify. Want something else? ' +
+        '<p class="small muted">Suggested public ' + (modern() ? '' : 'D&D ') + 'playlists on Spotify. Want something else? ' +
         '<a href="' + esc(sr.spotify) + '" target="_blank" rel="noopener">Find more on Spotify</a> · <a href="' + esc(sr.qobuz) + '" target="_blank" rel="noopener">Find on Qobuz</a></p></div>';
       h += '<div class="panel"><h3>My ' + esc(mood[1].toLowerCase()) + ' playlists</h3>';
       if (!mine.length) h += '<p class="small muted">None yet. On Spotify or Qobuz, use Share → Copy link on a playlist or album, then paste it here.</p>';
@@ -117,14 +143,14 @@
       return h + '</main>';
     }
     var actions = {
-      audMood: function (v) { S.mood = v; S.msg = ''; },
+      audMood: function (v) { S[MK()] = v; S.msg = ''; },
       audAdd: function () {
         var u = cleanUrl(S.add); if (!u) { S.msg = 'Paste a full link starting with https://'; return; }
-        var L = A().lists[S.mood] = A().lists[S.mood] || [];
+        var L = A().lists[S[MK()]] = A().lists[S[MK()]] || [];
         if (L.some(function (x) { return x.u === u; })) { S.msg = 'Already in this mood.'; return; }
         L.push({ u: u, t: String(S.name || '').trim() }); S.add = ''; S.name = ''; S.msg = '';
       },
-      audRm: function (v) { var L = A().lists[S.mood] || [], x = L[+v]; if (x && playing && playing.u === x.u) { playing = null; drawDock(); } L.splice(+v, 1); },
+      audRm: function (v) { var L = A().lists[S[MK()]] || [], x = L[+v]; if (x && playing && playing.u === x.u) { playing = null; drawDock(); } L.splice(+v, 1); },
       audPlay: function (v, el) { playing = playing && playing.u === v ? null : { u: v, t: el.getAttribute('data-t') }; drawDock(); },
       audStop: function () { playing = null; drawDock(); }
     };
@@ -133,6 +159,6 @@
   };
   root.AudioUI.spotifyEmbed = spotifyEmbed;
   root.AudioUI.cleanUrl = cleanUrl;
-  root.AudioUI.MOODS = MOODS;
+  root.AudioUI.MOODS = MOODS; root.AudioUI.MOODS_MM = MOODS_MM;
   root.AudioUI.PICKS = PICKS;
 })(typeof window !== 'undefined' ? window : globalThis);

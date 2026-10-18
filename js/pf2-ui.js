@@ -560,10 +560,36 @@
       'This app uses trademarks and/or copyrights owned by Paizo Inc., used under Paizo’s Community Use Policy (paizo.com/licenses/communityuse). We are expressly prohibited from charging you to use or access this content. This app is not published, endorsed, or specifically approved by Paizo. For more information about Paizo Inc. and Paizo products, visit paizo.com.\n\n' +
       '**Open Game License v1.0a** © 2000, Wizards of the Coast, Inc. Pathfinder Core Rulebook (Second Edition) © 2019, Paizo Inc. Pathfinder Advanced Player’s Guide © 2020, Paizo Inc. Pathfinder Secrets of Magic © 2021, Paizo Inc. Pathfinder Guns & Gears © 2021, Paizo Inc. Pathfinder Dark Archive © 2022, Paizo Inc. Pathfinder Bestiary, Bestiary 2, Bestiary 3 © 2019–2021, Paizo Inc. Pathfinder Lost Omens books © Paizo Inc.';
 
+    // ---------- a readable rules book for the Books shelf ----------
+    var bookCache = null;
+    function book() {
+      if (bookCache) return bookCache;
+      if (!need(['core'])) return null;
+      var C = PF2.index().core, byN = function (a, b) { return a.n < b.n ? -1 : 1; };
+      var entry = function (e, extra) { return '## ' + e.n + (extra ? ' ' + extra : '') + '\n\n' + (e.d || '') + (e.src ? '\n\n*' + e.src + '*' : ''); };
+      var letters = function (rows) { var parts = [], cur = null; rows.slice().sort(byN).forEach(function (e) { var L = e.n[0].toUpperCase(); if (!cur || cur.t !== L) { cur = { t: L, md: '# ' + L }; parts.push(cur); } cur.md += '\n\n' + entry(e); }); return parts; };
+      var one = function (rows, fn) { return rows.slice().sort(byN).map(function (e) { return { t: e.n, md: '# ' + e.n + '\n\n' + (e.d || '') + (fn ? fn(e) : '') }; }); };
+      bookCache = { id: 'pf2', title: 'Pathfinder 2e rules', chapters: [
+        { t: 'The basics', parts: [{ t: 'The basics', md: BASICS }] },
+        { t: 'Conditions', parts: [{ t: 'Conditions', md: '# Conditions\n\n' + (C.conditions || []).slice().sort(byN).map(function (e) { return entry(e); }).join('\n\n') }] },
+        { t: 'Actions', parts: letters(C.actions || []) },
+        { t: 'Ancestries', parts: one(C.ancestries || []) },
+        { t: 'Heritages', parts: letters(C.heritages || []) },
+        { t: 'Backgrounds', parts: letters(C.backgrounds || []) },
+        { t: 'Classes', parts: one(C.classes || [], function (c) {
+          var feats = (C.classfeatures || []).filter(function (f) { return (f.t || []).indexOf(c.id) >= 0; }).sort(function (a, b) { return (a.lv || 0) - (b.lv || 0) || byN(a, b); });
+          return '\n\n## Features by level\n\n' + (c.features || []).map(function (f) { return '- **' + f[0] + '** ' + f[1]; }).join('\n') + (feats.length ? '\n\n' + feats.map(function (f) { return entry(f, '(level ' + (f.lv || 1) + ')'); }).join('\n\n') : '');
+        }) },
+        { t: 'Deities', parts: letters(C.deities || []) },
+        { t: 'Sources and license', parts: [{ t: 'Sources and license', md: LICENSE }] }
+      ] };
+      return bookCache;
+    }
+
     // ---------- home ----------
     function homeHtml() {
       return '<main class="home"><h1>Pathfinder 2e</h1><p class="muted">Your table companion (pre-Remaster rules). Tap the d20 to roll.</p>' +
-        root.homeHub([['pf2-chars', 'sword', 'Characters'], ['pf2-party', 'campfire', 'Party'], ['pf2-enc', 'swords', 'Encounters'], ['pf2-rules', 'book', 'Rules'], ['audio', 'lute', 'Audio'], ['rules', 'scroll', 'House rules']]) + '</main>';
+        root.homeHub([['pf2-chars', 'sword', 'Characters'], ['pf2-party', 'campfire', 'Party'], ['pf2-enc', 'swords', 'Encounters'], ['pf2-mon', 'dragon', 'Monsters'], ['pf2-loot', 'coins', 'Treasures'], ['books', 'tome', 'Books'], ['pf2-rules', 'book', 'Rules'], ['audio', 'lute', 'Audio'], ['rules', 'scroll', 'House rules']]) + '</main>';
     }
 
     function html(section) {
@@ -574,6 +600,8 @@
         var ch = U.view === 'char' && cur();
         return ch ? charHtml(ch) : listHtml();
       }
+      if (section === 'pf2-mon') return root.PF2Enc ? ENC.monstersHtml() : '';
+      if (section === 'pf2-loot') return root.PF2Enc ? ENC.lootHtml() : '';
       if (section === 'pf2-party' || section === 'pf2-enc') return root.PF2Enc ? (section === 'pf2-party' ? ENC.partyHtml() : ENC.html()) : '';
       return homeHtml();
     }
@@ -711,7 +739,7 @@
       if (a('data-pff') || a('data-pfmoney') || a('data-pfgname') || a('data-pfprop')) return 'render';
       return ENC.onChange ? ENC.onChange(t) : null;
     }
-    function title(section) { var ch = cur(); return section === 'pf2-chars' && U.view === 'char' && ch ? (ch.name || 'Character') + ' — PF2' : { 'pf2-home': 'Pathfinder 2e', 'pf2-chars': 'PF2 characters', 'pf2-rules': 'PF2 rules', 'pf2-party': 'PF2 party', 'pf2-enc': 'PF2 encounters' }[section] || 'Pathfinder 2e'; }
+    function title(section) { var ch = cur(); return section === 'pf2-chars' && U.view === 'char' && ch ? (ch.name || 'Character') + ' — PF2' : { 'pf2-home': 'Pathfinder 2e', 'pf2-chars': 'PF2 characters', 'pf2-rules': 'PF2 rules', 'pf2-party': 'PF2 party', 'pf2-mon': 'PF2 monsters', 'pf2-loot': 'PF2 treasures', 'pf2-enc': 'PF2 encounters' }[section] || 'Pathfinder 2e'; }
 
     // What the helper sees, and the changes it may propose
     function context(section) {
@@ -759,6 +787,6 @@
     }
     function navPart() { return { v: U.view, t: U.tab, p: U.pick ? JSON.stringify(U.pick) : '' }; }
     function restoreNav(p) { if (!p) return; U.view = p.v || 'list'; U.tab = p.t || 'build'; try { U.pick = p.p ? JSON.parse(p.p) : null; } catch (e) { U.pick = null; } }
-    return { html: html, actions: actions, onInput: onInput, onChange: onChange, title: title, context: context, navPart: navPart, restoreNav: restoreNav, after: after };
+    return { html: html, book: book, actions: actions, onInput: onInput, onChange: onChange, title: title, context: context, navPart: navPart, restoreNav: restoreNav, after: after };
   };
 })(typeof window !== 'undefined' ? window : globalThis);

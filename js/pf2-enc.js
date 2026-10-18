@@ -60,7 +60,7 @@
       var sv = m.sv || {};
       return '<div class="pf-desc pf-stat-block">' + traits((m.t || []).concat(m.size ? [{ tiny: 'tiny', sm: 'small', med: 'medium', lg: 'large', huge: 'huge', grg: 'gargantuan' }[m.size] || m.size] : []), m) +
         '<p class="small"><b>Perception</b> ' + fmt((m.per || 0) + d) + (m.lang && m.lang.length ? ' · <b>Languages</b> ' + esc(m.lang.join(', ')) : '') + '</p>' +
-        (m.sk ? '<p class="small"><b>Skills</b> ' + esc(Object.keys(m.sk).map(function (k) { return k + ' ' + fmt(m.sk[k] + d); }).join(', ')) + '</p>' : '') +
+        (m.sk ? '<p class="small"><b>Skills</b> ' + esc(Object.keys(m.sk).map(function (k) { var v = m.sk[k]; return k + ' ' + fmt((typeof v === 'object' ? +v.value || 0 : +v || 0) + d); }).join(', ')) + '</p>' : '') +
         '<p class="small">' + ['str', 'dex', 'con', 'int', 'wis', 'cha'].map(function (a) { return '<b>' + a.toUpperCase() + '</b> ' + fmt((m.ab || {})[a] || 0); }).join(' ') + '</p>' +
         '<p class="small"><b>AC</b> ' + ((m.ac || 0) + d) + '; <b>Fort</b> ' + fmt((sv.fortitude || 0) + d) + ', <b>Ref</b> ' + fmt((sv.reflex || 0) + d) + ', <b>Will</b> ' + fmt((sv.will || 0) + d) + '</p>' +
         '<p class="small"><b>HP</b> ' + hp + (m.imm ? '; <b>Immunities</b> ' + esc(m.imm.join(', ')) : '') + (m.wea ? '; <b>Weaknesses</b> ' + esc(m.wea.join(', ')) : '') + (m.res ? '; <b>Resistances</b> ' + esc(m.res.join(', ')) : '') + '</p>' +
@@ -121,7 +121,7 @@
     function writeBack(c) { if (!c || !c.pm) return; var p = partyById(c.pm[0]), m = p && p.m.filter(function (x) { return x.id === c.pm[1]; })[0]; if (m) m.cur = c.hp; }
     function runHtml() {
       var run = enc().run;
-      return '<div class="panel enc-run"><div class="toolbar" style="margin:0"><h3 style="margin:0">Round ' + run.round + '</h3><span class="spacer"></span>' + btn('pfeNext', 'Next turn ▶', {}, 'btn primary') + btn('pfeStop', 'End fight', {}, 'btn') + '</div>' +
+      return '<div class="panel enc-run"><div class="toolbar" style="margin:0"><h3 style="margin:0">Round ' + run.round + '</h3><span class="spacer"></span>' + btn('pfeNext', 'Next turn ▶', {}, 'btn primary') + btn('pfeLoot', 'Treasure', {}, 'btn') + btn('pfeStop', 'End fight', {}, 'btn') + '</div>' +
         '<p class="small muted">Initiative is Perception + d20 (players can type their own rolls). Type damage (e.g. 12) or healing with + (e.g. +5).</p>' +
         run.list.map(function (c, i) {
           var pct = c.max ? Math.max(0, Math.round(c.hp / c.max * 100)) : 100, m = c.id && mon(c.id);
@@ -132,6 +132,94 @@
             '<span class="enc-hp"><b>' + c.hp + '</b>/' + c.max + '</span><input type="text" inputmode="numeric" class="enc-dmg" id="pfd-' + c.k + '" data-pfedmg="' + c.k + '" placeholder="−dmg" aria-label="Damage or healing for ' + esc(c.n) + '">' +
             '<div class="enc-adj">' + ['-10', '-5', '-1', '+1', '+5', '+10'].map(function (v) { return btn('pfeHpRun', v.replace('-', '−'), { v: c.k, d: v }, 'btn small'); }).join('') + '</div></div>';
         }).join('') + '</div>' + (E.view ? '<div class="enc-modal" role="dialog"><div class="toolbar">' + btn('pfeViewClose', '✕ Close', {}, 'btn') + '</div><h3>' + esc(mon(E.view).n) + '</h3>' + statBlock(mon(E.view)) + '</div>' : '');
+    }
+    // ---------- monsters: the whole bestiary to browse ----------
+    var M = ui.pf2m = ui.pf2m || { q: '', lo: '', hi: '', trait: '', size: '', src: '', open: '', added: '' };
+    var SRC = { B1: 'Bestiary', B2: 'Bestiary 2', B3: 'Bestiary 3', GMG: 'Gamemastery Guide', BotD: 'Book of the Dead', RoE: 'Rage of Elements', MoM: 'Monsters of Myth', LOCG: 'Lost Omens Character Guide', DA: 'Dark Archive', CRB: 'Core Rulebook', Abs: 'Lost Omens Absalom' };
+    var SIZES = [['tiny', 'Tiny'], ['sm', 'Small'], ['med', 'Medium'], ['lg', 'Large'], ['huge', 'Huge'], ['grg', 'Gargantuan']];
+    // creature-type traits → the sound groups the D&D monsters use
+    var CTYPE = { aberration: 'aberration', animal: 'beast', beast: 'beast', celestial: 'celestial', construct: 'construct', dragon: 'dragon', elemental: 'elemental', fey: 'fey', fiend: 'fiend', fungus: 'plant', giant: 'giant', humanoid: 'humanoid', ooze: 'ooze', plant: 'plant', undead: 'undead', spirit: 'undead' };
+    function soundBtn(m) { if (!root.Sounds) return ''; var ty = (m.t || []).filter(function (t) { return CTYPE[t]; })[0]; return root.Sounds.button({ n: m.n, type: ty ? CTYPE[ty] : '' }); }
+    function monstersHtml() {
+      if (!api.need(['core', 'bestiary'])) return api.waitHtml('Monsters');
+      var B = root.PF2DATA.bestiary, q = (M.q || '').toLowerCase(), lo = M.lo === '' ? -99 : +M.lo, hi = M.hi === '' ? 99 : +M.hi;
+      var list = B.filter(function (m) { return (!q || m.n.toLowerCase().indexOf(q) >= 0) && m.lv >= lo && m.lv <= hi && (!M.trait || (m.t || []).indexOf(M.trait) >= 0) && (!M.size || m.size === M.size) && (!M.src || m.src === M.src); })
+        .sort(function (a, b) { return a.lv - b.lv || (a.n < b.n ? -1 : 1); });
+      var tr = {}, srcs = {}; B.forEach(function (m) { (m.t || []).forEach(function (t) { tr[t] = 1; }); srcs[m.src] = (srcs[m.src] || 0) + 1; });
+      var lvls = []; for (var i = -1; i <= 25; i++) lvls.push(i);
+      var opt = function (v, label, cur) { return '<option value="' + esc(v) + '"' + (String(cur) === String(v) ? ' selected' : '') + '>' + esc(label) + '</option>'; };
+      var sel = function (k, label, opts) { return '<label class="mon-f">' + label + ' <select data-pfmf="' + k + '"><option value="">Any</option>' + opts.map(function (o) { return opt(o[0], o[1], M[k]); }).join('') + '</select></label>'; };
+      var n = enc().mons.reduce(function (a, x) { return a + x.count; }, 0);
+      var h = '<main class="mon-main"><h2>Monsters</h2><div class="panel"><div class="mon-tools"><input type="search" id="pfm-q" data-pfmf="q" placeholder="Search ' + B.length + ' creatures…" value="' + esc(M.q) + '">' +
+        sel('lo', 'Level from', lvls.map(function (l) { return [l, l]; })) + sel('hi', 'to', lvls.map(function (l) { return [l, l]; })) +
+        sel('trait', 'Trait', Object.keys(tr).sort().map(function (t) { return [t, t]; })) + sel('size', 'Size', SIZES) +
+        sel('src', 'Book', Object.keys(srcs).sort(function (a, b) { return srcs[b] - srcs[a]; }).map(function (k) { return [k, SRC[k] || k]; })) + '</div>' +
+        '<div class="small muted mon-count">' + list.length + ' creatures' + (list.length > 200 ? ', showing 200: search or filter to narrow' : '') + '</div>' +
+        (M.added ? '<p class="small rest-msg">' + esc(M.added) + ' added to the encounter (' + n + ' creature' + (n === 1 ? '' : 's') + '). <button type="button" class="linkbtn" data-act="section" data-v="pf2-enc">Go to Encounters</button></p>' : '') + '</div>';
+      h += list.slice(0, 200).map(function (m) {
+        var open = M.open === m.id, size = (SIZES.filter(function (x) { return x[0] === m.size; })[0] || ['', m.size || ''])[1];
+        var kind = (m.t || []).filter(function (t) { return CTYPE[t]; }).join(', ');
+        return '<div class="pf-spell' + (m.r ? ' r-' + esc(m.r) : '') + '"><button type="button" class="pf-pname" data-act="pfmOpen" data-v="' + esc(m.id) + '" aria-expanded="' + open + '"><b>' + esc(m.n) + '</b><span class="spacer"></span><small class="muted">Creature ' + m.lv + ' · ' + esc([size, kind].filter(Boolean).join(' ')) + ' · ' + esc(m.src) + '</small></button>' +
+          (open ? '<div class="toolbar">' + btn('pfmAdd', '+ Add to encounter', { v: m.id }, 'btn small primary') + soundBtn(m) + '<span class="small muted">' + esc(SRC[m.src] || m.src) + '</span></div>' + statBlock(m) : '') + '</div>';
+      }).join('');
+      return h + '<p class="small muted">Creatures from the pre-Remaster Bestiaries and books, Open Game Content (see Rules → License).</p></main>';
+    }
+
+    // ---------- treasure: Party Treasure by Level (Core Rulebook, table 10-9) ----------
+    // [total gp, permanent items [[level, count]], consumables [[level, count]], party currency gp, currency per extra character]
+    var TBL = [null,
+      [175, [[2, 2], [1, 2]], [[2, 2], [1, 3]], 40, 10], [300, [[3, 2], [2, 2]], [[3, 2], [2, 2], [1, 2]], 70, 18], [500, [[4, 2], [3, 2]], [[4, 2], [3, 2], [2, 2]], 120, 30],
+      [850, [[5, 2], [4, 2]], [[5, 2], [4, 2], [3, 2]], 200, 50], [1350, [[6, 2], [5, 2]], [[6, 2], [5, 2], [4, 2]], 320, 80], [2000, [[7, 2], [6, 2]], [[7, 2], [6, 2], [5, 2]], 500, 125],
+      [2900, [[8, 2], [7, 2]], [[8, 2], [7, 2], [6, 2]], 720, 180], [4000, [[9, 2], [8, 2]], [[9, 2], [8, 2], [7, 2]], 1000, 250], [5700, [[10, 2], [9, 2]], [[10, 2], [9, 2], [8, 2]], 1400, 350],
+      [8000, [[11, 2], [10, 2]], [[11, 2], [10, 2], [9, 2]], 2000, 500], [11500, [[12, 2], [11, 2]], [[12, 2], [11, 2], [10, 2]], 2800, 700], [16500, [[13, 2], [12, 2]], [[13, 2], [12, 2], [11, 2]], 4000, 1000],
+      [25000, [[14, 2], [13, 2]], [[14, 2], [13, 2], [12, 2]], 6000, 1500], [36500, [[15, 2], [14, 2]], [[15, 2], [14, 2], [13, 2]], 9000, 2250], [54500, [[16, 2], [15, 2]], [[16, 2], [15, 2], [14, 2]], 13000, 3250],
+      [82500, [[17, 2], [16, 2]], [[17, 2], [16, 2], [15, 2]], 20000, 5000], [128000, [[18, 2], [17, 2]], [[18, 2], [17, 2], [16, 2]], 30000, 7500], [208000, [[19, 2], [18, 2]], [[19, 2], [18, 2], [17, 2]], 48000, 12000],
+      [355000, [[20, 2], [19, 2]], [[20, 2], [19, 2], [18, 2]], 80000, 20000], [490000, [[20, 4]], [[20, 4], [19, 2]], 140000, 35000]];
+    var MAGICT = /^(magical|alchemical|arcane|divine|occult|primal|abjuration|conjuration|divination|enchantment|evocation|illusion|necromancy|transmutation|invested|gadget|tech)$/;
+    function loot() { return store.pf2Loot = store.pf2Loot || { lvl: 1, n: 4, kind: 'level', unc: false, last: null }; }
+    function itemPool(lv, cons, unc) {
+      return ((root.PF2DATA || {}).items || []).filter(function (it) {
+        return (it.lv || 0) === lv && it.cp > 0 && (cons ? it.k === 'consumable' : /^(equipment|armor|weapon|backpack)$/.test(it.k)) && (!it.r || unc && it.r === 'u') && (it.t || []).some(function (t) { return MAGICT.test(t); });
+      });
+    }
+    function gp(cp) { return cp >= 100 ? (Math.round(cp / 10) / 10).toLocaleString('en') + ' gp' : cp >= 10 ? Math.round(cp / 10) + ' sp' : cp + ' cp'; }
+    function rollLoot() {
+      var L = loot(), row = TBL[L.lvl], r = Math.random, pick = function (a) { return a[Math.floor(r() * a.length)]; }, out = { lvl: L.lvl, n: L.n, kind: L.kind, perm: [], cons: [], vals: [], coins: 0 };
+      var take = function (spec, cons, into) { spec.forEach(function (x) { var pool = itemPool(x[0], cons, L.unc); for (var i = 0; i < x[1] && pool.length; i++) into.push(pool.splice(Math.floor(r() * pool.length), 1)[0].id); }); };
+      var cur = Math.max(0, row[3] + row[4] * (L.n - 4));
+      if (L.kind === 'level') { take(row[1], false, out.perm); take(row[2], true, out.cons); }
+      else { if (r() < 0.5) take([[pick(row[1])[0], 1]], false, out.perm); take([[pick(row[2])[0], 1 + (r() < 0.5 ? 1 : 0)]], true, out.cons); cur = Math.round(cur / 4); }
+      // part of the money as gems and art objects
+      var gems = ((root.PF2DATA || {}).items || []).filter(function (it) { return it.k === 'treasure' && it.cp >= cur * 100 * 0.08 && it.cp <= cur * 100 * 0.4; }), left = cur * 100;
+      for (var i = 0; i < 2 && gems.length; i++) { if (r() < 0.6) { var g = pick(gems); if (g.cp <= left * 0.5) { out.vals.push(g.id); left -= g.cp; } } }
+      out.coins = Math.round(left / 100); L.last = out;
+    }
+    function itemById(id) { var I = (root.PF2DATA || {}).items || []; if (!I._by) { I._by = {}; I.forEach(function (x) { I._by[x.id] = x; }); } return I._by[id]; }
+    function lootRow(id, k) {
+      var it = itemById(id); if (!it) return '';
+      var open = M.lopen === k;
+      return '<div class="pf-spell' + (it.r ? ' r-' + esc(it.r) : '') + '"><button type="button" class="pf-pname" data-act="pflOpen" data-v="' + esc(k) + '" aria-expanded="' + open + '"><b>' + esc(it.n) + '</b><span class="spacer"></span><small class="muted">Item ' + (it.lv || 0) + ' · ' + gp(it.cp) + '</small></button>' +
+        (open ? '<div class="pf-desc">' + traits(it.t || [], it) + md(it.d || '') + '<p class="small muted">' + esc(it.src || '') + '</p></div>' : '') + '</div>';
+    }
+    function lootHtml() {
+      if (!api.need(['core', 'items'])) return api.waitHtml('Treasures');
+      var L = loot(), row = TBL[L.lvl], t = L.last, p = curParty();
+      var step = function (k, v, lo, hi) { return '<span class="mm-step">' + btn('pflSet', '−', { k: k, d: -1 }, 'mm-b') + '<b>' + v + '</b>' + btn('pflSet', '+', { k: k, d: 1 }, 'mm-b') + '</span>'; };
+      var h = '<main class="mon-main tre-main"><h2>Treasures</h2><div class="panel"><p class="small muted">Pathfinder gives each level a treasure budget. Roll the whole level’s worth at once, or one fight’s share (about a quarter) after an encounter.</p>' +
+        '<div class="pills">' + [['level', 'Whole level'], ['fight', 'One fight’s share']].map(function (k) { return btn('pflKind', k[1], { v: k[0] }, 'pill' + (L.kind === k[0] ? ' on' : '')); }).join('') + '</div>' +
+        '<div class="row"><div class="field"><span>Party level</span>' + step('lvl', L.lvl) + '</div><div class="field"><span>Characters</span>' + step('n', L.n) + '</div>' +
+        '<label class="field pf-chk"><span>Uncommon items</span><input type="checkbox" data-pflunc="1"' + (L.unc ? ' checked' : '') + '></label></div>' +
+        (p && p.m.length ? '<p class="small">' + btn('pflParty', 'Use my party (' + esc(p.name || 'unnamed') + ', level ' + partyLevel(p) + ', ' + p.m.length + ')', {}, 'linkbtn') + '</p>' : '') +
+        '<p class="small muted">Level ' + L.lvl + ' budget for 4 characters: ' + row[0].toLocaleString('en') + ' gp in all: permanent items ' + row[1].map(function (x) { return x[1] + ' of level ' + x[0]; }).join(', ') + '; consumables ' + row[2].map(function (x) { return x[1] + ' of level ' + x[0]; }).join(', ') + '; ' + row[3].toLocaleString('en') + ' gp in money (+' + row[4].toLocaleString('en') + ' gp per extra character).</p>' +
+        '<div class="toolbar">' + btn('pflRoll', (root.Icon ? root.Icon('d20') : '') + ' Random treasure', {}, 'btn primary') + '</div></div>';
+      if (t) {
+        h += '<div class="panel tre-result"><h3>' + (t.kind === 'level' ? 'Treasure for level ' + t.lvl : 'One fight at level ' + t.lvl) + ' <small class="muted">' + t.n + ' characters</small></h3>' +
+          '<div class="coins"><span class="coin coin-gp"><b>' + t.coins.toLocaleString('en') + '</b> gp</span></div>' +
+          (t.vals.length ? '<h4>Gems and art</h4>' + t.vals.map(function (id, i) { return lootRow(id, 'v' + i); }).join('') : '') +
+          (t.perm.length ? '<h4>Permanent items</h4>' + t.perm.map(function (id, i) { return lootRow(id, 'p' + i); }).join('') : '') +
+          (t.cons.length ? '<h4>Consumables</h4>' + t.cons.map(function (id, i) { return lootRow(id, 'c' + i); }).join('') : '') + '</div>';
+      }
+      return h + '<p class="small muted">Amounts from the Core Rulebook’s Party Treasure by Level table. Items are picked at random from the common' + (L.unc ? ' and uncommon' : '') + ' magic and alchemical items of each level. Fundamental runes and gear the players want are good swaps for random items.</p></main>';
     }
     function member(id) { var p = curParty(); return p && p.m.filter(function (x) { return x.id === id; })[0]; }
     function runC(k) { var r = enc().run; return r && r.list.filter(function (x) { return x.k === k; })[0]; }
@@ -155,11 +243,20 @@
       pfeRun: function () { if (!enc().mons.length) return; startRun(); root.scrollTo(0, 0); },
       pfeNext: function () { var r = enc().run; r.turn++; if (r.turn >= r.list.length) { r.turn = 0; r.round++; } },
       pfeStop: function () { enc().run = null; },
+      pfmOpen: function (v) { M.open = M.open === v ? '' : v; },
+      pfmAdd: function (v) { actions.pfeAdd2(v); var m = mon(v); M.added = m ? m.n : ''; },
+      pflOpen: function (v) { M.lopen = M.lopen === v ? '' : v; },
+      pflKind: function (v) { loot().kind = v; },
+      pflSet: function (_, el) { var L = loot(), k = el.getAttribute('data-k'); L[k] = Math.max(1, Math.min(k === 'n' ? 8 : 20, L[k] + +el.getAttribute('data-d'))); },
+      pflParty: function () { var p = curParty(), L = loot(); if (p && p.m.length) { L.lvl = partyLevel(p); L.n = Math.min(8, p.m.length); } },
+      pflRoll: function () { M.lopen = ''; rollLoot(); },
+      pfeLoot: function () { var e = enc(), p = partyById(e.party), L = loot(); L.lvl = p && p.m.length ? partyLevel(p) : +e.lvl || 1; L.n = Math.min(8, p && p.m.length ? p.m.length : +e.n || 4); L.kind = 'fight'; M.lopen = ''; rollLoot(); ui.section = 'pf2-loot'; root.scrollTo(0, 0); },
       pfeHpRun: function (v, el) { var c = runC(v); if (c) { c.hp = Math.max(0, Math.min(c.max, c.hp + +el.getAttribute('data-d'))); writeBack(c); } }
     };
     function onInput(t) {
       var a = function (n) { return t.getAttribute(n); };
       if (a('data-pfef') != null) { E[a('data-pfef')] = t.value; return 'render'; }
+      if (a('data-pfmf') != null) { M[a('data-pfmf')] = t.value; M.added = ''; return 'render'; }
       if (a('data-pfename')) { curParty().name = t.value; return 'save'; }
       if (a('data-pfem')) { var m = member(a('data-pfem')), k = a('data-f'); if (!m) return 'save'; if (k === 'n' || k === 'cls') m[k] = t.value; else { var was = +m.hp || 0; m[k] = Math.max(k === 'per' ? -5 : 0, Math.round(+t.value) || 0); if (k === 'lvl') m.lvl = Math.max(1, Math.min(20, m.lvl)); if (k === 'hp' && (+m.cur || 0) >= was) m.cur = m.hp; if (k === 'hp') m.cur = Math.min(m.cur, m.hp); } return 'save'; }
       if (a('data-pfeinit')) { var c = runC(a('data-pfeinit')); if (c) c.init = +t.value || 0; return 'save'; }
@@ -168,6 +265,8 @@
     }
     function onChange(t) {
       var a = function (n) { return t.getAttribute(n); };
+      if (a('data-pflunc')) { loot().unc = t.checked; return 'render'; }
+      if (a('data-pfmf') != null) return 'render';
       if (a('data-pfepick')) { E.team = t.value; return 'render'; }
       if (a('data-pfeparty') != null) { enc().party = t.value; return 'render'; }
       if (a('data-pfeadj') != null) { enc().mons[+a('data-pfeadj')].adj = t.value; return 'render'; }
@@ -177,7 +276,7 @@
       if (a('data-pfem') || a('data-pfename') || a('data-pfef') != null) return 'render';
       return null;
     }
-    return { html: html, partyHtml: partyHtml, actions: actions, onInput: onInput, onChange: onChange };
+    return { html: html, partyHtml: partyHtml, monstersHtml: monstersHtml, lootHtml: lootHtml, actions: actions, onInput: onInput, onChange: onChange };
   };
   root.PF2Enc.rate = rate; root.PF2Enc.xpFor = xpFor;
 })(typeof window !== 'undefined' ? window : globalThis);

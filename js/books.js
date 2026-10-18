@@ -166,12 +166,12 @@
 
     function srdReady() { return root.DND && root.DND.book; }
     function ensure() {
-      if (store.game !== 'mm' && !srdReady() && !B.loading) { B.loading = true; loadScript('data/srd-book.js').then(function () { B.loading = false; render(); }, function () { B.loading = false; B.err = 'Couldn’t load the free rules. Check your connection and try again.'; render(); }); }
+      if (store.game !== 'mm' && store.game !== 'pf2' && !srdReady() && !B.loading) { B.loading = true; loadScript('data/srd-book.js').then(function () { B.loading = false; render(); }, function () { B.loading = false; B.err = 'Couldn’t load the free rules. Check your connection and try again.'; render(); }); }
       if (!mine && root.indexedDB) { mine = []; get('books').then(function (l) { mine = l || []; render(); }, function () { mine = []; }); }
     }
     var rules = null, mmBook = null;
-    function built() { return store.game === 'mm' ? [{ id: 'mm', kind: 'mmrules', name: 'M&M 3e rules' }] : [{ id: 'rules', kind: 'rules', name: 'Rules' }]; } // each game shows its own rules; your own books show in both
-    function bookObj(id) { return id === 'rules' ? (rules = rules || withSrd(rulesBook(root.DND), root.DND.book)) : id === 'mm' ? (mmBook = mmBook || root.MMRules.book()) : texts[id]; }
+    function built() { return store.game === 'mm' ? [{ id: 'mm', kind: 'mmrules', name: 'M&M 3e rules' }] : store.game === 'pf2' ? [{ id: 'pf2', kind: 'pf2rules', name: 'Pathfinder 2e rules' }] : [{ id: 'rules', kind: 'rules', name: 'Rules' }]; } // each game shows its own rules; your own books show in both
+    function bookObj(id) { return id === 'rules' ? (rules = rules || withSrd(rulesBook(root.DND), root.DND.book)) : id === 'mm' ? (mmBook = mmBook || root.MMRules.book()) : id === 'pf2' ? api.pf2Book() : texts[id]; }
     function pos() { return store.bookPos = store.bookPos || {}; }
 
     // ---------- reading the free rules or a text book ----------
@@ -290,6 +290,7 @@
       if (meta.kind === 'pdf') {
         h += '<div class="bk-layout bk-layout-pdf"><aside class="bk-side">' + search + (B.q ? (pdf.doc ? pdfSearch() : '') : '<p class="small muted">Search finds the pages that mention a word.</p>') + tools + '</aside><section class="bk-read">' + pdfHtml(meta) + '</section></div>';
       } else {
+        if (meta.kind === 'pf2rules' && !bookObj('pf2')) return h + '<p class="muted">Loading the Pathfinder rules…</p></main>';
         if (meta.kind === 'rules' && !srdReady()) return h + '<p class="muted">' + esc(B.err || 'Loading the free rules…') + '</p></main>';
         if (own && !texts[meta.id]) {
           if (!B.loadingText) { B.loadingText = true; get('book:' + meta.id).then(function (t) { B.loadingText = false; texts[meta.id] = splitText(meta.name, typeof t === 'string' ? t : ''); texts[meta.id].title = meta.name; render(); }, function () { B.loadingText = false; }); }
@@ -301,6 +302,7 @@
       }
       if (meta.kind === 'rules') h += '<p class="small muted">The equipment, play, spellcasting, game master and magic item chapters are from the official free rules. This work includes material taken from the System Reference Document 5.1 (“SRD 5.1”) by Wizards of the Coast LLC, available at <a href="https://dnd.wizards.com/resources/systems-reference-document" target="_blank" rel="noopener">dnd.wizards.com</a>, licensed under the <a href="https://creativecommons.org/licenses/by/4.0/legalcode" target="_blank" rel="noopener">Creative Commons Attribution 4.0 International License</a>. Text prepared by <a href="https://github.com/OldManUmby/DND.SRD.Wiki" target="_blank" rel="noopener">OldManUmby’s SRD reForged</a>.</p>';
       if (meta.kind === 'rules') h += '<p class="small muted">The classes, class options, races, backgrounds, feats and spells are short summaries in our own words, from <a href="https://dnd5e.wikidot.com" target="_blank" rel="noopener">dnd5e.wikidot.com</a>. They are not the books’ text: check the book for exact wording.</p>';
+      else if (meta.kind === 'pf2rules') h += '<p class="small muted">Pre-Remaster Pathfinder 2e rules from the Foundry VTT system, Open Game Content under the OGL 1.0a (Rage of Elements under the ORC License), used under Paizo’s Community Use Policy; see the last chapter. Feats, spells and equipment are in Rules, with search.</p>';
       else if (meta.kind === 'mmrules') h += '<p class="small muted">Short summaries in our own words of the Mutants &amp; Masterminds 3rd edition rules, with names, costs and stats from its Open Game Content. For the full rules text see <a href="https://www.d20herosrd.com" target="_blank" rel="noopener">d20herosrd.com</a>, or add your own copy of the Hero’s Handbook (PDF) with + Add a book. Mutants &amp; Masterminds is a trademark of Green Ronin Publishing; this is an unofficial fan tool.</p>';
       else h += '<p class="small muted">Books you add stay in this browser on this device. They are never uploaded or shared.</p>';
       return h + '</main>';
