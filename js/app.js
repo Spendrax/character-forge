@@ -755,7 +755,7 @@
     var list = AM.filter(function (x) { return match(q, x[0]) && (!ui.miRarity || x[1].indexOf(ui.miRarity) >= 0) && (!ui.miType || x[2] === ui.miType) && (!ui.miOnly || (ui.miOnly === 'srd' ? srdItemText(x[0]) : ui.miOnly === 'mine' ? window.ItemTexts && ItemTexts.get(x[0]) : 1)); });
     var sel = function (key, label, opts) { return '<select data-ui="' + key + '" aria-label="' + label + '"><option value="">' + label + '</option>' + opts.map(function (o) { o = [].concat(o); return '<option value="' + esc(o[0]) + '"' + (ui[key] === o[0] ? ' selected' : '') + '>' + esc(o[1] || o[0]) + '</option>'; }).join('') + '</select>'; };
     var chars = store.chars, to = byId(ui.miTo) ? ui.miTo : store.current;
-    var shown = list.slice(0, 120);
+    var shown = list.slice(0, ui.miMore || 150);
     return '<main class="mon-main"><h2>Magic items</h2><p class="muted">' + AM.length + ' magic items. Tap ▸ to read one: items from the free rules (SRD) have their full text, and the ones you import show yours.</p>' +
       '<div class="panel">' + itemImportBar() + '<div class="toolbar">' + search('mi', 'Search magic items…') + sel('miRarity', 'Any rarity', D.rarities) + sel('miType', 'Any type', types.sort()) +
       sel('miOnly', 'All items', [['srd', 'With text from the free rules'], ['mine', 'With your imported text']]) + '<span class="muted small">' + list.length + ' found</span></div></div>' +
@@ -764,7 +764,7 @@
         return '<div class="spell"><div style="flex:1"><button type="button" class="fold" data-act="magicOpen" data-v="' + esc(x[0]) + '" aria-expanded="' + op + '">' + (op ? '▾' : '▸') + '</button> <b>' + esc(x[0]) + '</b> <span class="small muted">' + esc(x[2]) + ' · ' + esc(x[1].join(', ').toLowerCase()) + (x[3] ? ' · attunement' : '') + (!x[4] ? ' · imported' : '') + '</span>' +
           (op ? itemDescHtml({ k: 'magic', n: x[0], slug: x[4], id: 'pick' }, true) + (chars.length ? '<div class="toolbar">Give it to <select data-ui="miTo" aria-label="Character">' + chars.map(function (c) { return '<option value="' + c.id + '"' + (c.id === to ? ' selected' : '') + '>' + esc(title(c)) + '</option>'; }).join('') + '</select>' +
             x[1].map(function (r) { return btn('giveMagic', '+ ' + r, { v: x[0], r: r }, 'btn small'); }).join('') + '</div>' : '') : '') + '</div></div>';
-      }).join('') + '</div>' + (list.length > shown.length ? '<p class="small muted">Showing ' + shown.length + ' of ' + list.length + '. Search or filter to narrow the list.</p>' : '') + (list.length ? '' : '<p class="muted">No items match.</p>') + '</main>';
+      }).join('') + '</div>' + (list.length > shown.length ? '<div class="toolbar"><span class="small muted">Showing ' + shown.length + ' of ' + list.length + '.</span>' + btn('miMore', 'Show 150 more', {}, 'btn') + btn('miMore', 'Show all ' + list.length, { v: 'all' }, 'btn') + '</div>' : '') + (list.length ? '' : '<p class="muted">No items match.</p>') + '</main>';
   }
   function importItemTexts(input) {
     var files = [].slice.call(input.files || []); input.value = ''; if (!files.length) return;
@@ -1411,6 +1411,7 @@
     closeInstallHelp: function () { ui.installHelp = false; },
     import5eParts: function (v, el) { var I = ui.import5e; if (!I) return false; var id = +el.getAttribute('data-e'), e = I.entries.filter(function (x) { return x.id === id; })[0];
       I.parts[id] = el.getAttribute('data-all') ? PART_ORDER.filter(function (k) { return e.source === 'companion' || PARTS[k].spellbook; }) : []; },
+    miMore: function (v) { ui.miMore = v === 'all' ? 99999 : (ui.miMore || 150) + 150; },
     giveMagic: function (v, el) {
       var x = allMagic().filter(function (i) { return i[0] === v; })[0], c = byId(byId(ui.miTo) ? ui.miTo : store.current);
       if (!x || !c) return;
