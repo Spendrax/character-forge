@@ -728,11 +728,28 @@
     if (srd === null) return '<div class="item-desc small muted">Loading the description…</div>';
     var link = it.k === 'magic' && it.slug ? ' <a href="' + esc(D.magicItemUrl(it.slug)) + '" target="_blank" rel="noopener">Wiki ↗</a>' : '';
     if (srd) return '<div class="item-desc">' + BOOKS_MD(srd) + '<p class="small muted">From the free rules (SRD 5.1, CC-BY-4.0).' + link + '</p></div>';
-    if (readOnly) return '<div class="item-desc small muted">Not in the free rules, so its text can’t be built in.' + link + ' Once it’s in your inventory, you can paste its description into it.</div>';
+    var mine = !it.desc && window.ItemTexts && ItemTexts.get(it.n);
+    if (mine) return '<div class="item-desc">' + BOOKS_MD(mine.d) + '<p class="small muted">From your imported item texts (kept on this device).' + link + '</p></div>';
+    if (readOnly) return '<div class="item-desc small muted">Not in the free rules, so its text can’t be built in.' + link + ' If you have its text, use Import item texts above, or paste it into the item once it’s in your inventory.</div>';
     return '<div class="item-desc">' + (it.desc ? BOOKS_MD(it.desc) : '<p class="small muted">' + (it.k === 'magic' ? 'This item isn’t in the free rules, so its text can’t be built in.' + link + ' ' : '') + 'Paste or write its description here to keep it with the character:</p>') +
       '<textarea id="desc-' + it.id + '" data-itemdesc="' + it.id + '" rows="' + (it.desc ? 3 : 4) + '" placeholder="Description" aria-label="Description of ' + esc(it.n) + '">' + esc(it.desc || '') + '</textarea></div>';
   }
   function BOOKS_MD(t) { return window.BooksUI && BooksUI.md ? BooksUI.md(t) : '<p>' + esc(t).replace(/\n/g, '<br>') + '</p>'; }
+  // the app's magic items plus the ones only in your imported texts
+  function allMagic() {
+    var extra = window.ItemTexts ? ItemTexts.list().filter(function (x) { var k = inorm(x.n); return !D.magicItems.some(function (m) { return inorm(m[0]) === k; }); })
+      .map(function (x) { return [x.n, [x.r || 'Unknown'], x.type || 'Imported item', x.att ? 1 : 0, '']; }) : [];
+    return extra.length ? D.magicItems.concat(extra).sort(function (a, b) { return a[0].localeCompare(b[0]); }) : D.magicItems;
+  }
+  function importItemTexts(input) {
+    var files = [].slice.call(input.files || []); input.value = ''; if (!files.length) return;
+    ui.itemMsg = 'Reading ' + files.length + ' file' + (files.length === 1 ? '' : 's') + '…'; render();
+    Promise.all(files.map(function (f) { return /\.zip$/i.test(f.name) && window.MonsterUI ? f.arrayBuffer().then(MonsterUI.unzip) : f.text().then(function (t) { return [{ name: f.name, text: t }]; }); }))
+      .then(function (g) { var items = ItemTexts.parse([].concat.apply([], g)); if (!items.length) throw new Error('none'); return ItemTexts.add(items); })
+      .then(function (r) { ui.itemMsg = (r.added + r.updated) + ' item text' + (r.added + r.updated === 1 ? '' : 's') + ' imported and saved on this device' + (r.updated ? ' (' + r.updated + ' replaced older ones)' : '') + '.'; },
+        function () { ui.itemMsg = 'No item texts found in those files. Use .md or .txt files (one item each, or several under # headings), a .zip of them, or a JSON item list.'; })
+      .then(render);
+  }
   function itemName(it) { return it.k === 'magic' && it.slug ? '<a href="' + esc(D.magicItemUrl(it.slug)) + '" target="_blank" rel="noopener">' + esc(it.n) + '</a>' : esc(it.n); }
   function stepItems() {
     var inv = d.inv, over = inv.weight > inv.capacity, m = ch.money;
@@ -762,13 +779,17 @@
       return '<select data-ui="' + key + '" aria-label="' + label + '"><option value="">' + label + '</option>' + list.map(function (x) { return '<option' + (ui[key] === x ? ' selected' : '') + '>' + esc(x) + '</option>'; }).join('') + '</select>';
     };
     if (ui.itemTab === 'magic') {
-      var q = ui.q.magic || '', types = [];
-      D.magicItems.forEach(function (x) { if (types.indexOf(x[2]) < 0) types.push(x[2]); });
-      var list = D.magicItems.filter(function (x) { return match(q, x[0]) && (!ui.rarity || x[1].indexOf(ui.rarity) >= 0) && (!ui.itemType || x[2] === ui.itemType); });
-      h += '<div class="toolbar">' + search('magic', 'Search magic items…') + sel('rarity', 'Any rarity', D.rarities) + sel('itemType', 'Any type', types.sort()) + '<span class="muted small">' + list.length + ' of ' + D.magicItems.length + '</span></div><div class="optlist">' +
+      var q = ui.q.magic || '', types = [], AM = allMagic(), nImp = window.ItemTexts ? ItemTexts.list().length : 0;
+      AM.forEach(function (x) { if (types.indexOf(x[2]) < 0) types.push(x[2]); });
+      var list = AM.filter(function (x) { return match(q, x[0]) && (!ui.rarity || x[1].indexOf(ui.rarity) >= 0) && (!ui.itemType || x[2] === ui.itemType); });
+      h += '<div class="toolbar">' + search('magic', 'Search magic items…') + sel('rarity', 'Any rarity', D.rarities) + sel('itemType', 'Any type', types.sort()) + '<span class="muted small">' + list.length + ' of ' + AM.length + '</span></div>' +
+        '<div class="toolbar"><label class="btn small">Import item texts<input type="file" id="itemTextFile" multiple accept=".md,.markdown,.txt,.json,.zip" hidden></label>' +
+        (nImp ? (ui.confirmClearItems ? '<span class="small">Remove all ' + nImp + ' imported texts from this device?</span>' + btn('clearItemTexts', 'Remove', {}, 'btn small danger') + btn('clearItemTextsNo', 'Keep', {}, 'btn small') : btn('clearItemTextsAsk', 'Remove imported (' + nImp + ')', {}, 'btn small')) : '') +
+        '<span class="small muted">Have item descriptions of your own (your notes, an Obsidian vault, a JSON list)? Import them and they show here and in your inventory.</span></div>' +
+        (ui.itemMsg ? '<p class="small rest-msg">' + esc(ui.itemMsg) + '</p>' : '') + '<div class="optlist">' +
         list.slice(0, 80).map(function (x) {
           var op = ui.magicOpen === x[0];
-          return '<div class="spell"><div><button type="button" class="fold" data-act="magicOpen" data-v="' + esc(x[0]) + '" aria-expanded="' + op + '">' + (op ? '▾' : '▸') + '</button> <b>' + esc(x[0]) + '</b> <span class="small muted">' + esc(x[2]) + (x[3] ? ' · attunement' : '') + '</span>' +
+          return '<div class="spell"><div><button type="button" class="fold" data-act="magicOpen" data-v="' + esc(x[0]) + '" aria-expanded="' + op + '">' + (op ? '▾' : '▸') + '</button> <b>' + esc(x[0]) + '</b> <span class="small muted">' + esc(x[2]) + (x[3] ? ' · attunement' : '') + (!x[4] ? ' · imported' : '') + '</span>' +
             (op ? itemDescHtml({ k: 'magic', n: x[0], slug: x[4], id: 'pick' }, true) : '') + '</div>' +
             '<div class="pills" style="flex:none">' + x[1].map(function (r) { return btn('addMagic', '+ ' + r, { v: x[0], r: r }, 'btn tiny'); }).join('') + '</div></div>';
         }).join('') + '</div>' + (list.length > 80 ? '<p class="small muted">Showing the first 80. Search or filter to narrow the list.</p>' : '') + (list.length ? '' : '<p class="muted">No items match.</p>') +
@@ -1368,6 +1389,9 @@
     closeInstallHelp: function () { ui.installHelp = false; },
     import5eParts: function (v, el) { var I = ui.import5e; if (!I) return false; var id = +el.getAttribute('data-e'), e = I.entries.filter(function (x) { return x.id === id; })[0];
       I.parts[id] = el.getAttribute('data-all') ? PART_ORDER.filter(function (k) { return e.source === 'companion' || PARTS[k].spellbook; }) : []; },
+    clearItemTextsAsk: function () { ui.confirmClearItems = true; },
+    clearItemTextsNo: function () { ui.confirmClearItems = false; },
+    clearItemTexts: function () { ui.confirmClearItems = false; ItemTexts.clear().then(function () { ui.itemMsg = 'Imported item texts removed.'; render(); }); },
     itemOpen: function (v) { ui.itemOpen = ui.itemOpen || {}; ui.itemOpen[v] = !ui.itemOpen[v]; },
     magicOpen: function (v) { ui.magicOpen = ui.magicOpen === v ? '' : v; },
     import5eClose: function () { ui.import5e = null; ui.import5eDone = null; },
@@ -1511,7 +1535,7 @@
     },
     itemTab: function (v) { ui.itemTab = v; },
     addMagic: function (v, el) {
-      var x = D.magicItems.filter(function (i) { return i[0] === v; })[0];
+      var x = allMagic().filter(function (i) { return i[0] === v; })[0];
       if (x) ch.items.push({ id: R.uid(), k: 'magic', n: x[0], r: el.getAttribute('data-r'), type: x[2], att: !!x[3], attuned: false, slug: x[4], qty: 1, w: 0, note: '' });
     },
     addGear: function (v) {
@@ -1673,6 +1697,7 @@
     if (a('data-mon') != null) return;
     if (a('data-mymon') != null) { if (t.tagName === 'SELECT') return; return setTimeout(function () { var f = document.activeElement; if (!f || !f.getAttribute || f.getAttribute('data-mymon') == null) requestRender(); }, 0); }
     if (t.id === 'importFile') return importFile(t);
+    if (t.id === 'itemTextFile') return importItemTexts(t);
     if (t.id === 'monImportFile') return MON.importFile(t, render);
     if (t.id === 'pictureFile') return loadPicture(t);
     if (t.id === 'partImportFile') return loadPartImport(t);
@@ -1873,5 +1898,6 @@
   applyTheme(themeNow()); // reopen in the game you were using
   render();
   takeSharedFile();
+  if (window.ItemTexts) ItemTexts.load(function () { if (ItemTexts.list().length) render(); });
   window.Forge = { store: store, ui: ui, render: render, derived: function () { return d; } };
 })();

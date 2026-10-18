@@ -42,6 +42,10 @@ Five dice colours; your last choice is remembered. Results come from the browser
 
 ### Share from 5e Companion
 
+### Magic item texts of your own
+
+Items → Add items → Magic items → **Import item texts** reads item descriptions you have yourself: `.md` / `.txt` files (one item per file with a front-matter header or a `# Name` heading, or several items under `#` headings), a `.zip` of them, or a JSON item list (`[{name, rarity, type, entries or description}]`, or `{"item": [...]}`). They are kept in this browser only (IndexedDB), show when you tap ▸ on an item, and items not already in the app's list are added to it.
+
 ### From D&D Beyond
 
 On the Characters page, tap **From D&D Beyond** and paste a character's link (the character must be set to Public in its D&D Beyond settings). Everything on the sheet comes across like a 5e Companion import: race, background, classes and subclasses, ability scores, skills, languages, tools, feats, armour, weapons, inventory, coins, personality, notes and spells. If the browser can't reach D&D Beyond directly, the app tries its own server (`node server.js` serves `/api/ddb/<id>`), and otherwise shows a link to the character's data to copy and paste instead. A saved D&D Beyond JSON file also works with Import. This uses the data D&D Beyond's own character page loads; it is not an official export and may stop working if D&D Beyond changes it.

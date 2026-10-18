@@ -165,6 +165,13 @@ assert(dd2.casters[0].cantrips.includes('Fire Bolt') && dd2.casters[0].known.inc
 assert(/your Wisdom|Perception|surprised/i.test((dc.items.find(i => /Ioun Stone of Awareness/.test(i.n)) || {}).desc || '') && !/<[a-z]/.test(dc.items.map(i => i.desc || '').join(''))); // item text from D&D Beyond, as plain text
 assert(/Imported from D&D Beyond/.test(dc.notes.other) && /cult of giants/.test(dc.notes.backstory));
 
+// magic item texts you import yourself: Markdown (front matter or # headings) and JSON item lists
+const IT = require('../js/item-import.js');
+const its = IT.parse([{ name: 'a.md', text: '---\nname: Abracadabrus\nrarity: very rare\ntype: Wondrous item\n---\nA chest.' }, { name: 'b.md', text: '# One\n*Ring, rare (requires attunement)*\n\nText one.\n\n# Two\n*Wand, common*\n\nText two.' },
+  { name: 'c.json', text: JSON.stringify({ item: [{ name: 'Three', rarity: 'uncommon', type: 'RG', entries: ['Cast {@spell fly|phb}.'] }] }) }]);
+assert.deepEqual(its.map(x => [x.n, x.r, x.type, !!x.att]), [['Abracadabrus', 'Very rare', 'Wondrous item', false], ['One', 'Rare', 'Ring', true], ['Two', 'Common', 'Wand', false], ['Three', 'Uncommon', 'Ring', false]]);
+assert.equal(its[3].d, 'Cast fly.');
+
 // limits switched off, and extras
 const wiz1 = ['Magic Missile', 'Shield', 'Sleep', 'Burning Hands', 'Charm Person', 'Detect Magic', 'Feather Fall', 'Mage Armor'];
 const fr = mk({ lineage: 'human', classes: [C('wizard', 1)], method: 'manual', base: { STR: 20, DEX: 10, CON: 10, INT: 16, WIS: 10, CHA: 10 }, spells: { wizard: { c: [], k: wiz1.concat(['Cure Wounds', 'Fireball']), p: [] } } });

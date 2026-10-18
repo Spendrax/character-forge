@@ -397,4 +397,5 @@
   root.MonsterUI.roll = roll;
   root.MonsterUI.parse = parseStatBlock;
   root.MonsterUI.fromMarkdown = markdownToText;
+  root.MonsterUI.unzip = unzip;
 })(typeof window !== 'undefined' ? window : globalThis);
