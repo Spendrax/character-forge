@@ -776,3 +776,4 @@ html.dice3d-lock, html.dice3d-lock body { overflow: hidden; }
 .item-desc { margin: .4rem 0 .2rem; padding: .5rem .7rem; border-left: 3px solid var(--accent); background: var(--panel2, rgba(127,127,127,.06)); border-radius: 4px; font-size: .9rem; max-width: 46rem; }
 .item-desc p { margin: .3rem 0; }
 .item-desc textarea { width: 100%; font: inherit; }
+.spell-kinds .pill.off { opacity: .5; }

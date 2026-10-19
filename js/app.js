@@ -486,8 +486,18 @@
     var from = froms.length > 1 && froms.some(function (f) { return f[0] === ui.mySpellsFrom; }) ? ui.mySpellsFrom : '';
     if (froms.length > 1) h += '<div class="pills">' + btn('mySpellsFrom', 'All sources', { v: '' }, 'pill small' + (!from ? ' on' : '')) + froms.map(function (f) { return btn('mySpellsFrom', esc(f[1]), { v: f[0] }, 'pill small' + (from === f[0] ? ' on' : '')); }).join('') + '</div>';
     var fromOk = function (r) { return !from || r.srcs.some(function (x) { return from === 'other' ? !x.cls : x.cls === from; }); };
+    // quick filters: concentration, action, bonus action, reaction, ritual (tap again to show all)
+    var KINDS = [['conc', 'Concentration', function (x) { return x.conc; }], ['action', 'Action', function (x) { return /^1 action/i.test(x.time || ''); }],
+      ['bonus', 'Bonus action', function (x) { return /bonus action/i.test(x.time || ''); }], ['reaction', 'Reaction', function (x) { return /reaction/i.test(x.time || ''); }],
+      ['ritual', 'Ritual', function (x) { return x.ritual; }], ['noconc', 'No concentration', function (x) { return !x.conc; }]];
+    var kind = KINDS.filter(function (k) { return k[0] === ui.mySpellsKind; })[0];
+    var base = all.filter(function (r) { return (view === 'all' || r.ready) && fromOk(r); });
+    h += '<div class="pills spell-kinds" role="group" aria-label="Show only">' + KINDS.map(function (k) {
+      var n = base.filter(function (r) { return r.s && k[2](r.s); }).length;
+      return btn('mySpellsKind', k[1] + ' <small>' + n + '</small>', { v: k[0] }, 'pill small' + (kind === k ? ' on' : '') + (n ? '' : ' off'));
+    }).join('') + '</div>';
     var q = ui.q.myspells || '';
-    var rows = all.filter(function (r) { return (view === 'all' || r.ready) && fromOk(r) && match(q, r.name + ' ' + (r.s ? r.s.school : '')); });
+    var rows = base.filter(function (r) { return match(q, r.name + ' ' + (r.s ? r.s.school : '')) && (!kind || (r.s && kind[2](r.s))); });
     if (!all.length) h += '<p class="notice">No spells yet. Pick a spellcasting class and choose spells on the Spells step, take a lineage or feat that grants spells, or add one under Other spells on the Spells step.</p>';
     else if (!rows.length) h += '<p class="muted">No spells match.</p>';
     for (var l = 0; l <= 9; l++) {
@@ -1441,6 +1451,7 @@
     closeInstallHelp: function () { ui.installHelp = false; },
     import5eParts: function (v, el) { var I = ui.import5e; if (!I) return false; var id = +el.getAttribute('data-e'), e = I.entries.filter(function (x) { return x.id === id; })[0];
       I.parts[id] = el.getAttribute('data-all') ? PART_ORDER.filter(function (k) { return e.source === 'companion' || PARTS[k].spellbook; }) : []; },
+    mySpellsKind: function (v) { ui.mySpellsKind = ui.mySpellsKind === v ? '' : v; },
     miMore: function (v) { ui.miMore = v === 'all' ? 99999 : (ui.miMore || 150) + 150; },
     giveMagic: function (v, el) {
       var x = allMagic().filter(function (i) { return i[0] === v; })[0], c = byId(byId(ui.miTo) ? ui.miTo : store.current);
