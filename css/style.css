@@ -783,3 +783,7 @@ html.dice3d-lock, html.dice3d-lock body { overflow: hidden; }
 .insp-box { flex: none; width: 1.8rem; height: 1.8rem; border: 2px solid var(--muted); border-radius: 5px; display: grid; place-items: center; font-size: 1.1rem; color: var(--accent); }
 .insp-sq.on { border-color: var(--accent); }
 .insp-sq.on .insp-box { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 15%, transparent); }
+.snip { font-size: .85rem; margin: .2rem 0; color: var(--ink); font-weight: normal; }
+.snip mark { background: color-mix(in srgb, var(--accent) 35%, transparent); color: inherit; border-radius: 2px; padding: 0 1px; }
+.snip-group { margin: .4rem 0; }
+.note .note-peek { display: block; }

@@ -520,6 +520,8 @@
         '<div class="row"><label class="field"><span>Age</span><input type="text" id="pf-age" data-pff="age" value="' + esc(ch.age || '') + '"></label><label class="field"><span>Gender / pronouns</span><input type="text" id="pf-gender" data-pff="gender" value="' + esc(ch.gender || '') + '"></label><label class="field"><span>XP</span><input type="number" id="pf-xp" data-pff="xp" value="' + (ch.xp || 0) + '"></label></div>' +
         '<div class="field"><span>Languages</span><div class="pills">' + langs.map(function (l, i) { return '<span class="pill small on">' + esc(l) + ' ' + btn('pfLangRm', '✕', { v: i }, 'mm-b') + '</span>'; }).join('') + '</div><div class="row"><input type="text" id="pf-lang" list="pf-langs" placeholder="Add a language"><datalist id="pf-langs">' + sug.map(function (l) { return '<option value="' + esc(l[0].toUpperCase() + l.slice(1)) + '">'; }).join('') + '</datalist>' + btn('pfLangAdd', '+', {}, 'btn small') + '</div></div>' +
         '<label class="field"><span>Notes</span><textarea id="pf-notes" data-pff="notes" rows="8">' + esc(ch.notes || '') + '</textarea></label>' +
+        '<div class="toolbar"><input type="search" id="pf-nq" data-pfnq="1" placeholder="Find a word in the notes…" value="' + esc(U.noteQ || '') + '">' +
+        (U.noteQ ? (function () { var r = root.findSnippets ? root.findSnippets(ch.notes, U.noteQ, 8) : { n: 0, html: '' }; return '<span class="small muted">' + r.n + ' found</span></div><div class="snip-group">' + r.html + '</div>'; })() : '</div>') +
         (d.deity ? '' : '') + '</div>' + (ch.deity && PF2.byName('deities', ch.deity) ? '<details class="panel"><summary>' + esc(ch.deity) + '</summary>' + md(PF2.byName('deities', ch.deity).d) + '</details>' : '');
     }
 
@@ -715,6 +717,7 @@
       if (a('data-pfq')) { U.q = t.value; return 'render'; }
       if (a('data-pfrq')) { U.rules.q = t.value; return 'render'; }
       if (a('data-pfactq')) { U.actQ = t.value; return 'render'; }
+      if (a('data-pfnq')) { U.noteQ = t.value; return 'render'; }
       var ch = cur();
       if (a('data-pff') && ch) { var k = a('data-pff'); if (k === 'bgLore') ch.skills.bgLore = t.value; else ch[k] = k === 'xp' ? +t.value || 0 : t.value; return 'save'; }
       if (a('data-pfmoney') && ch) { ch.money = ch.money || {}; ch.money[a('data-pfmoney')] = Math.max(0, +t.value || 0); return 'save'; }

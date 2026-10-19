@@ -66,6 +66,18 @@
   function ok(t) { return R.tagOk(t, store.filters); }
   // search that ignores case, accents and punctuation ("moon touched" finds Moon-Touched Sword)
   function loose(s) { return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[’']/g, '').replace(/[^a-z0-9+]+/g, ' ').trim(); }
+  // where a word appears in a text: short snippets with the word marked (used by the notes searches)
+  window.findSnippets = function (text, q, max) {
+    text = String(text || ''); q = String(q || '').trim(); if (!q) return { n: 0, html: '' };
+    var lo = text.toLowerCase(), k = q.toLowerCase(), at = 0, hits = [], i;
+    while ((i = lo.indexOf(k, at)) >= 0) { hits.push(i); at = i + k.length; }
+    var e = function (x) { return String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); };
+    var html = hits.slice(0, max || 4).map(function (i) {
+      var a = Math.max(0, i - 50), b = Math.min(text.length, i + k.length + 70);
+      return '<div class="snip">' + (a ? '…' : '') + e(text.slice(a, i)).replace(/\n/g, ' ') + '<mark>' + e(text.slice(i, i + k.length)) + '</mark>' + e(text.slice(i + k.length, b)).replace(/\n/g, ' ') + (b < text.length ? '…' : '') + '</div>';
+    }).join('');
+    return { n: hits.length, html: html };
+  };
   function match(q, s) { return !q || loose(s).indexOf(loose(q)) >= 0; }
   function btn(act, label, attrs, cls) { return '<button type="button" class="' + (cls || 'btn') + '" data-act="' + act + '"' + data(attrs) + '>' + label + '</button>'; }
   function data(o) { var s = ''; for (var k in o || {}) s += ' data-' + k + '="' + esc(o[k]) + '"'; return s; }
@@ -1045,15 +1057,20 @@
       '<div class="toolbar">' + btn('saveNote', 'Save note', {}, 'btn primary') + '</div></div>';
     if (!J.length) return h + '<p class="muted small">No saved notes yet.</p>';
     var used = cats.filter(function (c) { return J.some(function (n) { return (n.c || 'Other') === c; }); });
-    var rows = J.filter(function (n) { return (!f || (n.c || 'Other') === f) && match(q, n.t + ' ' + n.c + ' ' + n.x); }).slice().reverse();
+    var rows = J.filter(function (n) { return (!f || (n.c || 'Other') === f) && (!q.trim() || ((n.t || '') + ' ' + (n.c || '') + ' ' + (n.x || '')).toLowerCase().indexOf(q.trim().toLowerCase()) >= 0); }).slice().reverse();
     h += '<h3>Saved notes (' + J.length + ')</h3><div class="pills">' + btn('noteCat', 'All', { v: '' }, 'pill small' + (!f ? ' on' : '')) +
       used.map(function (c) { var n = J.filter(function (x) { return (x.c || 'Other') === c; }).length; return btn('noteCat', esc(c) + ' ' + n, { v: c }, 'pill small' + (f === c ? ' on' : '')); }).join('') + '</div>' +
-      '<div class="toolbar">' + search('notes', 'Search notes…') + '</div>';
+      '<div class="toolbar">' + search('notes', 'Search words in your notes…') + (q ? '<span class="small muted">' + rows.length + ' note' + (rows.length === 1 ? '' : 's') + '</span>' : '') + '</div>';
+    if (q.trim()) { // the same words in the Details page (backstory, traits…)
+      var DET = [['traits', 'Personality traits'], ['ideals', 'Ideals'], ['bonds', 'Bonds'], ['flaws', 'Flaws'], ['appearance', 'Appearance'], ['backstory', 'Backstory'], ['other', 'Other notes'], ['session', 'Note being written']];
+      var det = DET.map(function (x) { var r = findSnippets(N[x[1] === 'Note being written' ? 'session' : x[0]], q, 2); return r.n ? '<div class="snip-group"><b>' + x[1] + '</b> <span class="small muted">' + r.n + '×</span>' + r.html + '</div>' : ''; }).join('');
+      if (det) h += '<div class="panel"><h4 style="margin-top:0">Also in ' + btn('step', 'Details', { v: 'details' }, 'linkbtn') + '</h4>' + det + '</div>';
+    }
     if (!rows.length) return h + '<p class="muted">No notes match.</p>';
     return h + '<div class="note-list">' + rows.map(function (n) {
       var open = ui.noteOpen === n.id;
       return '<details class="panel note"' + (open ? ' open' : '') + '><summary data-act="noteOpen" data-v="' + n.id + '"><b>' + esc(n.t || 'Untitled') + '</b> <span class="tag">' + esc(n.c || 'Other') + '</span> <span class="small muted">' + esc(n.at || '') + '</span>' +
-        (open ? '' : '<span class="small muted note-peek">' + esc(String(n.x || '').slice(0, 90)) + '</span>') + '</summary>' +
+        (open ? '' : q.trim() ? (function () { var r = findSnippets(n.x, q, 3), rt = findSnippets(n.t, q, 1); r.n += rt.n; if (!r.html) r.html = rt.html; return '<span class="small muted">' + r.n + '×</span><span class="note-peek">' + r.html + '</span>'; })() : '<span class="small muted note-peek">' + esc(String(n.x || '').slice(0, 90)) + '</span>') + '</summary>' +
         '<div class="row"><label class="field"><span>Title</span><input type="text" id="jn-' + n.id + '-t" data-jnote="' + n.id + '" data-f="t" value="' + esc(n.t || '') + '"></label>' +
         '<label class="field"><span>Category</span><input type="text" id="jn-' + n.id + '-c" list="note-cats" data-jnote="' + n.id + '" data-f="c" value="' + esc(n.c || '') + '"></label></div>' +
         '<textarea id="jn-' + n.id + '-x" class="notes-mid" data-jnote="' + n.id + '" data-f="x">' + esc(n.x || '') + '</textarea>' +
