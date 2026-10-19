@@ -1073,7 +1073,11 @@
       ['Invocations', 'Bond of the Talisman', d.pb, 'long', 'Teleport to the talisman’s wearer'], ['Invocations', 'Protection of the Talisman', d.pb, 'long', 'The wearer adds a d4 to a failed save'],
       ['Infusions', 'Armor of Magical Strength', 6, 'long', dawn('1d6')], ['Infusions', 'Mind Sharpener', 4, 'long', dawn('1d4')], ['Infusions', 'Radiant Weapon', 4, 'long', dawn('1d4')],
       ['Infusions', 'Repulsion Shield', 4, 'long', dawn('1d4')], ['Infusions', 'Spell-Refueling Ring', 1, 'long', 'Once per day, at dawn']
-    ].forEach(function (x) { if (pickedNames[x[1]] && !t.some(function (y) { return y.name === x[1]; })) add(x[0], x[1], x[2], x[3], x[4]); });
+    ].forEach(function (x) {
+      if (!pickedNames[x[1]] || t.some(function (y) { return y.name === x[1]; })) return;
+      var info = ((x[0] === 'Infusions' ? D.infusions : D.invocations) || []).filter(function (r) { return r[0] === x[1] || r[0].replace(/’/g, "'") === x[1]; })[0];
+      add(x[0], x[1], x[2], x[3], info ? info[2] + (x[0] === 'Infusions' && x[4] ? ' · ' + x[4] : '') : x[4]);
+    });
     // once-per-rest lineage and feat spells
     (d.innate || []).forEach(function (x) {
       if (!x.ready || !/\/(short|long) rest/.test(x.per)) return;

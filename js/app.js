@@ -615,6 +615,15 @@
     if (inn.length) h += '<div class="panel"><h3>Once-per-rest spells</h3>' + inn.map(trackRow).join('') + '</div>';
     var groups = []; d.trackers.forEach(function (x) { if (['slots', 'spells', 'own'].indexOf(x.group) < 0 && groups.indexOf(x.group) < 0) groups.push(x.group); });
     groups.forEach(function (g) { h += '<div class="panel"><h3>' + esc(g) + '</h3>' + d.trackers.filter(function (x) { return x.group === g; }).map(trackRow).join('') + '</div>'; });
+    // every invocation and infusion picked, with what it does (the ones with uses are counted above)
+    var feats2 = []; d.choices.forEach(function (c) {
+      var kind = /invocation/i.test(c.key) ? 'inv' : /infusion/i.test(c.key) ? 'inf' : ''; if (!kind) return;
+      (c.picked || []).forEach(function (n) { var r = ((kind === 'inv' ? D.invocations : D.infusions) || []).filter(function (x) { return x[0] === n; })[0]; if (r && !feats2.some(function (f) { return f[1] === n; })) feats2.push([kind, n, r[2]]); });
+    });
+    ['inv', 'inf'].forEach(function (k) {
+      var list = feats2.filter(function (f) { return f[0] === k && !d.trackers.some(function (x) { return x.name === f[1]; }); });
+      if (list.length) h += '<div class="panel"><h3>' + (k === 'inv' ? 'Other invocations' : 'Other infusions') + '</h3>' + list.map(function (f) { return '<div class="trk-row"><div class="trk-name"><b>' + esc(f[1]) + '</b><div class="small muted">' + esc(f[2]) + '</div></div></div>'; }).join('') + '</div>';
+    });
     var own = d.trackers.filter(function (x) { return x.group === 'own'; });
     h += '<div class="panel"><h3>Your own counters</h3><p class="small muted">For anything else with limited uses: a magic item’s charges, a feat, a boon, an ability the builder doesn’t count.</p>' +
       own.map(function (x) {
