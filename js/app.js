@@ -583,6 +583,12 @@
         return '<span>' + (k === 'deathOk' ? 'Successes' : 'Failures') + ' <span class="pips">' + b + '</span></span>';
       }).join(' ') + '</div>' : '') +
       trackRow({ key: 'hd', name: 'Hit dice (' + d.hitDice + ')', max: d.level, left: d.level - hdUsed, used: hdUsed, rest: 'long', note: 'Spend them on a short rest to heal; a long rest gives back half.' }) + '</div>';
+    // inspiration: one from the DM, one Bardic Inspiration die from a bard
+    var sq = function (k, label, sub, on) { return '<button type="button" class="insp-sq' + (on ? ' on' : '') + '" data-act="inspToggle" data-v="' + k + '" aria-pressed="' + !!on + '"><span class="insp-box">' + (on ? '★' : '') + '</span><span><b>' + label + '</b><small>' + sub + '</small></span></button>'; };
+    h += '<div class="panel"><h3>Inspiration</h3><div class="insp-row">' + sq('insp', 'Inspiration', T.insp ? 'From the DM. Tap when you use it (advantage on one roll).' : 'Tap when the DM gives you inspiration.', T.insp) +
+      sq('bardic', 'Bardic Inspiration' + (T.bardic ? ' ' + T.bardic : ''), T.bardic ? 'Add the ' + T.bardic + ' to one ability check, attack or save within 10 minutes. Tap when used.' : 'Tap when a bard inspires you.', T.bardic) +
+      '<label class="small">Die <select data-bardie="1" aria-label="Bardic Inspiration die">' + ['d6', 'd8', 'd10', 'd12'].map(function (x) { return '<option' + ((T.bardDie || 'd6') === x ? ' selected' : '') + '>' + x + '</option>'; }).join('') + '</select></label>' +
+      (T.bardic ? btn('rollBardic', '🎲 Roll ' + T.bardic, {}, 'btn small') : '') + '</div>' + (ui.bardRoll ? '<p class="small rest-msg">' + esc(ui.bardRoll) + '</p>' : '') + '</div>';
     var stat = function (x) { return '<div class="stat"><b>' + x[1] + '</b><span>' + x[0] + '</span></div>'; };
     h += '<div class="panel"><h3>Combat</h3><div class="slots combat-stats">' + [['Armor class', d.ac], ['Initiative', R.fmt(d.init)], ['Speed', d.speed + ' ft'], ['Passive Perception', d.passive], ['Proficiency', R.fmt(d.pb)]].concat(d.casters.map(function (S) { return [(d.casters.length > 1 ? S.name + ' s' : 'S') + 'pell DC / attack', S.dc + ' / ' + R.fmt(S.atk)]; })).map(stat).join('') + '</div>' +
       '<h4>Saving throws</h4><div class="slots combat-stats">' + AB.map(function (a) { var s = d.saves[a]; return stat([D.abilityNames[a] + (s.prof ? ' ●' : ''), R.fmt(s.total)]); }).join('') + '</div></div>';
@@ -1573,6 +1579,8 @@
     hpAdj: function (v) { var T = ch.track = ch.track || {}, hp = T.hp == null ? d.hp : T.hp, n = +v;
       if (n < 0 && T.temp > 0) { var soak = Math.min(T.temp, -n); T.temp -= soak; n += soak; } // temporary hit points go first
       hp = Math.max(0, Math.min(d.hp, hp + n)); T.hp = hp >= d.hp ? null : hp; if (hp > 0) { T.deathOk = 0; T.deathFail = 0; } },
+    inspToggle: function (v) { var T = ch.track = ch.track || {}; ui.bardRoll = ''; if (v === 'insp') T.insp = !T.insp; else T.bardic = T.bardic ? '' : (T.bardDie || 'd6'); },
+    rollBardic: function () { var T = ch.track || {}, n = parseInt(String(T.bardic || 'd6').slice(1), 10) || 6, r = 1 + Math.floor(Math.random() * n); ui.bardRoll = 'Bardic Inspiration ' + T.bardic + ': ' + r + '. Add it to your roll.'; T.bardic = ''; },
     death: function (v, el) { var T = ch.track = ch.track || {}; T[el.getAttribute('data-k')] = +v; },
     rest: function (v) {
       if (ui.confirmRest !== v) { ui.confirmRest = v; ui.restMsg = ''; return; }
@@ -1782,6 +1790,7 @@
     else if (a('data-imp5part')) { var IP = ui.import5e; if (IP) { var eid = +a('data-imp5part'), cur = (IP.parts[eid] || []).filter(function (k) { return k !== t.value; }); if (t.checked) cur.push(t.value); IP.parts[eid] = cur; } }
     else if (a('data-imp5target')) { if (ui.import5e) { ui.import5e.target[a('data-imp5target')] = t.value; var idT = +a('data-imp5target'); if (ui.import5e.pick.indexOf(idT) < 0) ui.import5e.pick.push(idT); } }
     else if (a('data-imp5')) { var I5 = ui.import5e, id5 = +a('data-imp5'); if (I5) { I5.pick = I5.pick.filter(function (x) { return x !== id5; }); if (t.checked) I5.pick.push(id5); } }
+    else if (a('data-bardie')) { var TB = ch.track = ch.track || {}; TB.bardDie = t.value; if (TB.bardic) TB.bardic = t.value; }
     else if (a('data-look')) { ch.look = ch.look || {}; ch.look[a('data-look')] = t.value; }
     else if (a('data-lookcolor')) { ch.look = ch.look || {}; ch.look[a('data-lookcolor')] = t.value; }
     else if (a('data-lookhide')) { ch.look = ch.look || {}; ch.look.hidden = ch.look.hidden || {}; if (t.checked) delete ch.look.hidden[a('data-lookhide')]; else ch.look.hidden[a('data-lookhide')] = 1; }

@@ -777,3 +777,9 @@ html.dice3d-lock, html.dice3d-lock body { overflow: hidden; }
 .item-desc p { margin: .3rem 0; }
 .item-desc textarea { width: 100%; font: inherit; }
 .spell-kinds .pill.off { opacity: .5; }
+.insp-row { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; }
+.insp-sq { display: flex; gap: .55rem; align-items: center; text-align: left; flex: 1 1 15rem; padding: .5rem .7rem; border: 1px solid var(--line, #8884); border-radius: 8px; background: none; color: inherit; font: inherit; cursor: pointer; }
+.insp-sq small { display: block; color: var(--muted); font-size: .8rem; }
+.insp-box { flex: none; width: 1.8rem; height: 1.8rem; border: 2px solid var(--muted); border-radius: 5px; display: grid; place-items: center; font-size: 1.1rem; color: var(--accent); }
+.insp-sq.on { border-color: var(--accent); }
+.insp-sq.on .insp-box { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 15%, transparent); }
