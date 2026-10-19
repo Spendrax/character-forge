@@ -172,6 +172,12 @@ const its = IT.parse([{ name: 'a.md', text: '---\nname: Abracadabrus\nrarity: ve
 assert.deepEqual(its.map(x => [x.n, x.r, x.type, !!x.att]), [['Abracadabrus', 'Very rare', 'Wondrous item', false], ['One', 'Rare', 'Ring', true], ['Two', 'Common', 'Wand', false], ['Three', 'Uncommon', 'Ring', false]]);
 assert.equal(its[3].d, 'Cast fly.');
 
+// invocations and infusions with uses or charges get their own counters on the Session page
+{ const wl = mk({ lineage: 'human', classes: [C('warlock', 7)] }); const k = R.derive(wl, {}).choices.find(x => /invocations$/.test(x.key)).key; wl.picks[k] = ['Sign of Ill Omen', 'Protection of the Talisman', 'Agonizing Blast'];
+  const tw = R.derive(wl, {}).trackers.filter(t => t.group === 'Invocations'); assert.deepEqual(tw.map(t => [t.name, t.max, t.rest]), [['Sign of Ill Omen', 1, 'long'], ['Protection of the Talisman', 3, 'long']]);
+  const ar = mk({ lineage: 'human', classes: [C('artificer', 10)] }); ar.picks['cls.artificer.infusions'] = ['Radiant Weapon', 'Enhanced Defense'];
+  assert.deepEqual(R.derive(ar, {}).trackers.filter(t => t.group === 'Infusions').map(t => [t.name, t.max]), [['Radiant Weapon', 4]]); }
+
 // limits switched off, and extras
 const wiz1 = ['Magic Missile', 'Shield', 'Sleep', 'Burning Hands', 'Charm Person', 'Detect Magic', 'Feather Fall', 'Mage Armor'];
 const fr = mk({ lineage: 'human', classes: [C('wizard', 1)], method: 'manual', base: { STR: 20, DEX: 10, CON: 10, INT: 16, WIS: 10, CHA: 10 }, spells: { wizard: { c: [], k: wiz1.concat(['Cure Wounds', 'Fireball']), p: [] } } });

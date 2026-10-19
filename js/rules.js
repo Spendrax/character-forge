@@ -1060,6 +1060,20 @@
       add('Lineage', tr[0], pb ? d.pb : 1, /short or long rest|short rest/.test(txt) ? 'short' : 'long');
     });
     (d.featUses || []).forEach(function (u) { add('Feats', u.name, u.max, u.rest); });
+    // invocations and infusions with limited uses or charges
+    var pickedNames = {}; (d.choices || []).forEach(function (c) { arr(c.picked).forEach(function (p) { pickedNames[p] = 1; }); });
+    var dawn = function (n) { return 'Gets back ' + n + ' at dawn; a long rest here refills it all, so untick what didn’t come back.'; };
+    [['Invocations', 'Bewitching Whispers', 1, 'long', 'Compulsion, with a warlock slot'], ['Invocations', 'Dreadful Word', 1, 'long', 'Confusion, with a warlock slot'],
+      ['Invocations', 'Minions of Chaos', 1, 'long', 'Conjure Elemental, with a warlock slot'], ['Invocations', 'Mire the Mind', 1, 'long', 'Slow, with a warlock slot'],
+      ['Invocations', 'Sculptor of Flesh', 1, 'long', 'Polymorph, with a warlock slot'], ['Invocations', 'Sign of Ill Omen', 1, 'long', 'Bestow Curse, with a warlock slot'],
+      ['Invocations', 'Thief of Five Fates', 1, 'long', 'Bane, with a warlock slot'], ['Invocations', 'Trickster\u2019s Escape', 1, 'long', 'Freedom of Movement, no slot'],
+      ['Invocations', 'Trickster\'s Escape', 1, 'long', 'Freedom of Movement, no slot'], ['Invocations', 'Undying Servitude', 1, 'long', 'Animate Dead, no slot'],
+      ['Invocations', 'Gift of the Depths', 1, 'long', 'Water Breathing, no slot'], ['Invocations', 'Gift of the Protectors', 1, 'long', 'A creature named in the book drops to 1 HP instead'],
+      ['Invocations', 'Cloak of Flies', 1, 'short', ''], ['Invocations', 'Ghostly Gaze', 1, 'short', ''], ['Invocations', 'Tomb of Levistus', 1, 'short', ''],
+      ['Invocations', 'Bond of the Talisman', d.pb, 'long', 'Teleport to the talisman’s wearer'], ['Invocations', 'Protection of the Talisman', d.pb, 'long', 'The wearer adds a d4 to a failed save'],
+      ['Infusions', 'Armor of Magical Strength', 6, 'long', dawn('1d6')], ['Infusions', 'Mind Sharpener', 4, 'long', dawn('1d4')], ['Infusions', 'Radiant Weapon', 4, 'long', dawn('1d4')],
+      ['Infusions', 'Repulsion Shield', 4, 'long', dawn('1d4')], ['Infusions', 'Spell-Refueling Ring', 1, 'long', 'Once per day, at dawn']
+    ].forEach(function (x) { if (pickedNames[x[1]] && !t.some(function (y) { return y.name === x[1]; })) add(x[0], x[1], x[2], x[3], x[4]); });
     // once-per-rest lineage and feat spells
     (d.innate || []).forEach(function (x) {
       if (!x.ready || !/\/(short|long) rest/.test(x.per)) return;
