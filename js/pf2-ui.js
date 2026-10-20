@@ -22,7 +22,7 @@
     function traits(t, e) { var x = (t || []).slice(); if (e && e.r) x.unshift({ u: 'uncommon', r: 'rare', q: 'unique' }[e.r]); return x.length ? '<div class="pf-traits">' + x.map(function (s) { return '<span class="pf-trait' + (/^(uncommon|rare|unique)$/.test(s) ? ' pf-' + s.slice(0, 4) : '') + '">' + esc(s.replace(/-/g, ' ')) + '</span>'; }).join('') + '</div>' : ''; }
 
     // ---------- the character's picture: shrunk to 640 px so it fits in the browser's storage ----------
-    function picHtml(ch, cls) { return ch.picture ? '<img class="pf-pic ' + (cls || '') + (ch.picFit === 'contain' ? ' whole' : '') + '" src="' + ch.picture + '" alt="Picture of ' + esc(ch.name || 'the character') + '">' : ''; }
+    function picHtml(ch, cls) { return ch.picture ? '<img class="pf-pic ' + (cls || '') + (ch.picFit === 'contain' ? ' whole' : '') + '" src="' + (root.safePic ? root.safePic(ch.picture) : '') + '" alt="Picture of ' + esc(ch.name || 'the character') + '">' : ''; }
     function loadPic(file, done) {
       if (!file || !/^image\//.test(file.type)) { done(null); return; }
       var r = new FileReader();

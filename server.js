@@ -6,7 +6,7 @@
 //   ANTHROPIC_API_KEY=sk-ant-… node server.js  (Claude, paid per use)
 // Optional: AI_MODEL (Claude default claude-sonnet-5-5; Gemini: the newest free Flash model), AI_CODE (an access code friends type into the helper's settings,
 // so strangers who find your server can't spend your key).
-const http = require('http'), fs = require('fs'), path = require('path');
+const http = require('http'), fs = require('fs'), path = require('path'), crypto = require('crypto');
 const root = __dirname, port = +process.argv[2] || +process.env.PORT || 8080;
 const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.md': 'text/plain; charset=utf-8', '.png': 'image/png', '.webmanifest': 'application/manifest+json', '.mp3': 'audio/mpeg', '.pdf': 'application/pdf' };
 const KEY = process.env.ANTHROPIC_API_KEY || '', GKEY = process.env.GEMINI_API_KEY || '', CODE = process.env.AI_CODE || '';
@@ -25,12 +25,24 @@ function geminiModel() {
   });
 }
 
-function json(res, code, obj) { res.writeHead(code, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(obj)); }
+// A few requests a minute per address for the parts that cost something (the AI key, D&D Beyond)
+const hits = new Map();
+function limited(req, kind, max) {
+  const k = kind + (req.socket.remoteAddress || ''), now = Date.now(), list = (hits.get(k) || []).filter(t => now - t < 60000);
+  list.push(now); hits.set(k, list);
+  if (hits.size > 5000) hits.clear();
+  return list.length > max;
+}
+function sameCode(a) { const x = Buffer.from(String(a || '')), y = Buffer.from(CODE); return x.length === y.length && crypto.timingSafeEqual(x, y); }
+// Headers for every answer: no sniffing file types, no framing by other sites, no referrer leaks
+const SAFE = { 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'no-referrer', 'Cross-Origin-Opener-Policy': 'same-origin' };
+function json(res, code, obj) { res.writeHead(code, Object.assign({ 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }, SAFE)); res.end(JSON.stringify(obj)); }
 function helper(req, res) {
   if (req.method === 'GET') return json(res, 200, { ok: !!(KEY || GKEY), ai: KEY ? 'claude' : GKEY ? 'gemini' : '' });
   if (req.method !== 'POST') return json(res, 405, { error: 'Use POST' });
   if (!KEY && !GKEY) return json(res, 503, { error: 'This server has no GEMINI_API_KEY or ANTHROPIC_API_KEY set.' });
-  if (CODE && req.headers['x-ai-code'] !== CODE) return json(res, 403, { error: 'Wrong access code.' });
+  if (CODE && !sameCode(req.headers['x-ai-code'])) return json(res, 403, { error: 'Wrong access code.' });
+  if (limited(req, 'ai', 20)) return json(res, 429, { error: 'Too many questions in a minute; wait a little.' });
   let body = '';
   req.on('data', c => { body += c; if (body.length > 300000) req.destroy(); });
   req.on('end', () => {
@@ -67,14 +79,18 @@ http.createServer((req, res) => {
   if (rel === '/api/ai') return helper(req, res);
   // D&D Beyond: fetch a public character's data for the importer (the browser can't read it directly)
   var ddb = rel.match(/^\/api\/ddb\/(\d{1,12})$/);
+  if (ddb && limited(req, 'ddb', 10)) return json(res, 429, { error: 'Too many requests; wait a minute.' });
   if (ddb) return fetch('https://character-service.dndbeyond.com/character/v5/character/' + ddb[1], { headers: { 'User-Agent': 'CharacterForge' } })
-    .then(function (r) { return r.text().then(function (t) { res.writeHead(r.status, { 'Content-Type': 'application/json' }); res.end(t); }); })
+    .then(function (r) { return r.text().then(function (t) { res.writeHead(r.status, Object.assign({ 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }, SAFE)); res.end(t.slice(0, 5000000)); }); })
     .catch(function () { json(res, 502, { error: 'Could not reach D&D Beyond.' }); });
+  if (req.method !== 'GET' && req.method !== 'HEAD') { res.writeHead(405, SAFE); return res.end('Method not allowed'); }
   const file = path.join(root, path.normalize(rel === '/' ? '/index.html' : rel));
-  if (file !== root && !file.startsWith(root + path.sep)) { res.writeHead(403); return res.end('Forbidden'); }
+  // only the app's own files: nothing outside this folder, no hidden files (.git, .env…), not the server, tests or tools
+  const inside = path.relative(root, file).split(path.sep);
+  if (file !== root && !file.startsWith(root + path.sep) || inside.some(p => p.startsWith('.')) || /^(server\.js|test|tools|node_modules|package(-lock)?\.json)$/.test(inside[0])) { res.writeHead(404, SAFE); return res.end('Not found'); }
   fs.readFile(file, (err, buf) => {
-    if (err) { res.writeHead(404); return res.end('Not found'); }
-    res.writeHead(200, { 'Content-Type': types[path.extname(file)] || 'application/octet-stream' });
+    if (err) { res.writeHead(404, SAFE); return res.end('Not found'); }
+    res.writeHead(200, Object.assign({ 'Content-Type': types[path.extname(file)] || 'application/octet-stream' }, SAFE));
     res.end(buf);
   });
 }).listen(port, () => console.log('Character Forge running at http://localhost:' + port + (KEY || GKEY ? ' (helper on, ' + (KEY ? 'Claude' : 'Gemini') + (CODE ? ', with access code' : '') + ')' : '')));

@@ -48,6 +48,9 @@
   }
   function save() { clearTimeout(saveTimer); saveTimer = setTimeout(saveNow, 300); } // typing: batch the writes
   window.addEventListener('pagehide', saveNow);
+  // only our own picture data (a data: image) ever goes into an <img>, whatever an imported file says
+  function safePic(u) { return /^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+\/=\s]+$/.test(String(u || '')) ? u : ''; }
+  window.safePic = safePic;
   function normalize(c) {
     c = R.upgrade(c);
     var n = R.newChar(), o = Object.assign(n, c);
@@ -56,6 +59,8 @@
     o.spells = c.spells || {};
     o.picks = c.picks || {}; o.asi = c.asi || {}; o.eq = c.eq || {}; o.weapons = c.weapons || [];
     o.money = Object.assign({ pp: 0, gp: 0, ep: 0, sp: 0, cp: 0 }, c.money || {});
+    o.picture = safePic(o.picture);
+    if (o.look && typeof o.look === 'object') Object.keys(o.look).forEach(function (k) { var v = o.look[k]; if (typeof v === 'string' && !/^[#a-z0-9 _-]*$/i.test(v)) delete o.look[k]; });
     return o;
   }
   function byId(id) { return store.chars.filter(function (c) { return c.id === id; })[0]; }
@@ -885,13 +890,13 @@
   }
   function pictureHtml(cls) {
     if (!ch.picture) return '';
-    return '<div class="pic-box ' + (cls || '') + '"><img class="char-pic' + (ch.pictureFit === 'contain' ? ' whole' : '') + '" src="' + ch.picture + '" alt="Picture of ' + esc(title(ch)) + '" draggable="false" style="transform:' + picTransform(ch.pictureView) + '"></div>';
+    return '<div class="pic-box ' + (cls || '') + '"><img class="char-pic' + (ch.pictureFit === 'contain' ? ' whole' : '') + '" src="' + safePic(ch.picture) + '" alt="Picture of ' + esc(title(ch)) + '" draggable="false" style="transform:' + picTransform(ch.pictureView) + '"></div>';
   }
   // All characters to choose from, each with its picture (or its drawn figure).
   function rosterHtml() {
     var cards = store.chars.filter(function (c) { return c.id === store.current || c.name || c.lineage || (c.classes || []).length || c.picture; }).map(function (c) {
       var dd = R.derive(c, store.filters);
-      var pic = c.picture ? '<div class="pic-box roster-pic"><img class="char-pic' + (c.pictureFit === 'contain' ? ' whole' : '') + '" src="' + c.picture + '" alt="" draggable="false" style="transform:' + picTransform(c.pictureView) + '"></div>'
+      var pic = c.picture ? '<div class="pic-box roster-pic"><img class="char-pic' + (c.pictureFit === 'contain' ? ' whole' : '') + '" src="' + safePic(c.picture) + '" alt="" draggable="false" style="transform:' + picTransform(c.pictureView) + '"></div>'
         : '<div class="roster-pic roster-fig"><canvas class="avatar figure" data-roster="' + c.id + '" width="48" height="58" aria-hidden="true"></canvas></div>';
       return '<button type="button" class="roster-card' + (c.id === store.current ? ' cur' : '') + '" data-act="openChar" data-v="' + c.id + '">' + pic +
         '<span class="roster-txt"><b>' + esc(title(c)) + '</b><span class="small muted">' + esc(summaryLine(c, dd)) + '</span>' +

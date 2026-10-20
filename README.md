@@ -271,3 +271,9 @@ The list of monsters from other books (names and basic facts only) comes from Ai
 Game data is summarised from [dnd5e.wikidot.com](https://dnd5e.wikidot.com/), whose content is licensed
 [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/); the files in `data/` are shared under the same licence.
 Dungeons & Dragons is a trademark of Wizards of the Coast. This is an unofficial fan tool; if you make it public, keep this notice.
+
+## Security
+
+- No accounts and no tracking: characters, books, imported texts and AI keys stay in your browser (localStorage / IndexedDB). Keys are never in this repository; a server key lives only in the server's environment variables.
+- The page has a Content Security Policy: scripts run only from the app itself (and Spotify's player), so text inside an imported file can't run code. Imported pictures must be real image data.
+- `server.js` serves only the app's own files (no hidden files like `.git`, not the server, tests or tools), sends safe headers (no framing, no MIME sniffing, no referrer), checks the AI access code in constant time, and limits the AI and D&D Beyond routes to a few requests a minute per address.
