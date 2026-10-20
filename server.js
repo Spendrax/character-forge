@@ -7,7 +7,7 @@
 // Optional: AI_MODEL (Claude default claude-sonnet-5-5; Gemini: the newest free Flash model), AI_CODE (an access code friends type into the helper's settings,
 // so strangers who find your server can't spend your key).
 const http = require('http'), fs = require('fs'), path = require('path'), crypto = require('crypto'), os = require('os');
-const root = __dirname, port = +process.argv[2] || +process.env.PORT || 8080;
+const root = __dirname, port = +process.argv.slice(2).filter(a => /^\d+$/.test(a))[0] || +process.env.PORT || 8080;
 const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.md': 'text/plain; charset=utf-8', '.png': 'image/png', '.webmanifest': 'application/manifest+json', '.mp3': 'audio/mpeg', '.pdf': 'application/pdf' };
 const KEY = process.env.ANTHROPIC_API_KEY || '', GKEY = process.env.GEMINI_API_KEY || '', CODE = process.env.AI_CODE || '';
 const MODEL = process.env.AI_MODEL || (KEY ? 'claude-sonnet-5-5' : '');
@@ -137,10 +137,13 @@ http.createServer((req, res) => {
   const file = path.join(root, path.normalize(rel === '/' ? '/index.html' : rel));
   // only the app's own files: nothing outside this folder, no hidden files (.git, .env…), not the server, tests or tools
   const inside = path.relative(root, file).split(path.sep);
-  if (file !== root && !file.startsWith(root + path.sep) || inside.some(p => p.startsWith('.')) || /^(server\.js|test|tools|node_modules|package(-lock)?\.json)$/.test(inside[0])) { res.writeHead(404, SAFE); return res.end('Not found'); }
+  if (file !== root && !file.startsWith(root + path.sep) || inside.some(p => p.startsWith('.')) || /^(server\.js|test|tools|node_modules|package(-lock)?\.json|.*\.(bat|command|sh))$/.test(inside[0])) { res.writeHead(404, SAFE); return res.end('Not found'); }
   fs.readFile(file, (err, buf) => {
     if (err) { res.writeHead(404, SAFE); return res.end('Not found'); }
     res.writeHead(200, Object.assign({ 'Content-Type': types[path.extname(file)] || 'application/octet-stream' }, SAFE));
     res.end(buf);
   });
-}).listen(port, () => { console.log('Character Forge running at http://localhost:' + port + (KEY || GKEY ? ' (helper on, ' + (KEY ? 'Claude' : 'Gemini') + (CODE ? ', with access code' : '') + ')' : '')); const l = lan(); if (l.length) console.log('Players on the same Wi-Fi open: ' + l.join('  or  ')); });
+}).listen(port, () => { console.log('Character Forge running at http://localhost:' + port + (KEY || GKEY ? ' (helper on, ' + (KEY ? 'Claude' : 'Gemini') + (CODE ? ', with access code' : '') + ')' : '')); const l = lan(); if (l.length) console.log('Players on the same Wi-Fi open: ' + l.join('  or  '));
+  // started by a launcher (start-table): open the app in the browser
+  if (process.argv.includes('--open')) { const u = 'http://localhost:' + port + '/#dm', cmd = process.platform === 'win32' ? 'start "" "' + u + '"' : process.platform === 'darwin' ? 'open "' + u + '"' : 'xdg-open "' + u + '"'; require('child_process').exec(cmd, () => {}); }
+}).on('error', e => { console.log(e.code === 'EADDRINUSE' ? 'Port ' + port + ' is already in use: the app is probably already running. Open http://localhost:' + port + '/' : 'Could not start: ' + e.message); });

@@ -283,7 +283,7 @@ Dungeons & Dragons is a trademark of Wizards of the Coast. This is an unofficial
 
 ## Players' phones at the table (same Wi-Fi)
 
-Run the app from the DM's computer: `node server.js`. It prints an address like `http://192.168.1.20:8080/`; players open that address on their phones (same Wi-Fi).
+Run the app from the DM's computer: download the app (Code → Download ZIP), unzip it, and double-click **Start table (Windows).bat** (Mac: **Start table (Mac).command**; Linux: `start-table.sh`). It checks for Node.js (and opens its download page if needed), starts the server and opens the app on Encounters. Or run `node server.js` yourself. Players open the address it shows (like `http://192.168.1.20:8080/`) or scan the table's QR code (same Wi-Fi).
 
 - **DM:** Encounters → **📱 Open the table** shows a 4-digit code and a QR code. **Run it** asks the players for initiative; their rolls land in the initiative order (matched by name, or taking a "Player 1" slot). **Next turn** is shown on their phones.
 - **Players:** open the character → Session → type the code → **Join**. Then **🎲 Roll** for initiative, or type the total rolled with real dice and **Send**. The phone shows the round and whose turn it is, and buzzes on your turn.

@@ -2265,7 +2265,9 @@
   render();
   takeSharedFile();
   checkXferLink();
-  function checkTableLink() { var m = String(location.hash || '').match(/^#table=(\d{4})$/); if (m) { ui.tblCode = m[1]; ui.tblHint = m[1]; try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { /* ignore */ } render(); } }
+  function checkTableLink() {
+    if (location.hash === '#dm') { store.game = 'dnd'; ui.section = 'encounters'; try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { /* ignore */ } render(); return; }
+    var m = String(location.hash || '').match(/^#table=(\d{4})$/); if (m) { ui.tblCode = m[1]; ui.tblHint = m[1]; try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { /* ignore */ } render(); } }
   checkTableLink(); window.addEventListener('hashchange', checkTableLink);
   window.addEventListener('hashchange', checkXferLink);
   if (window.ItemTexts) ItemTexts.load(function () { if (ItemTexts.list().length) render(); });
