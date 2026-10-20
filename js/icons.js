@@ -44,10 +44,10 @@
   root.Icon.names = Object.keys(P);
   // The home page: sections as coloured round buttons around a big d20 that opens the dice roller.
   root.homeHub = function (items) {
-    var n = items.length;
-    return '<nav class="hub" aria-label="Sections"><button type="button" class="hub-core" data-act="hubDice" aria-label="Roll dice"><span class="hub-ring" aria-hidden="true"></span>' + root.Icon('d20') + '</button>' +
+    var n = items.length, many = n > 8; // more than 8: a taller oval so buttons and labels don't touch
+    return '<nav class="hub' + (many ? ' many' : '') + '" aria-label="Sections"><button type="button" class="hub-core" data-act="hubDice" aria-label="Roll dice"><span class="hub-ring" aria-hidden="true"></span>' + root.Icon('d20') + '</button>' +
       items.map(function (it, i) {
-        var a = -Math.PI / 2 + i * 2 * Math.PI / n, x = 50 + 39 * Math.cos(a), y = 50 + 37 * Math.sin(a) + 2;
+        var a = -Math.PI / 2 + i * 2 * Math.PI / n, x = 50 + (many ? 40 : 39) * Math.cos(a), y = 50 + (many ? 41 : 37) * Math.sin(a) + (many ? 1 : 2);
         return '<button type="button" class="hub-item c' + (i % 8) + '" style="left:' + x.toFixed(2) + '%;top:' + y.toFixed(2) + '%;--dx:' + (50 - x).toFixed(2) + ';--dy:' + (50 - y).toFixed(2) + ';animation-delay:' + (i * 45) + 'ms" data-act="section" data-v="' + it[0] + '">' +
           '<span class="hub-dot">' + root.Icon(it[1]) + '</span><span class="hub-lbl">' + it[2] + '</span></button>';
       }).join('') + '</nav>';

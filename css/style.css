@@ -807,3 +807,7 @@ html.dice3d-lock, html.dice3d-lock body { overflow: hidden; }
   .pcard-text { flex: 1; overflow: hidden; }
   .pcard-foot { font-size: 6pt; text-align: right; color: #444; }
 }
+.hub.many { aspect-ratio: 3 / 4; width: min(100%, 27rem); margin-bottom: 5rem; }
+.hub.many .hub-item { width: 17%; }
+.hub.many .hub-core { width: 26%; }
+.hub.many .hub-lbl { font-size: .74rem; }
