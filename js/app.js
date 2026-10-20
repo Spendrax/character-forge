@@ -588,7 +588,7 @@
     return '<div class="trk-row"><div class="trk-name"><b>' + esc(x.name) + '</b>' + (x.note ? '<div class="small muted">' + esc(x.note) + '</div>' : '') + '</div>' + pipsHtml(x) +
       '<span class="small muted trk-rest">' + (x.max > 20 ? '' : x.left + '/' + x.max + ' · ') + 'back on ' + restLabel(x.rest) + '</span></div>';
   }
-  // ---------- joining the DM's table from this phone (app served by the DM's computer) ----------
+  // ---------- joining the DM's table from this phone ----------
   function tableJoinHtml() {
     if (!window.Table) return '';
     if (ui.tping === undefined) { ui.tping = 'wait'; Table.ping().then(function (j) { ui.tping = j; if (j) render(); }); }

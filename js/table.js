@@ -1,28 +1,125 @@
-// The table: players' phones and the DM's Encounters page share initiative through the app's own server
-// (node server.js on the DM's computer, same Wi-Fi). Nothing leaves that computer.
+// The table: players' phones and the DM's Encounters page share initiative directly, phone to phone (WebRTC,
+// through the free PeerJS service to find each other). Works from the normal app, on any network, no install.
+// The DM's device holds the table; players connect to it with a 4-digit code.
 (function (root) {
   'use strict';
-  function call(path, body) {
-    return fetch('api/table' + path, body ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) } : {})
-      .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status)); return j; }); });
+  var PREFIX = 'charforge-table-', HOSTKEY = 'cf-table-host';
+  var lib = null;
+  function loadLib() {
+    if (root.Peer) return Promise.resolve();
+    return lib = lib || new Promise(function (ok, no) { var s = document.createElement('script'); s.src = 'js/vendor/peerjs.min.js'; s.onload = ok; s.onerror = function () { lib = null; no(new Error('Couldn’t load the table (offline?).')); }; document.head.appendChild(s); });
   }
-  var pinged = null;
-  var watch = { code: '', timer: null, v: 0, cb: null };
+  function rnd(n) { var a = new Uint8Array(n); crypto.getRandomValues(a); return Array.prototype.map.call(a, function (b) { return ('0' + b.toString(16)).slice(-2); }).join(''); }
+  function pub(s) { return { code: s.code, v: s.v, open: s.open, round: s.round, turn: s.turn, players: s.players.map(function (p) { return { id: p.id, name: p.name, init: p.init, bonus: p.bonus }; }) }; }
+
+  // ---------- the DM's side: host ----------
+  var host = null; // { peer, state, conns: [], key, cb }
+  function saveHost() { try { localStorage.setItem(HOSTKEY, JSON.stringify({ code: host.state.code, key: host.key, state: host.state })); } catch (e) { /* storage blocked */ } }
+  function broadcast() { host.state.v++; saveHost(); var msg = { t: 'state', state: pub(host.state) }; host.conns.forEach(function (c) { if (c.open) try { c.send(msg); } catch (e) { /* gone */ } }); if (host.cb) host.cb(pub(host.state)); }
+  function onHostConn(conn) {
+    host.conns.push(conn);
+    conn.on('open', function () { conn.send({ t: 'state', state: pub(host.state) }); });
+    conn.on('close', function () { host && (host.conns = host.conns.filter(function (c) { return c !== conn; })); });
+    conn.on('data', function (m) {
+      if (!host || !m || typeof m !== 'object') return;
+      var s = host.state, str = function (x, n) { return String(x == null ? '' : x).slice(0, n); }, num = function (x, lo, hi) { return Math.max(lo, Math.min(hi, Math.round(+x) || 0)); };
+      if (m.t === 'join') {
+        if (s.players.length >= 16) return conn.send({ t: 'error', error: 'The table is full.' });
+        var p = { id: rnd(4), token: rnd(12), name: str(m.name, 40) || 'Player', bonus: num(m.bonus, -10, 30), init: null };
+        s.players.push(p); conn.send({ t: 'joined', id: p.id, token: p.token }); broadcast();
+      } else if (m.t === 'roll') {
+        var q = s.players.filter(function (x) { return x.id === m.id && x.token === m.token; })[0];
+        if (!q) return conn.send({ t: 'error', error: 'Join the table again.', gone: true });
+        q.init = m.init == null ? null : num(m.init, -20, 60); broadcast();
+      }
+    });
+  }
+  function startHost(code, key, state) {
+    return loadLib().then(function () {
+      return new Promise(function (ok, no) {
+        var peer = new root.Peer(PREFIX + code, root.TABLE_PEER_OPTS);
+        peer.on('open', function () { host = { peer: peer, state: state, conns: [], key: key, cb: host && host.cb }; peer.on('connection', onHostConn); saveHost(); ok(); });
+        peer.on('error', function (e) { if (!host || host.peer !== peer) { peer.destroy(); no(e); } });
+        peer.on('disconnected', function () { try { peer.reconnect(); } catch (e) { /* closed */ } });
+      });
+    });
+  }
+  function hosted() { try { return JSON.parse(localStorage.getItem(HOSTKEY) || 'null'); } catch (e) { return null; } }
+
+  // ---------- the player's side ----------
+  var guest = null; // { code, peer, conn, cb, state, wait }
+  function connectGuest(code) {
+    if (guest && guest.code === code && guest.conn) return Promise.resolve(guest);
+    if (guest) try { guest.peer.destroy(); } catch (e) { /* ignore */ }
+    var g = guest = { code: code, peer: null, conn: null, cb: guest && guest.code === code ? guest.cb : null, state: null, wait: [] };
+    return loadLib().then(function () {
+      return new Promise(function (ok, no) {
+        var peer = g.peer = new root.Peer(root.TABLE_PEER_OPTS);
+        peer.on('error', function (e) { no(e.type === 'peer-unavailable' ? new Error('No table with that code. Check the number with your DM (their Encounters page must stay open).') : new Error('Couldn’t connect (' + (e.type || e.message) + ').')); });
+        peer.on('open', function () {
+          var conn = peer.connect(PREFIX + code, { reliable: true });
+          conn.on('open', function () { g.conn = conn; ok(g); });
+          conn.on('data', function (m) {
+            if (!m) return;
+            if (m.t === 'state') { g.state = m.state; if (g.cb) g.cb(m.state); var w = g.wait; g.wait = []; w.forEach(function (f) { f(m.state); }); }
+            else if (m.t === 'joined' && g.onJoined) g.onJoined(m);
+            else if (m.t === 'error' && g.onError) g.onError(new Error(m.error));
+            else if (m.t === 'closed' && g.cb) g.cb(null, new Error('No table'));
+          });
+          conn.on('close', function () { if (guest !== g) return; g.conn = null; var retry = function () { if (guest && guest.code === code && !guest.conn) connectGuest(code).catch(function () { setTimeout(retry, 5000); }); }; setTimeout(retry, 3000); });
+        });
+      });
+    });
+  }
+  function send(code, msg) { return connectGuest(code).then(function (g) { g.conn.send(msg); return g; }); }
+
   root.Table = {
-    // is the app served by its own server? (GitHub Pages has no /api)
-    ping: function () { return pinged = pinged || call('').then(function (j) { return j && j.ok ? j : null; }, function () { return null; }); },
-    create: function () { return call('', {}); },
-    get: function (code) { return call('/' + code); },
-    join: function (code, name, bonus) { return call('/' + code + '/join', { name: name, bonus: bonus }); },
-    roll: function (code, id, token, init) { return call('/' + code + '/roll', { id: id, token: token, init: init }); },
-    dm: function (code, key, what) { return call('/' + code + '/dm', Object.assign({ key: key }, what)); },
-    // check every 2 seconds; cb(state) only when something changed (cb(null, error) if the table is gone)
-    watch: function (code, cb) {
-      if (watch.code === code && watch.timer) { watch.cb = cb; return; }
-      root.Table.stop(); watch.code = code; watch.cb = cb; watch.v = 0;
-      var tick = function () { if (document.hidden) return; call('/' + code).then(function (s) { if (s.v !== watch.v) { watch.v = s.v; watch.cb(s); } }, function (e) { if (/No table/.test(e.message)) { root.Table.stop(); watch.cb(null, e); } }); };
-      tick(); watch.timer = setInterval(tick, 2000);
+    ping: function () { return Promise.resolve(root.RTCPeerConnection ? { ok: true, lan: [] } : null); },
+    create: function () {
+      var tryOne = function (n) {
+        var code = String(1000 + Math.floor(Math.random() * 9000)), key = rnd(16);
+        return startHost(code, key, { code: code, v: 1, open: false, round: 0, turn: '', players: [] }).then(function () { return { code: code, key: key, lan: [] }; },
+          function (e) { if (e && e.type === 'unavailable-id' && n < 6) return tryOne(n + 1); throw new Error(e && e.type === 'network' || e && e.type === 'server-error' ? 'Couldn’t reach the connection service. Check the internet connection.' : (e && e.message) || 'Couldn’t open the table.'); });
+      };
+      return tryOne(0);
     },
-    stop: function () { if (watch.timer) clearInterval(watch.timer); watch.timer = null; watch.code = ''; }
+    join: function (code, name, bonus) {
+      return connectGuest(code).then(function (g) {
+        return new Promise(function (ok, no) {
+          g.onJoined = function (m) { g.onJoined = null; ok({ id: m.id, token: m.token, state: g.state }); };
+          g.onError = function (e) { g.onError = null; no(e); };
+          g.conn.send({ t: 'join', name: name, bonus: bonus });
+        });
+      });
+    },
+    roll: function (code, id, token, init) { return send(code, { t: 'roll', id: id, token: token, init: init }).then(function (g) { return new Promise(function (ok) { g.wait.push(ok); }); }); },
+    dm: function (code, key, what) {
+      var go = function () {
+        if (!host || host.state.code !== code || host.key !== key) throw new Error('Not the DM.');
+        var s = host.state;
+        if ('open' in what) { s.open = !!what.open; if (s.open && what.reset) s.players.forEach(function (p) { p.init = null; }); }
+        if ('round' in what) s.round = +what.round || 0;
+        if ('turn' in what) s.turn = String(what.turn || '').slice(0, 60);
+        if (what.kick) s.players = s.players.filter(function (p) { return p.id !== what.kick; });
+        if (what.close) { host.conns.forEach(function (c) { try { c.send({ t: 'closed' }); } catch (e) { /* gone */ } }); var pe = host.peer; host = null; try { localStorage.removeItem(HOSTKEY); } catch (e) { /* ignore */ } setTimeout(function () { pe.destroy(); }, 300); return { ok: true }; }
+        broadcast(); return pub(s);
+      };
+      if (host && host.state.code === code) return Promise.resolve().then(go);
+      var h = hosted(); if (h && h.code === code && h.key === key) return startHost(code, key, h.state).then(go);
+      return Promise.reject(new Error('Not the DM.'));
+    },
+    // follow a table: the DM's own (re-opened after a reload) or one joined as a player
+    watch: function (code, cb) {
+      var h = hosted();
+      if (h && h.code === code) {
+        if (host && host.state.code === code) { host.cb = cb; return; }
+        if (root.Table._starting === code) return; root.Table._starting = code;
+        startHost(code, h.key, h.state).then(function () { root.Table._starting = ''; host.cb = cb; cb(pub(host.state)); }, function () { root.Table._starting = ''; cb(null, new Error('No table')); });
+        return;
+      }
+      if (guest && guest.code === code) { guest.cb = cb; return; }
+      connectGuest(code).then(function (g) { g.cb = cb; }, function () { cb(null, new Error('No table')); });
+    },
+    stop: function () { if (guest) { try { guest.peer.destroy(); } catch (e) { /* ignore */ } guest = null; } }
   };
 })(typeof window !== 'undefined' ? window : globalThis);

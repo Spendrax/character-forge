@@ -154,25 +154,20 @@
         (saved.length ? '<select data-encload="1" aria-label="Load a saved encounter"><option value="">Load a saved one…</option>' + saved.map(function (s) { return '<option value="' + s.id + '">' + esc(s.name || 'Untitled') + '</option>'; }).join('') + '</select>' : '') + '</div></div>';
     }
 
-    // ----- the table: players join from their phones (app served by node server.js) -----
+    // ----- the table: players join from their phones, straight from the app (js/table.js) -----
     function tbl() { return store.encTable || null; }
     function phonesHtml() {
       var T = root.Table; if (!T) return '';
       if (E.tping === undefined) { E.tping = 'wait'; T.ping().then(function (j) { E.tping = j; E.tlan = j && j.lan || []; api.render(); }); }
       if (E.tping === 'wait') return '';
-      if (!E.tping) return '<div class="panel cond-panel"><button type="button" class="cond-head" data-act="tblHow" aria-expanded="' + !!E.thow + '"><b>📱 Players’ phones</b> <span class="small muted">players roll initiative on their phones</span><span class="spacer"></span><span aria-hidden="true">' + (E.thow ? '▾' : '▸') + '</span></button>' +
-        (E.thow ? '<p class="small">This needs the app running on the DM’s computer, so the phones can reach it on your Wi-Fi. Once:</p><ol class="small">' +
-          '<li><a href="https://github.com/Spendrax/character-forge/archive/refs/heads/main.zip" target="_blank" rel="noopener">Download the app</a> (a .zip) and unzip it somewhere.</li>' +
-          '<li>Double-click <b>Start table (Windows)</b> (on a Mac: <b>Start table (Mac)</b>). The first time it may ask you to install Node.js (free) and to allow the firewall on private networks: say yes.</li>' +
-          '<li>The app opens on Encounters with this panel ready: tap <b>Open the table</b> and show the QR code to the players.</li></ol>' +
-          '<p class="small muted">The app on your computer keeps its own characters and encounters: use Characters → 📲 To another device to bring yours over.</p>' : '') + '</div>';
+      if (!E.tping) return '';
       var t = tbl();
       if (!t) return '<div class="panel compact-row"><b>📱 Players’ phones</b><span class="small muted">Players roll initiative on their phones and it lands here.</span>' + btn('tblOpen', 'Open the table', {}, 'btn small') + (E.tmsg ? '<span class="small bad">' + esc(E.tmsg) + '</span>' : '') + '</div>';
       T.watch(t.code, function (st, err) { if (!st) { store.encTable = null; E.tmsg = 'The table closed (the server restarted?). Open a new one.'; api.render(); return; } E.tstate = st; if (mergePhones(st)) api.save && api.save(); api.render(); });
-      var st = E.tstate || { players: [] }, url = (E.tlan && E.tlan[0] || (location.origin + location.pathname)) + '#table=' + t.code;
+      var st = E.tstate || { players: [] }, url = location.origin + location.pathname + '#table=' + t.code;
       if (!E.tqr || E.tqrFor !== url) { E.tqrFor = url; if (root.Transfer) root.Transfer.qr(url).then(function (u) { E.tqr = u; api.render(); }, function () {}); }
       return '<div class="panel tbl-panel"><div class="toolbar" style="margin:0"><b>📱 Table <span class="tbl-code">' + t.code + '</span></b><span class="spacer"></span>' + btn('tblAsk', st.open ? 'Ask again (clear rolls)' : 'Ask for initiative', {}, 'btn small' + (st.open ? '' : ' primary')) + btn('tblClose', 'Close', {}, 'btn small') + '</div>' +
-        '<div class="tbl-join">' + (E.tqr ? '<img class="xfer-qr tbl-qr" src="' + E.tqr + '" alt="QR code to join the table">' : '') + '<div class="small">Players scan this, or open <b>' + esc(url.replace(/#.*/, '')) + '</b> on the same Wi-Fi, open their character’s Session page and type the code <b>' + t.code + '</b>.</div></div>' +
+        '<div class="tbl-join">' + (E.tqr ? '<img class="xfer-qr tbl-qr" src="' + E.tqr + '" alt="QR code to join the table">' : '') + '<div class="small">Players scan this with their phone’s camera, or open the app, go to their character’s <b>Session</b> page and type the code <b>' + t.code + '</b>. Keep this page open during the fight.</div></div>' +
         (st.players.length ? '<ul class="tbl-players">' + st.players.map(function (p) { return '<li><b>' + esc(p.name) + '</b> <span class="' + (p.init == null ? 'muted' : 'tbl-init') + '">' + (p.init == null ? (st.open ? 'rolling…' : 'joined') : p.init) + '</span>' + btn('tblKick', '✕', { v: p.id }, 'btn tiny') + '</li>'; }).join('') + '</ul>' : '<p class="small muted">Nobody has joined yet.</p>') +
         (store.encRun ? '<p class="small muted">Rolls that come in are put in the initiative order (matched by name, or added).</p>' : '<p class="small muted">Run the fight and the players are asked for initiative.</p>') + '</div>';
     }
@@ -275,7 +270,6 @@
       encView: function (v) { E.open = v; },
       encViewClose: function () { E.open = ''; },
       encRun: function () { var enc = cur(); if (!enc.mons.length) { E.msg = 'Add some monsters first.'; return; } startRun(enc); E.msg = ''; var t = tbl(); if (t && root.Table) root.Table.dm(t.code, t.key, { open: true, reset: true, round: 1, turn: (store.encRun.list[0] || {}).n || '' }).catch(function () {}); },
-      tblHow: function () { E.thow = !E.thow; },
       tblOpen: function () { E.tmsg = ''; root.Table.create().then(function (j) { store.encTable = { code: j.code, key: j.key }; E.tlan = j.lan || E.tlan; E.tstate = null; api.save && api.save(); api.render(); }, function (e) { E.tmsg = e.message; api.render(); }); return false; },
       tblAsk: function () { var t = tbl(); if (t) root.Table.dm(t.code, t.key, { open: true, reset: true }).catch(function () {}); return false; },
       tblKick: function (v) { var t = tbl(); if (t) root.Table.dm(t.code, t.key, { kick: v }).catch(function () {}); return false; },

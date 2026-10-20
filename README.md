@@ -281,13 +281,13 @@ Dungeons & Dragons is a trademark of Wizards of the Coast. This is an unofficial
 - **To another device:** Characters → 📲 To another device makes a link (and a QR code when it is small enough) with your D&D, PF2 and M&M characters; opening it on the other device adds them or updates the ones sent before. Or share a file, pictures included.
 - **PF2 spells:** quick filters (1, 2, 3 actions, reaction, free, sustained, longer). **M&M:** a Session tab with hero points, the damage track with Toughness checks, and conditions.
 
-## Players' phones at the table (same Wi-Fi)
+## Players' phones at the table
 
-Run the app from the DM's computer: download the app (Code → Download ZIP), unzip it, and double-click **Start table (Windows).bat** (Mac: **Start table (Mac).command**; Linux: `start-table.sh`). It checks for Node.js (and opens its download page if needed), starts the server and opens the app on Encounters. Or run `node server.js` yourself. Players open the address it shows (like `http://192.168.1.20:8080/`) or scan the table's QR code (same Wi-Fi).
+Nothing to install: it works from the normal app, on any network (same room or online).
 
-- **DM:** Encounters → **📱 Open the table** shows a 4-digit code and a QR code. **Run it** asks the players for initiative; their rolls land in the initiative order (matched by name, or taking a "Player 1" slot). **Next turn** is shown on their phones.
-- **Players:** open the character → Session → type the code → **Join**. Then **🎲 Roll** for initiative, or type the total rolled with real dice and **Send**. The phone shows the round and whose turn it is, and buzzes on your turn.
-- The table lives only in the server's memory (no account, nothing online) and is forgotten after 12 hours or when the server stops. It doesn't work from the GitHub Pages site, which has no server.
+- **DM:** Encounters → **📱 Open the table** shows a 4-digit code and a QR code. **Run it** asks the players for initiative; their rolls land in the initiative order (matched by name, or taking a "Player 1" slot). **Next turn** is shown on their phones. Keep the Encounters page open during the fight (a reload reopens the same table).
+- **Players:** scan the QR code, or open the character → Session → type the code → **Join**. Then **🎲 Roll** for initiative, or type the total rolled with real dice and **Send**. The phone shows the round and whose turn it is, and buzzes on your turn.
+- How: the phones talk directly to the DM's device (WebRTC, encrypted). The free PeerJS service (peerjs.com) only helps them find each other; only names and initiative numbers are exchanged.
 
 Everywhere a roll is made for you (concentration saves, hit dice, initiative), you can also type what you rolled with your own dice.
 
