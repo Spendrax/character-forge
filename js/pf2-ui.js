@@ -346,8 +346,13 @@
       }).join('') + '<p class="small muted">The three attack buttons are your first, second and third attack this turn (multiple attack penalty' + (d.strikes.some(function (s) { return s.map[0] === 4; }) ? '; agile weapons take less' : '') + '). Weapons come from the Gear tab.</p>';
     }
     // ----- Spells -----
+    // quick filters on the spells page: how many actions, reactions, sustained…
+    var SPK = [['1', '◆ 1 action', function (s) { return s.time === '1' || /^1 (to|or)/.test(s.time || ''); }], ['2', '◆◆ 2 actions', function (s) { return s.time === '2' || /(1|2) (to|or) (2|3)/.test(s.time || ''); }],
+      ['3', '◆◆◆ 3 actions', function (s) { return s.time === '3' || /(to|or) 3/.test(s.time || ''); }], ['reaction', '⤾ Reaction', function (s) { return s.time === 'reaction'; }], ['free', '◇ Free', function (s) { return s.time === 'free'; }],
+      ['sus', 'Sustained', function (s) { return !!s.sus; }], ['long', 'Longer (exploration)', function (s) { return /minute|hour|day|week/i.test(s.time || ''); }]];
+    function spOk(s) { var k = SPK.filter(function (x) { return x[0] === U.spK; })[0]; return !k || k[2](s); }
     function spellsTab(ch, d) {
-      var h = '', T = trk(ch);
+      var h = '<div class="pills spell-kinds">' + SPK.map(function (k) { return btn('pfSpK', k[1], { v: k[0] }, 'pill small' + (U.spK === k[0] ? ' on' : '')); }).join('') + '</div>', T = trk(ch);
       if (!d.casters.length && !d.focusMax && !(ch.spells && ch.spells.innate)) h += '<p class="muted">No spellcasting yet. Spells come from your class, a multiclass dedication, or feats (innate and focus spells).</p>';
       d.casters.forEach(function (c) {
         var bucket = (ch.spells || {})[c.id] || { known: {} }, used = ((T.slots || {})[c.id]) || {};
@@ -379,6 +384,7 @@
     }
     function spellRows(ids, entry, r) { return (ids || []).map(function (id) { var s = PF2.byId('spells', id); return s ? spellRow(s, entry, r) : ''; }).join(''); }
     function spellRow(s, entry, r, from) {
+      if (!spOk(s)) return '';
       var k = 's:' + (entry || 'g') + ':' + s.id, open = U.open === k;
       return '<div class="pf-spell' + rar(s) + '"><button type="button" class="pf-pname" data-act="pfOpenRow" data-v="' + esc(k) + '"><b>' + esc(s.n) + '</b> ' + gl(/^[123rf]$/.test(s.time) ? s.time : '') + '<span class="spacer"></span><small class="muted">' + (from ? esc(from) : s.cat === 'cantrip' ? 'cantrip' : s.cat === 'focus' ? 'focus' : 'rank ' + s.lv) + '</small></button>' +
         (entry ? btn('pfSpellRm', '✕', { v: s.id, e: entry, r: r }, 'mm-b') : '') + (open ? '<div class="pf-desc">' + traits(s.t, s) + spellLine(s) + md(s.d) + '</div>' : '') + '</div>';
@@ -613,6 +619,7 @@
     function chg(fn) { var ch = cur(); if (ch) fn(ch); }
     function pickTarget() { return U.pick; }
     var actions = {
+      pfSpK: function (v) { U.spK = U.spK === v ? '' : v; },
       pfNew: function () { var c = PF2.newChar(); S().chars.push(c); S().cur = c.id; U.view = 'char'; U.tab = 'build'; root.scrollTo(0, 0); },
       pfOpen: function (v) { S().cur = v; U.view = 'char'; var d = PF2.derive(cur()); U.tab = d.warnings.length > 3 ? 'build' : 'sheet'; root.scrollTo(0, 0); },
       pfList: function () { U.view = 'list'; U.pick = null; root.scrollTo(0, 0); },

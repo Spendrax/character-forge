@@ -105,7 +105,7 @@
       var s = state();
       return { kind: s.kind, tier: s.tier, creatures: s.from ? s.from.creatures : [{ cr: [0, 5, 11, 17][s.tier], type: '', n: s.count }] };
     }
-    function roll() { var s = state(); s.last = rollTreasure(spec(), D.magicItems, Math.random); s.last.kind = s.kind; }
+    function roll() { var s = state(); s.last = rollTreasure(spec(), D.magicItems, Math.random); s.last.kind = s.kind; s.split = { coins: Object.assign({}, s.last.coins), who: (s.split || {}).who || {}, give: {} }; }
 
     var COINS = [['pp', 'platinum'], ['gp', 'gold'], ['ep', 'electrum'], ['sp', 'silver'], ['cp', 'copper']];
     function resultHtml(t) {
@@ -125,6 +125,32 @@
         (items ? '<h4>Magic items</h4><ul class="tre-list">' + items + '</ul>' : '') +
         (t.notes.length ? '<p class="small muted">' + esc(t.notes.join(' ')) + '</p>' : '') + '</div>';
     }
+    // ---------- sharing the treasure out between the characters ----------
+    var COINK = ['pp', 'gp', 'ep', 'sp', 'cp'];
+    function chars() { return (store.chars || []).filter(function (c) { return c.name || (c.classes || []).length; }); }
+    function splitHtml() {
+      var s = state(), sp = s.split = s.split || { coins: {}, who: {}, give: {} }, cs = chars(), t = s.last;
+      if (!cs.length) return '<div class="panel"><h3>Share it out</h3><p class="small muted">Make characters first: then this splits the coins between them and hands out the items.</p></div>';
+      var picked = cs.filter(function (c) { return sp.who[c.id] !== false; });
+      var h = '<div class="panel tre-split"><h3>Share it out</h3><p class="small muted">Coins are split evenly between the ticked characters; anything that doesn’t divide evenly stays in the pot. Items go to whoever you choose.</p>' +
+        '<div class="pills">' + cs.map(function (c) { var on = sp.who[c.id] !== false; return '<label class="pill small' + (on ? ' on' : '') + '"><input type="checkbox" data-tresplitwho="' + c.id + '"' + (on ? ' checked' : '') + '> ' + esc(c.name || 'Unnamed') + '</label>'; }).join('') + '</div>' +
+        '<div class="row">' + COINK.map(function (k) { return '<label class="field"><span>' + k + '</span><input type="number" min="0" id="tre-c-' + k + '" data-tresplit="' + k + '" value="' + (+sp.coins[k] || 0) + '"></label>'; }).join('') + '</div>' +
+        '<div class="toolbar">' + (t ? btn('treFill', 'Use the coins just rolled', {}, 'btn small') : '') + btn('treSplit', 'Split between ' + picked.length + ' character' + (picked.length === 1 ? '' : 's'), {}, 'btn primary') + '</div>';
+      var things = t ? t.items.map(function (it, i) { return ['m' + i, it.n, it]; }).concat([].concat.apply([], t.valuables.map(function (v, j) { return v.names.map(function (n, k) { return ['v' + j + '-' + k, n + ' (' + v.value + ' gp)', { val: v.value, n: n, kind: v.kind }]; }); }))) : [];
+      if (things.length) h += '<h4>Items</h4>' + things.map(function (x) {
+        var given = sp.give[x[0]];
+        return '<div class="toolbar"><b>' + esc(x[1]) + '</b>' + (given ? '<span class="small muted">→ ' + esc(given) + '</span>' : '<select data-tregive="' + x[0] + '" aria-label="Give ' + esc(x[1]) + ' to">' + '<option value="">Give to…</option>' + cs.map(function (c) { return '<option value="' + c.id + '">' + esc(c.name || 'Unnamed') + '</option>'; }).join('') + '</select>') + '</div>';
+      }).join('');
+      return h + (sp.msg ? '<p class="small rest-msg">' + esc(sp.msg) + '</p>' : '') + '</div>';
+    }
+    function uid() { return 'i' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+    function giveThing(key, charId) {
+      var s = state(), t = s.last, c = (store.chars || []).filter(function (x) { return x.id === charId; })[0]; if (!t || !c) return;
+      c.items = c.items || [];
+      if (key[0] === 'm') { var it = t.items[+key.slice(1)]; if (!it) return; c.items.push({ id: uid(), k: 'magic', n: it.n, r: it.r, type: it.type, att: !!it.att, attuned: false, slug: it.slug, qty: 1, w: 0, note: 'From treasure' }); }
+      else { var m = key.slice(1).split('-'), v = t.valuables[+m[0]], n = v && v.names[+m[1]]; if (!n) return; c.items.push({ id: uid(), k: 'custom', n: n.charAt(0).toUpperCase() + n.slice(1), qty: 1, w: 0, note: (v.kind === 'gem' ? 'Gem' : 'Art object') + ', worth ' + v.value + ' gp' }); }
+      s.split.give[key] = c.name || 'Unnamed'; s.split.msg = '';
+    }
     function html() {
       var s = state(), from = s.from;
       var kindPills = '<div class="pills">' + [['pocket', 'Pocket money'], ['hoard', 'Hoard (boss or lair)']].map(function (k) { return btn('treKind', k[1], { v: k[0] }, 'pill' + (s.kind === k[0] ? ' on' : '')); }).join('') + '</div>';
@@ -135,14 +161,28 @@
           (s.kind === 'pocket' ? '<label class="mon-f">Creatures <input type="number" min="1" max="50" id="tre-count" data-tre="count" value="' + s.count + '"></label>' : '') + '</div>';
       return '<main class="mon-main tre-main"><h2>Treasures</h2><div class="panel"><p class="small muted">Pocket money is what each creature carries (bandits: a few coins). A hoard is a boss’s or lair’s stash: more coins, gems, art and magic items. Stronger creatures give more.</p>' +
         kindPills + source + '<div class="toolbar">' + btn('treRoll', root.Icon('d20') + ' Random treasure', {}, 'btn primary') + '</div></div>' + resultHtml(s.last) +
-        '<p class="small muted">Coins, gems and art follow the Dungeon Master’s Guide (2014) treasure tables. Magic items are picked by rarity from the item list in Characters → Items, with chances close to the book’s.</p></main>';
+        splitHtml() + '<p class="small muted">Coins, gems and art follow the Dungeon Master’s Guide (2014) treasure tables. Magic items are picked by rarity from the item list in Characters → Items, with chances close to the book’s.</p></main>';
     }
     var actions = {
       treKind: function (v) { state().kind = v; },
       treRoll: function () { roll(); },
-      treClear: function () { var s = state(); s.from = null; }
+      treClear: function () { var s = state(); s.from = null; },
+      treFill: function () { var s = state(); s.split = s.split || { coins: {}, who: {}, give: {} }; s.split.coins = Object.assign({}, s.last ? s.last.coins : {}); s.split.msg = ''; },
+      treSplit: function () {
+        var s = state(), sp = s.split = s.split || { coins: {}, who: {}, give: {} }, who = chars().filter(function (c) { return sp.who[c.id] !== false; }); if (!who.length) { sp.msg = 'Tick at least one character.'; return; }
+        var each = {}, left = {};
+        COINK.forEach(function (k) { var n = Math.max(0, +sp.coins[k] || 0); each[k] = Math.floor(n / who.length); left[k] = n - each[k] * who.length; });
+        who.forEach(function (c) { c.money = c.money || {}; COINK.forEach(function (k) { c.money[k] = (+c.money[k] || 0) + each[k]; }); });
+        var fmt = function (o) { return COINK.filter(function (k) { return o[k]; }).map(function (k) { return o[k].toLocaleString('en') + ' ' + k; }).join(', ') || 'nothing'; };
+        sp.msg = 'Each of ' + who.map(function (c) { return c.name || 'Unnamed'; }).join(', ') + ' got ' + fmt(each) + '.' + (fmt(left) !== 'nothing' ? ' Left in the pot: ' + fmt(left) + '.' : '');
+        sp.coins = left;
+      }
     };
     function onInput(t) {
+      var s0 = state(), sp0 = s0.split = s0.split || { coins: {}, who: {}, give: {} };
+      if (t.getAttribute('data-tresplit')) { sp0.coins[t.getAttribute('data-tresplit')] = Math.max(0, Math.round(+t.value) || 0); return 'save'; }
+      if (t.getAttribute('data-tresplitwho')) { sp0.who[t.getAttribute('data-tresplitwho')] = t.checked; return 'render'; }
+      if (t.getAttribute('data-tregive')) { if (t.value) giveThing(t.getAttribute('data-tregive'), t.value); return 'render'; }
       var k = t.getAttribute('data-tre'); if (k == null) return null;
       var s = state(); s[k] = Math.max(k === 'count' ? 1 : 0, Math.min(k === 'count' ? 50 : 3, Math.round(+t.value) || 0)); return k === 'count' ? 'save' : 'render';
     }

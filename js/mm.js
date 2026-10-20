@@ -173,7 +173,7 @@
       return '<label class="field"><span>' + esc(label) + '</span>' + (area ? '<textarea id="' + id + '" data-mmf="' + path + '" placeholder="' + esc(ph || '') + '">' + esc(v || '') + '</textarea>' : '<input type="text" id="' + id + '" data-mmf="' + path + '" value="' + esc(v || '') + '" placeholder="' + esc(ph || '') + '">') + '</label>';
     }
     function fmt(n) { return n == null ? '—' : (n >= 0 ? '+' : '−') + Math.abs(n); }
-    var TABS = [['basics', 'Basics'], ['abilities', 'Abilities'], ['powers', 'Powers'], ['advantages', 'Advantages'], ['skills', 'Skills'], ['defenses', 'Defenses'], ['complications', 'Complications'], ['sheet', 'Sheet']];
+    var TABS = [['basics', 'Basics'], ['abilities', 'Abilities'], ['powers', 'Powers'], ['advantages', 'Advantages'], ['skills', 'Skills'], ['defenses', 'Defenses'], ['complications', 'Complications'], ['sheet', 'Sheet'], ['play', 'Session']];
 
     function home() {
       return '<main class="home"><h1>Mutants &amp; Masterminds 3e</h1><p class="muted">Your superhero table companion. Tap the d20 to roll.</p>' +
@@ -189,7 +189,7 @@
         '<span class="small">Abilities ' + d.pp.abilities + ' · Powers ' + d.pp.powers + ' · Advantages ' + d.pp.advantages + ' · Skills ' + d.pp.skills + ' · Defenses ' + d.pp.defenses + '</span>' +
         (d.warnings.length ? '<span class="mm-warn">' + d.warnings.length + ' to check</span>' : '<span class="mm-ok">✓ within the limits</span>') + '</div>' +
         '<nav class="steps mm-tabs">' + TABS.map(function (t) { return btn('mmTab', t[1], { v: t[0] }, 'step' + (U.tab === t[0] ? ' on' : '')); }).join('') + '</nav>';
-      var body = { basics: basics, abilities: abilities, powers: powers, advantages: advantages, skills: skills, defenses: defenses, complications: complications, sheet: sheet }[U.tab] || basics;
+      var body = { basics: basics, abilities: abilities, powers: powers, advantages: advantages, skills: skills, defenses: defenses, complications: complications, sheet: sheet, play: play }[U.tab] || basics;
       return h2 + '<div class="mm-body">' + body(h, d) + '</div>' + (d.warnings.length && U.tab !== 'sheet' ? '<div class="panel mm-warns"><b>To check</b><ul>' + d.warnings.map(function (w) { return '<li>' + esc(w) + '</li>'; }).join('') + '</ul></div>' : '') + (d.notes.length && U.tab !== 'sheet' ? '<details class="panel mm-notes"><summary class="small">Worth a look with your GM (' + d.notes.length + ')</summary><ul class="small">' + d.notes.map(function (w) { return '<li>' + esc(w) + '</li>'; }).join('') + '</ul></details>' : '') + '</main>';
     }
     function basics(h, d) {
@@ -306,6 +306,22 @@
         (h.notes ? '<h3>Notes</h3><p>' + esc(h.notes).replace(/\n/g, '<br>') + '</p>' : '') + '</article>';
     }
 
+    // ---------- session: hero points, the damage track, conditions ----------
+    var TRACK = ['', 'Bruised', 'Dazed', 'Staggered', 'Incapacitated'];
+    function play(h, d) {
+      var T = h.track = h.track || {}, hp = T.hp == null ? 1 : +T.hp, bruise = +T.bruise || 0, on = T.conds || {};
+      var tough = d.def.tough - bruise;
+      var out = '<h2>Session</h2><div class="panel"><h3>Hero points</h3><div class="toolbar">' + btn('mmHp', '−', { v: -1 }, 'btn') + '<b class="mm-hpts">' + hp + '</b>' + btn('mmHp', '+', { v: 1 }, 'btn') +
+        '<span class="small muted">Spend one to reroll (a roll under 11 counts as 10 + the roll), to edit a scene, to recover, or for an instant counter. You get one when a complication causes trouble; back to 1 each adventure.</span></div></div>';
+      out += '<div class="panel"><h3>Damage</h3><p>Toughness <b>' + fmt(tough) + '</b>' + (bruise ? ' <span class="muted">(' + d.def.tough + ' − ' + bruise + ' bruise' + (bruise > 1 ? 's' : '') + ')</span>' : '') + (T.dmg ? ' · <b class="bad">' + TRACK[T.dmg] + '</b>' : '') + '</p>' +
+        '<div class="toolbar"><label class="small">Damage rank <input type="number" min="1" max="40" id="mm-dmgrank" data-mmplay="rank" value="' + esc(U.dmgRank || '') + '" style="width:4.5rem"></label>' + btn('mmHit', '🎲 Toughness check', {}, 'btn primary') + btn('mmRecover', 'Recover a step', {}, 'btn small') + btn('mmFresh', 'All healed', {}, 'btn small') + '</div>' +
+        (U.hitMsg ? '<p class="small rest-msg">' + esc(U.hitMsg) + '</p>' : '') + '<p class="small muted">The check is against DC 15 + the damage rank: each 5 points short is one more step (bruise, dazed, staggered, incapacitated).</p></div>';
+      out += '<div class="panel"><h3>Conditions</h3><div class="pills">' + M.conditions.map(function (c) { return btn('mmCond', c[0], { v: c[0] }, 'pill small' + (on[c[0]] ? ' on' : '')); }).join('') + '</div>' +
+        (Object.keys(on).length ? '<ul class="cond-list">' + M.conditions.filter(function (c) { return on[c[0]]; }).map(function (c) { return '<li><b>' + esc(c[0]) + ':</b> ' + esc(c[2]) + '</li>'; }).join('') + '</ul>' : '<p class="small muted">Tap a condition when it happens to the hero to see what it does.</p>') + '</div>';
+      out += '<div class="panel"><h3>Attacks and defenses</h3><ul class="lines">' + d.attacks.map(function (a) { return '<li><b>' + esc(a.n) + '</b> — ' + esc(a.range) + ', ' + (a.bonus == null ? 'no attack roll' : 'attack ' + fmt(a.bonus)) + ', ' + esc(a.kind) + ' ' + a.rank + (a.resist ? ' (DC ' + a.dc + ' ' + esc(a.resist) + ')' : '') + '</li>'; }).join('') + '</ul>' +
+        '<p>' + DEF.map(function (x) { return x[1] + ' <b>' + fmt(x[0] === 'tough' ? tough : d.def[x[0]]) + '</b>'; }).join(' · ') + ' · Initiative <b>' + fmt(d.init) + '</b></p></div>';
+      return out;
+    }
     // ---------- changes ----------
     function walk(obj, path) { var k = String(path).split('.'), o = obj; for (var i = 0; i < k.length - 1; i++) { if (o[k[i]] == null) o[k[i]] = {}; o = o[k[i]]; } return [o, k[k.length - 1]]; }
     var actions = {
@@ -333,9 +349,23 @@
       mmModRm: function (v, el) { hero().powers[+el.getAttribute('data-i')].mods.splice(+v, 1); },
       mmCompAdd: function () { var h = hero(); (h.comp = h.comp || []).push({ k: (h.comp || []).some(function (c) { return c.k === 'Motivation'; }) ? 'Responsibility' : 'Motivation', t: '' }); },
       mmCompRm: function (v) { hero().comp.splice(+v, 1); },
-      mmPrint: function () { root.print(); return false; }
+      mmPrint: function () { root.print(); return false; },
+      mmHp: function (v) { var T = hero().track = hero().track || {}; T.hp = Math.max(0, Math.min(20, (T.hp == null ? 1 : +T.hp) + +v)); },
+      mmCond: function (v) { var T = hero().track = hero().track || {}, c = T.conds = T.conds || {}; if (c[v]) delete c[v]; else c[v] = 1; },
+      mmHit: function () {
+        var h = hero(), d = derive(h), T = h.track = h.track || {}, rank = Math.round(+U.dmgRank || 0); if (!rank) { U.hitMsg = 'Type the damage rank first.'; return; }
+        if (T.dmg === 4) { U.hitMsg = 'Already incapacitated.'; return; }
+        var tough = d.def.tough - (+T.bruise || 0), roll = 1 + Math.floor(Math.random() * 20), tot = roll + tough, dc = 15 + rank, how = roll + ' ' + fmt(tough) + ' = ' + tot + ' vs DC ' + dc;
+        if (tot >= dc) { U.hitMsg = 'Resisted (' + how + ').'; return; }
+        var deg = Math.min(4, Math.ceil((dc - tot) / 5)); if (deg === 3 && T.dmg === 3) deg = 4;
+        if (deg < 4) T.bruise = (+T.bruise || 0) + 1; if (deg >= 2 && deg > (T.dmg || 0)) T.dmg = deg;
+        U.hitMsg = 'Failed by ' + deg + ' degree' + (deg > 1 ? 's' : '') + ' (' + how + '): ' + (deg === 1 ? '−1 Toughness (a bruise).' : TRACK[deg] + (deg < 4 ? ' and −1 Toughness.' : '.'));
+      },
+      mmRecover: function () { var T = hero().track = hero().track || {}; if (T.dmg) T.dmg = T.dmg === 2 ? 0 : T.dmg - 1; else if (T.bruise) T.bruise--; U.hitMsg = ''; },
+      mmFresh: function () { var T = hero().track = hero().track || {}; T.dmg = 0; T.bruise = 0; U.hitMsg = 'All healed.'; }
     };
     function onInput(t) {
+      if (t.getAttribute('data-mmplay') === 'rank') { U.dmgRank = t.value; return 'none'; }
       var f = t.getAttribute('data-mmf'); if (f == null) return null;
       var w = walk(hero(), f); w[0][w[1]] = t.value; return 'save';
     }

@@ -787,3 +787,23 @@ html.dice3d-lock, html.dice3d-lock body { overflow: hidden; }
 .snip mark { background: color-mix(in srgb, var(--accent) 35%, transparent); color: inherit; border-radius: 2px; padding: 0 1px; }
 .snip-group { margin: .4rem 0; }
 .note .note-peek { display: block; }
+.conc-on { display: flex; gap: .6rem; align-items: center; font-size: 1.05rem; margin-bottom: .4rem; }
+.conc-on b { color: var(--accent); }
+.cond-list { margin: .4rem 0 0; padding-left: 1.1rem; font-size: .9rem; }
+.cond-list li { margin: .2rem 0; }
+.hd-spend { margin-top: .3rem; }
+.xfer-qr { display: block; width: min(100%, 22rem); image-rendering: pixelated; background: #fff; padding: .4rem; border-radius: 6px; margin: .5rem 0; }
+/* spell cards: only shown while printing them */
+#print-cards { display: none; }
+@media print {
+  body.printing-cards > *:not(#print-cards) { display: none !important; }
+  body.printing-cards #print-cards { display: grid; grid-template-columns: repeat(3, 63mm); gap: 3mm; justify-content: center; }
+  .pcard { width: 63mm; height: 88mm; border: 1px solid #000; border-radius: 3mm; padding: 2.5mm 3mm; box-sizing: border-box; overflow: hidden; break-inside: avoid; font-size: 7.5pt; line-height: 1.25; display: flex; flex-direction: column; color: #000; background: #fff; }
+  .pcard-head { border-bottom: 1px solid #000; padding-bottom: 1mm; margin-bottom: 1mm; }
+  .pcard-head b { display: block; font-size: 10pt; }
+  .pcard-head span { font-style: italic; }
+  .pcard dl { display: grid; grid-template-columns: auto 1fr; gap: .2mm 2mm; margin: 0 0 1mm; }
+  .pcard dt { font-weight: bold; } .pcard dd { margin: 0; }
+  .pcard-text { flex: 1; overflow: hidden; }
+  .pcard-foot { font-size: 6pt; text-align: right; color: #444; }
+}

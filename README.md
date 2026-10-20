@@ -272,6 +272,15 @@ Game data is summarised from [dnd5e.wikidot.com](https://dnd5e.wikidot.com/), wh
 [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/); the files in `data/` are shared under the same licence.
 Dungeons & Dragons is a trademark of Wizards of the Coast. This is an unofficial fan tool; if you make it public, keep this notice.
 
+## At the table (new)
+
+- **Session page (D&D):** concentration (pick the spell; damage fills in the Constitution save DC and the app rolls it, War Caster included), conditions with what they do and exhaustion levels (speed updates), spend hit dice on a short rest with one tap, Wild Shape (the beasts a druid can turn into at its level, Circle of the Moon included, with the form's hit points and stat block; damage past 0 carries over), familiars and companions (any creature, Find Familiar shortcuts, hit points and stat block).
+- **Sheet:** Print spell cards (playing-card size, 9 per page).
+- **Treasures:** share it out: coins split evenly between the ticked characters (the rest stays in the pot), items handed to whoever you pick.
+- **Generators:** NPCs (name, job, looks, manner, wants, secret), taverns (menu, prices, rumors, owner) and shops (stock with prices, owner, quirk); keep the ones you like. Random encounters are on the Encounters page.
+- **To another device:** Characters → 📲 To another device makes a link (and a QR code when it is small enough) with your D&D, PF2 and M&M characters; opening it on the other device adds them or updates the ones sent before. Or share a file, pictures included.
+- **PF2 spells:** quick filters (1, 2, 3 actions, reaction, free, sustained, longer). **M&M:** a Session tab with hero points, the damage track with Toughness checks, and conditions.
+
 ## Security
 
 - No accounts and no tracking: characters, books, imported texts and AI keys stay in your browser (localStorage / IndexedDB). Keys are never in this repository; a server key lives only in the server's environment variables.

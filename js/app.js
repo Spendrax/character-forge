@@ -588,6 +588,91 @@
     return '<div class="trk-row"><div class="trk-name"><b>' + esc(x.name) + '</b>' + (x.note ? '<div class="small muted">' + esc(x.note) + '</div>' : '') + '</div>' + pipsHtml(x) +
       '<span class="small muted trk-rest">' + (x.max > 20 ? '' : x.left + '/' + x.max + ' · ') + 'back on ' + restLabel(x.rest) + '</span></div>';
   }
+  function hitDieSizes() { var z = []; (ch.classes || []).forEach(function (e) { var c = D.classes.filter(function (x) { return x.id === e.cls; })[0]; if (c && z.indexOf(c.hitDie) < 0) z.push(c.hitDie); }); return z.length ? z.sort(function (a, b) { return b - a; }) : [8]; }
+  // ---------- concentration ----------
+  function concHtml() {
+    var T = ch.track || {}, list = mySpellRows().filter(function (r) { return r.s && r.s.conc && r.ready; }).map(function (r) { return r.name; });
+    var war = JSON.stringify(ch.picks || {}).indexOf('War Caster') >= 0;
+    if (!list.length && !T.conc) return '';
+    var h = '<div class="panel conc-panel"><h3>Concentration</h3>';
+    if (!T.conc) return h + '<div class="toolbar"><select data-concpick="1" aria-label="Concentrate on a spell"><option value="">Start concentrating on…</option>' + list.map(function (n) { return '<option>' + esc(n) + '</option>'; }).join('') + '</select></div><p class="small muted">Casting another concentration spell ends the first one.</p></div>';
+    var dmg = ui.concDmg, dc = dmg ? Math.max(10, Math.floor(dmg / 2)) : 0, save = d.saves.CON;
+    h += '<div class="conc-on"><b>◉ ' + esc(T.conc) + '</b>' + btn('concEnd', 'End', {}, 'btn small') + '</div>' +
+      '<div class="toolbar"><label class="small">Damage taken <input type="number" min="0" id="conc-dmg" data-concdmg="1" value="' + (dmg || '') + '" style="width:5rem"></label>' +
+      (dc ? '<span>Constitution save <b>DC ' + dc + '</b> (you have ' + R.fmt(save.total) + (war ? ', advantage: War Caster' : '') + ')</span>' + btn('concRoll', '🎲 Roll the save', {}, 'btn small primary') : '<span class="small muted">When you take damage, type it here (it fills in by itself when you use − on your hit points).</span>') + '</div>' +
+      (ui.concMsg ? '<p class="small rest-msg">' + esc(ui.concMsg) + '</p>' : '') + '<p class="small muted">The DC is 10 or half the damage, whichever is higher; one save for each source of damage. Being incapacitated or dropping to 0 hit points also ends it.</p></div>';
+    return h;
+  }
+  // ---------- conditions ----------
+  var CONDS = [['Blinded', 'Can’t see; checks that need sight fail. Attacks against you have advantage, your attacks have disadvantage.'],
+    ['Charmed', 'Can’t attack the charmer or target it with harmful effects; the charmer has advantage on social checks with you.'],
+    ['Deafened', 'Can’t hear; checks that need hearing fail.'],
+    ['Frightened', 'Disadvantage on ability checks and attacks while the source is in sight; can’t move closer to it.'],
+    ['Grappled', 'Speed 0. Ends if the grappler is incapacitated or you are moved out of reach.'],
+    ['Incapacitated', 'No actions or reactions (concentration ends).'],
+    ['Invisible', 'Can’t be seen without magic or a special sense. Your attacks have advantage, attacks against you have disadvantage.'],
+    ['Paralyzed', 'Incapacitated, can’t move or speak. Fail Strength and Dexterity saves. Attacks against you have advantage; hits from within 5 ft are critical.'],
+    ['Petrified', 'Turned to stone: incapacitated, resistance to all damage, immune to poison and disease. Fail Strength and Dexterity saves.'],
+    ['Poisoned', 'Disadvantage on attack rolls and ability checks.'],
+    ['Prone', 'Can only crawl (standing up costs half your speed). Disadvantage on your attacks; attacks within 5 ft have advantage, farther ones disadvantage.'],
+    ['Restrained', 'Speed 0. Disadvantage on attacks and Dexterity saves; attacks against you have advantage.'],
+    ['Stunned', 'Incapacitated, can’t move, can barely speak. Fail Strength and Dexterity saves; attacks against you have advantage.'],
+    ['Unconscious', 'Incapacitated, drop what you hold, fall prone. Fail Strength and Dexterity saves; attacks against you have advantage, hits within 5 ft are critical.']];
+  var EXH = ['', 'Disadvantage on ability checks.', 'Speed halved.', 'Disadvantage on attack rolls and saving throws.', 'Hit point maximum halved.', 'Speed 0.', 'Death.'];
+  function liveSpeed() { var T = ch.track || {}, c = T.conds || {}, ex = +T.exh || 0; return c.Grappled || c.Restrained || c.Paralyzed || c.Petrified || c.Stunned || c.Unconscious || ex >= 5 ? 0 : ex >= 2 ? Math.floor(d.speed / 2) : d.speed; }
+  function condHtml() {
+    var T = ch.track || {}, on = T.conds || {}, ex = +T.exh || 0, act = CONDS.filter(function (c) { return on[c[0]]; });
+    return '<div class="panel"><h3>Conditions</h3><div class="pills">' + CONDS.map(function (c) { return btn('condToggle', c[0], { v: c[0] }, 'pill small' + (on[c[0]] ? ' on' : '')); }).join('') + '</div>' +
+      '<div class="toolbar"><span>Exhaustion</span>' + btn('exh', '−', { v: -1 }, 'btn small') + '<b>' + ex + '</b>' + btn('exh', '+', { v: 1 }, 'btn small') + '</div>' +
+      (act.length || ex ? '<ul class="cond-list">' + act.map(function (c) { return '<li><b>' + c[0] + ':</b> ' + esc(c[1]) + '</li>'; }).join('') +
+        (ex ? '<li><b>Exhaustion ' + ex + ':</b> ' + esc(EXH.slice(1, ex + 1).join(' ')) + ' A long rest removes one level.</li>' : '') + '</ul>' : '<p class="small muted">Tap a condition when it happens to you to see what it does.</p>') + '</div>';
+  }
+  // ---------- Wild Shape and companions (creatures from the Monsters list) ----------
+  var FAMILIARS = ['Bat', 'Cat', 'Crab', 'Frog', 'Hawk', 'Lizard', 'Octopus', 'Owl', 'Poisonous Snake', 'Quipper', 'Rat', 'Raven', 'Sea Horse', 'Spider', 'Weasel'];
+  function creatureHp(key, cur, max, label) {
+    var pct = max ? Math.max(0, Math.round(cur / max * 100)) : 0;
+    return '<div class="pm-hp"><span><b>' + cur + '</b>/' + max + ' HP' + (label ? ' · ' + esc(label) : '') + '</span><div class="hpbar"><span style="width:' + pct + '%"></span></div><div class="enc-adj">' +
+      ['-10', '-5', '-1', '+1', '+5', '+10'].map(function (v) { return btn('crHp', v.replace('-', '−'), { v: key, d: v }, 'btn small'); }).join('') + '</div></div>';
+  }
+  function wildShapeHtml() {
+    var dl = 0; (ch.classes || []).forEach(function (e) { if (e.cls === 'druid') dl = e.level; });
+    if (dl < 2) return '';
+    if (!MON.ensure(render)) return '<div class="panel"><h3>Wild Shape</h3><p class="small muted">Loading the beasts…</p></div>';
+    var moon = (ch.classes || []).some(function (e) { return e.cls === 'druid' && /moon/.test(e.subclass || ''); });
+    var maxCr = moon ? (dl >= 6 ? Math.floor(dl / 3) : 1) : dl >= 8 ? 1 : dl >= 4 ? 0.5 : 0.25, noFly = dl < 8, noSwim = dl < 4;
+    var T = ch.track || {}, ws = T.ws, cur = ws && MON.find(ws.id);
+    var h = '<div class="panel"><h3>Wild Shape</h3>';
+    if (cur) {
+      h += '<div class="toolbar" style="margin:0"><b>' + esc(cur.n) + '</b><span class="small muted">AC ' + (cur.acv || cur.ac) + ' · ' + esc(cur.sp || cur.mv || '') + '</span><span class="spacer"></span>' + btn('wsEnd', 'Revert', {}, 'btn small') + '</div>' +
+        creatureHp('ws', ws.hp, cur.hp, 'when it drops to 0 you revert, and extra damage carries over to you') +
+        '<details class="ws-block"><summary>Stat block</summary>' + MON.block(cur) + '</details>';
+      return h + '</div>';
+    }
+    var beasts = MON.all().filter(function (m) { var mv = String(m.sp || m.mv || ''); return /^beast/i.test(m.type || '') && (+m.cr || 0) <= maxCr && !(noFly && /fly/.test(mv)) && !(noSwim && /swim/.test(mv)); })
+      .sort(function (a, b) { return (+b.cr || 0) - (+a.cr || 0) || (a.n < b.n ? -1 : 1); });
+    var q = ui.q.ws || '', shown = beasts.filter(function (m) { return match(q, m.n); });
+    h += '<p class="small muted">' + (moon ? 'Circle of the Moon: ' : '') + 'beasts up to challenge ' + MON.crText(maxCr) + (noFly ? ', no flying' : '') + (noSwim ? ' or swimming' : '') + ' speed. ' + beasts.length + ' forms.</p>' +
+      '<div class="toolbar">' + search('ws', 'Find a beast…') + '</div><div class="optlist ws-list">' + shown.slice(0, 40).map(function (m) {
+        return '<div class="spell"><div style="flex:1"><b>' + esc(m.n) + '</b> <span class="small muted">CR ' + MON.crText(+m.cr || 0) + ' · AC ' + (m.acv || '') + ' · ' + m.hp + ' HP · ' + esc(m.sp || m.mv || 'walk') + '</span></div>' + btn('wsStart', 'Turn into', { v: m.id }, 'btn small') + '</div>';
+      }).join('') + '</div>';
+    return h + '</div>';
+  }
+  function companionsHtml() {
+    var L = ch.companions || [], h = '<div class="panel"><h3>Familiars and companions</h3>';
+    if (!MON.ensure(render)) return h + '<p class="small muted">Loading the creatures…</p></div>';
+    h += L.map(function (c) {
+      var m = MON.find(c.mon), open = (ui.compOpen || {})[c.id];
+      return '<div class="comp"><div class="toolbar" style="margin:0"><b>' + esc(c.n) + '</b><span class="small muted">' + (m ? esc(m.n) + ' · AC ' + (m.acv || m.ac) + ' · ' + esc(m.sp || m.mv || '') : '') + '</span><span class="spacer"></span>' +
+        btn('compOpen', open ? 'Hide stats' : 'Stats', { v: c.id }, 'btn small') + btn('compRm', '✕', { v: c.id }, 'btn small') + '</div>' + creatureHp('c:' + c.id, c.hp, c.max) +
+        (open && m ? MON.block(m) : '') + '</div>';
+    }).join('');
+    var q = ui.q.comp || '', fam = FAMILIARS.map(function (n) { return MON.all().filter(function (m) { return m.n === n; })[0]; }).filter(Boolean);
+    var found = q.trim().length >= 2 ? MON.all().filter(function (m) { return match(q, m.n); }).slice(0, 15) : [];
+    h += '<div class="small" style="margin-top:.5rem">Add a familiar: ' + fam.map(function (m) { return btn('compAdd', esc(m.n), { v: m.id }, 'pill small'); }).join('') + '</div>' +
+      '<div class="toolbar">' + search('comp', 'Or find any creature (a ranger’s beast, a summon, a mount)…') + '</div>' +
+      (found.length ? '<div class="optlist">' + found.map(function (m) { return '<div class="spell"><div style="flex:1"><b>' + esc(m.n) + '</b> <span class="small muted">CR ' + MON.crText(+m.cr || 0) + ' · ' + m.hp + ' HP</span></div>' + btn('compAdd', '+ Add', { v: m.id }, 'btn small') + '</div>'; }).join('') + '</div>' : '');
+    return h + '</div>';
+  }
   function stepPlay() {
     var T = ch.track || {}, hp = T.hp == null ? d.hp : T.hp, hdUsed = Math.min(d.level, +T.hd || 0);
     var h = '<h2>Session</h2>' + restBarHtml();
@@ -599,7 +684,9 @@
         for (var i = 0; i < 3; i++) b += '<button type="button" class="pip' + (i < n ? ' on ' + (k === 'deathOk' ? 'ok' : 'fail') : '') + '" data-act="death" data-k="' + k + '" data-v="' + (i < n ? i : i + 1) + '" aria-label="' + (k === 'deathOk' ? 'Success' : 'Failure') + ' ' + (i + 1) + '"></button>';
         return '<span>' + (k === 'deathOk' ? 'Successes' : 'Failures') + ' <span class="pips">' + b + '</span></span>';
       }).join(' ') + '</div>' : '') +
-      trackRow({ key: 'hd', name: 'Hit dice (' + d.hitDice + ')', max: d.level, left: d.level - hdUsed, used: hdUsed, rest: 'long', note: 'Spend them on a short rest to heal; a long rest gives back half.' }) + '</div>';
+      trackRow({ key: 'hd', name: 'Hit dice (' + d.hitDice + ')', max: d.level, left: d.level - hdUsed, used: hdUsed, rest: 'long', note: 'Spend them on a short rest to heal; a long rest gives back half.' }) +
+      (d.level - hdUsed > 0 ? '<div class="toolbar hd-spend"><span class="small">Short rest:</span>' + hitDieSizes().map(function (z) { return btn('spendHD', '🎲 Spend a d' + z + ' (' + R.fmt(d.abilities.CON.mod) + ')', { v: z }, 'btn small'); }).join('') + '</div>' : '') +
+      (ui.hdMsg ? '<p class="small rest-msg">' + esc(ui.hdMsg) + '</p>' : '') + '</div>' + concHtml() + condHtml();
     // inspiration: one from the DM, one Bardic Inspiration die from a bard
     var sq = function (k, label, sub, on) { return '<button type="button" class="insp-sq' + (on ? ' on' : '') + '" data-act="inspToggle" data-v="' + k + '" aria-pressed="' + !!on + '"><span class="insp-box">' + (on ? '★' : '') + '</span><span><b>' + label + '</b><small>' + sub + '</small></span></button>'; };
     h += '<div class="panel"><h3>Inspiration</h3><div class="insp-row">' + sq('insp', 'Inspiration', T.insp ? 'From the DM. Tap when you use it (advantage on one roll).' : 'Tap when the DM gives you inspiration.', T.insp) +
@@ -607,9 +694,10 @@
       '<label class="small">Die <select data-bardie="1" aria-label="Bardic Inspiration die">' + ['d6', 'd8', 'd10', 'd12'].map(function (x) { return '<option' + ((T.bardDie || 'd6') === x ? ' selected' : '') + '>' + x + '</option>'; }).join('') + '</select></label>' +
       (T.bardic ? btn('rollBardic', '🎲 Roll ' + T.bardic, {}, 'btn small') : '') + '</div>' + (ui.bardRoll ? '<p class="small rest-msg">' + esc(ui.bardRoll) + '</p>' : '') + '</div>';
     var stat = function (x) { return '<div class="stat"><b>' + x[1] + '</b><span>' + x[0] + '</span></div>'; };
-    h += '<div class="panel"><h3>Combat</h3><div class="slots combat-stats">' + [['Armor class', d.ac], ['Initiative', R.fmt(d.init)], ['Speed', d.speed + ' ft'], ['Passive Perception', d.passive], ['Proficiency', R.fmt(d.pb)]].concat(d.casters.map(function (S) { return [(d.casters.length > 1 ? S.name + ' s' : 'S') + 'pell DC / attack', S.dc + ' / ' + R.fmt(S.atk)]; })).map(stat).join('') + '</div>' +
+    h += '<div class="panel"><h3>Combat</h3><div class="slots combat-stats">' + [['Armor class', d.ac], ['Initiative', R.fmt(d.init)], ['Speed', liveSpeed() + ' ft'], ['Passive Perception', d.passive], ['Proficiency', R.fmt(d.pb)]].concat(d.casters.map(function (S) { return [(d.casters.length > 1 ? S.name + ' s' : 'S') + 'pell DC / attack', S.dc + ' / ' + R.fmt(S.atk)]; })).map(stat).join('') + '</div>' +
       '<h4>Saving throws</h4><div class="slots combat-stats">' + AB.map(function (a) { var s = d.saves[a]; return stat([D.abilityNames[a] + (s.prof ? ' ●' : ''), R.fmt(s.total)]); }).join('') + '</div></div>';
     if (d.attacks.length) h += '<div class="panel"><h3>Weapons</h3>' + attacksHtml(false) + '</div>';
+    h += wildShapeHtml() + companionsHtml();
     var quick = ch.items.filter(function (i) { return i.quick; });
     h += '<div class="panel"><h3>Quick access</h3>' + (quick.length ? quick.map(function (it) {
       var op = (ui.itemOpen || {})[it.id]; return '<div class="trk-row"><div class="trk-name"><button type="button" class="fold" data-act="itemOpen" data-v="' + it.id + '" aria-expanded="' + !!op + '">' + (op ? '▾' : '▸') + '</button> <b>' + esc(it.n) + '</b>' + (it.qty > 1 ? ' ×' + it.qty : '') + ' <span class="small muted">' + esc(itemMeta(it)) + (it.att ? (it.attuned ? ' · attuned' : ' · not attuned') : '') + '</span>' + (it.note ? '<div class="small">' + esc(it.note) + '</div>' : '') + (op ? itemDescHtml(it) : '') + '</div>' + btn('quickItem', '✕', { v: it.id }, 'btn tiny') + '</div>';
@@ -902,9 +990,61 @@
         '<span class="roster-txt"><b>' + esc(title(c)) + '</b><span class="small muted">' + esc(summaryLine(c, dd)) + '</span>' +
         ((c.classes || []).length ? '<span class="roster-stats small"><span>Lv ' + dd.level + '</span><span>AC ' + dd.ac + '</span><span>HP ' + (c.track && c.track.hp != null ? c.track.hp + '/' : '') + dd.hp + '</span></span>' : '') + '</span></button>';
     }).join('');
-    return '<main class="home roster"><div class="toolbar"><h2 style="margin:0">Characters</h2><span class="spacer"></span>' + btn('rosterNew', '+ New character', {}, 'btn primary') + btn('import', 'Import', {}, 'btn') + btn('ddbOpen', 'From D&D Beyond', {}, 'btn') + '</div>' +
+    return '<main class="home roster"><div class="toolbar"><h2 style="margin:0">Characters</h2><span class="spacer"></span>' + btn('rosterNew', '+ New character', {}, 'btn primary') + btn('import', 'Import', {}, 'btn') + btn('ddbOpen', 'From D&D Beyond', {}, 'btn') + btn('xferOpen', '📲 To another device', {}, 'btn') + '</div>' +
       (ui.importError ? '<p class="small" style="color:var(--warn)">' + esc(ui.importError === true ? 'That file is not a Character Forge export, a 5th Spellbook backup, a 5e Companion character or D&D Beyond data.' : ui.importError) + '</p>' : '') +
-      ddbHtml() + import5eHtml() + '<div class="roster-grid">' + cards + '</div><input type="file" id="importFile" hidden></main>';
+      xferHtml() + ddbHtml() + import5eHtml() + '<div class="roster-grid">' + cards + '</div><input type="file" id="importFile" hidden></main>';
+  }
+  // ---------- moving characters to another device (a link / QR code, or a file) ----------
+  function xferBundle(withPics) {
+    var X = ui.xfer || {}, strip = function (c) { c = JSON.parse(JSON.stringify(c)); if (!withPics) delete c.picture; return c; };
+    var b = { cf: 1 };
+    if (X.dnd !== false) b.chars = store.chars.filter(function (c) { return c.name || (c.classes || []).length; }).map(strip);
+    if (X.pf2 !== false && store.pf2 && (store.pf2.chars || []).length) b.pf2 = store.pf2.chars.map(strip);
+    if (X.mm !== false && store.mm && (store.mm.heroes || []).length) b.mm = store.mm.heroes.map(strip);
+    return b;
+  }
+  function xferHtml() {
+    var X = ui.xfer; if (!X) return '';
+    var n = { dnd: store.chars.filter(function (c) { return c.name || (c.classes || []).length; }).length, pf2: ((store.pf2 || {}).chars || []).length, mm: ((store.mm || {}).heroes || []).length };
+    var chk = function (k, label) { return n[k] ? '<label class="pill small' + (X[k] !== false ? ' on' : '') + '"><input type="checkbox" data-xfer="' + k + '"' + (X[k] !== false ? ' checked' : '') + '> ' + label + ' (' + n[k] + ')</label>' : ''; };
+    var h = '<div class="panel import5e noprint"><h3>Send to another device</h3><p class="small muted">Makes a link with your characters inside it. Open it on the other device (scan the QR code with the camera, or send the link to yourself): it adds them there, and updates the ones already sent before.</p>' +
+      '<div class="pills">' + chk('dnd', 'D&D') + chk('pf2', 'PF2') + chk('mm', 'M&M') + '</div>' +
+      '<div class="toolbar">' + btn('xferMake', 'Make the link', {}, 'btn primary') + btn('xferFile', 'Share as a file (with pictures)', {}, 'btn') + btn('xferClose', 'Close', {}, 'btn') + '</div>';
+    if (X.busy) h += '<p class="small muted">Packing…</p>';
+    if (X.link) h += '<p class="small">Link ready (' + Math.round(X.link.length / 100) / 10 + ' thousand characters, pictures left out).</p>' +
+      (X.qr ? '<img class="xfer-qr" src="' + X.qr + '" alt="QR code with your characters">' : '<p class="small muted">Too much for a QR code: copy or share the link instead.</p>') +
+      '<div class="toolbar">' + btn('xferCopy', 'Copy the link', {}, 'btn') + (navigator.share ? btn('xferShare', 'Share the link…', {}, 'btn') : '') + '</div>';
+    return h + (X.msg ? '<p class="small rest-msg">' + esc(X.msg) + '</p>' : '') + '</div>';
+  }
+  // the other side: opened with #take=… in the address
+  function xferInHtml() {
+    var I = ui.xferIn; if (!I) return '';
+    if (I.err) return '<div class="panel import5e noprint"><h3>Characters from another device</h3><p>' + esc(I.err) + '</p>' + btn('xferInNo', 'OK', {}, 'btn') + '</div>';
+    var b = I.b, names = function (l) { return (l || []).map(function (c) { return c.name || 'Unnamed'; }).join(', '); };
+    return '<div class="panel import5e noprint"><h3>Characters from another device</h3><ul>' +
+      (b.chars && b.chars.length ? '<li><b>D&amp;D:</b> ' + esc(names(b.chars)) + '</li>' : '') + (b.pf2 && b.pf2.length ? '<li><b>PF2:</b> ' + esc(names(b.pf2)) + '</li>' : '') + (b.mm && b.mm.length ? '<li><b>M&amp;M:</b> ' + esc(names(b.mm)) + '</li>' : '') +
+      '</ul><p class="small muted">Characters you sent before are updated (their pictures here are kept); new ones are added. Nothing else on this device changes.</p><div class="toolbar">' + btn('xferInGo', 'Add them', {}, 'btn primary') + btn('xferInNo', 'Not now', {}, 'btn') + '</div></div>';
+  }
+  function xferTake(b) {
+    var done = [];
+    var merge = function (list, incoming, fix) {
+      (incoming || []).forEach(function (c) {
+        if (!c || typeof c !== 'object') return; c = fix ? fix(c) : c; c.picture = safePic(c.picture);
+        var i = list.map(function (x) { return x.id; }).indexOf(c.id);
+        if (i >= 0) { if (!c.picture && list[i].picture) c.picture = list[i].picture; list[i] = c; } else { if (!c.id) c.id = R.uid(); list.push(c); }
+        done.push(c.name || 'Unnamed');
+      });
+    };
+    merge(store.chars, b.chars, function (c) { var id = c.id; c = normalize(c); c.id = id || R.uid(); return c; });
+    if (b.pf2) { store.pf2 = store.pf2 || { chars: [] }; store.pf2.chars = store.pf2.chars || []; merge(store.pf2.chars, b.pf2); }
+    if (b.mm) { store.mm = store.mm || { heroes: [] }; store.mm.heroes = store.mm.heroes || []; merge(store.mm.heroes, b.mm); }
+    return done;
+  }
+  function checkXferLink() {
+    var m = String(window.location.hash || '').match(/^#take=([A-Za-z0-9_-]+)$/);
+    if (!m || !window.Transfer) return;
+    try { window.history.replaceState(null, '', window.location.pathname + window.location.search); } catch (e) { /* ignore */ }
+    Transfer.unpack(m[1]).then(function (b) { if (!b || b.cf !== 1) throw new Error('not ours'); ui.xferIn = { b: b }; render(); }, function () { ui.xferIn = { err: 'That link is incomplete or damaged. Make a new one on the other device.' }; render(); });
   }
   // D&D Beyond: paste a public character's link (or its data) and bring it in like a 5e Companion character
   function ddbHtml() {
@@ -1103,7 +1243,7 @@
         return '<div class="feature"><b>' + esc(x.n) + '</b>' + (kind === 'option' ? ' <span class="lv">' + esc(x.src) + '</span>' : '') + (t ? ' — ' + esc(t) : '') + '</div>';
       }).join('') : '';
     }
-    var h = '<div class="toolbar noprint">' + btn('print', 'Print or save as PDF', {}, 'btn primary') + btn('export', 'Export JSON') + (totalTodo() ? '<span class="count" style="color:var(--warn)">' + totalTodo() + ' choice(s) still open — see the badges in the step list.</span>' : '') + '</div>';
+    var h = '<div class="toolbar noprint">' + btn('print', 'Print or save as PDF', {}, 'btn primary') + (mySpellRows().length ? btn('printCards', 'Print spell cards', {}, 'btn') : '') + btn('export', 'Export JSON') + (totalTodo() ? '<span class="count" style="color:var(--warn)">' + totalTodo() + ' choice(s) still open — see the badges in the step list.</span>' : '') + '</div>';
     h += '<div class="sheet"><div class="sheet-head"><div class="sheet-pics">' + pictureHtml('sheet-pic') + avatarCanvas('sheet-pic') + '</div><div style="flex:1"><h2>' + esc(title(ch)) + '</h2><div>' + esc(summaryLine(ch, d)) + '</div></div><div class="facts" style="margin:0">' +
       (d.bg ? '<span><b>Background</b> ' + esc(d.bg.n) + '</span>' : '') + (ch.alignment ? '<span><b>Alignment</b> ' + esc(ch.alignment) + '</span>' : '') + (ch.player ? '<span><b>Player</b> ' + esc(ch.player) + '</span>' : '') +
       '<span><b>XP</b> ' + D.xpByLevel[d.level - 1].toLocaleString('en') + '</span><span><b>Size</b> ' + esc(d.size || 'Medium') + '</span></div></div><div class="sheet-cols"><div>' +
@@ -1274,7 +1414,7 @@
       '<span class="mini-ab">' + AB.map(function (a) { return a + ' <b>' + R.fmt(d.abilities[a].mod) + '</b>'; }).join(' ') + '</span></div>';
     var oldNav = document.querySelector('.steps'), navX = oldNav ? oldNav.scrollLeft : 0;
     var keep = scrollState();
-    setApp(top + installHelpHtml() + import5eHtml() + '<div class="shell">' + nav + '<main>' + body + foot + '</main>' + side + '</div>' + mini);
+    setApp(top + installHelpHtml() + xferInHtml() + import5eHtml() + '<div class="shell">' + nav + '<main>' + body + foot + '</main>' + side + '</div>' + mini);
     keepStepInView(navX);
     if (!ui.scrollToStep) restoreScroll(keep);
     if (ui.scrollToStep) { // a new step starts at its top; on a phone the step row stays visible above it
@@ -1307,7 +1447,7 @@
   }
   function sectionNav() {
     var list = gameOf() === 'pf2' ? [['pf2-home', '⌂ Home'], ['pf2-chars', 'Characters'], ['pf2-party', 'Party'], ['pf2-enc', 'Encounters'], ['pf2-mon', 'Monsters'], ['pf2-loot', 'Treasures'], ['books', 'Books'], ['pf2-rules', 'Rules'], ['audio', 'Audio'], ['rules', 'House rules']] : gameOf() === 'mm' ? [['mm-home', '⌂ Home'], ['mm-heroes', 'Heroes'], ['mm-party', 'Party'], ['mm-enc', 'Encounters'], ['mm-foes', 'Villains'], ['mm-loot', 'Rewards'], ['mm-rules', 'Rules'], ['audio', 'Audio'], ['rules', 'House rules']]
-      : [['home', '⌂ Home'], ['roster', 'Characters'], ['monsters', 'Monsters'], ['party', 'Party'], ['encounters', 'Encounters'], ['treasure', 'Treasures'], ['items', 'Magic items'], ['books', 'Books'], ['audio', 'Audio'], ['rules', 'House rules']];
+      : [['home', '⌂ Home'], ['roster', 'Characters'], ['monsters', 'Monsters'], ['party', 'Party'], ['encounters', 'Encounters'], ['treasure', 'Treasures'], ['items', 'Magic items'], ['gen', 'Generators'], ['books', 'Books'], ['audio', 'Audio'], ['rules', 'House rules']];
     return '<nav class="sections" aria-label="Sections">' + list.map(function (x) {
       var on = ui.section === x[0] || (x[0] === 'roster' && ui.section === 'chars');
       return '<button type="button" class="sec' + (on ? ' on' : '') + '" data-act="section" data-v="' + x[0] + '"' + (on ? ' aria-current="page"' : '') + '>' + x[1] + '</button>';
@@ -1315,7 +1455,7 @@
   }
   function homeHtml() {
     var hub = window.homeHub([['roster', 'sword', 'Characters'], ['party', 'campfire', 'Party'], ['encounters', 'swords', 'Encounters'], ['monsters', 'dragon', 'Monsters'],
-      ['treasure', 'coins', 'Treasures'], ['items', 'potion', 'Magic items'], ['books', 'book', 'Books'], ['audio', 'lute', 'Audio'], ['rules', 'scroll', 'House rules']]);
+      ['treasure', 'coins', 'Treasures'], ['items', 'potion', 'Magic items'], ['gen', 'sparkle', 'Generators'], ['books', 'book', 'Books'], ['audio', 'lute', 'Audio'], ['rules', 'scroll', 'House rules']]);
     return '<main class="home"><h1>Dungeons &amp; Dragons 5e</h1><p class="muted">Your table companion (2014 rules). Tap the d20 to roll.</p>' + hub + '</main>';
   }
   // House rules: short titled notes for the table, searchable; saved with the characters.
@@ -1364,8 +1504,8 @@
     var keep = scrollState();
     var top = '<header class="top">' + btn('section', 'Character Forge', { v: gameOf() === 'mm' ? 'mm-home' : gameOf() === 'pf2' ? 'pf2-home' : 'home' }, 'brand linkish') + gameSwitch() + sectionNav() + '<span class="spacer"></span>' +
       themeBtn() + '<button type="button" class="btn" data-act="undo" title="Undo (Ctrl+Z)"' + (undoStack.length ? '' : ' disabled') + '>↶ Undo</button>' + (isInstalledApp() ? '' : btn('install', 'Install app', {}, installPrompt ? 'btn primary' : 'btn')) + '</header>';
-    var body = /^pf2-/.test(ui.section) ? PFV.html(ui.section) : /^mm-(home|heroes)$/.test(ui.section) ? MMV.html(ui.section) : ui.section === 'mm-enc' ? MME.html() : ui.section === 'mm-party' ? MME.partyPage() : ui.section === 'mm-foes' ? MME.foesPage() : ui.section === 'mm-loot' ? MME.lootPage() : ui.section === 'mm-rules' ? BOOKS.html() : ui.section === 'monsters' ? '<main class="mon-main">' + MON.html() + '</main>' : ui.section === 'encounters' ? ENC.html() : ui.section === 'party' ? ENC.partyPage() : ui.section === 'roster' ? rosterHtml() : ui.section === 'treasure' ? TRE.html() : ui.section === 'items' ? itemsPage() : ui.section === 'books' ? BOOKS.html() : ui.section === 'audio' ? AUD.html() : ui.section === 'rules' ? rulesHtml() : homeHtml();
-    setApp(top + installHelpHtml() + body);
+    var body = /^pf2-/.test(ui.section) ? PFV.html(ui.section) : /^mm-(home|heroes)$/.test(ui.section) ? MMV.html(ui.section) : ui.section === 'mm-enc' ? MME.html() : ui.section === 'mm-party' ? MME.partyPage() : ui.section === 'mm-foes' ? MME.foesPage() : ui.section === 'mm-loot' ? MME.lootPage() : ui.section === 'mm-rules' ? BOOKS.html() : ui.section === 'monsters' ? '<main class="mon-main">' + MON.html() + '</main>' : ui.section === 'encounters' ? ENC.html() : ui.section === 'party' ? ENC.partyPage() : ui.section === 'roster' ? rosterHtml() : ui.section === 'treasure' ? TRE.html() : ui.section === 'items' ? itemsPage() : ui.section === 'gen' ? GEN.html() : ui.section === 'books' ? BOOKS.html() : ui.section === 'audio' ? AUD.html() : ui.section === 'rules' ? rulesHtml() : homeHtml();
+    setApp(top + installHelpHtml() + xferInHtml() + (ui.xferDone && ui.section === 'roster' ? '<p class="panel small rest-msg">' + esc(ui.xferDone) + '</p>' : '') + body);
     if (ui.mon && ui.mon.scrollTop) { ui.mon.scrollTop = false; var r = document.querySelector('.mon-right'); if (r && window.innerWidth < 800) r.scrollIntoView(); else window.scrollTo(0, 0); }
     else restoreScroll(keep);
     if (ui.section === 'books' || ui.section === 'mm-rules') BOOKS.after();
@@ -1374,7 +1514,7 @@
     if (/^pf2-/.test(ui.section) && PFV.after) PFV.after();
     AUD.after(); Dice3D.place(); AIHelper.place(); syncHistory();
     if (fid) { var el = document.getElementById(fid); if (el && el !== document.activeElement) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } try { if (pos != null) el.setSelectionRange(pos, pos); } catch (e) { /* not text */ } } }
-    document.title = (/^pf2-/.test(ui.section) ? PFV.title(ui.section) : /^mm-(home|heroes)$/.test(ui.section) ? MMV.title(ui.section) : ui.section === 'mm-enc' ? 'M&M encounters' : ui.section === 'mm-party' ? 'M&M party' : ui.section === 'mm-foes' ? 'M&M villains' : ui.section === 'mm-loot' ? 'M&M rewards' : ui.section === 'mm-rules' ? 'M&M rules' : ui.section === 'monsters' ? 'Monsters' : ui.section === 'encounters' ? 'Encounters' : ui.section === 'party' ? 'Party' : ui.section === 'roster' ? 'Characters' : ui.section === 'treasure' ? 'Treasures' : ui.section === 'items' ? 'Magic items' : ui.section === 'books' ? 'Books' : ui.section === 'audio' ? 'Audio' : ui.section === 'rules' ? 'House rules' : 'Home') + ' — Character Forge';
+    document.title = (/^pf2-/.test(ui.section) ? PFV.title(ui.section) : /^mm-(home|heroes)$/.test(ui.section) ? MMV.title(ui.section) : ui.section === 'mm-enc' ? 'M&M encounters' : ui.section === 'mm-party' ? 'M&M party' : ui.section === 'mm-foes' ? 'M&M villains' : ui.section === 'mm-loot' ? 'M&M rewards' : ui.section === 'mm-rules' ? 'M&M rules' : ui.section === 'monsters' ? 'Monsters' : ui.section === 'encounters' ? 'Encounters' : ui.section === 'party' ? 'Party' : ui.section === 'roster' ? 'Characters' : ui.section === 'treasure' ? 'Treasures' : ui.section === 'items' ? 'Magic items' : ui.section === 'gen' ? 'Generators' : ui.section === 'books' ? 'Books' : ui.section === 'audio' ? 'Audio' : ui.section === 'rules' ? 'House rules' : 'Home') + ' — Character Forge';
     saveNow();
   }
 
@@ -1480,6 +1620,21 @@
     },
     'import': function () { document.getElementById('importFile').click(); return false; },
     print: function () { window.print(); return false; },
+    printCards: function () {
+      var rows = mySpellRows().filter(function (r) { return r.ready && r.s; }).sort(function (a, b) { return a.s.level - b.s.level || (a.name < b.name ? -1 : 1); });
+      var box = document.getElementById('print-cards') || document.body.appendChild(Object.assign(document.createElement('div'), { id: 'print-cards' }));
+      box.innerHTML = rows.map(function (r) {
+        var s = r.s, txt = R.spellText(s.name) || '';
+        return '<div class="pcard"><div class="pcard-head"><b>' + esc(s.name) + '</b><span>' + (s.level ? 'Level ' + s.level : 'Cantrip') + ' · ' + esc(s.school) + '</span></div>' +
+          '<dl><dt>Time</dt><dd>' + esc(s.time) + (s.ritual ? ' (ritual)' : '') + '</dd><dt>Range</dt><dd>' + esc(s.range) + '</dd><dt>Components</dt><dd>' + esc(s.comp) + '</dd><dt>Duration</dt><dd>' + esc(s.duration) + (s.conc ? ' (concentration)' : '') + '</dd></dl>' +
+          '<div class="pcard-text">' + esc(txt) + '</div><div class="pcard-foot">' + esc(title(ch)) + '</div></div>';
+      }).join('');
+      document.body.classList.add('printing-cards');
+      var done = function () { document.body.classList.remove('printing-cards'); window.removeEventListener('afterprint', done); };
+      window.addEventListener('afterprint', done);
+      setTimeout(function () { window.print(); setTimeout(done, 1000); }, 50);
+      return false;
+    },
     install: function () {
       if (!installPrompt) { ui.installHelp = !ui.installHelp; return; }
       var pr = installPrompt; installPrompt = null; pr.prompt();
@@ -1490,6 +1645,26 @@
       I.parts[id] = el.getAttribute('data-all') ? PART_ORDER.filter(function (k) { return e.source === 'companion' || PARTS[k].spellbook; }) : []; },
     mySpellsKind: function (v) { ui.mySpellsKind = ui.mySpellsKind === v ? '' : v; },
     miMore: function (v) { ui.miMore = v === 'all' ? 99999 : (ui.miMore || 150) + 150; },
+    xferOpen: function () { ui.xfer = ui.xfer || {}; ui.ddb = null; },
+    xferClose: function () { ui.xfer = null; },
+    xferMake: function () {
+      var X = ui.xfer; if (!X) return false; X.busy = true; X.link = ''; X.qr = ''; X.msg = '';
+      Transfer.pack(xferBundle(false)).then(function (z) {
+        X.link = window.location.origin + window.location.pathname + '#take=' + z; X.busy = false;
+        return X.link.length <= Transfer.QR_MAX ? Transfer.qr(X.link).then(function (u) { X.qr = u; }, function () { X.qr = ''; }) : null;
+      }).then(render, function () { X.busy = false; X.msg = 'This browser can’t make the link. Use “Share as a file” instead.'; render(); });
+    },
+    xferCopy: function () { var X = ui.xfer; if (!X || !X.link) return false; (navigator.clipboard ? navigator.clipboard.writeText(X.link) : Promise.reject()).then(function () { X.msg = 'Link copied. Paste it in a message to yourself or straight into the other device’s browser.'; render(); }, function () { X.msg = 'Couldn’t copy here: use Share instead.'; render(); }); return false; },
+    xferShare: function () { var X = ui.xfer; if (X && X.link && navigator.share) navigator.share({ title: 'My characters', url: X.link }).catch(function () { /* cancelled */ }); return false; },
+    xferFile: function () {
+      var blob = new Blob([JSON.stringify(xferBundle(true))], { type: 'application/json' }), name = 'character-forge-' + new Date().toISOString().slice(0, 10) + '.json';
+      var file = window.File ? new File([blob], name, { type: 'application/json' }) : null;
+      if (file && navigator.canShare && navigator.canShare({ files: [file] })) { navigator.share({ files: [file], title: 'My characters' }).catch(function () { /* cancelled */ }); return false; }
+      var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+      ui.xfer.msg = 'Saved ' + name + '. On the other device, use Import on the Characters page.'; return false;
+    },
+    xferInGo: function () { var I = ui.xferIn; if (!I || !I.b) return; var got = xferTake(I.b); ui.xferIn = null; ui.importError = false; ui.section = 'roster'; ui.xferDone = got.length + ' character' + (got.length === 1 ? '' : 's') + ' added or updated: ' + got.join(', ') + '.'; },
+    xferInNo: function () { ui.xferIn = null; },
     giveMagic: function (v, el) {
       var x = allMagic().filter(function (i) { return i[0] === v; })[0], c = byId(byId(ui.miTo) ? ui.miTo : store.current);
       if (!x || !c) return;
@@ -1607,11 +1782,36 @@
       used[k] = Math.max(0, Math.min(x.max, x.used + +v)); if (!used[k]) delete used[k];
       ui.restMsg = '';
     },
-    hpAdj: function (v) { var T = ch.track = ch.track || {}, hp = T.hp == null ? d.hp : T.hp, n = +v;
+    hpAdj: function (v) { var T = ch.track = ch.track || {}, hp = T.hp == null ? d.hp : T.hp, n = +v; ui.hdMsg = ''; if (n < 0 && T.conc) { var nowT = Date.now(); ui.concDmg = (nowT - (ui.concAt || 0) < 4000 ? ui.concDmg || 0 : 0) - n; ui.concAt = nowT; ui.concMsg = ''; } // taps a few seconds apart are one hit
       if (n < 0 && T.temp > 0) { var soak = Math.min(T.temp, -n); T.temp -= soak; n += soak; } // temporary hit points go first
-      hp = Math.max(0, Math.min(d.hp, hp + n)); T.hp = hp >= d.hp ? null : hp; if (hp > 0) { T.deathOk = 0; T.deathFail = 0; } },
+      hp = Math.max(0, Math.min(d.hp, hp + n)); T.hp = hp >= d.hp ? null : hp; if (hp > 0) { T.deathOk = 0; T.deathFail = 0; } else if (T.conc) { ui.concMsg = T.conc + ' ended: you dropped to 0 hit points.'; T.conc = ''; ui.concDmg = 0; } },
     inspToggle: function (v) { var T = ch.track = ch.track || {}; ui.bardRoll = ''; if (v === 'insp') T.insp = !T.insp; else T.bardic = T.bardic ? '' : (T.bardDie || 'd6'); },
     rollBardic: function () { var T = ch.track || {}, n = parseInt(String(T.bardic || 'd6').slice(1), 10) || 6, r = 1 + Math.floor(Math.random() * n); ui.bardRoll = 'Bardic Inspiration ' + T.bardic + ': ' + r + '. Add it to your roll.'; T.bardic = ''; },
+    spendHD: function (v) {
+      var T = ch.track = ch.track || {}, used = +T.hd || 0; if (used >= d.level) return;
+      var r = 1 + Math.floor(Math.random() * +v), con = d.abilities.CON.mod, heal = Math.max(0, r + con), hp = T.hp == null ? d.hp : T.hp, nhp = Math.min(d.hp, hp + heal);
+      T.hd = used + 1; T.hp = nhp >= d.hp ? null : nhp; if (nhp > 0) { T.deathOk = 0; T.deathFail = 0; }
+      ui.hdMsg = 'd' + v + ': ' + r + ' ' + (con < 0 ? '− ' + -con : '+ ' + con) + ' = ' + heal + ' hit points → ' + nhp + '/' + d.hp + '. ' + (d.level - used - 1) + ' hit dice left.';
+    },
+    wsStart: function (v) { var m = MON.find(v); if (!m) return; var T = ch.track = ch.track || {}; T.ws = { id: v, hp: +m.hp || 1 }; var w = trk('res:Wild Shape'); if (w && w.left > 0) { T.used = T.used || {}; T.used[w.key] = w.used + 1; } ui.q.ws = ''; },
+    wsEnd: function () { var T = ch.track = ch.track || {}; T.ws = null; },
+    crHp: function (v, el) {
+      var dlt = +el.getAttribute('data-d'), T = ch.track = ch.track || {};
+      if (v === 'ws') { var m = T.ws && MON.find(T.ws.id); if (!m) return; var nh = T.ws.hp + dlt; if (nh <= 0) { T.ws = null; if (nh < 0) actions.hpAdj(String(nh)); ui.hdMsg = 'You revert to your normal form' + (nh < 0 ? ' and take ' + -nh + ' damage that carried over.' : '.'); } else T.ws.hp = Math.min(+m.hp, nh); return; }
+      var c = (ch.companions || []).filter(function (x) { return 'c:' + x.id === v; })[0]; if (c) c.hp = Math.max(0, Math.min(c.max, c.hp + dlt));
+    },
+    compAdd: function (v) { var m = MON.find(v); if (!m) return; ch.companions = (ch.companions || []).concat([{ id: R.uid(), mon: v, n: m.n, hp: +m.hp || 1, max: +m.hp || 1 }]); ui.q.comp = ''; },
+    compRm: function (v) { ch.companions = (ch.companions || []).filter(function (c) { return c.id !== v; }); },
+    compOpen: function (v) { ui.compOpen = ui.compOpen || {}; ui.compOpen[v] = !ui.compOpen[v]; },
+    concEnd: function () { var T = ch.track = ch.track || {}; T.conc = ''; ui.concDmg = 0; ui.concMsg = ''; },
+    concRoll: function () {
+      var T = ch.track || {}, dc = Math.max(10, Math.floor((ui.concDmg || 0) / 2)), b = d.saves.CON.total, war = JSON.stringify(ch.picks || {}).indexOf('War Caster') >= 0;
+      var r1 = 1 + Math.floor(Math.random() * 20), r2 = 1 + Math.floor(Math.random() * 20), r = war ? Math.max(r1, r2) : r1, tot = r + b, ok = tot >= dc;
+      ui.concMsg = (war ? 'Rolled ' + r1 + ' and ' + r2 + ', kept ' + r : 'Rolled ' + r) + ' ' + R.fmt(b) + ' = ' + tot + ' vs DC ' + dc + ': ' + (ok ? 'you keep concentrating on ' + T.conc + '.' : T.conc + ' ends.');
+      if (!ok) T.conc = ''; ui.concDmg = 0;
+    },
+    condToggle: function (v) { var T = ch.track = ch.track || {}, c = T.conds = T.conds || {}; if (c[v]) delete c[v]; else { c[v] = 1; if (/Incapacitated|Paralyzed|Petrified|Stunned|Unconscious/.test(v) && T.conc) { ui.concMsg = T.conc + ' ended (' + v.toLowerCase() + ').'; T.conc = ''; } } },
+    exh: function (v) { var T = ch.track = ch.track || {}; T.exh = Math.max(0, Math.min(6, (+T.exh || 0) + +v)); },
     death: function (v, el) { var T = ch.track = ch.track || {}; T[el.getAttribute('data-k')] = +v; },
     rest: function (v) {
       if (ui.confirmRest !== v) { ui.confirmRest = v; ui.restMsg = ''; return; }
@@ -1743,6 +1943,8 @@
   document.addEventListener('pointercancel', function () { pointerDown = false; if (pending) { pending = false; render(); } }, true);
   function requestRender() { if (pointerDown) pending = true; else render(); }
 
+  var GEN = window.GeneratorsUI({ esc: esc, btn: btn, ui: ui, store: store });
+  Object.keys(GEN.actions).forEach(function (k) { actions[k] = GEN.actions[k]; });
   var MON = window.MonsterUI({ esc: esc, btn: btn, ui: ui, store: store, render: render });
   Object.keys(MON.actions).forEach(function (k) { actions[k] = MON.actions[k]; });
   var BOOKS = window.BooksUI({ esc: esc, btn: btn, ui: ui, store: store, render: render, pf2Book: function () { return PFV.book(); } });
@@ -1777,6 +1979,7 @@
     if (ui.section === 'mm-heroes') { var mi = MMV.onInput(t); if (mi === 'render') render(); else if (mi) save(); if (mi) return; }
     if (t.getAttribute && t.getAttribute('data-ddb')) { if (ui.ddb) ui.ddb.v = t.value; return; }
     if (ui.section === 'audio') { var au = AUD.onInput(t); if (au === 'render') render(); if (au) return; }
+    if (ui.section === 'gen') { var gr = GEN.onInput(t); if (gr) { render(); return; } }
     if (ui.section === 'treasure') { var tr = TRE.onInput(t); if (tr === 'render') render(); else if (tr) save(); if (tr) return; }
     if (ui.section === 'encounters' || ui.section === 'party') { var er = ENC.onInput(t); if (er === 'render') render(); else if (er) save(); if (er) return; }
     if (a('data-mon') != null || a('data-mymon') != null) { var mr = MON.onInput(t); if (mr === 'render') render(); else save(); return; }
@@ -1821,6 +2024,9 @@
     else if (a('data-imp5part')) { var IP = ui.import5e; if (IP) { var eid = +a('data-imp5part'), cur = (IP.parts[eid] || []).filter(function (k) { return k !== t.value; }); if (t.checked) cur.push(t.value); IP.parts[eid] = cur; } }
     else if (a('data-imp5target')) { if (ui.import5e) { ui.import5e.target[a('data-imp5target')] = t.value; var idT = +a('data-imp5target'); if (ui.import5e.pick.indexOf(idT) < 0) ui.import5e.pick.push(idT); } }
     else if (a('data-imp5')) { var I5 = ui.import5e, id5 = +a('data-imp5'); if (I5) { I5.pick = I5.pick.filter(function (x) { return x !== id5; }); if (t.checked) I5.pick.push(id5); } }
+    else if (a('data-concpick')) { if (t.value) { var TC = ch.track = ch.track || {}; TC.conc = t.value; ui.concDmg = 0; ui.concMsg = ''; } }
+    else if (a('data-concdmg')) { ui.concDmg = Math.max(0, +t.value || 0); ui.concMsg = ''; }
+    else if (a('data-xfer')) { ui.xfer = ui.xfer || {}; ui.xfer[a('data-xfer')] = t.checked; ui.xfer.link = ''; ui.xfer.qr = ''; }
     else if (a('data-bardie')) { var TB = ch.track = ch.track || {}; TB.bardDie = t.value; if (TB.bardic) TB.bardic = t.value; }
     else if (a('data-look')) { ch.look = ch.look || {}; ch.look[a('data-look')] = t.value; }
     else if (a('data-lookcolor')) { ch.look = ch.look || {}; ch.look[a('data-lookcolor')] = t.value; }
@@ -1950,7 +2156,9 @@
           startImport(entries);
         } else {
           if (!got) throw new Error('not json');
-          var o = got.json, list = Array.isArray(o) ? o : (o && Array.isArray(o.chars) ? o.chars : [o]);
+          var o = got.json;
+          if (o && o.cf === 1) { ui.xferIn = { b: o }; return; }
+          var list = Array.isArray(o) ? o : (o && Array.isArray(o.chars) ? o.chars : [o]);
           list.forEach(function (c) { if (!c || typeof c !== 'object' || !(('classes' in c) || ('level' in c)) || !c.base) throw new Error('not a character'); c = normalize(c); c.id = R.uid(); store.chars.push(c); store.current = c.id; });
           ui.step = 'sheet'; ui.section = 'chars';
         }
@@ -2008,6 +2216,8 @@
   applyTheme(themeNow()); // reopen in the game you were using
   render();
   takeSharedFile();
+  checkXferLink();
+  window.addEventListener('hashchange', checkXferLink);
   if (window.ItemTexts) ItemTexts.load(function () { if (ItemTexts.list().length) render(); });
   window.Forge = { store: store, ui: ui, render: render, derived: function () { return d; } };
 })();

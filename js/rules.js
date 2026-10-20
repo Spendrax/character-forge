@@ -1100,6 +1100,7 @@
       tr.hp = null; tr.temp = 0; tr.deathOk = 0; tr.deathFail = 0;
       var hd = +tr.hd || 0, back = Math.min(hd, Math.max(1, Math.floor(d.level / 2)));
       if (back) { tr.hd = hd - back; got.push(back + ' hit ' + (back === 1 ? 'die' : 'dice')); }
+      if (+tr.exh > 0) { tr.exh = +tr.exh - 1; got.push('one level of exhaustion'); }
     }
     return got;
   };
