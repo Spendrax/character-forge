@@ -53,10 +53,14 @@
     if (guest) try { guest.peer.destroy(); } catch (e) { /* ignore */ }
     var g = guest = { code: code, peer: null, conn: null, cb: guest && guest.code === code ? guest.cb : null, state: null, wait: [] };
     return loadLib().then(function () {
-      return new Promise(function (ok, no) {
+      return new Promise(function (ok0, no0) {
+        // never wait forever: if the phones can't reach each other, say so
+        var done = false, ok = function (x) { if (!done) { done = true; clearTimeout(tm); ok0(x); } }, no = function (e) { if (!done) { done = true; clearTimeout(tm); try { peer.destroy(); } catch (x) { /* ignore */ } if (guest === g) guest = null; no0(e); } };
+        var tm = setTimeout(function () { no(new Error(g.step === 'open' ? 'Found the table but couldn’t connect to the DM’s device. Try the same Wi-Fi as the DM, or turn off a VPN or data saver, then Join again.' : 'Couldn’t reach the connection service. Check the internet connection, then Join again.')); }, 20000);
         var peer = g.peer = new root.Peer(root.TABLE_PEER_OPTS);
         peer.on('error', function (e) { no(e.type === 'peer-unavailable' ? new Error('No table with that code. Check the number with your DM (their Encounters page must stay open).') : new Error('Couldn’t connect (' + (e.type || e.message) + ').')); });
         peer.on('open', function () {
+          g.step = 'open';
           var conn = peer.connect(PREFIX + code, { reliable: true });
           conn.on('open', function () { g.conn = conn; ok(g); });
           conn.on('data', function (m) {
@@ -88,6 +92,7 @@
         return new Promise(function (ok, no) {
           g.onJoined = function (m) { g.onJoined = null; ok({ id: m.id, token: m.token, state: g.state }); };
           g.onError = function (e) { g.onError = null; no(e); };
+          setTimeout(function () { if (g.onJoined) { g.onJoined = null; no(new Error('The DM’s device didn’t answer. Is their Encounters page still open?')); } }, 15000);
           g.conn.send({ t: 'join', name: name, bonus: bonus });
         });
       });

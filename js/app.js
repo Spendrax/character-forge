@@ -594,7 +594,7 @@
     if (ui.tping === undefined) { ui.tping = 'wait'; Table.ping().then(function (j) { ui.tping = j; if (j) render(); }); }
     if (!ui.tping || ui.tping === 'wait') return '';
     var J = (store.tableJoin || {})[ch.id], S = ui.tstate;
-    if (!J) return '<div class="panel compact-row"><b>📱 DM’s table</b><input type="text" inputmode="numeric" maxlength="4" id="tbl-code" data-tblcode="1" value="' + esc(ui.tblCode || '') + '" placeholder="code" style="width:5.5rem">' + btn('tblJoin', 'Join', {}, 'btn small primary') + (ui.tblMsg ? '<span class="small bad">' + esc(ui.tblMsg) + '</span>' : '') + '</div>';
+    if (!J) return '<div class="panel compact-row"><b>📱 DM’s table</b><input type="text" inputmode="numeric" maxlength="4" id="tbl-code" data-tblcode="1" value="' + esc(ui.tblCode || '') + '" placeholder="code" style="width:5.5rem">' + btn('tblJoin', ui.tblBusy ? 'Joining…' : 'Join', {}, 'btn small primary') + (ui.tblMsg ? '<span class="small ' + (ui.tblBusy ? 'muted' : 'bad') + '">' + esc(ui.tblMsg) + '</span>' : '') + '</div>';
     Table.watch(J.code, function (st, err) {
       if (!st) { delete store.tableJoin[ch.id]; ui.tstate = null; ui.tblMsg = 'The table was closed.'; save(); render(); return; }
       var me = st.players.filter(function (p) { return p.id === J.id; })[0];
@@ -1811,9 +1811,9 @@
     inspToggle: function (v) { var T = ch.track = ch.track || {}; ui.bardRoll = ''; if (v === 'insp') T.insp = !T.insp; else T.bardic = T.bardic ? '' : (T.bardDie || 'd6'); },
     rollBardic: function () { var T = ch.track || {}, n = parseInt(String(T.bardic || 'd6').slice(1), 10) || 6, r = 1 + Math.floor(Math.random() * n); ui.bardRoll = 'Bardic Inspiration ' + T.bardic + ': ' + r + '. Add it to your roll.'; T.bardic = ''; },
     tblJoin: function () {
-      var code = String(ui.tblCode || '').trim(); if (!/^\d{4}$/.test(code)) { ui.tblMsg = 'The code is 4 digits: ask your DM.'; return; }
-      ui.tblMsg = ''; var cid = ch.id;
-      Table.join(code, ch.name || 'Player', d.init).then(function (j) { store.tableJoin = store.tableJoin || {}; store.tableJoin[cid] = { code: code, id: j.id, token: j.token }; ui.tstate = j.state; save(); render(); }, function (e) { ui.tblMsg = e.message; render(); });
+      var box = document.getElementById('tbl-code'), code = String((box && box.value) || ui.tblCode || '').trim(); if (!/^\d{4}$/.test(code)) { ui.tblMsg = 'The code is 4 digits: ask your DM.'; return; }
+      if (ui.tblBusy) return false; ui.tblBusy = true; ui.tblMsg = 'Connecting to the DM’s table…'; var cid = ch.id; render();
+      Table.join(code, ch.name || 'Player', d.init).then(function (j) { ui.tblBusy = false; ui.tblMsg = ''; store.tableJoin = store.tableJoin || {}; store.tableJoin[cid] = { code: code, id: j.id, token: j.token }; ui.tstate = j.state; save(); render(); }, function (e) { ui.tblBusy = false; ui.tblMsg = e.message || 'Couldn’t join.'; render(); });
       return false;
     },
     tblHintOk: function () { ui.tblHint = ''; },
