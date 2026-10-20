@@ -6,7 +6,7 @@
 //   ANTHROPIC_API_KEY=sk-ant-… node server.js  (Claude, paid per use)
 // Optional: AI_MODEL (Claude default claude-sonnet-5-5; Gemini: the newest free Flash model), AI_CODE (an access code friends type into the helper's settings,
 // so strangers who find your server can't spend your key).
-const http = require('http'), fs = require('fs'), path = require('path'), crypto = require('crypto');
+const http = require('http'), fs = require('fs'), path = require('path'), crypto = require('crypto'), os = require('os');
 const root = __dirname, port = +process.argv[2] || +process.env.PORT || 8080;
 const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.md': 'text/plain; charset=utf-8', '.png': 'image/png', '.webmanifest': 'application/manifest+json', '.mp3': 'audio/mpeg', '.pdf': 'application/pdf' };
 const KEY = process.env.ANTHROPIC_API_KEY || '', GKEY = process.env.GEMINI_API_KEY || '', CODE = process.env.AI_CODE || '';
@@ -73,10 +73,60 @@ function helper(req, res) {
   });
 }
 
+// ---------- the table: players' phones send their initiative to the DM (same Wi-Fi, kept in memory only) ----------
+const tables = new Map();
+function lan() { const out = []; Object.values(os.networkInterfaces()).forEach(l => (l || []).forEach(a => { if (a.family === 'IPv4' && !a.internal) out.push('http://' + a.address + ':' + port + '/'); })); return out; }
+function readBody(req, max) { return new Promise((ok, no) => { let b = ''; req.on('data', c => { b += c; if (b.length > max) { no(new Error('too big')); req.destroy(); } }); req.on('end', () => { try { ok(b ? JSON.parse(b) : {}); } catch (e) { no(e); } }); }); }
+function pub(t) { return { code: t.code, v: t.v, open: t.open, round: t.round, turn: t.turn, players: t.players.map(p => ({ id: p.id, name: p.name, init: p.init, bonus: p.bonus })) }; }
+function sweep() { const now = Date.now(); for (const [k, t] of tables) if (now - t.at > 12 * 3600e3) tables.delete(k); }
+function tableApi(req, res, rel) {
+  if (limited(req, 'table', 240)) return json(res, 429, { error: 'Too many requests.' });
+  const m = rel.match(/^\/api\/table(?:\/(\d{4})(?:\/(join|roll|dm))?)?$/);
+  if (!m) return json(res, 404, { error: 'Not found' });
+  const code = m[1], what = m[2], t = code && tables.get(code);
+  if (!code && req.method === 'GET') return json(res, 200, { ok: true, lan: lan() });
+  if (!code && req.method === 'POST') {
+    sweep(); if (tables.size > 300) return json(res, 503, { error: 'Too many tables open.' });
+    let c; do { c = String(crypto.randomInt(1000, 10000)); } while (tables.has(c));
+    const key = crypto.randomBytes(16).toString('hex');
+    tables.set(c, { code: c, key, v: 1, open: false, round: 0, turn: '', players: [], at: Date.now() });
+    return json(res, 200, { code: c, key, lan: lan() });
+  }
+  if (!t) return json(res, 404, { error: 'No table with that code. Check the number with your DM.' });
+  t.at = Date.now();
+  if (!what && req.method === 'GET') return json(res, 200, pub(t));
+  if (req.method !== 'POST') return json(res, 405, { error: 'Use POST' });
+  readBody(req, 4000).then(q => {
+    const str = (x, n) => String(x == null ? '' : x).slice(0, n), num = (x, lo, hi) => Math.max(lo, Math.min(hi, Math.round(+x) || 0));
+    if (what === 'join') {
+      if (t.players.length >= 16) return json(res, 403, { error: 'The table is full.' });
+      const p = { id: crypto.randomBytes(4).toString('hex'), token: crypto.randomBytes(12).toString('hex'), name: str(q.name, 40) || 'Player', bonus: num(q.bonus, -10, 30), init: null };
+      t.players.push(p); t.v++;
+      return json(res, 200, { id: p.id, token: p.token, state: pub(t) });
+    }
+    if (what === 'roll') {
+      const p = t.players.find(x => x.id === q.id && x.token === q.token); if (!p) return json(res, 403, { error: 'Join the table again.' });
+      p.init = q.init == null ? null : num(q.init, -20, 60); t.v++;
+      return json(res, 200, pub(t));
+    }
+    if (what === 'dm') {
+      if (!q.key || q.key.length !== t.key.length || !crypto.timingSafeEqual(Buffer.from(q.key), Buffer.from(t.key))) return json(res, 403, { error: 'Not the DM.' });
+      if ('open' in q) { t.open = !!q.open; if (t.open && q.reset) t.players.forEach(p => { p.init = null; }); }
+      if ('round' in q) t.round = num(q.round, 0, 999);
+      if ('turn' in q) t.turn = str(q.turn, 60);
+      if (q.kick) t.players = t.players.filter(p => p.id !== q.kick);
+      if (q.close) { tables.delete(t.code); return json(res, 200, { ok: true }); }
+      t.v++; return json(res, 200, pub(t));
+    }
+    json(res, 404, { error: 'Not found' });
+  }, () => json(res, 400, { error: 'Bad request' }));
+}
+
 http.createServer((req, res) => {
   let rel;
   try { rel = decodeURIComponent(req.url.split('?')[0]); } catch (e) { res.writeHead(400); return res.end('Bad request'); }
   if (rel === '/api/ai') return helper(req, res);
+  if (/^\/api\/table/.test(rel)) return tableApi(req, res, rel);
   // D&D Beyond: fetch a public character's data for the importer (the browser can't read it directly)
   var ddb = rel.match(/^\/api\/ddb\/(\d{1,12})$/);
   if (ddb && limited(req, 'ddb', 10)) return json(res, 429, { error: 'Too many requests; wait a minute.' });
@@ -93,4 +143,4 @@ http.createServer((req, res) => {
     res.writeHead(200, Object.assign({ 'Content-Type': types[path.extname(file)] || 'application/octet-stream' }, SAFE));
     res.end(buf);
   });
-}).listen(port, () => console.log('Character Forge running at http://localhost:' + port + (KEY || GKEY ? ' (helper on, ' + (KEY ? 'Claude' : 'Gemini') + (CODE ? ', with access code' : '') + ')' : '')));
+}).listen(port, () => { console.log('Character Forge running at http://localhost:' + port + (KEY || GKEY ? ' (helper on, ' + (KEY ? 'Claude' : 'Gemini') + (CODE ? ', with access code' : '') + ')' : '')); const l = lan(); if (l.length) console.log('Players on the same Wi-Fi open: ' + l.join('  or  ')); });

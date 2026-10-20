@@ -281,6 +281,16 @@ Dungeons & Dragons is a trademark of Wizards of the Coast. This is an unofficial
 - **To another device:** Characters → 📲 To another device makes a link (and a QR code when it is small enough) with your D&D, PF2 and M&M characters; opening it on the other device adds them or updates the ones sent before. Or share a file, pictures included.
 - **PF2 spells:** quick filters (1, 2, 3 actions, reaction, free, sustained, longer). **M&M:** a Session tab with hero points, the damage track with Toughness checks, and conditions.
 
+## Players' phones at the table (same Wi-Fi)
+
+Run the app from the DM's computer: `node server.js`. It prints an address like `http://192.168.1.20:8080/`; players open that address on their phones (same Wi-Fi).
+
+- **DM:** Encounters → **📱 Open the table** shows a 4-digit code and a QR code. **Run it** asks the players for initiative; their rolls land in the initiative order (matched by name, or taking a "Player 1" slot). **Next turn** is shown on their phones.
+- **Players:** open the character → Session → type the code → **Join**. Then **🎲 Roll** for initiative, or type the total rolled with real dice and **Send**. The phone shows the round and whose turn it is, and buzzes on your turn.
+- The table lives only in the server's memory (no account, nothing online) and is forgotten after 12 hours or when the server stops. It doesn't work from the GitHub Pages site, which has no server.
+
+Everywhere a roll is made for you (concentration saves, hit dice, initiative), you can also type what you rolled with your own dice.
+
 ## Security
 
 - No accounts and no tracking: characters, books, imported texts and AI keys stay in your browser (localStorage / IndexedDB). Keys are never in this repository; a server key lives only in the server's environment variables.

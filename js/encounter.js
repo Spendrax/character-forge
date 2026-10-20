@@ -154,6 +154,39 @@
         (saved.length ? '<select data-encload="1" aria-label="Load a saved encounter"><option value="">Load a saved one…</option>' + saved.map(function (s) { return '<option value="' + s.id + '">' + esc(s.name || 'Untitled') + '</option>'; }).join('') + '</select>' : '') + '</div></div>';
     }
 
+    // ----- the table: players join from their phones (app served by node server.js) -----
+    function tbl() { return store.encTable || null; }
+    function phonesHtml() {
+      var T = root.Table; if (!T) return '';
+      if (E.tping === undefined) { E.tping = 'wait'; T.ping().then(function (j) { E.tping = j; E.tlan = j && j.lan || []; if (j) api.render(); }); }
+      if (!E.tping || E.tping === 'wait') return '';
+      var t = tbl();
+      if (!t) return '<div class="panel compact-row"><b>📱 Players’ phones</b><span class="small muted">Players roll initiative on their phones and it lands here.</span>' + btn('tblOpen', 'Open the table', {}, 'btn small') + (E.tmsg ? '<span class="small bad">' + esc(E.tmsg) + '</span>' : '') + '</div>';
+      T.watch(t.code, function (st, err) { if (!st) { store.encTable = null; E.tmsg = 'The table closed (the server restarted?). Open a new one.'; api.render(); return; } E.tstate = st; if (mergePhones(st)) api.save && api.save(); api.render(); });
+      var st = E.tstate || { players: [] }, url = (E.tlan && E.tlan[0] || (location.origin + location.pathname)) + '#table=' + t.code;
+      if (!E.tqr || E.tqrFor !== url) { E.tqrFor = url; if (root.Transfer) root.Transfer.qr(url).then(function (u) { E.tqr = u; api.render(); }, function () {}); }
+      return '<div class="panel tbl-panel"><div class="toolbar" style="margin:0"><b>📱 Table <span class="tbl-code">' + t.code + '</span></b><span class="spacer"></span>' + btn('tblAsk', st.open ? 'Ask again (clear rolls)' : 'Ask for initiative', {}, 'btn small' + (st.open ? '' : ' primary')) + btn('tblClose', 'Close', {}, 'btn small') + '</div>' +
+        '<div class="tbl-join">' + (E.tqr ? '<img class="xfer-qr tbl-qr" src="' + E.tqr + '" alt="QR code to join the table">' : '') + '<div class="small">Players scan this, or open <b>' + esc(url.replace(/#.*/, '')) + '</b> on the same Wi-Fi, open their character’s Session page and type the code <b>' + t.code + '</b>.</div></div>' +
+        (st.players.length ? '<ul class="tbl-players">' + st.players.map(function (p) { return '<li><b>' + esc(p.name) + '</b> <span class="' + (p.init == null ? 'muted' : 'tbl-init') + '">' + (p.init == null ? (st.open ? 'rolling…' : 'joined') : p.init) + '</span>' + btn('tblKick', '✕', { v: p.id }, 'btn tiny') + '</li>'; }).join('') + '</ul>' : '<p class="small muted">Nobody has joined yet.</p>') +
+        (store.encRun ? '<p class="small muted">Rolls that come in are put in the initiative order (matched by name, or added).</p>' : '<p class="small muted">Run the fight and the players are asked for initiative.</p>') + '</div>';
+    }
+    // put the phones' rolls into the running fight
+    function mergePhones(st) {
+      var run = store.encRun; if (!run || !st) return false;
+      var changed = false, cur = run.list[run.turn] && run.list[run.turn].k;
+      st.players.forEach(function (p) {
+        if (p.init == null) return;
+        var c = run.list.filter(function (x) { return x.phone === p.id; })[0] || run.list.filter(function (x) { return x.pc && !x.phone && String(x.n).trim().toLowerCase() === String(p.name).trim().toLowerCase(); })[0];
+        if (!c) { c = run.list.filter(function (x) { return x.pc && !x.phone && /^Player \d+$/.test(x.n); })[0]; if (c) { c.n = p.name; c.mod = p.bonus || 0; changed = true; } } // a placeholder player takes the name
+        if (!c) { c = { k: 'ph' + p.id, n: p.name, pc: true, init: p.init, mod: p.bonus || 0 }; run.list.push(c); changed = true; }
+        c.phone = p.id;
+        if (c.init !== p.init) { c.init = p.init; changed = true; }
+      });
+      if (changed) { run.list.sort(function (a, b) { return b.init - a.init || b.mod - a.mod; }); run.turn = Math.max(0, run.list.map(function (x) { return x.k; }).indexOf(cur)); pushTurn(); }
+      return changed;
+    }
+    function pushTurn() { var t = tbl(), run = store.encRun; if (!t || !root.Table) return; root.Table.dm(t.code, t.key, run ? { round: run.round, turn: (run.list[run.turn] || {}).n || '' } : { open: false, round: 0, turn: '' }).catch(function () {}); }
+
     // ----- running: initiative, hit points, turns -----
     function startRun(enc) {
       var list = [], roll = function (mod) { return 1 + Math.floor(Math.random() * 20) + mod; };
@@ -193,7 +226,7 @@
       var enc = cur(), view = E.open && MON.find(E.open);
       var main = store.encRun ? runHtml() : '<div class="enc-wrap">' + pickerHtml() + '<div>' + partyHtml(enc) + encounterHtml(enc) + '</div></div>';
       var ask = E.askLoot && !store.encRun ? '<div class="panel enc-loot"><b>Fight over.</b> Roll treasure for this encounter? ' + btn('encLootYes', root.Icon('coins') + ' Yes, roll treasure', {}, 'btn primary') + btn('encLootNo', 'No', {}, 'btn') + '</div>' : '';
-      return '<main class="mon-main"><h2>Encounters</h2>' + ask + (E.msg ? '<p class="small rest-msg">' + esc(E.msg) + '</p>' : '') + main +
+      return '<main class="mon-main"><h2>Encounters</h2>' + ask + (E.msg ? '<p class="small rest-msg">' + esc(E.msg) + '</p>' : '') + phonesHtml() + main +
         (view ? '<div class="enc-modal" role="dialog" aria-label="' + esc(view.n) + '"><div class="toolbar">' + btn('encViewClose', '✕ Close', {}, 'btn') + '</div>' + MON.block(view) + '</div>' : '') + '</main>';
     }
     function randomEncounter(enc) {
@@ -235,10 +268,14 @@
       },
       encView: function (v) { E.open = v; },
       encViewClose: function () { E.open = ''; },
-      encRun: function () { var enc = cur(); if (!enc.mons.length) { E.msg = 'Add some monsters first.'; return; } startRun(enc); E.msg = ''; },
+      encRun: function () { var enc = cur(); if (!enc.mons.length) { E.msg = 'Add some monsters first.'; return; } startRun(enc); E.msg = ''; var t = tbl(); if (t && root.Table) root.Table.dm(t.code, t.key, { open: true, reset: true, round: 1, turn: (store.encRun.list[0] || {}).n || '' }).catch(function () {}); },
+      tblOpen: function () { E.tmsg = ''; root.Table.create().then(function (j) { store.encTable = { code: j.code, key: j.key }; E.tlan = j.lan || E.tlan; E.tstate = null; api.save && api.save(); api.render(); }, function (e) { E.tmsg = e.message; api.render(); }); return false; },
+      tblAsk: function () { var t = tbl(); if (t) root.Table.dm(t.code, t.key, { open: true, reset: true }).catch(function () {}); return false; },
+      tblKick: function (v) { var t = tbl(); if (t) root.Table.dm(t.code, t.key, { kick: v }).catch(function () {}); return false; },
+      tblClose: function () { var t = tbl(); if (t) root.Table.dm(t.code, t.key, { close: true }).catch(function () {}); root.Table.stop(); store.encTable = null; E.tstate = null; },
       encHp: function (v, el) { var c = store.encRun.list.filter(function (x) { return x.k === v; })[0]; if (c) c.hp = Math.max(0, Math.min(c.max, c.hp + +el.getAttribute('data-d'))); writeBack(c); },
-      encNext: function () { var run = store.encRun; run.turn++; if (run.turn >= run.list.length) { run.turn = 0; run.round++; } },
-      encStop: function () { store.encRun = null; E.askLoot = true; },
+      encNext: function () { var run = store.encRun; run.turn++; if (run.turn >= run.list.length) { run.turn = 0; run.round++; } pushTurn(); },
+      encStop: function () { store.encRun = null; E.askLoot = true; pushTurn(); },
       encLootNo: function () { E.askLoot = false; },
       encLootYes: function () {
         var enc = cur(); E.askLoot = false;

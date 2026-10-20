@@ -588,6 +588,29 @@
     return '<div class="trk-row"><div class="trk-name"><b>' + esc(x.name) + '</b>' + (x.note ? '<div class="small muted">' + esc(x.note) + '</div>' : '') + '</div>' + pipsHtml(x) +
       '<span class="small muted trk-rest">' + (x.max > 20 ? '' : x.left + '/' + x.max + ' · ') + 'back on ' + restLabel(x.rest) + '</span></div>';
   }
+  // ---------- joining the DM's table from this phone (app served by the DM's computer) ----------
+  function tableJoinHtml() {
+    if (!window.Table) return '';
+    if (ui.tping === undefined) { ui.tping = 'wait'; Table.ping().then(function (j) { ui.tping = j; if (j) render(); }); }
+    if (!ui.tping || ui.tping === 'wait') return '';
+    var J = (store.tableJoin || {})[ch.id], S = ui.tstate;
+    if (!J) return '<div class="panel compact-row"><b>📱 DM’s table</b><input type="text" inputmode="numeric" maxlength="4" id="tbl-code" data-tblcode="1" value="' + esc(ui.tblCode || '') + '" placeholder="code" style="width:5.5rem">' + btn('tblJoin', 'Join', {}, 'btn small primary') + (ui.tblMsg ? '<span class="small bad">' + esc(ui.tblMsg) + '</span>' : '') + '</div>';
+    Table.watch(J.code, function (st, err) {
+      if (!st) { delete store.tableJoin[ch.id]; ui.tstate = null; ui.tblMsg = 'The table was closed.'; save(); render(); return; }
+      var me = st.players.filter(function (p) { return p.id === J.id; })[0];
+      if (!me) { delete store.tableJoin[ch.id]; ui.tstate = null; ui.tblMsg = 'The DM removed you from the table.'; save(); render(); return; }
+      var mine = st.turn && st.turn.trim().toLowerCase() === String(me.name).trim().toLowerCase();
+      if (mine && !(ui.tstate && ui.tstate.turn === st.turn && ui.tstate.round === st.round) && navigator.vibrate) navigator.vibrate([120, 80, 120]);
+      ui.tstate = st; render();
+    });
+    if (!S) return '<div class="panel compact-row"><b>📱 Table ' + J.code + '</b><span class="small muted">connecting…</span></div>';
+    var me = S.players.filter(function (p) { return p.id === J.id; })[0] || {}, mine = S.turn && S.turn.trim().toLowerCase() === String(me.name || '').trim().toLowerCase();
+    var h = '<div class="panel tbl-me' + (mine ? ' my-turn' : '') + '"><div class="toolbar" style="margin:0"><b>📱 Table ' + J.code + '</b>' + (S.round ? '<span>Round ' + S.round + ' · ' + (mine ? '<b>your turn!</b>' : 'turn: ' + esc(S.turn || '—')) + '</span>' : '<span class="small muted">' + (S.open ? 'the fight is starting' : 'waiting for the DM') + '</span>') + '<span class="spacer"></span>' + btn('tblLeave', 'Leave', {}, 'btn small') + '</div>';
+    if (S.open && me.init == null) h += '<div class="toolbar"><b>Initiative</b>' + btn('tblRoll', '🎲 Roll (' + R.fmt(d.init) + ')', {}, 'btn small primary') + '<span class="small">or I rolled</span><input type="number" id="tbl-mine" data-tblmine="1" value="' + esc(ui.tblMine || '') + '" placeholder="total" style="width:5rem">' + btn('tblSend', 'Send', {}, 'btn small') + '</div>';
+    else if (me.init != null) h += '<p class="small">Your initiative: <b>' + me.init + '</b> ' + btn('tblRedo', 'change', {}, 'linkbtn') + '</p>';
+    return h + (ui.tblMsg ? '<p class="small rest-msg">' + esc(ui.tblMsg) + '</p>' : '') + '</div>';
+  }
+  function sendInit(v) { var J = (store.tableJoin || {})[ch.id]; if (!J) return; Table.roll(J.code, J.id, J.token, v).then(function (st) { ui.tstate = st; ui.tblMine = ''; render(); }, function (e) { ui.tblMsg = e.message; render(); }); }
   function hitDieSizes() { var z = []; (ch.classes || []).forEach(function (e) { var c = D.classes.filter(function (x) { return x.id === e.cls; })[0]; if (c && z.indexOf(c.hitDie) < 0) z.push(c.hitDie); }); return z.length ? z.sort(function (a, b) { return b - a; }) : [8]; }
   // ---------- concentration ----------
   function concHtml() {
@@ -597,7 +620,7 @@
     if (!T.conc) return '<div class="panel compact-row"><b>Concentration</b><select data-concpick="1" aria-label="Concentrate on a spell"><option value="">— none —</option>' + list.map(function (n) { return '<option>' + esc(n) + '</option>'; }).join('') + '</select>' + (ui.concMsg ? '<span class="small muted">' + esc(ui.concMsg) + '</span>' : '') + '</div>';
     var dmg = ui.concDmg, dc = dmg ? Math.max(10, Math.floor(dmg / 2)) : 0;
     return '<div class="panel compact-row conc-panel"><b>Concentration</b><span class="conc-on">◉ ' + esc(T.conc) + '</span>' +
-      (dc ? '<span>Con save <b>DC ' + dc + '</b>' + (war ? ' (adv.)' : '') + '</span>' + btn('concRoll', '🎲 ' + R.fmt(d.saves.CON.total), {}, 'btn small primary') : '') +
+      (dc ? '<span>Con save <b>DC ' + dc + '</b>' + (war ? ' (adv.)' : '') + '</span>' + btn('concRoll', '🎲 ' + R.fmt(d.saves.CON.total), {}, 'btn small primary') + '<input type="number" id="conc-mine" data-concmine="1" placeholder="or total" style="width:5.5rem" aria-label="The total you rolled">' + btn('concCheck', 'OK', {}, 'btn small') : '') +
       btn('concEnd', 'End', {}, 'btn small') + (ui.concMsg ? '<span class="small rest-msg">' + esc(ui.concMsg) + '</span>' : '') + '</div>';
   }
   // ---------- conditions ----------
@@ -675,7 +698,7 @@
   }
   function stepPlay() {
     var T = ch.track || {}, hp = T.hp == null ? d.hp : T.hp, hdUsed = Math.min(d.level, +T.hd || 0);
-    var h = '<h2>Session</h2>' + restBarHtml();
+    var h = '<h2>Session</h2>' + tableJoinHtml() + restBarHtml();
     h += '<div class="panel"><h3>Hit points</h3><div class="hp-row"><label>Current <input type="number" id="trk-hp" data-trk="hp" value="' + hp + '" min="0" max="' + d.hp + '"></label><span class="muted">/ ' + d.hp + '</span>' +
       ['-10', '-5', '-1', '+1', '+5', '+10'].map(function (v) { return btn('hpAdj', v, { v: v }, 'btn small'); }).join('') +
       '<label>Temporary <input type="number" id="trk-temp" data-trk="temp" value="' + (+T.temp || 0) + '" min="0"></label></div>' +
@@ -685,7 +708,7 @@
         return '<span>' + (k === 'deathOk' ? 'Successes' : 'Failures') + ' <span class="pips">' + b + '</span></span>';
       }).join(' ') + '</div>' : '') +
       trackRow({ key: 'hd', name: 'Hit dice (' + d.hitDice + ')', max: d.level, left: d.level - hdUsed, used: hdUsed, rest: 'long', note: 'Spend them on a short rest to heal; a long rest gives back half.' }) +
-      (d.level - hdUsed > 0 ? '<div class="toolbar hd-spend"><span class="small">Short rest:</span>' + hitDieSizes().map(function (z) { return btn('spendHD', '🎲 Spend a d' + z + ' (' + R.fmt(d.abilities.CON.mod) + ')', { v: z }, 'btn small'); }).join('') + '</div>' : '') +
+      (d.level - hdUsed > 0 ? '<div class="toolbar hd-spend"><span class="small">Short rest:</span>' + hitDieSizes().map(function (z) { return btn('spendHD', '🎲 Spend a d' + z + ' (' + R.fmt(d.abilities.CON.mod) + ')', { v: z }, 'btn small'); }).join('') + '<input type="number" min="1" max="12" id="hd-mine" data-hdmine="1" placeholder="or die roll" style="width:6rem" aria-label="What the hit die showed">' + btn('spendHDMine', 'Heal', {}, 'btn small') + '</div>' : '') +
       (ui.hdMsg ? '<p class="small rest-msg">' + esc(ui.hdMsg) + '</p>' : '') + '</div>' + concHtml() + condHtml();
     // inspiration: one from the DM, one Bardic Inspiration die from a bard
     var sq = function (k, label, sub, on) { return '<button type="button" class="insp-sq' + (on ? ' on' : '') + '" data-act="inspToggle" data-v="' + k + '" aria-pressed="' + !!on + '"><span class="insp-box">' + (on ? '★' : '') + '</span><span><b>' + label + '</b><small>' + sub + '</small></span></button>'; };
@@ -1505,7 +1528,7 @@
     var top = '<header class="top">' + btn('section', 'Character Forge', { v: gameOf() === 'mm' ? 'mm-home' : gameOf() === 'pf2' ? 'pf2-home' : 'home' }, 'brand linkish') + gameSwitch() + sectionNav() + '<span class="spacer"></span>' +
       themeBtn() + '<button type="button" class="btn" data-act="undo" title="Undo (Ctrl+Z)"' + (undoStack.length ? '' : ' disabled') + '>↶ Undo</button>' + (isInstalledApp() ? '' : btn('install', 'Install app', {}, installPrompt ? 'btn primary' : 'btn')) + '</header>';
     var body = /^pf2-/.test(ui.section) ? PFV.html(ui.section) : /^mm-(home|heroes)$/.test(ui.section) ? MMV.html(ui.section) : ui.section === 'mm-enc' ? MME.html() : ui.section === 'mm-party' ? MME.partyPage() : ui.section === 'mm-foes' ? MME.foesPage() : ui.section === 'mm-loot' ? MME.lootPage() : ui.section === 'mm-rules' ? BOOKS.html() : ui.section === 'monsters' ? '<main class="mon-main">' + MON.html() + '</main>' : ui.section === 'encounters' ? ENC.html() : ui.section === 'party' ? ENC.partyPage() : ui.section === 'roster' ? rosterHtml() : ui.section === 'treasure' ? TRE.html() : ui.section === 'items' ? itemsPage() : ui.section === 'gen' ? GEN.html() : ui.section === 'books' ? BOOKS.html() : ui.section === 'audio' ? AUD.html() : ui.section === 'rules' ? rulesHtml() : homeHtml();
-    setApp(top + installHelpHtml() + xferInHtml() + (ui.xferDone && ui.section === 'roster' ? '<p class="panel small rest-msg">' + esc(ui.xferDone) + '</p>' : '') + body);
+    setApp(top + installHelpHtml() + xferInHtml() + (ui.tblHint ? '<p class="panel small rest-msg">📱 Table ' + ui.tblHint + ': open your character, go to its Session page and tap Join. ' + btn('tblHintOk', 'OK', {}, 'btn tiny') + '</p>' : '') + (ui.xferDone && ui.section === 'roster' ? '<p class="panel small rest-msg">' + esc(ui.xferDone) + '</p>' : '') + body);
     if (ui.mon && ui.mon.scrollTop) { ui.mon.scrollTop = false; var r = document.querySelector('.mon-right'); if (r && window.innerWidth < 800) r.scrollIntoView(); else window.scrollTo(0, 0); }
     else restoreScroll(keep);
     if (ui.section === 'books' || ui.section === 'mm-rules') BOOKS.after();
@@ -1787,6 +1810,17 @@
       hp = Math.max(0, Math.min(d.hp, hp + n)); T.hp = hp >= d.hp ? null : hp; if (hp > 0) { T.deathOk = 0; T.deathFail = 0; } else if (T.conc) { ui.concMsg = T.conc + ' ended: you dropped to 0 hit points.'; T.conc = ''; ui.concDmg = 0; } },
     inspToggle: function (v) { var T = ch.track = ch.track || {}; ui.bardRoll = ''; if (v === 'insp') T.insp = !T.insp; else T.bardic = T.bardic ? '' : (T.bardDie || 'd6'); },
     rollBardic: function () { var T = ch.track || {}, n = parseInt(String(T.bardic || 'd6').slice(1), 10) || 6, r = 1 + Math.floor(Math.random() * n); ui.bardRoll = 'Bardic Inspiration ' + T.bardic + ': ' + r + '. Add it to your roll.'; T.bardic = ''; },
+    tblJoin: function () {
+      var code = String(ui.tblCode || '').trim(); if (!/^\d{4}$/.test(code)) { ui.tblMsg = 'The code is 4 digits: ask your DM.'; return; }
+      ui.tblMsg = ''; var cid = ch.id;
+      Table.join(code, ch.name || 'Player', d.init).then(function (j) { store.tableJoin = store.tableJoin || {}; store.tableJoin[cid] = { code: code, id: j.id, token: j.token }; ui.tstate = j.state; save(); render(); }, function (e) { ui.tblMsg = e.message; render(); });
+      return false;
+    },
+    tblHintOk: function () { ui.tblHint = ''; },
+    tblLeave: function () { if (store.tableJoin) delete store.tableJoin[ch.id]; Table.stop(); ui.tstate = null; ui.tblMsg = ''; },
+    tblRoll: function () { var r = 1 + Math.floor(Math.random() * 20); ui.tblMsg = 'Rolled ' + r + ' ' + R.fmt(d.init) + ' = ' + (r + d.init) + '.'; sendInit(r + d.init); return false; },
+    tblSend: function () { var v = parseInt(ui.tblMine, 10); if (isNaN(v)) { ui.tblMsg = 'Type the total you rolled (die + bonus).'; return; } ui.tblMsg = ''; sendInit(v); return false; },
+    tblRedo: function () { sendInit(null); return false; },
     spendHD: function (v) {
       var T = ch.track = ch.track || {}, used = +T.hd || 0; if (used >= d.level) return;
       var r = 1 + Math.floor(Math.random() * +v), con = d.abilities.CON.mod, heal = Math.max(0, r + con), hp = T.hp == null ? d.hp : T.hp, nhp = Math.min(d.hp, hp + heal);
@@ -1804,6 +1838,15 @@
     compRm: function (v) { ch.companions = (ch.companions || []).filter(function (c) { return c.id !== v; }); },
     compOpen: function (v) { ui.compOpen = ui.compOpen || {}; ui.compOpen[v] = !ui.compOpen[v]; },
     concEnd: function () { var T = ch.track = ch.track || {}; T.conc = ''; ui.concDmg = 0; ui.concMsg = ''; },
+    concCheck: function () {
+      var T = ch.track || {}, el = document.getElementById('conc-mine'), tot = parseInt(el && el.value, 10), dc = Math.max(10, Math.floor((ui.concDmg || 0) / 2)); if (isNaN(tot)) return false;
+      var ok = tot >= dc; ui.concMsg = tot + ' vs DC ' + dc + ': ' + (ok ? 'you keep concentrating on ' + T.conc + '.' : T.conc + ' ends.'); if (!ok) T.conc = ''; ui.concDmg = 0;
+    },
+    spendHDMine: function () {
+      var el = document.getElementById('hd-mine'), r = parseInt(el && el.value, 10), T = ch.track = ch.track || {}, used = +T.hd || 0; if (isNaN(r) || used >= d.level) return false;
+      var con = d.abilities.CON.mod, heal = Math.max(0, r + con), hp = T.hp == null ? d.hp : T.hp, nhp = Math.min(d.hp, hp + heal);
+      T.hd = used + 1; T.hp = nhp >= d.hp ? null : nhp; ui.hdMsg = r + ' ' + (con < 0 ? '− ' + -con : '+ ' + con) + ' = ' + heal + ' hit points → ' + nhp + '/' + d.hp + '. ' + (d.level - used - 1) + ' hit dice left.';
+    },
     concRoll: function () {
       var T = ch.track || {}, dc = Math.max(10, Math.floor((ui.concDmg || 0) / 2)), b = d.saves.CON.total, war = JSON.stringify(ch.picks || {}).indexOf('War Caster') >= 0;
       var r1 = 1 + Math.floor(Math.random() * 20), r2 = 1 + Math.floor(Math.random() * 20), r = war ? Math.max(r1, r2) : r1, tot = r + b, ok = tot >= dc;
@@ -1961,7 +2004,7 @@
   Object.keys(AUD.actions).forEach(function (k) { actions[k] = AUD.actions[k]; });
   var TRE = window.TreasureUI({ esc: esc, btn: btn, ui: ui, store: store });
   Object.keys(TRE.actions).forEach(function (k) { actions[k] = TRE.actions[k]; });
-  var ENC = window.EncounterUI({ esc: esc, btn: btn, ui: ui, store: store, render: render, MON: MON, R: R,
+  var ENC = window.EncounterUI({ esc: esc, btn: btn, ui: ui, store: store, render: render, save: save, MON: MON, R: R,
     onLoot: function (creatures, levels, title) { TRE.fromEncounter(creatures, levels, title); ui.section = 'treasure'; window.scrollTo(0, 0); } });
   Object.keys(ENC.actions).forEach(function (k) { actions[k] = ENC.actions[k]; });
 
@@ -1979,6 +2022,8 @@
     if (/^mm-(enc|party|foes|loot)$/.test(ui.section)) { var me = MME.onInput(t); if (me === 'render') render(); else if (me) save(); if (me) return; }
     if (ui.section === 'mm-heroes') { var mi = MMV.onInput(t); if (mi === 'render') render(); else if (mi) save(); if (mi) return; }
     if (t.getAttribute && t.getAttribute('data-ddb')) { if (ui.ddb) ui.ddb.v = t.value; return; }
+    if (t.getAttribute && t.getAttribute('data-tblcode')) { ui.tblCode = t.value; return; }
+    if (t.getAttribute && t.getAttribute('data-tblmine')) { ui.tblMine = t.value; return; }
     if (ui.section === 'audio') { var au = AUD.onInput(t); if (au === 'render') render(); if (au) return; }
     if (ui.section === 'gen') { var gr = GEN.onInput(t); if (gr) { render(); return; } }
     if (ui.section === 'treasure') { var tr = TRE.onInput(t); if (tr === 'render') render(); else if (tr) save(); if (tr) return; }
@@ -2028,6 +2073,8 @@
     else if (a('data-concpick')) { if (t.value) { var TC = ch.track = ch.track || {}; TC.conc = t.value; ui.concDmg = 0; ui.concMsg = ''; } }
     else if (a('data-concdmg')) { ui.concDmg = Math.max(0, +t.value || 0); ui.concMsg = ''; }
     else if (a('data-xfer')) { ui.xfer = ui.xfer || {}; ui.xfer[a('data-xfer')] = t.checked; ui.xfer.link = ''; ui.xfer.qr = ''; }
+    else if (a('data-tblcode')) { ui.tblCode = t.value; }
+    else if (a('data-tblmine')) { ui.tblMine = t.value; }
     else if (a('data-bardie')) { var TB = ch.track = ch.track || {}; TB.bardDie = t.value; if (TB.bardic) TB.bardic = t.value; }
     else if (a('data-look')) { ch.look = ch.look || {}; ch.look[a('data-look')] = t.value; }
     else if (a('data-lookcolor')) { ch.look = ch.look || {}; ch.look[a('data-lookcolor')] = t.value; }
@@ -2218,6 +2265,8 @@
   render();
   takeSharedFile();
   checkXferLink();
+  function checkTableLink() { var m = String(location.hash || '').match(/^#table=(\d{4})$/); if (m) { ui.tblCode = m[1]; ui.tblHint = m[1]; try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { /* ignore */ } render(); } }
+  checkTableLink(); window.addEventListener('hashchange', checkTableLink);
   window.addEventListener('hashchange', checkXferLink);
   if (window.ItemTexts) ItemTexts.load(function () { if (ItemTexts.list().length) render(); });
   window.Forge = { store: store, ui: ui, render: render, derived: function () { return d; } };

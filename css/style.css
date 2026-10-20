@@ -817,3 +817,10 @@ html.dice3d-lock, html.dice3d-lock body { overflow: hidden; }
 .cond-head { display: flex; width: 100%; gap: .6rem; align-items: center; background: none; border: 0; padding: .15rem 0; font: inherit; color: inherit; cursor: pointer; text-align: left; }
 .cond-panel .pills { margin-top: .4rem; }
 .cond-head .spacer { flex: 1; }
+.tbl-code { font-size: 1.3rem; letter-spacing: .12em; color: var(--accent); margin-left: .2rem; }
+.tbl-join { display: flex; gap: .8rem; align-items: center; flex-wrap: wrap; margin: .4rem 0; }
+.tbl-qr { width: 9rem; margin: 0; }
+.tbl-players { list-style: none; padding: 0; margin: .3rem 0; display: flex; flex-wrap: wrap; gap: .4rem; }
+.tbl-players li { border: 1px solid var(--line); border-radius: 999px; padding: .15rem .3rem .15rem .7rem; display: flex; gap: .4rem; align-items: center; }
+.tbl-init { font-weight: 700; color: var(--accent); }
+.tbl-me.my-turn { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
