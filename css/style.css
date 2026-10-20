@@ -811,3 +811,9 @@ html.dice3d-lock, html.dice3d-lock body { overflow: hidden; }
 .hub.many .hub-item { width: 17%; }
 .hub.many .hub-core { width: 26%; }
 .hub.many .hub-lbl { font-size: .74rem; }
+.compact-row { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .7rem; padding-top: .55rem; padding-bottom: .55rem; }
+.compact-row select { max-width: 14rem; }
+.cond-panel { padding-top: .45rem; padding-bottom: .45rem; }
+.cond-head { display: flex; width: 100%; gap: .6rem; align-items: center; background: none; border: 0; padding: .15rem 0; font: inherit; color: inherit; cursor: pointer; text-align: left; }
+.cond-panel .pills { margin-top: .4rem; }
+.cond-head .spacer { flex: 1; }

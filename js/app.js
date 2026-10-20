@@ -594,14 +594,11 @@
     var T = ch.track || {}, list = mySpellRows().filter(function (r) { return r.s && r.s.conc && r.ready; }).map(function (r) { return r.name; });
     var war = JSON.stringify(ch.picks || {}).indexOf('War Caster') >= 0;
     if (!list.length && !T.conc) return '';
-    var h = '<div class="panel conc-panel"><h3>Concentration</h3>';
-    if (!T.conc) return h + '<div class="toolbar"><select data-concpick="1" aria-label="Concentrate on a spell"><option value="">Start concentrating on…</option>' + list.map(function (n) { return '<option>' + esc(n) + '</option>'; }).join('') + '</select></div><p class="small muted">Casting another concentration spell ends the first one.</p></div>';
-    var dmg = ui.concDmg, dc = dmg ? Math.max(10, Math.floor(dmg / 2)) : 0, save = d.saves.CON;
-    h += '<div class="conc-on"><b>◉ ' + esc(T.conc) + '</b>' + btn('concEnd', 'End', {}, 'btn small') + '</div>' +
-      '<div class="toolbar"><label class="small">Damage taken <input type="number" min="0" id="conc-dmg" data-concdmg="1" value="' + (dmg || '') + '" style="width:5rem"></label>' +
-      (dc ? '<span>Constitution save <b>DC ' + dc + '</b> (you have ' + R.fmt(save.total) + (war ? ', advantage: War Caster' : '') + ')</span>' + btn('concRoll', '🎲 Roll the save', {}, 'btn small primary') : '<span class="small muted">When you take damage, type it here (it fills in by itself when you use − on your hit points).</span>') + '</div>' +
-      (ui.concMsg ? '<p class="small rest-msg">' + esc(ui.concMsg) + '</p>' : '') + '<p class="small muted">The DC is 10 or half the damage, whichever is higher; one save for each source of damage. Being incapacitated or dropping to 0 hit points also ends it.</p></div>';
-    return h;
+    if (!T.conc) return '<div class="panel compact-row"><b>Concentration</b><select data-concpick="1" aria-label="Concentrate on a spell"><option value="">— none —</option>' + list.map(function (n) { return '<option>' + esc(n) + '</option>'; }).join('') + '</select>' + (ui.concMsg ? '<span class="small muted">' + esc(ui.concMsg) + '</span>' : '') + '</div>';
+    var dmg = ui.concDmg, dc = dmg ? Math.max(10, Math.floor(dmg / 2)) : 0;
+    return '<div class="panel compact-row conc-panel"><b>Concentration</b><span class="conc-on">◉ ' + esc(T.conc) + '</span>' +
+      (dc ? '<span>Con save <b>DC ' + dc + '</b>' + (war ? ' (adv.)' : '') + '</span>' + btn('concRoll', '🎲 ' + R.fmt(d.saves.CON.total), {}, 'btn small primary') : '') +
+      btn('concEnd', 'End', {}, 'btn small') + (ui.concMsg ? '<span class="small rest-msg">' + esc(ui.concMsg) + '</span>' : '') + '</div>';
   }
   // ---------- conditions ----------
   var CONDS = [['Blinded', 'Can’t see; checks that need sight fail. Attacks against you have advantage, your attacks have disadvantage.'],
@@ -621,12 +618,15 @@
   var EXH = ['', 'Disadvantage on ability checks.', 'Speed halved.', 'Disadvantage on attack rolls and saving throws.', 'Hit point maximum halved.', 'Speed 0.', 'Death.'];
   function liveSpeed() { var T = ch.track || {}, c = T.conds || {}, ex = +T.exh || 0; return c.Grappled || c.Restrained || c.Paralyzed || c.Petrified || c.Stunned || c.Unconscious || ex >= 5 ? 0 : ex >= 2 ? Math.floor(d.speed / 2) : d.speed; }
   function condHtml() {
-    var T = ch.track || {}, on = T.conds || {}, ex = +T.exh || 0, act = CONDS.filter(function (c) { return on[c[0]]; });
-    return '<div class="panel"><h3>Conditions</h3><div class="pills">' + CONDS.map(function (c) { return btn('condToggle', c[0], { v: c[0] }, 'pill small' + (on[c[0]] ? ' on' : '')); }).join('') + '</div>' +
-      '<div class="toolbar"><span>Exhaustion</span>' + btn('exh', '−', { v: -1 }, 'btn small') + '<b>' + ex + '</b>' + btn('exh', '+', { v: 1 }, 'btn small') + '</div>' +
-      (act.length || ex ? '<ul class="cond-list">' + act.map(function (c) { return '<li><b>' + c[0] + ':</b> ' + esc(c[1]) + '</li>'; }).join('') +
-        (ex ? '<li><b>Exhaustion ' + ex + ':</b> ' + esc(EXH.slice(1, ex + 1).join(' ')) + ' A long rest removes one level.</li>' : '') + '</ul>' : '<p class="small muted">Tap a condition when it happens to you to see what it does.</p>') + '</div>';
+    var T = ch.track || {}, on = T.conds || {}, ex = +T.exh || 0, act = CONDS.filter(function (c) { return on[c[0]]; }), open = ui.condOpen;
+    var sum = act.map(function (c) { return c[0]; }).concat(ex ? ['Exhaustion ' + ex] : []);
+    var h = '<div class="panel cond-panel"><button type="button" class="cond-head" data-act="condOpen" aria-expanded="' + !!open + '"><b>Conditions</b> <span class="' + (sum.length ? 'bad' : 'small muted') + '">' + esc(sum.join(', ') || 'none') + '</span><span class="spacer"></span><span aria-hidden="true">' + (open ? '▾' : '▸') + '</span></button>';
+    if (act.length || ex) h += '<ul class="cond-list">' + act.map(function (c) { return '<li><b>' + c[0] + ':</b> ' + esc(c[1]) + '</li>'; }).join('') + (ex ? '<li><b>Exhaustion ' + ex + ':</b> ' + esc(EXH.slice(1, ex + 1).join(' ')) + '</li>' : '') + '</ul>';
+    if (open) h += '<div class="pills">' + CONDS.map(function (c) { return btn('condToggle', c[0], { v: c[0] }, 'pill small' + (on[c[0]] ? ' on' : '')); }).join('') + '</div>' +
+      '<div class="toolbar"><span>Exhaustion</span>' + btn('exh', '−', { v: -1 }, 'btn small') + '<b>' + ex + '</b>' + btn('exh', '+', { v: 1 }, 'btn small') + '<span class="small muted">a long rest removes one level</span></div>';
+    return h + '</div>';
   }
+
   // ---------- Wild Shape and companions (creatures from the Monsters list) ----------
   var FAMILIARS = ['Bat', 'Cat', 'Crab', 'Frog', 'Hawk', 'Lizard', 'Octopus', 'Owl', 'Poisonous Snake', 'Quipper', 'Rat', 'Raven', 'Sea Horse', 'Spider', 'Weasel'];
   function creatureHp(key, cur, max, label) {
@@ -1810,6 +1810,7 @@
       ui.concMsg = (war ? 'Rolled ' + r1 + ' and ' + r2 + ', kept ' + r : 'Rolled ' + r) + ' ' + R.fmt(b) + ' = ' + tot + ' vs DC ' + dc + ': ' + (ok ? 'you keep concentrating on ' + T.conc + '.' : T.conc + ' ends.');
       if (!ok) T.conc = ''; ui.concDmg = 0;
     },
+    condOpen: function () { ui.condOpen = !ui.condOpen; },
     condToggle: function (v) { var T = ch.track = ch.track || {}, c = T.conds = T.conds || {}; if (c[v]) delete c[v]; else { c[v] = 1; if (/Incapacitated|Paralyzed|Petrified|Stunned|Unconscious/.test(v) && T.conc) { ui.concMsg = T.conc + ' ended (' + v.toLowerCase() + ').'; T.conc = ''; } } },
     exh: function (v) { var T = ch.track = ch.track || {}; T.exh = Math.max(0, Math.min(6, (+T.exh || 0) + +v)); },
     death: function (v, el) { var T = ch.track = ch.track || {}; T[el.getAttribute('data-k')] = +v; },
