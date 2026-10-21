@@ -177,7 +177,7 @@
 
     function home() {
       return '<main class="home"><h1>Mutants &amp; Masterminds 3e</h1><p class="muted">Your superhero table companion. Tap the d20 to roll.</p>' +
-        root.homeHub([['mm-heroes', 'bolt', 'Heroes'], ['mm-party', 'campfire', 'Party'], ['mm-enc', 'swords', 'Encounters'], ['mm-foes', 'mask', 'Villains'], ['mm-loot', 'coins', 'Rewards'], ['mm-rules', 'book', 'Rules'], ['audio', 'lute', 'Audio'], ['rules', 'scroll', 'House rules']]) + '</main>';
+        root.homeHub([['mm-heroes', 'bolt', 'Heroes'], ['dm', 'eye', 'GM'], ['mm-rules', 'book', 'Rules'], ['audio', 'lute', 'Audio'], ['rules', 'scroll', 'House rules']]) + '</main>';
     }
 
     function heroes() {
@@ -311,7 +311,10 @@
     function play(h, d) {
       var T = h.track = h.track || {}, hp = T.hp == null ? 1 : +T.hp, bruise = +T.bruise || 0, on = T.conds || {};
       var tough = d.def.tough - bruise;
-      var out = '<h2>Session</h2><div class="panel"><h3>Hero points</h3><div class="toolbar">' + btn('mmHp', '−', { v: -1 }, 'btn') + '<b class="mm-hpts">' + hp + '</b>' + btn('mmHp', '+', { v: 1 }, 'btn') +
+      var who = { key: h.id, name: h.name, init: d.init,
+        bonus: function (a) { return a.kind === 'def' ? d.def[a.key] - (a.key === 'tough' ? bruise : 0) : a.kind === 'skill' ? (d.skills[a.key] || {}).total || 0 : a.kind === 'ab' ? d.ab[a.key] || 0 : 0; },
+        status: function () { return { hp: 0, max: 0, ac: 0, conds: Object.keys(on).concat(T.dmg ? [TRACK[T.dmg]] : []), txt: 'Toughness ' + fmt(tough) + (bruise ? ' (' + bruise + ' bruise' + (bruise > 1 ? 's' : '') + ')' : '') + ' · ' + hp + ' hero point' + (hp === 1 ? '' : 's') }; } };
+      var out = '<h2>Session</h2>' + (api.tp ? api.tp.html(who) : '') + '<div class="panel"><h3>Hero points</h3><div class="toolbar">' + btn('mmHp', '−', { v: -1 }, 'btn') + '<b class="mm-hpts">' + hp + '</b>' + btn('mmHp', '+', { v: 1 }, 'btn') +
         '<span class="small muted">Spend one to reroll (a roll under 11 counts as 10 + the roll), to edit a scene, to recover, or for an instant counter. You get one when a complication causes trouble; back to 1 each adventure.</span></div></div>';
       out += '<div class="panel"><h3>Damage</h3><p>Toughness <b>' + fmt(tough) + '</b>' + (bruise ? ' <span class="muted">(' + d.def.tough + ' − ' + bruise + ' bruise' + (bruise > 1 ? 's' : '') + ')</span>' : '') + (T.dmg ? ' · <b class="bad">' + TRACK[T.dmg] + '</b>' : '') + '</p>' +
         '<div class="toolbar"><label class="small">Damage rank <input type="number" min="1" max="40" id="mm-dmgrank" data-mmplay="rank" value="' + esc(U.dmgRank || '') + '" style="width:4.5rem"></label>' + btn('mmHit', '🎲 Toughness check', {}, 'btn primary') + btn('mmRecover', 'Recover a step', {}, 'btn small') + btn('mmFresh', 'All healed', {}, 'btn small') + '</div>' +

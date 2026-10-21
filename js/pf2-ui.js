@@ -98,13 +98,13 @@
     }
 
     // ---------- the character page ----------
-    var TABS = [['build', 'Build'], ['sheet', 'Sheet'], ['defense', 'Defense'], ['offense', 'Offense'], ['skills', 'Skills'], ['spells', 'Spells'], ['gear', 'Gear'], ['feats', 'Feats'], ['actions', 'Actions'], ['notes', 'Notes']];
+    var TABS = [['build', 'Build'], ['sheet', 'Sheet'], ['defense', 'Defense'], ['offense', 'Offense'], ['skills', 'Skills'], ['spells', 'Spells'], ['gear', 'Gear'], ['feats', 'Feats'], ['actions', 'Actions'], ['notes', 'Notes'], ['play', 'Session']];
     function charHtml(ch) {
       var d = PF2.derive(ch);
       var head = '<div class="pf-head">' + '<label class="pf-face" title="' + (ch.picture ? 'Change the picture' : 'Add a picture') + '">' + (ch.picture ? picHtml(ch) : '<span>' + (root.Icon ? root.Icon('sword') : '+') + '</span>') + '<input type="file" accept="image/*" data-pfpic="1" hidden></label><div><b>' + esc(ch.name || 'Unnamed') + '</b><span class="small muted">' + esc([d.anc && d.anc.n, d.cls && d.cls.n + ' ' + d.level].filter(Boolean).join(' · ')) + '</span></div><span class="spacer"></span>' +
         btn('pfList', 'All characters', {}, 'btn small') + '</div>';
       var tabs = '<nav class="mm-tabs pf-tabs">' + TABS.map(function (t) { return btn('pfTab', t[1] + (t[0] === 'build' && d.warnings.length ? ' <span class="badge">' + d.warnings.length + '</span>' : ''), { v: t[0] }, 'mm-tab' + (U.tab === t[0] ? ' on' : '')); }).join('') + '</nav>';
-      var body = ({ build: buildTab, sheet: sheetTab, defense: defenseTab, offense: offenseTab, strikes: offenseTab, skills: skillsTab, spells: spellsTab, gear: gearTab, feats: featsTab, actions: actionsTab, notes: notesTab })[U.tab] || buildTab;
+      var body = ({ build: buildTab, sheet: sheetTab, defense: defenseTab, offense: offenseTab, strikes: offenseTab, skills: skillsTab, spells: spellsTab, gear: gearTab, feats: featsTab, actions: actionsTab, notes: notesTab, play: playTab })[U.tab] || buildTab;
       return '<main class="pf-main">' + (U.msg ? '<p class="rest-msg small">' + esc(U.msg) + ' ' + btn('pfMsgOk', 'OK', {}, 'btn tiny') + '</p>' : '') + head + tabs + '<div class="pf-body">' + body(ch, d) + '</div>' + (U.pick ? pickerHtml(ch, d) : '') + '</main>';
     }
 
@@ -300,14 +300,29 @@
 
     // ----- Sheet -----
     function trk(ch) { return ch.track = ch.track || { hp: null, temp: 0, hero: 1, focus: null, dying: 0, wounded: 0, conds: {} }; }
-    function sheetTab(ch, d) {
+    function hpBox(ch, d) {
       var T = trk(ch), hp = T.hp == null ? d.hp.max : T.hp, pct = Math.max(0, Math.min(100, Math.round(hp / d.hp.max * 100)));
-      var h = '<div class="panel pf-hpbox"><div class="pf-hpline"><b class="pf-hp">' + hp + '</b><span class="muted">/ ' + d.hp.max + ' HP</span>' + (T.temp ? '<span class="pf-temp">+' + T.temp + ' temp</span>' : '') + '<span class="spacer"></span>' + btn('pfRest', 'Rest', {}, 'btn small') + '</div>' +
+      return '<div class="panel pf-hpbox"><div class="pf-hpline"><b class="pf-hp">' + hp + '</b><span class="muted">/ ' + d.hp.max + ' HP</span>' + (T.temp ? '<span class="pf-temp">+' + T.temp + ' temp</span>' : '') + '<span class="spacer"></span>' + btn('pfRest', 'Rest', {}, 'btn small') + '</div>' +
         '<div class="hpbar"><span style="width:' + pct + '%"></span></div><div class="enc-adj">' + ['-10', '-5', '-1', '+1', '+5', '+10'].map(function (v) { return btn('pfHp', v.replace('-', '−'), { v: v }, 'btn small'); }).join('') + '</div>' +
         '<div class="row"><label class="field"><span>Temp HP</span><input type="number" min="0" inputmode="numeric" id="pf-temp" data-pftrk="temp" value="' + (T.temp || 0) + '"></label>' +
         '<div class="field"><span>Hero points</span><span class="pf-dots">' + [1, 2, 3].map(function (i) { return btn('pfHero', '', { v: i }, 'pf-dot' + ((T.hero || 0) >= i ? ' on' : '')); }).join('') + '</span></div>' +
         (d.focusMax ? '<div class="field"><span>Focus points</span><span class="pf-dots">' + Array.apply(null, Array(d.focusMax)).map(function (_, i) { var f = T.focus == null ? d.focusMax : T.focus; return btn('pfFocus', '', { v: i + 1 }, 'pf-dot' + (f > i ? ' on' : '')); }).join('') + '</span></div>' : '') + '</div>' +
         '<div class="row"><div class="field"><span>Dying</span><span class="mm-step">' + btn('pfTrk', '−', { k: 'dying', d: -1 }, 'mm-b') + '<b>' + (T.dying || 0) + '</b>' + btn('pfTrk', '+', { k: 'dying', d: 1 }, 'mm-b') + '</span></div><div class="field"><span>Wounded</span><span class="mm-step">' + btn('pfTrk', '−', { k: 'wounded', d: -1 }, 'mm-b') + '<b>' + (T.wounded || 0) + '</b>' + btn('pfTrk', '+', { k: 'wounded', d: 1 }, 'mm-b') + '</span></div></div>' + condHtml(ch) + '</div>';
+    }
+    // Session: the GM's table, then hit points, conditions and the numbers needed in a fight
+    function who(ch, d) {
+      var T = trk(ch);
+      return { key: ch.id, name: ch.name, init: d.perception.v,
+        bonus: function (a) { if (a.kind === 'save') return (d.saves[a.key] || {}).v || 0; if (a.kind === 'perception') return d.perception.v; if (a.kind === 'skill') { var s = Object.keys(d.skills).map(function (k) { return d.skills[k]; }).filter(function (x) { return x.n === a.key; })[0]; return s ? s.v : 0; } return 0; },
+        status: function () { return { hp: T.hp == null ? d.hp.max : T.hp, max: d.hp.max, temp: +T.temp || 0, ac: d.ac.v, conds: Object.keys(T.conds || {}).map(function (c) { return c + (T.conds[c] > 1 ? ' ' + T.conds[c] : ''); }).concat(T.dying ? ['Dying ' + T.dying] : []), conc: '' }; } };
+    }
+    function playTab(ch, d) {
+      var stat = function (label, v) { return '<div class="pf-stat"><small>' + label + '</small><b>' + v + '</b></div>'; };
+      return (api.tp ? api.tp.html(who(ch, d)) : '') + hpBox(ch, d) + '<div class="pf-stats">' + stat('AC', d.ac.v) + ['fortitude', 'reflex', 'will'].map(function (s) { return stat(s[0].toUpperCase() + s.slice(1), fmt(d.saves[s].v)); }).join('') +
+        stat('Perception', fmt(d.perception.v)) + (d.classDC ? stat('Class DC', d.classDC.v) : '') + stat('Speed', d.speed.v + ' ft') + '</div>';
+    }
+    function sheetTab(ch, d) {
+      var T = trk(ch), h = hpBox(ch, d);
       var stat = function (label, v, rank, sub) { return '<div class="pf-stat"><small>' + label + '</small><b>' + v + '</b>' + (rank != null ? teml(rank) : '') + (sub ? '<span class="small muted">' + sub + '</span>' : '') + '</div>'; };
       h += '<div class="pf-stats">' + stat('AC', d.ac.v, d.ac.rank, (d.armor ? esc(d.armor.e.n) : 'unarmored') + (d.ac.dexCap != null ? ' · Dex cap ' + d.ac.dexCap : '')) +
         (d.shield ? stat(T.raised ? 'AC, shield raised' : 'Shield raised', d.ac.v + d.shield.ac, null, esc(d.shield.e.n) + ' · Hardness ' + d.shield.hard + ' · HP ' + ((T.shield || {})[d.shield.g.uid || 'shield'] == null ? d.shield.hp : T.shield[d.shield.g.uid || 'shield']) + '/' + d.shield.hp) : '') +
@@ -597,7 +612,7 @@
     // ---------- home ----------
     function homeHtml() {
       return '<main class="home"><h1>Pathfinder 2e</h1><p class="muted">Your table companion (pre-Remaster rules). Tap the d20 to roll.</p>' +
-        root.homeHub([['pf2-chars', 'sword', 'Characters'], ['pf2-party', 'campfire', 'Party'], ['pf2-enc', 'swords', 'Encounters'], ['pf2-mon', 'dragon', 'Monsters'], ['pf2-loot', 'coins', 'Treasures'], ['books', 'tome', 'Books'], ['pf2-rules', 'book', 'Rules'], ['audio', 'lute', 'Audio'], ['rules', 'scroll', 'House rules']]) + '</main>';
+        root.homeHub([['pf2-chars', 'sword', 'Characters'], ['dm', 'eye', 'GM'], ['books', 'tome', 'Books'], ['pf2-rules', 'book', 'Rules'], ['audio', 'lute', 'Audio'], ['rules', 'scroll', 'House rules']]) + '</main>';
     }
 
     function html(section) {

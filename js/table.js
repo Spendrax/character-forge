@@ -53,7 +53,7 @@
       else if (m.t === 'gotGift') p.gifts = (p.gifts || []).filter(function (g) { return g.gid !== m.gid; });
       else if (m.t === 'msg') { var tx = str(m.text, 1000).trim(); if (!tx) return; s.msgs = (s.msgs || []).concat([{ mid: rnd(4), from: p.id, fromName: p.name, to: ['dm'], text: tx, at: Date.now() }]).slice(-100); }
       else if (m.t === 'answer') { var a = (s.asks || []).filter(function (x) { return x.rid === m.rid; })[0]; if (!a || (a.to !== 'all' && a.to.indexOf(p.id) < 0)) return; var tot = num(m.total, -20, 80); a.ans[p.id] = { total: tot, roll: m.roll == null ? null : num(m.roll, 1, 20), ok: a.dc ? tot >= a.dc : null }; }
-      else if (m.t === 'status') { var st = m.st || {}; p.status = { hp: num(st.hp, -99, 9999), max: num(st.max, 0, 9999), temp: num(st.temp, 0, 999), ac: num(st.ac, 0, 99), conds: (Array.isArray(st.conds) ? st.conds : []).slice(0, 16).map(function (c) { return str(c, 24); }), conc: str(st.conc, 60) }; }
+      else if (m.t === 'status') { var st = m.st || {}; p.status = { hp: num(st.hp, -99, 9999), max: num(st.max, 0, 9999), temp: num(st.temp, 0, 999), ac: num(st.ac, 0, 99), conds: (Array.isArray(st.conds) ? st.conds : []).slice(0, 16).map(function (c) { return str(c, 24); }), conc: str(st.conc, 60), txt: str(st.txt, 100) }; }
       else return;
       broadcast();
     });

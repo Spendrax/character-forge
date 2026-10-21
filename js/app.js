@@ -1522,10 +1522,10 @@
     }).join('') + '</div>';
   }
   function sectionNav() {
-    var list = gameOf() === 'pf2' ? [['pf2-home', '⌂ Home'], ['pf2-chars', 'Characters'], ['pf2-party', 'Party'], ['pf2-enc', 'Encounters'], ['pf2-mon', 'Monsters'], ['pf2-loot', 'Treasures'], ['books', 'Books'], ['pf2-rules', 'Rules'], ['audio', 'Audio'], ['rules', 'House rules']] : gameOf() === 'mm' ? [['mm-home', '⌂ Home'], ['mm-heroes', 'Heroes'], ['mm-party', 'Party'], ['mm-enc', 'Encounters'], ['mm-foes', 'Villains'], ['mm-loot', 'Rewards'], ['mm-rules', 'Rules'], ['audio', 'Audio'], ['rules', 'House rules']]
+    var list = gameOf() === 'pf2' ? [['pf2-home', '⌂ Home'], ['pf2-chars', 'Characters'], ['dm', 'GM'], ['books', 'Books'], ['pf2-rules', 'Rules'], ['audio', 'Audio'], ['rules', 'House rules']] : gameOf() === 'mm' ? [['mm-home', '⌂ Home'], ['mm-heroes', 'Heroes'], ['dm', 'GM'], ['mm-rules', 'Rules'], ['audio', 'Audio'], ['rules', 'House rules']]
       : [['home', '⌂ Home'], ['roster', 'Characters'], ['dm', 'DM'], ['items', 'Magic items'], ['books', 'Books'], ['audio', 'Audio'], ['rules', 'House rules']];
     return '<nav class="sections" aria-label="Sections">' + list.map(function (x) {
-      var on = ui.section === x[0] || (x[0] === 'roster' && ui.section === 'chars') || (x[0] === 'dm' && /^(party|encounters|monsters|treasure|gen)$/.test(ui.section));
+      var on = ui.section === x[0] || (x[0] === 'roster' && ui.section === 'chars') || (x[0] === 'dm' && /^(party|encounters|monsters|treasure|gen|pf2-(party|enc|mon|loot)|mm-(party|enc|foes|loot))$/.test(ui.section));
       return '<button type="button" class="sec' + (on ? ' on' : '') + '" data-act="section" data-v="' + x[0] + '"' + (on ? ' aria-current="page"' : '') + '>' + x[1] + '</button>';
     }).join('') + '</nav>';
   }
@@ -1589,7 +1589,7 @@
     if (/^pf2-/.test(ui.section) && PFV.after) PFV.after();
     AUD.after(); Dice3D.place(); AIHelper.place(); syncHistory();
     if (fid) { var el = document.getElementById(fid); if (el && el !== document.activeElement) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } try { if (pos != null) el.setSelectionRange(pos, pos); } catch (e) { /* not text */ } } }
-    document.title = (/^pf2-/.test(ui.section) ? PFV.title(ui.section) : /^mm-(home|heroes)$/.test(ui.section) ? MMV.title(ui.section) : ui.section === 'mm-enc' ? 'M&M encounters' : ui.section === 'mm-party' ? 'M&M party' : ui.section === 'mm-foes' ? 'M&M villains' : ui.section === 'mm-loot' ? 'M&M rewards' : ui.section === 'mm-rules' ? 'M&M rules' : ui.section === 'monsters' ? 'Monsters' : ui.section === 'encounters' ? 'Encounters' : ui.section === 'party' ? 'Party' : ui.section === 'roster' ? 'Characters' : ui.section === 'treasure' ? 'Treasures' : ui.section === 'items' ? 'Magic items' : ui.section === 'gen' ? 'Generators' : ui.section === 'dm' ? 'DM' : ui.section === 'books' ? 'Books' : ui.section === 'audio' ? 'Audio' : ui.section === 'rules' ? 'House rules' : 'Home') + ' — Character Forge';
+    document.title = (/^pf2-/.test(ui.section) ? PFV.title(ui.section) : /^mm-(home|heroes)$/.test(ui.section) ? MMV.title(ui.section) : ui.section === 'mm-enc' ? 'M&M encounters' : ui.section === 'mm-party' ? 'M&M party' : ui.section === 'mm-foes' ? 'M&M villains' : ui.section === 'mm-loot' ? 'M&M rewards' : ui.section === 'mm-rules' ? 'M&M rules' : ui.section === 'monsters' ? 'Monsters' : ui.section === 'encounters' ? 'Encounters' : ui.section === 'party' ? 'Party' : ui.section === 'roster' ? 'Characters' : ui.section === 'treasure' ? 'Treasures' : ui.section === 'items' ? 'Magic items' : ui.section === 'gen' ? 'Generators' : ui.section === 'dm' ? (gameOf() === 'dnd' ? 'DM' : 'GM') : ui.section === 'books' ? 'Books' : ui.section === 'audio' ? 'Audio' : ui.section === 'rules' ? 'House rules' : 'Home') + ' — Character Forge';
     saveNow();
   }
 
@@ -2052,17 +2052,19 @@
 
   var GEN = window.GeneratorsUI({ esc: esc, btn: btn, ui: ui, store: store });
   Object.keys(GEN.actions).forEach(function (k) { actions[k] = GEN.actions[k]; });
-  var DMV = window.DMUI({ esc: esc, btn: btn, ui: ui, store: store, save: function () { save(); }, render: function () { render(); }, skills: function () { return Object.keys(D.skills); }, isHere: function () { return ui.section === 'dm'; } });
+  var DMV = window.DMUI({ esc: esc, btn: btn, ui: ui, store: store, save: function () { save(); }, render: function () { render(); }, skills: function () { return Object.keys(D.skills); }, isHere: function () { return ui.section === 'dm'; }, game: gameOf });
   Object.keys(DMV.actions).forEach(function (k) { actions[k] = DMV.actions[k]; });
   var MON = window.MonsterUI({ esc: esc, btn: btn, ui: ui, store: store, render: render });
   Object.keys(MON.actions).forEach(function (k) { actions[k] = MON.actions[k]; });
   var BOOKS = window.BooksUI({ esc: esc, btn: btn, ui: ui, store: store, render: render, pf2Book: function () { return PFV.book(); } });
   Object.keys(BOOKS.actions).forEach(function (k) { actions[k] = BOOKS.actions[k]; });
-  var MMV = window.MMUI({ esc: esc, btn: btn, ui: ui, store: store });
+  var TP = window.TablePanel({ esc: esc, btn: btn, ui: ui, store: store, save: function () { save(); }, render: function () { render(); } });
+  Object.keys(TP.actions).forEach(function (k) { actions[k] = TP.actions[k]; });
+  var MMV = window.MMUI({ esc: esc, btn: btn, ui: ui, store: store, tp: TP });
   AIHelper.setContext(aiContext);
   Object.keys(MMV.actions).forEach(function (k) { actions[k] = MMV.actions[k]; });
   var MME = window.MMEnc({ esc: esc, btn: btn, ui: ui, store: store });
-  var PFV = window.PF2UI({ esc: esc, btn: btn, ui: ui, store: store, render: function () { render(); } });
+  var PFV = window.PF2UI({ esc: esc, btn: btn, ui: ui, store: store, tp: TP, render: function () { render(); } });
   Object.keys(PFV.actions).forEach(function (k) { actions[k] = PFV.actions[k]; });
   Object.keys(MME.actions).forEach(function (k) { actions[k] = MME.actions[k]; });
   var AUD = window.AudioUI({ esc: esc, btn: btn, ui: ui, store: store, game: gameOf });
@@ -2082,6 +2084,7 @@
   });
   document.addEventListener('input', function (e) {
     var t = e.target, a = function (n) { return t.getAttribute(n); };
+    if (TP.onInput(t)) return;
     if (ui.section === 'books' || ui.section === 'mm-rules') { var bk = BOOKS.onInput(t); if (bk === 'render') render(); if (bk) return; }
     if (/^pf2-/.test(ui.section)) { var pi = PFV.onInput(t); if (pi === 'render') render(); else if (pi) save(); if (pi) return; }
     if (/^mm-(enc|party|foes|loot)$/.test(ui.section)) { var me = MME.onInput(t); if (me === 'render') render(); else if (me) save(); if (me) return; }
@@ -2113,6 +2116,7 @@
   document.addEventListener('change', function (e) {
     var t = e.target, a = function (n) { return t.getAttribute(n); };
     if (t.id === 'bookFile') return BOOKS.importFile(t);
+    if (t.getAttribute && t.getAttribute('data-tp')) return;
     if (t.getAttribute && t.getAttribute('data-magic') != null && ch) { ch.magic = ch.magic || {}; var mv = +t.value || 0; if (mv) ch.magic[t.getAttribute('data-magic')] = mv; else delete ch.magic[t.getAttribute('data-magic')]; render(); return; }
     if (t.getAttribute && t.getAttribute('data-booston') != null && ch) { ch.boostOn = ch.boostOn || {}; ch.boostOn[t.getAttribute('data-booston')] = t.value; render(); return; }
     if (ui.section === 'books' || ui.section === 'mm-rules') { if (BOOKS.onChange(t)) { render(); return; } }
