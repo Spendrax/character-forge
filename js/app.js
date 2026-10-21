@@ -595,12 +595,15 @@
     if (!ui.tping || ui.tping === 'wait') return '';
     var J = (store.tableJoin || {})[ch.id], S = ui.tstate;
     if (!J) return '<div class="panel compact-row"><b>📱 DM’s table</b><input type="text" inputmode="numeric" maxlength="4" id="tbl-code" data-tblcode="1" value="' + esc(ui.tblCode || '') + '" placeholder="code" style="width:5.5rem">' + btn('tblJoin', ui.tblBusy ? 'Joining…' : 'Join', {}, 'btn small primary') + (ui.tblMsg ? '<span class="small ' + (ui.tblBusy ? 'muted' : 'bad') + '">' + esc(ui.tblMsg) + '</span>' : '') + '</div>';
+    Table.setCreds(J.code, J.id, J.token);
     Table.watch(J.code, function (st, err) {
       if (!st) { delete store.tableJoin[ch.id]; ui.tstate = null; ui.tblMsg = 'The table was closed.'; save(); render(); return; }
       var me = st.players.filter(function (p) { return p.id === J.id; })[0];
       if (!me) { delete store.tableJoin[ch.id]; ui.tstate = null; ui.tblMsg = 'The DM removed you from the table.'; save(); render(); return; }
       var mine = st.turn && st.turn.trim().toLowerCase() === String(me.name).trim().toLowerCase();
       if (mine && !(ui.tstate && ui.tstate.turn === st.turn && ui.tstate.round === st.round) && navigator.vibrate) navigator.vibrate([120, 80, 120]);
+      var news = (st.msgs || []).length + (st.asks || []).length + (st.handouts || []).length, was = ui.tstate ? (ui.tstate.msgs || []).length + (ui.tstate.asks || []).length + (ui.tstate.handouts || []).length : news;
+      if (news > was && navigator.vibrate) navigator.vibrate(150);
       if ((me.gifts || []).length > (((ui.tstate && ui.tstate.players.filter(function (p) { return p.id === J.id; })[0]) || {}).gifts || []).length && navigator.vibrate) navigator.vibrate(200);
       ui.tstate = st; render();
     });
@@ -618,7 +621,36 @@
       var what = coins.concat((g.items || []).map(function (i) { return String(i.n || 'an item'); }));
       h += '<div class="tbl-gift">🎁 <b>From the DM:</b> ' + esc(what.join(', ') || 'nothing') + '<div class="toolbar">' + btn('tblGift', 'Add to ' + esc(ch.name || 'my character'), { v: g.gid }, 'btn small primary') + btn('tblGiftNo', 'Not for me', { v: g.gid }, 'btn small') + '</div></div>';
     });
+    h += tableDmHtml(J, S);
+    sendStatus(J);
     return h + (ui.tblMsg ? '<p class="small rest-msg">' + esc(ui.tblMsg) + '</p>' : '') + '</div>';
+  }
+  // what the DM sent this player: roll requests, handouts and messages, and a box to answer
+  function askBonus(a) { return a.kind === 'save' ? (d.saves[a.key] || {}).total || 0 : a.kind === 'skill' ? (d.skills[a.key] || {}).total || 0 : ((d.abilities || {})[a.key] || {}).mod || 0; }
+  function tableDmHtml(J, S) {
+    var h = '';
+    (S.asks || []).forEach(function (a) {
+      var r = a.ans[J.id], b = askBonus(a);
+      h += '<div class="tbl-gift">🎲 <b>The DM asks: ' + esc(a.label) + '</b>' + (a.dc ? ' <span class="small">DC ' + a.dc + '</span>' : '') +
+        (r ? '<div class="small">You sent <b>' + r.total + '</b>' + (r.ok == null ? '' : r.ok ? ' <span class="good">success</span>' : ' <span class="bad">fail</span>') + '</div>'
+          : '<div class="toolbar">' + btn('tblAskRoll', '🎲 Roll (' + R.fmt(b) + ')', { v: a.rid }, 'btn small primary') + '<span class="small">or I rolled</span><input type="number" id="tbl-ans-' + a.rid + '" data-tblans="' + a.rid + '" value="' + esc((ui.tblAns || {})[a.rid] || '') + '" placeholder="total" style="width:5rem">' + btn('tblAskSend', 'Send', { v: a.rid }, 'btn small') + '</div>') + '</div>';
+    });
+    (S.handouts || []).slice().reverse().forEach(function (x) {
+      var img = Table.handoutImg(x.hid);
+      h += '<div class="tbl-gift tbl-handout">📜 <b>' + esc(x.title || 'Handout from the DM') + '</b>' + (img ? '<button type="button" class="tbl-ho-img" data-act="tblHoBig" data-v="' + esc(x.hid) + '"><img src="' + img + '" alt="' + esc(x.title || 'Handout') + '"></button>' : '<span class="small muted"> loading…</span>') + '</div>';
+    });
+    if (ui.tblHoBig && Table.handoutImg(ui.tblHoBig)) h += '<button type="button" class="tbl-ho-big" data-act="tblHoBig" data-v="" aria-label="Close"><img src="' + Table.handoutImg(ui.tblHoBig) + '" alt="Handout"></button>';
+    var msgs = (S.msgs || []).slice(-8);
+    h += '<details class="tbl-chat"' + (ui.tblChat || msgs.length && msgs[msgs.length - 1].from === 'dm' ? ' open' : '') + '><summary><b>✉ Messages</b>' + (msgs.length ? ' <span class="small muted">(' + msgs.length + ')</span>' : '') + '</summary>' +
+      (msgs.length ? '<ul class="dm-msgs">' + msgs.map(function (m) { var mine = m.from === J.id; return '<li class="' + (mine ? 'out' : 'in') + '"><span class="small muted">' + (mine ? 'You, to the DM' : m.to === 'all' ? 'DM, to everyone' : 'DM, just for you') + '</span><div>' + esc(m.text).replace(/\n/g, '<br>') + '</div></li>'; }).join('') + '</ul>' : '') +
+      '<div class="toolbar"><input type="text" id="tbl-say" data-tblsay="1" value="' + esc(ui.tblSay || '') + '" placeholder="Message the DM (only they see it)" style="flex:1;min-width:10rem">' + btn('tblSay', 'Send', {}, 'btn small') + '</div></details>';
+    return h;
+  }
+  // tell the DM how this character is doing, when it changes
+  function sendStatus(J) {
+    var T = ch.track || {}, st = { hp: T.hp == null ? d.hp : T.hp, max: d.hp, temp: +T.temp || 0, ac: d.ac, conds: Object.keys(T.conds || {}).concat(+T.exh ? ['Exhaustion ' + T.exh] : []), conc: T.conc || '' };
+    var k = J.code + JSON.stringify(st); if (ui.tblSent === k) return; ui.tblSent = k;
+    Table.status(J.code, st).catch(function () { ui.tblSent = ''; });
   }
   // take what the DM sent: coins into the purse, items into the inventory (only plain fields are kept)
   function takeGift(g) {
@@ -1491,15 +1523,14 @@
   }
   function sectionNav() {
     var list = gameOf() === 'pf2' ? [['pf2-home', '⌂ Home'], ['pf2-chars', 'Characters'], ['pf2-party', 'Party'], ['pf2-enc', 'Encounters'], ['pf2-mon', 'Monsters'], ['pf2-loot', 'Treasures'], ['books', 'Books'], ['pf2-rules', 'Rules'], ['audio', 'Audio'], ['rules', 'House rules']] : gameOf() === 'mm' ? [['mm-home', '⌂ Home'], ['mm-heroes', 'Heroes'], ['mm-party', 'Party'], ['mm-enc', 'Encounters'], ['mm-foes', 'Villains'], ['mm-loot', 'Rewards'], ['mm-rules', 'Rules'], ['audio', 'Audio'], ['rules', 'House rules']]
-      : [['home', '⌂ Home'], ['roster', 'Characters'], ['monsters', 'Monsters'], ['party', 'Party'], ['encounters', 'Encounters'], ['treasure', 'Treasures'], ['items', 'Magic items'], ['gen', 'Generators'], ['books', 'Books'], ['audio', 'Audio'], ['rules', 'House rules']];
+      : [['home', '⌂ Home'], ['roster', 'Characters'], ['dm', 'DM'], ['items', 'Magic items'], ['books', 'Books'], ['audio', 'Audio'], ['rules', 'House rules']];
     return '<nav class="sections" aria-label="Sections">' + list.map(function (x) {
-      var on = ui.section === x[0] || (x[0] === 'roster' && ui.section === 'chars');
+      var on = ui.section === x[0] || (x[0] === 'roster' && ui.section === 'chars') || (x[0] === 'dm' && /^(party|encounters|monsters|treasure|gen)$/.test(ui.section));
       return '<button type="button" class="sec' + (on ? ' on' : '') + '" data-act="section" data-v="' + x[0] + '"' + (on ? ' aria-current="page"' : '') + '>' + x[1] + '</button>';
     }).join('') + '</nav>';
   }
   function homeHtml() {
-    var hub = window.homeHub([['roster', 'sword', 'Characters'], ['party', 'campfire', 'Party'], ['encounters', 'swords', 'Encounters'], ['monsters', 'dragon', 'Monsters'],
-      ['treasure', 'coins', 'Treasures'], ['items', 'potion', 'Magic items'], ['gen', 'sparkle', 'Generators'], ['books', 'book', 'Books'], ['audio', 'lute', 'Audio'], ['rules', 'scroll', 'House rules']]);
+    var hub = window.homeHub([['roster', 'sword', 'Characters'], ['dm', 'eye', 'DM'], ['items', 'potion', 'Magic items'], ['books', 'book', 'Books'], ['audio', 'lute', 'Audio'], ['rules', 'scroll', 'House rules']]);
     return '<main class="home"><h1>Dungeons &amp; Dragons 5e</h1><p class="muted">Your table companion (2014 rules). Tap the d20 to roll.</p>' + hub + '</main>';
   }
   // House rules: short titled notes for the table, searchable; saved with the characters.
@@ -1548,7 +1579,7 @@
     var keep = scrollState();
     var top = '<header class="top">' + btn('section', 'Character Forge', { v: gameOf() === 'mm' ? 'mm-home' : gameOf() === 'pf2' ? 'pf2-home' : 'home' }, 'brand linkish') + gameSwitch() + sectionNav() + '<span class="spacer"></span>' +
       themeBtn() + '<button type="button" class="btn" data-act="undo" title="Undo (Ctrl+Z)"' + (undoStack.length ? '' : ' disabled') + '>↶ Undo</button>' + (isInstalledApp() ? '' : btn('install', 'Install app', {}, installPrompt ? 'btn primary' : 'btn')) + '</header>';
-    var body = /^pf2-/.test(ui.section) ? PFV.html(ui.section) : /^mm-(home|heroes)$/.test(ui.section) ? MMV.html(ui.section) : ui.section === 'mm-enc' ? MME.html() : ui.section === 'mm-party' ? MME.partyPage() : ui.section === 'mm-foes' ? MME.foesPage() : ui.section === 'mm-loot' ? MME.lootPage() : ui.section === 'mm-rules' ? BOOKS.html() : ui.section === 'monsters' ? '<main class="mon-main">' + MON.html() + '</main>' : ui.section === 'encounters' ? ENC.html() : ui.section === 'party' ? ENC.partyPage() : ui.section === 'roster' ? rosterHtml() : ui.section === 'treasure' ? TRE.html() : ui.section === 'items' ? itemsPage() : ui.section === 'gen' ? GEN.html() : ui.section === 'books' ? BOOKS.html() : ui.section === 'audio' ? AUD.html() : ui.section === 'rules' ? rulesHtml() : homeHtml();
+    var body = /^pf2-/.test(ui.section) ? PFV.html(ui.section) : /^mm-(home|heroes)$/.test(ui.section) ? MMV.html(ui.section) : ui.section === 'mm-enc' ? MME.html() : ui.section === 'mm-party' ? MME.partyPage() : ui.section === 'mm-foes' ? MME.foesPage() : ui.section === 'mm-loot' ? MME.lootPage() : ui.section === 'mm-rules' ? BOOKS.html() : ui.section === 'monsters' ? '<main class="mon-main">' + MON.html() + '</main>' : ui.section === 'encounters' ? ENC.html() : ui.section === 'party' ? ENC.partyPage() : ui.section === 'roster' ? rosterHtml() : ui.section === 'treasure' ? TRE.html() : ui.section === 'items' ? itemsPage() : ui.section === 'gen' ? GEN.html() : ui.section === 'dm' ? DMV.html() : ui.section === 'books' ? BOOKS.html() : ui.section === 'audio' ? AUD.html() : ui.section === 'rules' ? rulesHtml() : homeHtml();
     setApp(top + installHelpHtml() + xferInHtml() + (ui.tblHint ? '<p class="panel small rest-msg">📱 Table ' + ui.tblHint + ': open your character, go to its Session page and tap Join. ' + btn('tblHintOk', 'OK', {}, 'btn tiny') + '</p>' : '') + (ui.xferDone && ui.section === 'roster' ? '<p class="panel small rest-msg">' + esc(ui.xferDone) + '</p>' : '') + body);
     if (ui.mon && ui.mon.scrollTop) { ui.mon.scrollTop = false; var r = document.querySelector('.mon-right'); if (r && window.innerWidth < 800) r.scrollIntoView(); else window.scrollTo(0, 0); }
     else restoreScroll(keep);
@@ -1558,7 +1589,7 @@
     if (/^pf2-/.test(ui.section) && PFV.after) PFV.after();
     AUD.after(); Dice3D.place(); AIHelper.place(); syncHistory();
     if (fid) { var el = document.getElementById(fid); if (el && el !== document.activeElement) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } try { if (pos != null) el.setSelectionRange(pos, pos); } catch (e) { /* not text */ } } }
-    document.title = (/^pf2-/.test(ui.section) ? PFV.title(ui.section) : /^mm-(home|heroes)$/.test(ui.section) ? MMV.title(ui.section) : ui.section === 'mm-enc' ? 'M&M encounters' : ui.section === 'mm-party' ? 'M&M party' : ui.section === 'mm-foes' ? 'M&M villains' : ui.section === 'mm-loot' ? 'M&M rewards' : ui.section === 'mm-rules' ? 'M&M rules' : ui.section === 'monsters' ? 'Monsters' : ui.section === 'encounters' ? 'Encounters' : ui.section === 'party' ? 'Party' : ui.section === 'roster' ? 'Characters' : ui.section === 'treasure' ? 'Treasures' : ui.section === 'items' ? 'Magic items' : ui.section === 'gen' ? 'Generators' : ui.section === 'books' ? 'Books' : ui.section === 'audio' ? 'Audio' : ui.section === 'rules' ? 'House rules' : 'Home') + ' — Character Forge';
+    document.title = (/^pf2-/.test(ui.section) ? PFV.title(ui.section) : /^mm-(home|heroes)$/.test(ui.section) ? MMV.title(ui.section) : ui.section === 'mm-enc' ? 'M&M encounters' : ui.section === 'mm-party' ? 'M&M party' : ui.section === 'mm-foes' ? 'M&M villains' : ui.section === 'mm-loot' ? 'M&M rewards' : ui.section === 'mm-rules' ? 'M&M rules' : ui.section === 'monsters' ? 'Monsters' : ui.section === 'encounters' ? 'Encounters' : ui.section === 'party' ? 'Party' : ui.section === 'roster' ? 'Characters' : ui.section === 'treasure' ? 'Treasures' : ui.section === 'items' ? 'Magic items' : ui.section === 'gen' ? 'Generators' : ui.section === 'dm' ? 'DM' : ui.section === 'books' ? 'Books' : ui.section === 'audio' ? 'Audio' : ui.section === 'rules' ? 'House rules' : 'Home') + ' — Character Forge';
     saveNow();
   }
 
@@ -1845,6 +1876,10 @@
     tblWant: function (v) { var J = (store.tableJoin || {})[ch.id], S = ui.tstate, c = S && (S.claims || []).filter(function (x) { return x.key === v; })[0]; if (!J || !c) return; var on = c.wants.indexOf(J.id) < 0; Table.want(J.code, J.id, J.token, v, on).catch(function () {}); c.wants = on ? c.wants.concat([J.id]) : c.wants.filter(function (x) { return x !== J.id; }); },
     tblGiftNo: function (v) { var J = (store.tableJoin || {})[ch.id], S = ui.tstate, me = J && S && S.players.filter(function (p) { return p.id === J.id; })[0]; if (!J) return; Table.ackGift(J.code, J.id, J.token, v).catch(function () {}); if (me) me.gifts = (me.gifts || []).filter(function (x) { return x.gid !== v; }); },
     tblHintOk: function () { ui.tblHint = ''; },
+    tblAskRoll: function (v) { var J = (store.tableJoin || {})[ch.id], a = J && ui.tstate && (ui.tstate.asks || []).filter(function (x) { return x.rid === v; })[0]; if (!a) return; var r = 1 + Math.floor(Math.random() * 20), tot = r + askBonus(a); a.ans[J.id] = { total: tot, roll: r, ok: a.dc ? tot >= a.dc : null }; Table.answer(J.code, v, tot, r).catch(function (e) { ui.tblMsg = e.message; render(); }); },
+    tblAskSend: function (v) { var J = (store.tableJoin || {})[ch.id], a = J && ui.tstate && (ui.tstate.asks || []).filter(function (x) { return x.rid === v; })[0], el = document.getElementById('tbl-ans-' + v), n = el ? el.value : (ui.tblAns || {})[v]; if (!a || n === '' || n == null || isNaN(+n)) return false; a.ans[J.id] = { total: +n, roll: null, ok: a.dc ? +n >= a.dc : null }; Table.answer(J.code, v, +n, null).catch(function (e) { ui.tblMsg = e.message; render(); }); },
+    tblSay: function () { var J = (store.tableJoin || {})[ch.id], el = document.getElementById('tbl-say'), tx = (el ? el.value : ui.tblSay || '').trim(); if (!J || !tx) return false; ui.tblSay = ''; ui.tblChat = true; Table.message(J.code, tx).catch(function (e) { ui.tblMsg = e.message; render(); }); },
+    tblHoBig: function (v) { ui.tblHoBig = v || ''; },
     tblLeave: function () { if (store.tableJoin) delete store.tableJoin[ch.id]; Table.stop(); ui.tstate = null; ui.tblMsg = ''; },
     tblRoll: function () { var r = 1 + Math.floor(Math.random() * 20); ui.tblMsg = 'Rolled ' + r + ' ' + R.fmt(d.init) + ' = ' + (r + d.init) + '.'; sendInit(r + d.init); return false; },
     tblSend: function () { var v = parseInt(ui.tblMine, 10); if (isNaN(v)) { ui.tblMsg = 'Type the total you rolled (die + bonus).'; return; } ui.tblMsg = ''; sendInit(v); return false; },
@@ -2017,6 +2052,8 @@
 
   var GEN = window.GeneratorsUI({ esc: esc, btn: btn, ui: ui, store: store });
   Object.keys(GEN.actions).forEach(function (k) { actions[k] = GEN.actions[k]; });
+  var DMV = window.DMUI({ esc: esc, btn: btn, ui: ui, store: store, save: function () { save(); }, render: function () { render(); }, skills: function () { return Object.keys(D.skills); }, isHere: function () { return ui.section === 'dm'; } });
+  Object.keys(DMV.actions).forEach(function (k) { actions[k] = DMV.actions[k]; });
   var MON = window.MonsterUI({ esc: esc, btn: btn, ui: ui, store: store, render: render });
   Object.keys(MON.actions).forEach(function (k) { actions[k] = MON.actions[k]; });
   var BOOKS = window.BooksUI({ esc: esc, btn: btn, ui: ui, store: store, render: render, pf2Book: function () { return PFV.book(); } });
@@ -2054,6 +2091,9 @@
     if (t.getAttribute && t.getAttribute('data-tblmine')) { ui.tblMine = t.value; return; }
     if (ui.section === 'audio') { var au = AUD.onInput(t); if (au === 'render') render(); if (au) return; }
     if (ui.section === 'gen') { var gr = GEN.onInput(t); if (gr) { render(); return; } }
+    if (ui.section === 'dm') { var dr = DMV.onInput(t); if (dr === 'render') render(); if (dr) return; }
+    if (t.getAttribute && t.getAttribute('data-tblsay')) { ui.tblSay = t.value; return; }
+    if (t.getAttribute && t.getAttribute('data-tblans')) { ui.tblAns = ui.tblAns || {}; ui.tblAns[t.getAttribute('data-tblans')] = t.value; return; }
     if (ui.section === 'treasure') { var tr = TRE.onInput(t); if (tr === 'render') render(); else if (tr) save(); if (tr) return; }
     if (ui.section === 'encounters' || ui.section === 'party') { var er = ENC.onInput(t); if (er === 'render') render(); else if (er) save(); if (er) return; }
     if (a('data-mon') != null || a('data-mymon') != null) { var mr = MON.onInput(t); if (mr === 'render') render(); else save(); return; }
@@ -2080,6 +2120,8 @@
     if (/^mm-(enc|party|foes|loot)$/.test(ui.section)) { var mec = MME.onChange(t); if (mec) { requestRender(); return; } }
     if (ui.section === 'mm-heroes') { var mc = MMV.onChange(t); if (mc) { requestRender(); return; } } // wait for the tap that moved focus
     if (ui.section === 'encounters' || ui.section === 'party') { var ec = ENC.onChange(t); if (ec) { render(); return; } if (a('data-enc') != null) return; }
+    if (ui.section === 'dm') { var dc = DMV.onChange(t); if (dc === 'render') render(); if (dc) return; }
+    if (a('data-tblsay') || a('data-tblans')) return;
     if (a('data-mon') != null) return;
     if (a('data-mymon') != null) { if (t.tagName === 'SELECT') return; return setTimeout(function () { var f = document.activeElement; if (!f || !f.getAttribute || f.getAttribute('data-mymon') == null) requestRender(); }, 0); }
     if (t.id === 'importFile') return importFile(t);
@@ -2294,7 +2336,7 @@
   takeSharedFile();
   checkXferLink();
   function checkTableLink() {
-    if (location.hash === '#dm') { store.game = 'dnd'; ui.section = 'encounters'; try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { /* ignore */ } render(); return; }
+    if (location.hash === '#dm') { store.game = 'dnd'; ui.section = 'dm'; try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { /* ignore */ } render(); return; }
     var m = String(location.hash || '').match(/^#table=(\d{4})$/); if (m) { ui.tblCode = m[1]; ui.tblHint = m[1]; try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { /* ignore */ } render(); } }
   checkTableLink(); window.addEventListener('hashchange', checkTableLink);
   window.addEventListener('hashchange', checkXferLink);
