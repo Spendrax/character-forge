@@ -1751,15 +1751,7 @@
               esc(s.dmg) +
               (s.extra.length ? ' + ' + esc(s.extra.join(', ')) : '') +
               '</button>' +
-              (s.cond.length
-                ? '<label class="check-line small"><input type="checkbox" data-pfcondmg="' +
-                  i +
-                  '"' +
-                  ((U.cdmg || {})[i] ? ' checked' : '') +
-                  '> Add ' +
-                  esc(s.cond.join(', ')) +
-                  '</label>'
-                : '') +
+              (s.cond.length ? condBox(s, i) : '') +
               '</div></div>'
             );
           })
@@ -2311,6 +2303,26 @@
     }
 
     // ----- Offense -----
+    // extra damage that only counts sometimes, like Sneak Attack (the target must be off-guard): a box to tick
+    function condBox(s, i) {
+      var sa = s.cond.filter(function (c) {
+          return /Sneak Attack/.test(c);
+        }),
+        label = sa.length
+          ? '<b>Sneak Attack</b> +' +
+            esc(sa[0].replace(/ ?Sneak Attack$/, '')) +
+            ' <span class="muted">(target off-guard)</span>'
+          : 'Add ' + esc(s.cond.join(', '));
+      return (
+        '<label class="check-line small pf-sneak"><input type="checkbox" data-pfcondmg="' +
+        i +
+        '"' +
+        ((U.cdmg || {})[i] ? ' checked' : '') +
+        '> <span>' +
+        label +
+        '</span></label>'
+      );
+    }
     function offenseTab(ch, d) {
       var at = d.attackRanks,
         special = Object.keys(at).filter(function (k) {
@@ -2393,16 +2405,9 @@
               '">Damage ' +
               esc(s.dmg) +
               (s.extra.length ? ' + ' + esc(s.extra.join(', ')) : '') +
+              ((U.cdmg || {})[i] && s.cond.length ? ' <b>+ ' + esc(s.cond.join(', ')) + '</b>' : '') +
               '</button>' +
-              (s.cond.length
-                ? '<label class="check-line small"><input type="checkbox" data-pfcondmg="' +
-                  i +
-                  '"' +
-                  ((U.cdmg || {})[i] ? ' checked' : '') +
-                  '> Add ' +
-                  esc(s.cond.join(', ')) +
-                  '</label>'
-                : '') +
+              (s.cond.length ? condBox(s, i) : '') +
               '</div>' +
               (gi >= 0
                 ? '<div class="toolbar">' +
@@ -3399,7 +3404,11 @@
         };
         s.extra.forEach(add);
         if ((U.cdmg || {})[v]) s.cond.forEach(add);
-        root.Dice3D.roll(counts, s.bonus);
+        root.Dice3D.roll(
+          counts,
+          s.bonus,
+          s.n + ' damage' + ((U.cdmg || {})[v] && s.cond.length ? ' + ' + s.cond.join(', ') : '')
+        );
         return false;
       },
       pfQty: function (v, el) {

@@ -237,36 +237,94 @@
     if (!/^[\d\s+\-*/().,a-z]*$/.test(t)) return 0;
     if (/[a-z]/.test(t.replace(/\b(ternary|gte|gt|lte|lt|eq|max|min|floor|ceil|abs)\b/g, ''))) return 0;
     try {
-      return (
-        Function('ternary,gte,gt,lte,lt,eq,max,min,floor,ceil,abs', 'return (' + t + ');')(
-          function (c, a, b) {
-            return c ? a : b;
-          },
-          function (a, b) {
-            return a >= b;
-          },
-          function (a, b) {
-            return a > b;
-          },
-          function (a, b) {
-            return a <= b;
-          },
-          function (a, b) {
-            return a < b;
-          },
-          function (a, b) {
-            return a === b;
-          },
-          Math.max,
-          Math.min,
-          Math.floor,
-          Math.ceil,
-          Math.abs
-        ) || 0
-      );
+      return Number(calc(t)) || 0;
     } catch (e) {
       return 0;
     }
+  }
+  // A small calculator for the rules' formulas: numbers, + − × ÷, brackets and a few functions.
+  // (Not Function() or eval: the page's security policy forbids running text as code.)
+  var FN = {
+    ternary: function (c, a, b) {
+      return c ? a : b;
+    },
+    gte: function (a, b) {
+      return a >= b;
+    },
+    gt: function (a, b) {
+      return a > b;
+    },
+    lte: function (a, b) {
+      return a <= b;
+    },
+    lt: function (a, b) {
+      return a < b;
+    },
+    eq: function (a, b) {
+      return a === b;
+    },
+    max: Math.max,
+    min: Math.min,
+    floor: Math.floor,
+    ceil: Math.ceil,
+    abs: Math.abs
+  };
+  function calc(src) {
+    var toks = String(src).match(/\d+(?:\.\d+)?|[a-z]+|[-+*/(),]/g) || [],
+      i = 0;
+    var peek = function () {
+        return toks[i];
+      },
+      take = function (x) {
+        if (x && toks[i] !== x) throw new Error('expected ' + x);
+        return toks[i++];
+      };
+    function sum() {
+      var v = product();
+      while (peek() === '+' || peek() === '-') v = take() === '+' ? v + product() : v - product();
+      return v;
+    }
+    function product() {
+      var v = unary();
+      while (peek() === '*' || peek() === '/') v = take() === '*' ? v * unary() : v / unary();
+      return v;
+    }
+    function unary() {
+      if (peek() === '-') {
+        take();
+        return -unary();
+      }
+      if (peek() === '+') {
+        take();
+        return unary();
+      }
+      return atom();
+    }
+    function atom() {
+      var t = take();
+      if (t == null) throw new Error('end');
+      if (t === '(') {
+        var v = sum();
+        take(')');
+        return v;
+      }
+      if (/^\d/.test(t)) return +t;
+      if (!FN[t]) throw new Error('unknown ' + t);
+      take('(');
+      var args = [];
+      if (peek() !== ')') {
+        args.push(sum());
+        while (peek() === ',') {
+          take();
+          args.push(sum());
+        }
+      }
+      take(')');
+      return FN[t].apply(null, args);
+    }
+    var v = sum();
+    if (i !== toks.length) throw new Error('extra');
+    return v;
   }
 
   // ---------- predicates ("feat:toughness", {"gte": ["self:level", 11]}, {"not": ...}) ----------
