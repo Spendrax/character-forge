@@ -313,6 +313,7 @@
       var tough = d.def.tough - bruise;
       var who = { key: h.id, name: h.name, init: d.init,
         bonus: function (a) { return a.kind === 'def' ? d.def[a.key] - (a.key === 'tough' ? bruise : 0) : a.kind === 'skill' ? (d.skills[a.key] || {}).total || 0 : a.kind === 'ab' ? d.ab[a.key] || 0 : 0; },
+        take: function (g) { var n = (g.items || []).slice(0, 20).filter(function (i) { return i && i.n; }).map(function (i) { return '- ' + String(i.n).slice(0, 80) + (i.note ? ': ' + String(i.note).slice(0, 200) : ''); }); if (n.length) h.notes = (h.notes ? h.notes + '\n\n' : '') + 'From the GM:\n' + n.join('\n'); },
         status: function () { return { hp: 0, max: 0, ac: 0, conds: Object.keys(on).concat(T.dmg ? [TRACK[T.dmg]] : []), txt: 'Toughness ' + fmt(tough) + (bruise ? ' (' + bruise + ' bruise' + (bruise > 1 ? 's' : '') + ')' : '') + ' · ' + hp + ' hero point' + (hp === 1 ? '' : 's') }; } };
       var out = '<h2>Session</h2>' + (api.tp ? api.tp.html(who) : '') + '<div class="panel"><h3>Hero points</h3><div class="toolbar">' + btn('mmHp', '−', { v: -1 }, 'btn') + '<b class="mm-hpts">' + hp + '</b>' + btn('mmHp', '+', { v: 1 }, 'btn') +
         '<span class="small muted">Spend one to reroll (a roll under 11 counts as 10 + the roll), to edit a scene, to recover, or for an instant counter. You get one when a complication causes trouble; back to 1 each adventure.</span></div></div>';

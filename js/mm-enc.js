@@ -242,8 +242,8 @@
     function startRun() {
       var e = E(), list = [];
       e.foes.forEach(function (h) { if (h.pre) { var f = preFoe(h.pre); if (f) list.push({ k: h.id, n: h.name, foe: true, minion: h.minion, init: 1 + R(20) + f.init, mod: f.init, tough: defOf(f.def[3]), bruise: 0, cond: '', dodge: defOf(f.def[0]), parry: defOf(f.def[1]) }); return; } var d = MR.derive(h); list.push({ k: h.id, n: h.name, foe: true, minion: h.minion, init: 1 + R(20) + d.init, mod: d.init, tough: d.def.tough, bruise: 0, cond: '', dodge: d.def.dodge, parry: d.def.parry }); });
-      var t = teamById(e.team); if (t) t.m.forEach(function (m) { list.push({ k: m.id, n: m.n || 'Hero', team: t.id, init: 1 + R(20), mod: 0, tough: +m.tough || 0, bruise: +m.bruise || 0, cond: m.cond || '', dodge: +m.dodge || 0, parry: +m.parry || 0 }); });
-      (store.mm && store.mm.heroes || []).filter(function (h) { return (U.fighting || {})[h.id]; }).forEach(function (h) { var d = MR.derive(h); list.push({ k: h.id, n: h.name || 'Hero', init: 1 + R(20) + d.init, mod: d.init, tough: d.def.tough, bruise: 0, cond: '', dodge: d.def.dodge, parry: d.def.parry }); });
+      var t = teamById(e.team); if (t) t.m.forEach(function (m) { list.push({ k: m.id, n: m.n || 'Hero', pc: true, team: t.id, init: 1 + R(20), mod: 0, tough: +m.tough || 0, bruise: +m.bruise || 0, cond: m.cond || '', dodge: +m.dodge || 0, parry: +m.parry || 0 }); });
+      (store.mm && store.mm.heroes || []).filter(function (h) { return (U.fighting || {})[h.id]; }).forEach(function (h) { var d = MR.derive(h); list.push({ k: h.id, n: h.name || 'Hero', pc: true, init: 1 + R(20) + d.init, mod: d.init, tough: d.def.tough, bruise: 0, cond: '', dodge: d.def.dodge, parry: d.def.parry }); });
       list.sort(function (x, y) { return y.init - x.init || y.mod - x.mod; });
       e.run = { list: list, turn: 0, round: 1, log: '' };
     }
@@ -261,7 +261,8 @@
     }
     function writeBack(c) { var t = c && c.team && teamById(c.team), m = t && t.m.filter(function (x) { return x.id === c.k; })[0]; if (m) { m.bruise = c.bruise; m.cond = c.cond; } }
     function runHtml() {
-      var run = E().run;
+      var run = E().run, TB = root.Table, hi = TB && TB.hostInfo && TB.hostInfo(), blank = { tough: 0, bruise: 0, cond: '', dodge: 0, parry: 0 };
+      if (hi) { TB.watch(hi.code, function (st) { if (st && TB.mergeRun(E().run, st, blank)) api.render && api.render(); }, 'mmenc'); TB.mergeRun(run, hi.state, blank); }
       return '<div class="panel enc-run"><div class="toolbar" style="margin:0"><h3 style="margin:0">Round ' + run.round + '</h3><span class="spacer"></span>' + btn('mmeNext', 'Next turn ▶', {}, 'btn primary') + btn('mmeStop', 'End fight', {}, 'btn') + '</div>' +
         (run.log ? '<p class="rest-msg small">' + esc(run.log) + '</p>' : '') +
         '<p class="small muted">Type the damage rank of a hit and tap Hit: the app rolls the Toughness check (DC 15 + rank) and fills in the damage track. Minions are out after any failed check.</p>' +
@@ -323,6 +324,7 @@
       if (t) h += '<div class="panel tre-result"><h3>Found <small class="muted">' + esc((T.themes.filter(function (x) { return x[0] === t.theme; })[0] || ['', ''])[1]) + ' · PL ' + t.pl + '</small></h3><ul class="tre-list">' +
         t.items.map(function (d) { return '<li><b>' + esc(d[0]) + '</b> — ' + esc(d[2]) + '<div class="small">' + esc(d[1]) + '</div></li>'; }).join('') +
         '<li><b>A lead</b> — ' + esc(t.clue) + '</li>' + (t.cash ? '<li><b>Evidence and stolen goods</b> — enough to put the minions away and return what was taken; the grateful owners may become Contacts.</li>' : '') + '</ul></div>';
+      if (t && api.ts) h += api.ts.html(t.items.map(function (d, i) { return { key: 'i' + i, n: d[0], note: d[1] + (d[2] ? ' (' + d[2] + ')' : '') }; }).concat([{ key: 'lead', n: 'A lead', note: t.clue }]), 0, 'rewards');
       return h + '<div class="panel"><h3>Power points and hero points</h3><ul class="small">' +
         '<li>Give each hero <b>1 power point</b> per adventure (2 for a big finale); they spend them like the ones they started with.</li>' +
         '<li>Hero points go back to 1 at the start of each adventure; give one more for each complication that comes up in play.</li>' +
@@ -343,9 +345,9 @@
       mmeRm: function (v) { var e = E(); e.foes = e.foes.filter(function (x) { return x.id !== v; }); },
       mmeSave: function (v) { var h = JSON.parse(JSON.stringify(foe(v))); h.id = 'h' + uid(); store.mm = store.mm || { heroes: [], cur: '' }; store.mm.heroes.push(h); E().msg = h.name + ' is now in your Heroes, ready to edit.'; },
       mmeFight: function (v) { U.fighting = U.fighting || {}; U.fighting[v] = !U.fighting[v]; },
-      mmeRun: function () { startRun(); root.scrollTo(0, 0); },
-      mmeNext: function () { var r = E().run; for (var i = 0; i < r.list.length; i++) { r.turn++; if (r.turn >= r.list.length) { r.turn = 0; r.round++; } if (r.list[r.turn].cond !== 'Incapacitated') break; } r.log = ''; },
-      mmeStop: function () { E().run = null; },
+      mmeRun: function () { startRun(); if (root.Table) root.Table.pushRun(E().run, true); root.scrollTo(0, 0); },
+      mmeNext: function () { var r = E().run; for (var i = 0; i < r.list.length; i++) { r.turn++; if (r.turn >= r.list.length) { r.turn = 0; r.round++; } if (r.list[r.turn].cond !== 'Incapacitated') break; } r.log = ''; if (root.Table) root.Table.pushRun(r); },
+      mmeStop: function () { E().run = null; if (root.Table) root.Table.pushRun(null); },
       mmfAdd: function (v) { var f = preFoe(v), e = E(); if (!f) return; var same = e.foes.filter(function (x) { return x.pre === v; }); if (same.length === 1 && same[0].name === f.n) same[0].name = f.n + ' 1'; e.foes.push({ id: uid(), pre: v, name: f.n + (same.length ? ' ' + (same.length + 1) : ''), minion: !!f.minion, pl: f.pl }); U.added = f.n; },
       mmlSet: function (_, el) { var L = lootState(); L.pl = clamp(L.pl + +el.getAttribute('data-d'), 1, 20); },
       mmlRoll: function () { rollLoot(); },

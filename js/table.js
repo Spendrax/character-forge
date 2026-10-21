@@ -165,6 +165,26 @@
       var hh = hosted(); if (hh && hh.code === code && hh.key === key) return startHost(code, key, hh.state).then(go);
       return Promise.reject(new Error('Not the DM.'));
     },
+    // for the GM's fight trackers (run = { list: [{ k, n, init, mod, pc }], turn, round }): players' phone rolls go into
+    // the order (matched by name or a "Player N" slot, or added), and the current turn goes out to the phones
+    mergeRun: function (run, st, blank) {
+      if (!run || !st) return false;
+      var changed = false, cur = run.list[run.turn] && run.list[run.turn].k, low = function (x) { return String(x).trim().toLowerCase(); };
+      st.players.forEach(function (p) {
+        if (p.init == null) return;
+        var c = run.list.filter(function (x) { return x.phone === p.id; })[0] || run.list.filter(function (x) { return x.pc && !x.phone && low(x.n) === low(p.name); })[0];
+        if (!c) { c = run.list.filter(function (x) { return x.pc && !x.phone && /^Player \d+$/.test(x.n); })[0]; if (c) { c.n = p.name; changed = true; } }
+        if (!c) { var ps = p.status || {}; c = Object.assign({ hp: ps.hp || 0, max: ps.max || 0, ac: ps.ac || 0 }, blank, { k: 'ph' + p.id, n: p.name, pc: true, init: p.init, mod: p.bonus || 0 }); run.list.push(c); changed = true; }
+        c.phone = p.id;
+        if (c.init !== p.init) { c.init = p.init; changed = true; }
+      });
+      if (changed) { run.list.sort(function (a, b) { return b.init - a.init || (b.mod || 0) - (a.mod || 0); }); run.turn = Math.max(0, run.list.map(function (x) { return x.k; }).indexOf(cur)); root.Table.pushRun(run); }
+      return changed;
+    },
+    pushRun: function (run, start) {
+      var h = root.Table.hostInfo(); if (!h) return;
+      root.Table.dm(h.code, h.key, run ? Object.assign(start ? { open: true, reset: true } : {}, { round: run.round, turn: (run.list[run.turn] || {}).n || '' }) : { open: false, round: 0, turn: '' }).catch(function () {});
+    },
     // follow a table: the DM's own (several pages may listen, by name) or one joined as a player
     watch: function (code, cb, name) {
       var h = hosted();

@@ -314,6 +314,10 @@
       var T = trk(ch);
       return { key: ch.id, name: ch.name, init: d.perception.v,
         bonus: function (a) { if (a.kind === 'save') return (d.saves[a.key] || {}).v || 0; if (a.kind === 'perception') return d.perception.v; if (a.kind === 'skill') { var s = Object.keys(d.skills).map(function (k) { return d.skills[k]; }).filter(function (x) { return x.n === a.key; })[0]; return s ? s.v : 0; } return 0; },
+        take: function (g) {
+          var m = ch.money = ch.money || {}; ['pp', 'gp', 'sp', 'cp'].forEach(function (k) { var n = Math.max(0, Math.min(1e7, Math.floor(+(g.coins || {})[k] || 0))); if (n) m[k] = (+m[k] || 0) + n; });
+          (g.items || []).slice(0, 20).forEach(function (i) { if (!i || !i.n) return; var e = i.id && PF2.byId('items', String(i.id)); (ch.gear = ch.gear || []).push(e ? { uid: PF2.uid(), id: e.id, q: 1, worn: false, runes: {} } : { uid: PF2.uid(), id: '', custom: true, name: String(i.n).slice(0, 80), q: 1 }); });
+        },
         status: function () { return { hp: T.hp == null ? d.hp.max : T.hp, max: d.hp.max, temp: +T.temp || 0, ac: d.ac.v, conds: Object.keys(T.conds || {}).map(function (c) { return c + (T.conds[c] > 1 ? ' ' + T.conds[c] : ''); }).concat(T.dying ? ['Dying ' + T.dying] : []), conc: '' }; } };
     }
     function playTab(ch, d) {
@@ -628,7 +632,7 @@
       if (section === 'pf2-party' || section === 'pf2-enc') return root.PF2Enc ? (section === 'pf2-party' ? ENC.partyHtml() : ENC.html()) : '';
       return homeHtml();
     }
-    var ENC = root.PF2Enc ? root.PF2Enc({ esc: esc, btn: btn, ui: ui, store: store, render: render, need: need, waitHtml: waitHtml, md: md, fmt: fmt, gl: gl, traits: traits }) : { actions: {}, onInput: function () {}, onChange: function () {} };
+    var ENC = root.PF2Enc ? root.PF2Enc({ esc: esc, btn: btn, ui: ui, store: store, render: render, ts: api.ts, need: need, waitHtml: waitHtml, md: md, fmt: fmt, gl: gl, traits: traits }) : { actions: {}, onInput: function () {}, onChange: function () {} };
 
     // ---------- actions ----------
     function chg(fn) { var ch = cur(); if (ch) fn(ch); }

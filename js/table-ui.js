@@ -1,6 +1,6 @@
 // A Pathfinder or M&M character at the GM's table, from its Session tab: join with the code, initiative,
 // whose turn it is, the GM's roll requests, handouts and messages, and the character's status sent to the GM.
-// who = { key, name, init (bonus), bonus(ask) → number, status() → {hp,max,temp,ac,conds,txt} }
+// who = { key, name, init (bonus), bonus(ask) → number, status() → {hp,max,temp,ac,conds,txt}, take(gift) → adds it to the character }
 (function (root) {
   'use strict';
   root.TablePanel = function (api) {
@@ -33,6 +33,14 @@
           (r ? '<div class="small">You sent <b>' + r.total + '</b>' + (r.ok == null ? '' : r.ok ? ' <span class="good">success</span>' : ' <span class="bad">fail</span>') + '</div>'
             : '<div class="toolbar">' + btn('tpAskRoll', '🎲 Roll (' + fmt(who.bonus(a)) + ')', { v: a.rid }, 'btn small primary') + '<span class="small">or I rolled</span><input type="number" id="tp-ans-' + a.rid + '" data-tp="ans:' + a.rid + '" value="' + esc((U.ans || {})[a.rid] || '') + '" placeholder="total" style="width:5rem">' + btn('tpAskSend', 'Send', { v: a.rid }, 'btn small') + '</div>') + '</div>';
       });
+      (S.claims || []).forEach(function (c) {
+        var on = c.wants.indexOf(j.id) >= 0;
+        h += '<div class="tbl-gift">🎲 <b>' + esc(c.n) + '</b> ' + (c.result ? '<div class="small">' + esc(c.result) + '</div>' : '<span class="small muted">is up for grabs: tap if you want it, the dice decide.</span><div class="toolbar">' + btn('tpWant', on ? '✋ I’m in (tap to back out)' : 'I want it', { v: c.key }, 'btn small' + (on ? '' : ' primary')) + '</div>') + '</div>';
+      });
+      (p.gifts || []).forEach(function (g) {
+        var what = Object.keys(g.coins || {}).filter(function (k) { return +g.coins[k] > 0; }).map(function (k) { return (+g.coins[k]).toLocaleString('en') + ' ' + k; }).concat((g.items || []).map(function (i) { return String(i.n || 'an item'); }));
+        h += '<div class="tbl-gift">🎁 <b>From the GM:</b> ' + esc(what.join(', ') || 'nothing') + '<div class="toolbar">' + btn('tpGift', 'Add to ' + esc(who.name || 'my character'), { v: g.gid }, 'btn small primary') + btn('tpGiftNo', 'Not for me', { v: g.gid }, 'btn small') + '</div></div>';
+      });
       (S.handouts || []).slice().reverse().forEach(function (x) {
         var img = Table.handoutImg(x.hid);
         h += '<div class="tbl-gift tbl-handout">📜 <b>' + esc(x.title || 'Handout from the GM') + '</b>' + (img ? '<button type="button" class="tbl-ho-img" data-act="tpBig" data-v="' + esc(x.hid) + '"><img src="' + img + '" alt="' + esc(x.title || 'Handout') + '"></button>' : '<span class="small muted"> loading…</span>') + '</div>';
@@ -51,6 +59,11 @@
     function err(e) { U.msg = e.message; api.render(); }
     function answer(a, tot, roll) { var j = J(); a.ans[j.id] = { total: tot, roll: roll, ok: a.dc ? tot >= a.dc : null }; root.Table.answer(j.code, a.rid, tot, roll).catch(err); }
     function init(v) { var j = J(); root.Table.roll(j.code, j.id, j.token, v).then(function (st) { U.st = st; U.mine = ''; api.render(); }, err); }
+    function gotGift(gid, take) {
+      var j = J(), p = me(U.st), g = p && (p.gifts || []).filter(function (x) { return x.gid === gid; })[0]; if (!g) return;
+      if (take && W.take) { W.take(g); api.save(); U.msg = 'Added to ' + (W.name || 'your character') + '.'; }
+      p.gifts = p.gifts.filter(function (x) { return x !== g; }); root.Table.ackGift(j.code, j.id, j.token, gid).catch(function () {});
+    }
     var d20 = function () { return 1 + Math.floor(Math.random() * 20); };
     var actions = {
       tpJoin: function () {
@@ -67,7 +80,10 @@
       tpAskRoll: function (v) { var a = ask(v); if (!a) return; var r = d20(); answer(a, r + W.bonus(a), r); },
       tpAskSend: function (v) { var a = ask(v), n = val('tp-ans-' + v, ''); if (!a || n === '' || n == null || isNaN(+n)) return false; answer(a, +n, null); },
       tpSay: function () { var j = J(), tx = String(val('tp-say', 'say') || '').trim(); if (!j || !tx) return false; U.say = ''; U.chat = true; root.Table.message(j.code, tx).catch(err); },
-      tpBig: function (v) { U.big = v || ''; }
+      tpBig: function (v) { U.big = v || ''; },
+      tpWant: function (v) { var j = J(), c = U.st && (U.st.claims || []).filter(function (x) { return x.key === v; })[0]; if (!j || !c) return; var on = c.wants.indexOf(j.id) < 0; root.Table.want(j.code, j.id, j.token, v, on).catch(err); c.wants = on ? c.wants.concat([j.id]) : c.wants.filter(function (x) { return x !== j.id; }); },
+      tpGift: function (v) { gotGift(v, true); },
+      tpGiftNo: function (v) { gotGift(v, false); }
     };
     function onInput(t) { var k = t.getAttribute && t.getAttribute('data-tp'); if (!k) return false; if (/^ans:/.test(k)) { U.ans = U.ans || {}; U.ans[k.slice(4)] = t.value; } else U[k] = t.value; return true; }
     return { html: html, actions: actions, onInput: onInput };

@@ -2060,11 +2060,13 @@
   Object.keys(BOOKS.actions).forEach(function (k) { actions[k] = BOOKS.actions[k]; });
   var TP = window.TablePanel({ esc: esc, btn: btn, ui: ui, store: store, save: function () { save(); }, render: function () { render(); } });
   Object.keys(TP.actions).forEach(function (k) { actions[k] = TP.actions[k]; });
+  var TS = window.TableShare({ esc: esc, btn: btn, ui: ui, render: function () { render(); }, isHere: function () { return ui.section === 'pf2-loot' || ui.section === 'mm-loot'; } });
+  Object.keys(TS.actions).forEach(function (k) { actions[k] = TS.actions[k]; });
   var MMV = window.MMUI({ esc: esc, btn: btn, ui: ui, store: store, tp: TP });
   AIHelper.setContext(aiContext);
   Object.keys(MMV.actions).forEach(function (k) { actions[k] = MMV.actions[k]; });
-  var MME = window.MMEnc({ esc: esc, btn: btn, ui: ui, store: store });
-  var PFV = window.PF2UI({ esc: esc, btn: btn, ui: ui, store: store, tp: TP, render: function () { render(); } });
+  var MME = window.MMEnc({ esc: esc, btn: btn, ui: ui, store: store, ts: TS, render: function () { render(); } });
+  var PFV = window.PF2UI({ esc: esc, btn: btn, ui: ui, store: store, tp: TP, ts: TS, render: function () { render(); } });
   Object.keys(PFV.actions).forEach(function (k) { actions[k] = PFV.actions[k]; });
   Object.keys(MME.actions).forEach(function (k) { actions[k] = MME.actions[k]; });
   var AUD = window.AudioUI({ esc: esc, btn: btn, ui: ui, store: store, game: gameOf });
@@ -2117,6 +2119,7 @@
     var t = e.target, a = function (n) { return t.getAttribute(n); };
     if (t.id === 'bookFile') return BOOKS.importFile(t);
     if (t.getAttribute && t.getAttribute('data-tp')) return;
+    if (TS.onChange(t)) { render(); return; }
     if (t.getAttribute && t.getAttribute('data-magic') != null && ch) { ch.magic = ch.magic || {}; var mv = +t.value || 0; if (mv) ch.magic[t.getAttribute('data-magic')] = mv; else delete ch.magic[t.getAttribute('data-magic')]; render(); return; }
     if (t.getAttribute && t.getAttribute('data-booston') != null && ch) { ch.boostOn = ch.boostOn || {}; ch.boostOn[t.getAttribute('data-booston')] = t.value; render(); return; }
     if (ui.section === 'books' || ui.section === 'mm-rules') { if (BOOKS.onChange(t)) { render(); return; } }

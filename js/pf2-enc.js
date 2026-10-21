@@ -119,8 +119,14 @@
       e.run = { list: list, turn: 0, round: 1 };
     }
     function writeBack(c) { if (!c || !c.pm) return; var p = partyById(c.pm[0]), m = p && p.m.filter(function (x) { return x.id === c.pm[1]; })[0]; if (m) m.cur = c.hp; }
+    // the GM's table: players' initiative from their phones, and the turn shown on them
+    function phones(run, blank, name) {
+      var T = root.Table, h = T && T.hostInfo && T.hostInfo(); if (!h) return;
+      T.watch(h.code, function (st) { if (st && T.mergeRun(enc().run, st, blank)) api.render(); }, name);
+      T.mergeRun(run, h.state, blank);
+    }
     function runHtml() {
-      var run = enc().run;
+      var run = enc().run; phones(run, { cond: '' }, 'pf2enc');
       return '<div class="panel enc-run"><div class="toolbar" style="margin:0"><h3 style="margin:0">Round ' + run.round + '</h3><span class="spacer"></span>' + btn('pfeNext', 'Next turn ▶', {}, 'btn primary') + btn('pfeLoot', 'Treasure', {}, 'btn') + btn('pfeStop', 'End fight', {}, 'btn') + '</div>' +
         '<p class="small muted">Initiative is Perception + d20 (players can type their own rolls). Type damage (e.g. 12) or healing with + (e.g. +5).</p>' +
         run.list.map(function (c, i) {
@@ -218,6 +224,8 @@
           (t.vals.length ? '<h4>Gems and art</h4>' + t.vals.map(function (id, i) { return lootRow(id, 'v' + i); }).join('') : '') +
           (t.perm.length ? '<h4>Permanent items</h4>' + t.perm.map(function (id, i) { return lootRow(id, 'p' + i); }).join('') : '') +
           (t.cons.length ? '<h4>Consumables</h4>' + t.cons.map(function (id, i) { return lootRow(id, 'c' + i); }).join('') : '') + '</div>';
+        var things = []; [['v', t.vals], ['p', t.perm], ['c', t.cons]].forEach(function (g) { g[1].forEach(function (id, i) { var it = itemById(id); if (it) things.push({ key: g[0] + i, n: it.n, id: id }); }); });
+        if (api.ts) h += api.ts.html(things, t.coins, 'treasure');
       }
       return h + '<p class="small muted">Amounts from the Core Rulebook’s Party Treasure by Level table. Items are picked at random from the common' + (L.unc ? ' and uncommon' : '') + ' magic and alchemical items of each level. Fundamental runes and gear the players want are good swaps for random items.</p></main>';
     }
@@ -240,9 +248,9 @@
       pfeView: function (v) { E.view = v; },
       pfeViewClose: function () { E.view = ''; },
       pfeNear: function (v) { E.lo = String(Math.max(-1, +v - 3)); E.hi = String(+v + 3); },
-      pfeRun: function () { if (!enc().mons.length) return; startRun(); root.scrollTo(0, 0); },
-      pfeNext: function () { var r = enc().run; r.turn++; if (r.turn >= r.list.length) { r.turn = 0; r.round++; } },
-      pfeStop: function () { enc().run = null; },
+      pfeRun: function () { if (!enc().mons.length) return; startRun(); if (root.Table) root.Table.pushRun(enc().run, true); root.scrollTo(0, 0); },
+      pfeNext: function () { var r = enc().run; r.turn++; if (r.turn >= r.list.length) { r.turn = 0; r.round++; } if (root.Table) root.Table.pushRun(r); },
+      pfeStop: function () { enc().run = null; if (root.Table) root.Table.pushRun(null); },
       pfmOpen: function (v) { M.open = M.open === v ? '' : v; },
       pfmAdd: function (v) { actions.pfeAdd2(v); var m = mon(v); M.added = m ? m.n : ''; },
       pflOpen: function (v) { M.lopen = M.lopen === v ? '' : v; },
