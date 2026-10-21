@@ -825,3 +825,4 @@ html.dice3d-lock, html.dice3d-lock body { overflow: hidden; }
 .tbl-init { font-weight: 700; color: var(--accent); }
 .tbl-me.my-turn { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
 .hub-item.c8 { --hc: #8b5e3c; } .hub-item.c9 { --hc: #5d6d7e; }
+.tbl-gift { margin-top: .5rem; padding: .5rem .7rem; border: 1px dashed var(--accent); border-radius: 8px; }

@@ -127,29 +127,40 @@
     }
     // ---------- sharing the treasure out between the characters ----------
     var COINK = ['pp', 'gp', 'ep', 'sp', 'cp'];
-    function chars() { return (store.chars || []).filter(function (c) { return c.name || (c.classes || []).length; }); }
+    // who can get a share: characters on this device, and players at the DM's table (📱, sent to their phone)
+    function table() { return root.Table && root.Table.hostInfo ? root.Table.hostInfo() : null; }
+    function chars() {
+      var tb = table(), phones = tb ? tb.state.players.map(function (p) { return { id: 'tbl:' + p.id, name: p.name, phone: p.id }; }) : [];
+      return phones.concat((store.chars || []).filter(function (c) { return c.name || (c.classes || []).length; }));
+    }
+    function isOn(sp, c, list) { return sp.who[c.id] != null ? sp.who[c.id] !== false : !(list.some(function (x) { return x.phone; }) && !c.phone); } // with players at the table, their phones are ticked first
+    function label(c) { return (c.name || 'Unnamed') + (c.phone ? ' 📱' : ''); }
+    function sendGift(c, coins, items) { var tb = table(); if (!tb || !c.phone) return; root.Table.dm(tb.code, tb.key, { gift: { to: c.phone, coins: coins || {}, items: items || [], from: (state().from && state().from.title) || 'treasure' } }).catch(function () {}); }
     function splitHtml() {
       var s = state(), sp = s.split = s.split || { coins: {}, who: {}, give: {} }, cs = chars(), t = s.last;
       if (!cs.length) return '<div class="panel"><h3>Share it out</h3><p class="small muted">Make characters first: then this splits the coins between them and hands out the items.</p></div>';
-      var picked = cs.filter(function (c) { return sp.who[c.id] !== false; });
+      var picked = cs.filter(function (c) { return isOn(sp, c, cs); });
       var h = '<div class="panel tre-split"><h3>Share it out</h3><p class="small muted">Coins are split evenly between the ticked characters; anything that doesn’t divide evenly stays in the pot. Items go to whoever you choose.</p>' +
-        '<div class="pills">' + cs.map(function (c) { var on = sp.who[c.id] !== false; return '<label class="pill small' + (on ? ' on' : '') + '"><input type="checkbox" data-tresplitwho="' + c.id + '"' + (on ? ' checked' : '') + '> ' + esc(c.name || 'Unnamed') + '</label>'; }).join('') + '</div>' +
+        '<div class="pills">' + cs.map(function (c) { var on = isOn(sp, c, cs); return '<label class="pill small' + (on ? ' on' : '') + '"><input type="checkbox" data-tresplitwho="' + c.id + '"' + (on ? ' checked' : '') + '> ' + esc(label(c)) + '</label>'; }).join('') + '</div>' +
+        (cs.some(function (c) { return c.phone; }) ? '<p class="small muted">📱 players are at your table: their share goes straight to their phone, where they add it to their character.</p>' : '') +
         '<div class="row">' + COINK.map(function (k) { return '<label class="field"><span>' + k + '</span><input type="number" min="0" id="tre-c-' + k + '" data-tresplit="' + k + '" value="' + (+sp.coins[k] || 0) + '"></label>'; }).join('') + '</div>' +
         '<div class="toolbar">' + (t ? btn('treFill', 'Use the coins just rolled', {}, 'btn small') : '') + btn('treSplit', 'Split between ' + picked.length + ' character' + (picked.length === 1 ? '' : 's'), {}, 'btn primary') + '</div>';
       var things = t ? t.items.map(function (it, i) { return ['m' + i, it.n, it]; }).concat([].concat.apply([], t.valuables.map(function (v, j) { return v.names.map(function (n, k) { return ['v' + j + '-' + k, n + ' (' + v.value + ' gp)', { val: v.value, n: n, kind: v.kind }]; }); }))) : [];
       if (things.length) h += '<h4>Items</h4>' + things.map(function (x) {
         var given = sp.give[x[0]];
-        return '<div class="toolbar"><b>' + esc(x[1]) + '</b>' + (given ? '<span class="small muted">→ ' + esc(given) + '</span>' : '<select data-tregive="' + x[0] + '" aria-label="Give ' + esc(x[1]) + ' to">' + '<option value="">Give to…</option>' + cs.map(function (c) { return '<option value="' + c.id + '">' + esc(c.name || 'Unnamed') + '</option>'; }).join('') + '</select>') + '</div>';
+        return '<div class="toolbar"><b>' + esc(x[1]) + '</b>' + (given ? '<span class="small muted">→ ' + esc(given) + '</span>' : '<select data-tregive="' + x[0] + '" aria-label="Give ' + esc(x[1]) + ' to">' + '<option value="">Give to…</option>' + cs.map(function (c) { return '<option value="' + c.id + '">' + esc(label(c)) + '</option>'; }).join('') + '</select>') + '</div>';
       }).join('');
       return h + (sp.msg ? '<p class="small rest-msg">' + esc(sp.msg) + '</p>' : '') + '</div>';
     }
     function uid() { return 'i' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
     function giveThing(key, charId) {
-      var s = state(), t = s.last, c = (store.chars || []).filter(function (x) { return x.id === charId; })[0]; if (!t || !c) return;
-      c.items = c.items || [];
-      if (key[0] === 'm') { var it = t.items[+key.slice(1)]; if (!it) return; c.items.push({ id: uid(), k: 'magic', n: it.n, r: it.r, type: it.type, att: !!it.att, attuned: false, slug: it.slug, qty: 1, w: 0, note: 'From treasure' }); }
-      else { var m = key.slice(1).split('-'), v = t.valuables[+m[0]], n = v && v.names[+m[1]]; if (!n) return; c.items.push({ id: uid(), k: 'custom', n: n.charAt(0).toUpperCase() + n.slice(1), qty: 1, w: 0, note: (v.kind === 'gem' ? 'Gem' : 'Art object') + ', worth ' + v.value + ' gp' }); }
-      s.split.give[key] = c.name || 'Unnamed'; s.split.msg = '';
+      var s = state(), t = s.last, c = chars().filter(function (x) { return x.id === charId; })[0]; if (!t || !c) return;
+      var item;
+      if (key[0] === 'm') { var it = t.items[+key.slice(1)]; if (!it) return; item = { k: 'magic', n: it.n, r: it.r, type: it.type, att: !!it.att, slug: it.slug, note: 'From treasure' }; }
+      else { var m = key.slice(1).split('-'), v = t.valuables[+m[0]], n = v && v.names[+m[1]]; if (!n) return; item = { k: 'custom', n: n.charAt(0).toUpperCase() + n.slice(1), note: (v.kind === 'gem' ? 'Gem' : 'Art object') + ', worth ' + v.value + ' gp' }; }
+      if (c.phone) sendGift(c, {}, [item]);
+      else { c.items = c.items || []; c.items.push(Object.assign({ id: uid(), attuned: false, qty: 1, w: 0 }, item)); }
+      s.split.give[key] = label(c); s.split.msg = '';
     }
     function html() {
       var s = state(), from = s.from;
@@ -169,12 +180,12 @@
       treClear: function () { var s = state(); s.from = null; },
       treFill: function () { var s = state(); s.split = s.split || { coins: {}, who: {}, give: {} }; s.split.coins = Object.assign({}, s.last ? s.last.coins : {}); s.split.msg = ''; },
       treSplit: function () {
-        var s = state(), sp = s.split = s.split || { coins: {}, who: {}, give: {} }, who = chars().filter(function (c) { return sp.who[c.id] !== false; }); if (!who.length) { sp.msg = 'Tick at least one character.'; return; }
+        var s = state(), sp = s.split = s.split || { coins: {}, who: {}, give: {} }, list0 = chars(), who = list0.filter(function (c) { return isOn(sp, c, list0); }); if (!who.length) { sp.msg = 'Tick at least one character.'; return; }
         var each = {}, left = {};
         COINK.forEach(function (k) { var n = Math.max(0, +sp.coins[k] || 0); each[k] = Math.floor(n / who.length); left[k] = n - each[k] * who.length; });
-        who.forEach(function (c) { c.money = c.money || {}; COINK.forEach(function (k) { c.money[k] = (+c.money[k] || 0) + each[k]; }); });
+        who.forEach(function (c) { if (c.phone) return sendGift(c, each, []); c.money = c.money || {}; COINK.forEach(function (k) { c.money[k] = (+c.money[k] || 0) + each[k]; }); });
         var fmt = function (o) { return COINK.filter(function (k) { return o[k]; }).map(function (k) { return o[k].toLocaleString('en') + ' ' + k; }).join(', ') || 'nothing'; };
-        sp.msg = 'Each of ' + who.map(function (c) { return c.name || 'Unnamed'; }).join(', ') + ' got ' + fmt(each) + '.' + (fmt(left) !== 'nothing' ? ' Left in the pot: ' + fmt(left) + '.' : '');
+        sp.msg = 'Each of ' + who.map(label).join(', ') + ' got ' + fmt(each) + '.' + (fmt(left) !== 'nothing' ? ' Left in the pot: ' + fmt(left) + '.' : '');
         sp.coins = left;
       }
     };

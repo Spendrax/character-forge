@@ -601,6 +601,7 @@
       if (!me) { delete store.tableJoin[ch.id]; ui.tstate = null; ui.tblMsg = 'The DM removed you from the table.'; save(); render(); return; }
       var mine = st.turn && st.turn.trim().toLowerCase() === String(me.name).trim().toLowerCase();
       if (mine && !(ui.tstate && ui.tstate.turn === st.turn && ui.tstate.round === st.round) && navigator.vibrate) navigator.vibrate([120, 80, 120]);
+      if ((me.gifts || []).length > (((ui.tstate && ui.tstate.players.filter(function (p) { return p.id === J.id; })[0]) || {}).gifts || []).length && navigator.vibrate) navigator.vibrate(200);
       ui.tstate = st; render();
     });
     if (!S) return '<div class="panel compact-row"><b>📱 Table ' + J.code + '</b><span class="small muted">connecting…</span></div>';
@@ -608,7 +609,23 @@
     var h = '<div class="panel tbl-me' + (mine ? ' my-turn' : '') + '"><div class="toolbar" style="margin:0"><b>📱 Table ' + J.code + '</b>' + (S.round ? '<span>Round ' + S.round + ' · ' + (mine ? '<b>your turn!</b>' : 'turn: ' + esc(S.turn || '—')) + '</span>' : '<span class="small muted">' + (S.open ? 'the fight is starting' : 'waiting for the DM') + '</span>') + '<span class="spacer"></span>' + btn('tblLeave', 'Leave', {}, 'btn small') + '</div>';
     if (S.open && me.init == null) h += '<div class="toolbar"><b>Initiative</b>' + btn('tblRoll', '🎲 Roll (' + R.fmt(d.init) + ')', {}, 'btn small primary') + '<span class="small">or I rolled</span><input type="number" id="tbl-mine" data-tblmine="1" value="' + esc(ui.tblMine || '') + '" placeholder="total" style="width:5rem">' + btn('tblSend', 'Send', {}, 'btn small') + '</div>';
     else if (me.init != null) h += '<p class="small">Your initiative: <b>' + me.init + '</b> ' + btn('tblRedo', 'change', {}, 'linkbtn') + '</p>';
+    (me.gifts || []).forEach(function (g) {
+      var coins = ['pp', 'gp', 'ep', 'sp', 'cp'].filter(function (k) { return +g.coins[k] > 0; }).map(function (k) { return (+g.coins[k]).toLocaleString('en') + ' ' + k; });
+      var what = coins.concat((g.items || []).map(function (i) { return String(i.n || 'an item'); }));
+      h += '<div class="tbl-gift">🎁 <b>From the DM:</b> ' + esc(what.join(', ') || 'nothing') + '<div class="toolbar">' + btn('tblGift', 'Add to ' + esc(ch.name || 'my character'), { v: g.gid }, 'btn small primary') + btn('tblGiftNo', 'Not for me', { v: g.gid }, 'btn small') + '</div></div>';
+    });
     return h + (ui.tblMsg ? '<p class="small rest-msg">' + esc(ui.tblMsg) + '</p>' : '') + '</div>';
+  }
+  // take what the DM sent: coins into the purse, items into the inventory (only plain fields are kept)
+  function takeGift(g) {
+    var m = ch.money = ch.money || {};
+    ['pp', 'gp', 'ep', 'sp', 'cp'].forEach(function (k) { var n = Math.max(0, Math.min(1e7, Math.floor(+(g.coins || {})[k] || 0))); if (n) m[k] = (+m[k] || 0) + n; });
+    (g.items || []).slice(0, 20).forEach(function (i) {
+      if (!i || !i.n) return;
+      var mi = i.k === 'magic' && D.magicItems.filter(function (x) { return x[0] === String(i.n); })[0];
+      ch.items.push(mi ? { id: R.uid(), k: 'magic', n: mi[0], r: mi[1].indexOf(i.r) >= 0 ? i.r : mi[1][0], type: mi[2], att: !!mi[3], attuned: false, slug: mi[4], qty: 1, w: 0, note: 'From the DM' }
+        : { id: R.uid(), k: 'custom', n: String(i.n).slice(0, 80), qty: 1, w: 0, note: String(i.note || 'From the DM').slice(0, 200) });
+    });
   }
   function sendInit(v) { var J = (store.tableJoin || {})[ch.id]; if (!J) return; Table.roll(J.code, J.id, J.token, v).then(function (st) { ui.tstate = st; ui.tblMine = ''; render(); }, function (e) { ui.tblMsg = e.message; render(); }); }
   function hitDieSizes() { var z = []; (ch.classes || []).forEach(function (e) { var c = D.classes.filter(function (x) { return x.id === e.cls; })[0]; if (c && z.indexOf(c.hitDie) < 0) z.push(c.hitDie); }); return z.length ? z.sort(function (a, b) { return b - a; }) : [8]; }
@@ -1816,6 +1833,12 @@
       Table.join(code, ch.name || 'Player', d.init).then(function (j) { ui.tblBusy = false; ui.tblMsg = ''; store.tableJoin = store.tableJoin || {}; store.tableJoin[cid] = { code: code, id: j.id, token: j.token }; ui.tstate = j.state; save(); render(); }, function (e) { ui.tblBusy = false; ui.tblMsg = e.message || 'Couldn’t join.'; render(); });
       return false;
     },
+    tblGift: function (v) {
+      var J = (store.tableJoin || {})[ch.id], S = ui.tstate, me = J && S && S.players.filter(function (p) { return p.id === J.id; })[0], g = me && (me.gifts || []).filter(function (x) { return x.gid === v; })[0];
+      if (!g) return; takeGift(g); Table.ackGift(J.code, J.id, J.token, v).catch(function () {});
+      me.gifts = me.gifts.filter(function (x) { return x.gid !== v; }); ui.tblMsg = 'Added to ' + (ch.name || 'your character') + ': see Items.';
+    },
+    tblGiftNo: function (v) { var J = (store.tableJoin || {})[ch.id], S = ui.tstate, me = J && S && S.players.filter(function (p) { return p.id === J.id; })[0]; if (!J) return; Table.ackGift(J.code, J.id, J.token, v).catch(function () {}); if (me) me.gifts = (me.gifts || []).filter(function (x) { return x.gid !== v; }); },
     tblHintOk: function () { ui.tblHint = ''; },
     tblLeave: function () { if (store.tableJoin) delete store.tableJoin[ch.id]; Table.stop(); ui.tstate = null; ui.tblMsg = ''; },
     tblRoll: function () { var r = 1 + Math.floor(Math.random() * 20); ui.tblMsg = 'Rolled ' + r + ' ' + R.fmt(d.init) + ' = ' + (r + d.init) + '.'; sendInit(r + d.init); return false; },
