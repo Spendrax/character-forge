@@ -239,21 +239,51 @@ Mutants & Masterminds is a trademark of Green Ronin Publishing. This is an unoff
 - Archived / superseded Unearthed Arcana from the wiki is not included.
 - Spell grants from lineages and feats are described in their text, not added to the spell picker.
 
-## Layout
+## How the code is organized
 
-    index.html        page and script load order
+Plain JavaScript files loaded by `index.html` in order, no build step. Each file starts with a comment saying what it does.
+
+**The D&D app** (`js/app/`, loaded in this order). These files share one scope: what one declares at the top (`store`, `ui`, `ch` the open character, `d` its computed sheet, `render`, `esc`, `btn`…) the others can use.
+
+    core.js           shared state, saving, undo, small helpers
+    widgets.js        lists of options to pick from
+    builder.js        building steps: lineage, class, abilities, background
+    spells.js         Spells step and My spells
+    session.js        Session page: uses and rests, the DM's table, concentration, conditions, Wild Shape
+    equipment.js      Equipment step
+    items.js          magic item texts, the Magic items section, Items step
+    characters.js     pictures, the character list, moving to another device, imports
+    sheet.js          Appearance, Details, Notes and Sheet steps
+    frame.js          drawing the page: top bar, sections, home, theme, phone back button
+    helper-bridge.js  what the AI helper sees and may change
+    actions.js        every button: data-act="name" in the page runs actions.name
+    events.js         taps, typing and changes, routed to the right section; installing the app
+    main.js           start-up: connects the sections below, loads and draws
+
+How a tap works: a button has `data-act="name"`, the click goes to `actions.name`, the state changes, and `render()` redraws the page from the state.
+
+**Sections**, each a self-contained file that `main.js` connects (they receive `esc`, `btn`, `ui`, `store`… and return their page and actions):
+
+    rules.js          D&D rules engine: turns picks into a sheet (no page code; also runs in Node for tests)
+    monsters.js, encounter.js, treasure.js, generators.js, books.js, audio.js, dm.js (DM/GM page)
+    pf2.js, pf2-ui.js, pf2-enc.js, pf2-import.js        Pathfinder 2e: rules, pages, encounters/treasure, import
+    mm.js, mm-enc.js, mm-foes.js                        Mutants & Masterminds 3e
+    table.js          the table between the DM's device and the players' phones (PeerJS)
+    table-ui.js       a Pathfinder or M&M character at the table; table-share.js sends treasure to phones
+    transfer.js, import-5e.js, import-companion.js, import-ddb.js, item-import.js, sqlite-read.js   moving and importing
+    avatar.js, dice3d.js, icons.js, sounds.js, ai.js, boot.js       figures, dice, icons, sounds, AI helper, start-up checks
+
+**Everything else**
+
+    index.html        the page and script load order
     css/style.css     styles (light, dark, print)
-    js/rules.js       rules engine (no DOM; runs in Node)
-    js/app.js         user interface
-    js/avatar.js      pixel-art figure for the Appearance step
-    js/sqlite-read.js read-only SQLite reader (for app backups)
-    js/import-5e.js   5th Spellbook backup → characters
-    js/import-companion.js  5e Companion shared character → character
-    data/*.js         game data, plain scripts that fill window.DND
-    data/items.js     magic item index and adventuring gear
-    data/text-*.js    longer feature text and spell descriptions (optional: delete the two script tags to drop them)
-    manifest.webmanifest, sw.js, icons/   installable app: name, icons, offline copy
+    data/*.js         game data, plain scripts that fill window.DND (and PF2DATA, MM)
+    js/vendor/        third-party libraries (PeerJS, QR codes)
+    manifest.webmanifest, sw.js, icons/   installable app and offline copy (bump VERSION in sw.js when files change)
+    server.js         optional local server (`node server.js`)
     test/             `node test/rules.test.js`
+
+Code style: [Prettier](https://prettier.io) with `.prettierrc.json` (run `npx prettier --write .`).
 
 To add content, append an entry to the matching file in `data/` following its neighbours.
 

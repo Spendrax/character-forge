@@ -1,7 +1,7 @@
 // Service worker: keeps a copy of the app so it opens offline, and always tries the network first
 // so a new version on the site is picked up as soon as you are online.
 // Bump VERSION when files are added or removed.
-var VERSION = 'cf-104';
+var VERSION = 'cf-105';
 var FILES = [
   './',
   'index.html',
@@ -40,14 +40,17 @@ var FILES = [
   'js/import-companion.js',
   'js/import-ddb.js',
   'js/transfer.js',
-  'js/table.js', 'js/table-ui.js', 'js/table-share.js',
+  'js/table.js',
+  'js/table-ui.js',
+  'js/table-share.js',
   'js/vendor/peerjs.min.js',
   'js/vendor/qrcode.js',
   'js/item-import.js',
   'js/monsters.js',
   'js/encounter.js',
   'js/treasure.js',
-  'js/generators.js', 'js/dm.js',
+  'js/generators.js',
+  'js/dm.js',
   'data/mm.js',
   'js/mm.js',
   'js/mm-foes.js',
@@ -175,40 +178,108 @@ var FILES = [
   'data/monsters.js',
   'data/srd-book.js',
   'js/boot.js',
-  'js/app.js',
+  'js/app/core.js',
+  'js/app/widgets.js',
+  'js/app/builder.js',
+  'js/app/spells.js',
+  'js/app/session.js',
+  'js/app/equipment.js',
+  'js/app/items.js',
+  'js/app/characters.js',
+  'js/app/sheet.js',
+  'js/app/frame.js',
+  'js/app/helper-bridge.js',
+  'js/app/actions.js',
+  'js/app/events.js',
+  'js/app/main.js',
   'icons/icon-192.png',
   'icons/icon-512.png',
   'icons/maskable-512.png'
 ];
 
 self.addEventListener('install', function (e) {
-  e.waitUntil(caches.open(VERSION).then(function (c) { return c.addAll(FILES); }).then(function () { return self.skipWaiting(); }));
+  e.waitUntil(
+    caches
+      .open(VERSION)
+      .then(function (c) {
+        return c.addAll(FILES);
+      })
+      .then(function () {
+        return self.skipWaiting();
+      })
+  );
 });
 self.addEventListener('activate', function (e) {
-  e.waitUntil(caches.keys().then(function (keys) {
-    return Promise.all(keys.filter(function (k) { return k !== VERSION && k !== 'cf-share'; }).map(function (k) { return caches.delete(k); }));
-  }).then(function () { return self.clients.claim(); }));
+  e.waitUntil(
+    caches
+      .keys()
+      .then(function (keys) {
+        return Promise.all(
+          keys
+            .filter(function (k) {
+              return k !== VERSION && k !== 'cf-share';
+            })
+            .map(function (k) {
+              return caches.delete(k);
+            })
+        );
+      })
+      .then(function () {
+        return self.clients.claim();
+      })
+  );
 });
 // Sharing a file to the installed app (Android share menu): keep the file, then open the app to import it.
 var SHARE_CACHE = 'cf-share';
 self.addEventListener('fetch', function (e) {
   var req = e.request;
   if (req.method === 'POST' && /\/share-target\/?$/.test(new URL(req.url).pathname)) {
-    e.respondWith(req.formData().then(function (form) {
-      var file = form.getAll('files').filter(function (f) { return f && f.size; })[0];
-      var text = form.get('text') || '', title = form.get('title') || '';
-      var body = file || new Blob([String(text)], { type: 'text/plain' });
-      return caches.open(SHARE_CACHE).then(function (c) {
-        return c.put('shared-file', new Response(body, { headers: { 'x-name': encodeURIComponent((file && file.name) || title || 'shared') } }));
-      });
-    }).then(function () { return Response.redirect('./?shared=1', 303); }, function () { return Response.redirect('./?shared=error', 303); }));
+    e.respondWith(
+      req
+        .formData()
+        .then(function (form) {
+          var file = form.getAll('files').filter(function (f) {
+            return f && f.size;
+          })[0];
+          var text = form.get('text') || '',
+            title = form.get('title') || '';
+          var body = file || new Blob([String(text)], { type: 'text/plain' });
+          return caches.open(SHARE_CACHE).then(function (c) {
+            return c.put(
+              'shared-file',
+              new Response(body, {
+                headers: { 'x-name': encodeURIComponent((file && file.name) || title || 'shared') }
+              })
+            );
+          });
+        })
+        .then(
+          function () {
+            return Response.redirect('./?shared=1', 303);
+          },
+          function () {
+            return Response.redirect('./?shared=error', 303);
+          }
+        )
+    );
     return;
   }
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
-  e.respondWith(fetch(req).then(function (res) {
-    if (res && res.ok) { var copy = res.clone(); caches.open(VERSION).then(function (c) { c.put(req, copy); }); }
-    return res;
-  }).catch(function () {
-    return caches.match(req, { ignoreSearch: true }).then(function (hit) { return hit || (req.mode === 'navigate' ? caches.match('index.html') : undefined); });
-  }));
+  e.respondWith(
+    fetch(req)
+      .then(function (res) {
+        if (res && res.ok) {
+          var copy = res.clone();
+          caches.open(VERSION).then(function (c) {
+            c.put(req, copy);
+          });
+        }
+        return res;
+      })
+      .catch(function () {
+        return caches.match(req, { ignoreSearch: true }).then(function (hit) {
+          return hit || (req.mode === 'navigate' ? caches.match('index.html') : undefined);
+        });
+      })
+  );
 });

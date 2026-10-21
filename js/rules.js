@@ -6,22 +6,57 @@
   var AB = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'];
   var R = {};
 
-  R.mod = function (score) { return Math.floor((score - 10) / 2); };
-  R.fmt = function (n) { return (n >= 0 ? '+' : '') + n; };
-  R.pb = function (level) { return 2 + Math.floor((level - 1) / 4); };
-  R.uid = function () { return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); };
+  R.mod = function (score) {
+    return Math.floor((score - 10) / 2);
+  };
+  R.fmt = function (n) {
+    return (n >= 0 ? '+' : '') + n;
+  };
+  R.pb = function (level) {
+    return 2 + Math.floor((level - 1) / 4);
+  };
+  R.uid = function () {
+    return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  };
 
   R.newChar = function () {
     return {
-      id: R.uid(), name: '', player: '', alignment: '',
-      lineage: '', version: 0, sub: 0, flexMode: '21',
+      id: R.uid(),
+      name: '',
+      player: '',
+      alignment: '',
+      lineage: '',
+      version: 0,
+      sub: 0,
+      flexMode: '21',
       classes: [],
-      method: 'array', base: { STR: 15, DEX: 14, CON: 13, INT: 12, WIS: 10, CHA: 8 },
-      asi: {}, background: '', picks: {},
+      method: 'array',
+      base: { STR: 15, DEX: 14, CON: 13, INT: 12, WIS: 10, CHA: 8 },
+      asi: {},
+      background: '',
+      picks: {},
       spells: {},
-      armor: '', shield: false, weapons: [], eq: {}, gear: '', items: [], money: { pp: 0, gp: 0, ep: 0, sp: 0, cp: 0 },
-      hpMode: 'avg', hpManual: 0,
-      notes: { traits: '', ideals: '', bonds: '', flaws: '', appearance: '', backstory: '', other: '', session: '', draftTitle: '', draftCat: '' }
+      armor: '',
+      shield: false,
+      weapons: [],
+      eq: {},
+      gear: '',
+      items: [],
+      money: { pp: 0, gp: 0, ep: 0, sp: 0, cp: 0 },
+      hpMode: 'avg',
+      hpManual: 0,
+      notes: {
+        traits: '',
+        ideals: '',
+        bonds: '',
+        flaws: '',
+        appearance: '',
+        backstory: '',
+        other: '',
+        session: '',
+        draftTitle: '',
+        draftCat: ''
+      }
     };
   };
 
@@ -30,24 +65,40 @@
     if (!Array.isArray(c.classes)) {
       var id = c.cls || '';
       c.classes = id ? [{ cls: id, level: c.level | 0 || 1, subclass: c.subclass || '' }] : [];
-      var picks = c.picks || {}, np = {}, asi = {};
+      var picks = c.picks || {},
+        np = {},
+        asi = {};
       Object.keys(picks).forEach(function (k) {
         var m;
         if (id && (m = /^(cls|sc)\.(.+)$/.exec(k))) np[m[1] + '.' + id + '.' + m[2]] = picks[k];
         else if (id && (m = /^asi(\d+)\.(.+)$/.exec(k))) np['asi.' + id + '.' + m[1] + '.' + m[2]] = picks[k];
         else np[k] = picks[k];
       });
-      Object.keys(c.asi || {}).forEach(function (k) { var m = /^asi(\d+)$/.exec(k); asi[m && id ? 'asi.' + id + '.' + m[1] : k] = c.asi[k]; });
-      c.picks = np; c.asi = asi;
-      if (c.spells && Array.isArray(c.spells.c)) { var sp = c.spells; c.spells = {}; if (id) c.spells[id] = sp; }
-      delete c.cls; delete c.level; delete c.subclass; delete c.variant;
+      Object.keys(c.asi || {}).forEach(function (k) {
+        var m = /^asi(\d+)$/.exec(k);
+        asi[m && id ? 'asi.' + id + '.' + m[1] : k] = c.asi[k];
+      });
+      c.picks = np;
+      c.asi = asi;
+      if (c.spells && Array.isArray(c.spells.c)) {
+        var sp = c.spells;
+        c.spells = {};
+        if (id) c.spells[id] = sp;
+      }
+      delete c.cls;
+      delete c.level;
+      delete c.subclass;
+      delete c.variant;
     }
     if (!c.spells || Array.isArray(c.spells.c)) c.spells = {};
     // coins used to be one line of text
     if (!c.money) {
       c.money = { pp: 0, gp: 0, ep: 0, sp: 0, cp: 0 };
       var found = false;
-      String(c.coins || '').replace(/([\d,]+)\s*(pp|gp|ep|sp|cp)\b/gi, function (m, n, u) { c.money[u.toLowerCase()] += parseInt(n.replace(/,/g, ''), 10) || 0; found = true; });
+      String(c.coins || '').replace(/([\d,]+)\s*(pp|gp|ep|sp|cp)\b/gi, function (m, n, u) {
+        c.money[u.toLowerCase()] += parseInt(n.replace(/,/g, ''), 10) || 0;
+        found = true;
+      });
       if (c.coins && !found) c.gear = (c.gear ? c.gear + '\n' : '') + c.coins;
     }
     delete c.coins;
@@ -56,21 +107,77 @@
   };
 
   // ---------- lookups ----------
-  R.cls = function (id) { return D.classes.filter(function (c) { return c.id === id; })[0] || null; };
-  R.subclass = function (id) { return D.subclasses.filter(function (s) { return s.id === id; })[0] || null; };
-  R.subclassesOf = function (cid) { return D.subclasses.filter(function (s) { return s.c === cid; }); };
-  R.lineage = function (id) { return D.lineages.filter(function (l) { return l.id === id; })[0] || null; };
-  R.background = function (n) { return D.backgrounds.filter(function (b) { return b.n === n; })[0] || null; };
-  R.feat = function (n) { return D.feats.filter(function (f) { return f.n === n; })[0] || null; };
-  R.allTools = function () { var o = []; for (var k in D.tools) o = o.concat(D.tools[k]); return o; };
-  R.allLanguages = function () { return D.languages.standard.concat(D.languages.exotic, D.languages.other); };
+  R.cls = function (id) {
+    return (
+      D.classes.filter(function (c) {
+        return c.id === id;
+      })[0] || null
+    );
+  };
+  R.subclass = function (id) {
+    return (
+      D.subclasses.filter(function (s) {
+        return s.id === id;
+      })[0] || null
+    );
+  };
+  R.subclassesOf = function (cid) {
+    return D.subclasses.filter(function (s) {
+      return s.c === cid;
+    });
+  };
+  R.lineage = function (id) {
+    return (
+      D.lineages.filter(function (l) {
+        return l.id === id;
+      })[0] || null
+    );
+  };
+  R.background = function (n) {
+    return (
+      D.backgrounds.filter(function (b) {
+        return b.n === n;
+      })[0] || null
+    );
+  };
+  R.feat = function (n) {
+    return (
+      D.feats.filter(function (f) {
+        return f.n === n;
+      })[0] || null
+    );
+  };
+  R.allTools = function () {
+    var o = [];
+    for (var k in D.tools) o = o.concat(D.tools[k]);
+    return o;
+  };
+  R.allLanguages = function () {
+    return D.languages.standard.concat(D.languages.exotic, D.languages.other);
+  };
   // What a player can pick when a rule says "a language of your choice": the standard and exotic tables only.
   // The other list (setting languages, Druidic, Thieves' Cant) is only granted by specific traits.
-  R.choosableLanguages = function () { return D.languages.standard.concat(D.languages.exotic); };
-  R.languageGroup = function (l) { return D.languages.standard.indexOf(l) >= 0 ? 'Standard' : D.languages.exotic.indexOf(l) >= 0 ? 'Exotic' : ''; };
+  R.choosableLanguages = function () {
+    return D.languages.standard.concat(D.languages.exotic);
+  };
+  R.languageGroup = function (l) {
+    return D.languages.standard.indexOf(l) >= 0 ? 'Standard' : D.languages.exotic.indexOf(l) >= 0 ? 'Exotic' : '';
+  };
 
-  function arr(x) { return x == null ? [] : (Array.isArray(x) ? x : [x]); }
-  function uniq(a) { var s = {}, o = []; a.forEach(function (x) { if (!s[x]) { s[x] = 1; o.push(x); } }); return o; }
+  function arr(x) {
+    return x == null ? [] : Array.isArray(x) ? x : [x];
+  }
+  function uniq(a) {
+    var s = {},
+      o = [];
+    a.forEach(function (x) {
+      if (!s[x]) {
+        s[x] = 1;
+        o.push(x);
+      }
+    });
+    return o;
+  }
 
   // Merge a lineage version with one of its subraces into a single flat record.
   R.mergeLineage = function (lin, vi, si) {
@@ -82,20 +189,47 @@
     var a = v.a;
     if (s && s.a) {
       if (s.replaceAsi || a === 'flex' || s.a === 'flex') a = s.a;
-      else { a = Object.assign({}, a); for (var k in s.a) a[k] = (a[k] || 0) + s.a[k]; }
+      else {
+        a = Object.assign({}, a);
+        for (var k in s.a) a[k] = (a[k] || 0) + s.a[k];
+      }
     }
     m.a = a || {};
-    ['sz', 'sp', 'dv', 'fly', 'swim', 'climb', 'ac', 'plus2', 'naturalAC', 'naturalACcon', 'fixedAC', 'acBonus', 'initProf'].forEach(function (k) {
+    [
+      'sz',
+      'sp',
+      'dv',
+      'fly',
+      'swim',
+      'climb',
+      'ac',
+      'plus2',
+      'naturalAC',
+      'naturalACcon',
+      'fixedAC',
+      'acBonus',
+      'initProf'
+    ].forEach(function (k) {
       m[k] = s && s[k] !== undefined ? s[k] : v[k];
     });
-    ['lang', 'sk', 'res', 'imm', 'saves'].forEach(function (k) { m[k] = uniq(arr(v[k]).concat(s ? arr(s[k]) : [])); });
-    ['lc', 'feat', 'hpPerLevel'].forEach(function (k) { m[k] = (v[k] || 0) + ((s && s[k]) || 0); });
+    ['lang', 'sk', 'res', 'imm', 'saves'].forEach(function (k) {
+      m[k] = uniq(arr(v[k]).concat(s ? arr(s[k]) : []));
+    });
+    ['lc', 'feat', 'hpPerLevel'].forEach(function (k) {
+      m[k] = (v[k] || 0) + ((s && s[k]) || 0);
+    });
     m.skc = arr(v.skc).concat(s ? arr(s.skc) : []);
     m.pick = arr(v.pick).concat(s ? arr(s.pick) : []);
     m.prof = { armor: [], weapons: [], tools: [] };
-    [v.prof, s && s.prof].forEach(function (p) { if (p) for (var k in m.prof) m.prof[k] = m.prof[k].concat(p[k] || []); });
+    [v.prof, s && s.prof].forEach(function (p) {
+      if (p) for (var k in m.prof) m.prof[k] = m.prof[k].concat(p[k] || []);
+    });
     var drop = (s && s.dropTraits) || [];
-    m.tr = (v.tr || []).filter(function (t) { return drop.indexOf(t[0]) < 0; }).concat((s && s.tr) || []);
+    m.tr = (v.tr || [])
+      .filter(function (t) {
+        return drop.indexOf(t[0]) < 0;
+      })
+      .concat((s && s.tr) || []);
     return m;
   };
 
@@ -103,25 +237,53 @@
   // Lineage and feat texts say things like "Know Thaumaturgy. Cast Hellish Rebuke (3rd level) once per long rest,
   // using Charisma." This reads them into spells (with the character level they arrive at) and choices.
   var spellNamesByLength = null;
-  var CLASSWORD = { wizard: 'wizard', druid: 'druid', cleric: 'cleric', bard: 'bard', sorcerer: 'sorcerer', warlock: 'warlock' };
+  var CLASSWORD = {
+    wizard: 'wizard',
+    druid: 'druid',
+    cleric: 'cleric',
+    bard: 'bard',
+    sorcerer: 'sorcerer',
+    warlock: 'warlock'
+  };
   R.spellsInText = function (text) {
     var out = { spells: [], choices: [] };
     text = String(text || '');
     if (!/\b(Know|know|Cast|cast|Learn|learn|cantrip|spell)\b/.test(text)) return out;
-    if (!spellNamesByLength) spellNamesByLength = Object.keys(D.spells).map(function (k) { return D.spells[k].name; })
-      .filter(function (n) { return !/\(UA\)|\(HB\)/.test(n); }).sort(function (a, b) { return b.length - a.length; });
-    var abil = (text.match(/(?:using|cast with|with) (Intelligence|Wisdom|Charisma|Constitution|Dexterity)\b/) || [])[1] || '';
+    if (!spellNamesByLength)
+      spellNamesByLength = Object.keys(D.spells)
+        .map(function (k) {
+          return D.spells[k].name;
+        })
+        .filter(function (n) {
+          return !/\(UA\)|\(HB\)/.test(n);
+        })
+        .sort(function (a, b) {
+          return b.length - a.length;
+        });
+    var abil =
+      (text.match(/(?:using|cast with|with) (Intelligence|Wisdom|Charisma|Constitution|Dexterity)\b/) || [])[1] || '';
     var withSlots = /or with (?:spell )?slots|or with (?:your )?spell slots/.test(text);
-    if (!abil && (withSlots || /^Know one/.test(text))) abil = 'Intelligence, Wisdom or Charisma (chosen with your lineage)';
+    if (!abil && (withSlots || /^Know one/.test(text)))
+      abil = 'Intelligence, Wisdom or Charisma (chosen with your lineage)';
     var optional = /\bChoose one\b/.test(text);
     // a choice among named spells: "Know one of Dancing Lights, Light or Sacred Flame."
     var oneOf = text.match(/\bone of ([^.;]+)/);
     var cm = text.match(/\b(one|two) (wizard|druid|cleric|bard|sorcerer|warlock) cantrips?\b/i);
-    if (cm) out.choices.push({ count: cm[1].toLowerCase() === 'two' ? 2 : 1, list: cm[2].toLowerCase(), level: 0, label: cm[2].charAt(0).toUpperCase() + cm[2].slice(1).toLowerCase() + ' cantrip', ability: abil, optional: optional });
-    var taken = new Array(text.length + 1).join(' '), found = [];
-    var alias = { 'Enlarge': 'Enlarge/Reduce' };
+    if (cm)
+      out.choices.push({
+        count: cm[1].toLowerCase() === 'two' ? 2 : 1,
+        list: cm[2].toLowerCase(),
+        level: 0,
+        label: cm[2].charAt(0).toUpperCase() + cm[2].slice(1).toLowerCase() + ' cantrip',
+        ability: abil,
+        optional: optional
+      });
+    var taken = new Array(text.length + 1).join(' '),
+      found = [];
+    var alias = { Enlarge: 'Enlarge/Reduce' };
     spellNamesByLength.concat(Object.keys(alias)).forEach(function (n) {
-      var re = new RegExp('(^|[^A-Za-z])' + n.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&') + '(?![A-Za-z/])', 'g'), m;
+      var re = new RegExp('(^|[^A-Za-z])' + n.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&') + '(?![A-Za-z/])', 'g'),
+        m;
       while ((m = re.exec(text))) {
         var at = m.index + m[1].length;
         if (taken.slice(at, at + n.length).trim() !== '') continue;
@@ -129,33 +291,64 @@
         found.push({ name: alias[n] || n, at: at, len: n.length });
       }
     });
-    found.sort(function (a, b) { return a.at - b.at; });
-    var inChoice = [], seen = {};
+    found.sort(function (a, b) {
+      return a.at - b.at;
+    });
+    var inChoice = [],
+      seen = {};
     found.forEach(function (f, i) {
       var sp = D.findSpell(f.name);
       if (!sp || seen[sp.name]) return;
       seen[sp.name] = 1;
-      if (oneOf && f.at >= oneOf.index && f.at < oneOf.index + oneOf[0].length) { inChoice.push(sp.name); return; }
+      if (oneOf && f.at >= oneOf.index && f.at < oneOf.index + oneOf[0].length) {
+        inChoice.push(sp.name);
+        return;
+      }
       // the words up to the next spell (or the end of the sentence) say when and how often
-      var end = text.indexOf('.', f.at + f.len); if (end < 0) end = text.length;
+      var end = text.indexOf('.', f.at + f.len);
+      if (end < 0) end = text.length;
       var next = found[i + 1] && found[i + 1].at < end ? found[i + 1].at : end;
-      var after = text.slice(f.at + f.len, next), tail = text.slice(f.at + f.len, end);
-      var start = text.lastIndexOf('.', f.at) + 1, before = text.slice(start, f.at);
-      var lv = (after.match(/^[^().]{0,20}\((\d+)(?:st|nd|rd|th) level/) || after.match(/from (\d+)(?:st|nd|rd|th) level/) ||
-        before.match(/From (\d+)(?:st|nd|rd|th) level/i) || [])[1];
-      var per = !sp.level ? '' : /at will/.test(after) ? 'at will' : /short or long rest/.test(tail) ? '1/short rest' : /long rest/.test(tail) ? '1/long rest' : /ritual/.test(tail) ? 'ritual' : '';
-      out.spells.push({ name: sp.name, minLevel: lv ? +lv : 1, ability: abil, per: per, slots: withSlots && sp.level > 0 });
+      var after = text.slice(f.at + f.len, next),
+        tail = text.slice(f.at + f.len, end);
+      var start = text.lastIndexOf('.', f.at) + 1,
+        before = text.slice(start, f.at);
+      var lv = (after.match(/^[^().]{0,20}\((\d+)(?:st|nd|rd|th) level/) ||
+        after.match(/from (\d+)(?:st|nd|rd|th) level/) ||
+        before.match(/From (\d+)(?:st|nd|rd|th) level/i) ||
+        [])[1];
+      var per = !sp.level
+        ? ''
+        : /at will/.test(after)
+          ? 'at will'
+          : /short or long rest/.test(tail)
+            ? '1/short rest'
+            : /long rest/.test(tail)
+              ? '1/long rest'
+              : /ritual/.test(tail)
+                ? 'ritual'
+                : '';
+      out.spells.push({
+        name: sp.name,
+        minLevel: lv ? +lv : 1,
+        ability: abil,
+        per: per,
+        slots: withSlots && sp.level > 0
+      });
     });
-    if (inChoice.length > 1) out.choices.push({ count: 1, names: inChoice, level: 0, label: 'Cantrip', ability: abil, optional: optional });
+    if (inChoice.length > 1)
+      out.choices.push({ count: 1, names: inChoice, level: 0, label: 'Cantrip', ability: abil, optional: optional });
     return out;
   };
 
   // Work out whether a tool proficiency string is a fixed tool or a choice.
   var WORDNUM = { one: 1, two: 2, three: 3, four: 4 };
   R.parseTool = function (str) {
-    var all = R.allTools(), low = str.toLowerCase();
+    var all = R.allTools(),
+      low = str.toLowerCase();
     for (var i = 0; i < all.length; i++) if (all[i].toLowerCase() === low) return { fixed: all[i] };
-    var count = WORDNUM[(low.match(/^(one|two|three|four)\b/) || [])[1]] || 1, from = [], lang = /additional language/.test(low);
+    var count = WORDNUM[(low.match(/^(one|two|three|four)\b/) || [])[1]] || 1,
+      from = [],
+      lang = /additional language/.test(low);
     if (/artisan/.test(low)) from = from.concat(D.tools["Artisan's tools"]);
     if (/musical instrument/.test(low)) from = from.concat(D.tools['Musical instruments']);
     if (/gaming set/.test(low)) from = from.concat(D.tools['Gaming sets']);
@@ -163,66 +356,142 @@
       var n = t.toLowerCase();
       if (low.indexOf(n) >= 0 && from.indexOf(t) < 0) from.push(t);
     });
-    if (!from.length) { if (/tool|choice|origin|house/.test(low)) from = all; else return { fixed: str }; }
+    if (!from.length) {
+      if (/tool|choice|origin|house/.test(low)) from = all;
+      else return { fixed: str };
+    }
     return { count: count, from: from, label: str, orLanguage: lang };
   };
 
   // ---------- spell slots ----------
-  function ord(n) { return n + (n % 100 > 10 && n % 100 < 14 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th'); }
+  function ord(n) {
+    return n + (n % 100 > 10 && n % 100 < 14 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th');
+  }
   R.ord = ord;
   // Artificer "Replicate Magic Item" tables (Tasha's Cauldron of Everything): [item, artificer level]
   R.replicable = function () {
-    var L = { 2: 'Alchemy Jug|Bag of Holding|Cap of Water Breathing|Goggles of Night|Rope of Climbing|Sending Stones|Wand of Magic Detection|Wand of Secrets',
+    var L = {
+      2: 'Alchemy Jug|Bag of Holding|Cap of Water Breathing|Goggles of Night|Rope of Climbing|Sending Stones|Wand of Magic Detection|Wand of Secrets',
       6: 'Boots of Elvenkind|Cloak of Elvenkind|Cloak of the Manta Ray|Eyes of Charming|Gloves of Thievery|Lantern of Revealing|Pipes of Haunting|Ring of Water Walking',
       10: 'Boots of Striding and Springing|Boots of the Winterlands|Bracers of Archery|Brooch of Shielding|Cloak of Protection|Eyes of the Eagle|Gauntlets of Ogre Power|Gloves of Missile Snaring|Gloves of Swimming and Climbing|Hat of Disguise|Headband of Intellect|Helm of Telepathy|Medallion of Thoughts|Necklace of Adaptation|Periapt of Wound Closure|Pipes of the Sewers|Quiver of Ehlonna|Ring of Jumping|Ring of Mind Shielding|Slippers of Spider Climbing|Ventilating Lungs|Winged Boots',
-      14: 'Amulet of Health|Arcane Propulsion Arm|Belt of Hill Giant Strength|Boots of Levitation|Boots of Speed|Bracers of Defense|Cloak of the Bat|Dimensional Shackles|Gem of Seeing|Horn of Blasting|Ring of Free Action|Ring of Protection|Ring of the Ram' };
-    return [].concat.apply([], Object.keys(L).map(function (l) { return L[l].split('|').map(function (n) { return [n, +l]; }); }));
+      14: 'Amulet of Health|Arcane Propulsion Arm|Belt of Hill Giant Strength|Boots of Levitation|Boots of Speed|Bracers of Defense|Cloak of the Bat|Dimensional Shackles|Gem of Seeing|Horn of Blasting|Ring of Free Action|Ring of Protection|Ring of the Ram'
+    };
+    return [].concat.apply(
+      [],
+      Object.keys(L).map(function (l) {
+        return L[l].split('|').map(function (n) {
+          return [n, +l];
+        });
+      })
+    );
   };
   R.slotsFor = function (kind, level) {
     if (kind === 'full') return D.fullCasterSlots[level - 1];
     if (kind === 'half') return level < 2 ? [] : D.fullCasterSlots[Math.ceil(level / 2) - 1];
     if (kind === 'half-up') return D.fullCasterSlots[Math.ceil(level / 2) - 1];
-    if (kind === 'third') return D.thirdCasterSlots[level - 1].filter(function (n) { return n > 0; });
+    if (kind === 'third')
+      return D.thirdCasterSlots[level - 1].filter(function (n) {
+        return n > 0;
+      });
     return [];
   };
 
-  var EXPERTISE = { rogue: [[1, 2], [6, 2]], bard: [[3, 2], [10, 2]] };
-  function steps(level, table) { var n = 0; table.forEach(function (t) { if (level >= t[0]) n = t[1]; }); return n; }
-  function tagOk(tag, filters) { return !filters || filters[tag || 'official'] !== false; }
+  var EXPERTISE = {
+    rogue: [
+      [1, 2],
+      [6, 2]
+    ],
+    bard: [
+      [3, 2],
+      [10, 2]
+    ]
+  };
+  function steps(level, table) {
+    var n = 0;
+    table.forEach(function (t) {
+      if (level >= t[0]) n = t[1];
+    });
+    return n;
+  }
+  function tagOk(tag, filters) {
+    return !filters || filters[tag || 'official'] !== false;
+  }
   R.tagOk = tagOk;
 
   // ---------- multiclassing tables ----------
   // Ability score minimums (every inner list is "one of these at 13+").
-  var MC_REQ = { artificer: [['INT']], barbarian: [['STR']], bard: [['CHA']], 'blood-hunter': [['INT'], ['STR', 'DEX']], cleric: [['WIS']], druid: [['WIS']],
-    fighter: [['STR', 'DEX']], monk: [['DEX'], ['WIS']], paladin: [['STR'], ['CHA']], ranger: [['DEX'], ['WIS']], rogue: [['DEX']], sorcerer: [['CHA']], warlock: [['CHA']], wizard: [['INT']] };
+  var MC_REQ = {
+    artificer: [['INT']],
+    barbarian: [['STR']],
+    bard: [['CHA']],
+    'blood-hunter': [['INT'], ['STR', 'DEX']],
+    cleric: [['WIS']],
+    druid: [['WIS']],
+    fighter: [['STR', 'DEX']],
+    monk: [['DEX'], ['WIS']],
+    paladin: [['STR'], ['CHA']],
+    ranger: [['DEX'], ['WIS']],
+    rogue: [['DEX']],
+    sorcerer: [['CHA']],
+    warlock: [['CHA']],
+    wizard: [['INT']]
+  };
   // Proficiencies gained when a class is added after level 1 (instead of its full starting list).
-  var LM = ['Light armor', 'Medium armor', 'Shields'], SMW = ['Simple weapons', 'Martial weapons'];
+  var LM = ['Light armor', 'Medium armor', 'Shields'],
+    SMW = ['Simple weapons', 'Martial weapons'];
   var MC_PROF = {
     artificer: { armor: LM, tools: ["Thieves' tools", "Tinker's tools"] },
     barbarian: { armor: ['Shields'], weapons: SMW },
     bard: { armor: ['Light armor'], skills: 1, skillFrom: 'any', tools: ['One musical instrument'] },
     'blood-hunter': { armor: LM, weapons: SMW },
-    cleric: { armor: LM }, druid: { armor: ['Light armor', 'Medium armor', 'Shields (nonmetal)'] },
-    fighter: { armor: LM, weapons: SMW }, monk: { weapons: ['Simple weapons', 'Shortswords'] }, paladin: { armor: LM, weapons: SMW },
-    ranger: { armor: LM, weapons: SMW, skills: 1 }, rogue: { armor: ['Light armor'], skills: 1, tools: ["Thieves' tools"] },
-    sorcerer: {}, warlock: { armor: ['Light armor'], weapons: ['Simple weapons'] }, wizard: {}
+    cleric: { armor: LM },
+    druid: { armor: ['Light armor', 'Medium armor', 'Shields (nonmetal)'] },
+    fighter: { armor: LM, weapons: SMW },
+    monk: { weapons: ['Simple weapons', 'Shortswords'] },
+    paladin: { armor: LM, weapons: SMW },
+    ranger: { armor: LM, weapons: SMW, skills: 1 },
+    rogue: { armor: ['Light armor'], skills: 1, tools: ["Thieves' tools"] },
+    sorcerer: {},
+    warlock: { armor: ['Light armor'], weapons: ['Simple weapons'] },
+    wizard: {}
   };
-  R.multiclassProf = function (id) { return MC_PROF[id] || {}; };
+  R.multiclassProf = function (id) {
+    return MC_PROF[id] || {};
+  };
   R.multiclassReq = function (id) {
-    return (MC_REQ[id] || []).map(function (g) { return g.map(function (a) { return D.abilityNames[a]; }).join(' or ') + ' 13'; }).join(' and ');
+    return (MC_REQ[id] || [])
+      .map(function (g) {
+        return (
+          g
+            .map(function (a) {
+              return D.abilityNames[a];
+            })
+            .join(' or ') + ' 13'
+        );
+      })
+      .join(' and ');
   };
 
-  function normName(n) { return String(n).toLowerCase().replace(/\(optional\)/g, '').replace(/[^a-z0-9]/g, ''); }
+  function normName(n) {
+    return String(n)
+      .toLowerCase()
+      .replace(/\(optional\)/g, '')
+      .replace(/[^a-z0-9]/g, '');
+  }
   // Longer paraphrase for a class or subclass feature, when one was collected.
   R.longText = function (ownerId, name) {
     var t = (D.featureText || {})[ownerId];
     return (t && t[name]) || '';
   };
-  R.spellText = function (name) { return (D.spellText || {})[name] || ''; };
+  R.spellText = function (name) {
+    return (D.spellText || {})[name] || '';
+  };
 
   // Clean up the saved class list: known classes only, no duplicates, 20 levels in total.
   R.classEntries = function (ch) {
-    var seen = {}, left = 20, out = [];
+    var seen = {},
+      left = 20,
+      out = [];
     arr(ch.classes).forEach(function (e) {
       var c = e && R.cls(e.cls);
       if (!c || seen[c.id] || left < 1) return;
@@ -238,30 +507,72 @@
   // Skills, tools, languages and expertise picked in one step are greyed out everywhere else.
   // A first pass finds who picked what (the earlier step keeps a duplicate); the second pass uses that.
   R.derive = function (ch, filters) {
-    var first = deriveOnce(ch, filters, null), claimed = {};
+    var first = deriveOnce(ch, filters, null),
+      claimed = {};
     first.choices.forEach(function (c) {
       if (!c.bucket) return;
-      var b = claimed[c.bucket] = claimed[c.bucket] || {};
-      c.picked.forEach(function (v) { if (!b[v]) b[v] = { key: c.key, label: c.label }; });
+      var b = (claimed[c.bucket] = claimed[c.bucket] || {});
+      c.picked.forEach(function (v) {
+        if (!b[v]) b[v] = { key: c.key, label: c.label };
+      });
     });
     return deriveOnce(ch, filters, claimed);
   };
   function deriveOnce(ch, filters, claimed) {
     var entries = R.classEntries(ch);
-    var level = entries.reduce(function (n, e) { return n + e.level; }, 0) || 1;
+    var level =
+      entries.reduce(function (n, e) {
+        return n + e.level;
+      }, 0) || 1;
     var pb = R.pb(level);
     var lin = R.lineage(ch.lineage);
     var L = R.mergeLineage(lin, ch.version, ch.sub);
     var bg = R.background(ch.background);
     var picks = ch.picks || {};
-    var out = { level: level, pb: pb, classes: entries, cls: entries[0] ? entries[0].cls : null, lin: lin, L: L, bg: bg, choices: [], features: [], warnings: [] };
+    var out = {
+      level: level,
+      pb: pb,
+      classes: entries,
+      cls: entries[0] ? entries[0].cls : null,
+      lin: lin,
+      L: L,
+      bg: bg,
+      choices: [],
+      features: [],
+      warnings: []
+    };
 
-    var prof = { armor: [], weapons: [], tools: [], languages: [], skills: [], expertise: [], saves: [], res: [], imm: [] };
+    var prof = {
+      armor: [],
+      weapons: [],
+      tools: [],
+      languages: [],
+      skills: [],
+      expertise: [],
+      saves: [],
+      res: [],
+      imm: []
+    };
     // Limits the player switched off, and extras gained outside the normal rules (items, boons, house rules)
-    var free = ch.free || {}, X = ch.extra || {}, xn = function (k) { return Math.round(+X[k] || 0); };
-    var xlist = function (k) { return String(X[k] || '').split(/[,;\n]/).map(function (t) { return t.trim(); }).filter(Boolean); };
+    var free = ch.free || {},
+      X = ch.extra || {},
+      xn = function (k) {
+        return Math.round(+X[k] || 0);
+      };
+    var xlist = function (k) {
+      return String(X[k] || '')
+        .split(/[,;\n]/)
+        .map(function (t) {
+          return t.trim();
+        })
+        .filter(Boolean);
+    };
     var fixedSrc = { skills: {}, tools: {}, languages: {} };
-    function fixed(bucket, list, src) { arr(list).forEach(function (v) { if (fixedSrc[bucket] && !fixedSrc[bucket][v]) fixedSrc[bucket][v] = src; }); }
+    function fixed(bucket, list, src) {
+      arr(list).forEach(function (v) {
+        if (fixedSrc[bucket] && !fixedSrc[bucket][v]) fixedSrc[bucket][v] = src;
+      });
+    }
     var bonus = { STR: 0, DEX: 0, CON: 0, INT: 0, WIS: 0, CHA: 0 };
     var hooks = { init: 0, speed: 0, hpPerLevel: 0, hpFlat: 0, passive: 0, unarmoredAC: 0 };
     var senses = { dv: 0 };
@@ -271,13 +582,40 @@
     var innate = [];
     function grantSpells(text, src, trait, keyBase, step, extra) {
       var g = R.spellsInText(text);
-      g.spells.forEach(function (sp) { innate.push(Object.assign({ src: src, trait: trait, kind: step === 'lineage' ? 'lineage' : 'feat' }, sp)); });
+      g.spells.forEach(function (sp) {
+        innate.push(Object.assign({ src: src, trait: trait, kind: step === 'lineage' ? 'lineage' : 'feat' }, sp));
+      });
       g.choices.forEach(function (gc, j) {
-        var names = gc.names || (D.spellLists[gc.list] || []).filter(function (n) { var x = D.findSpell(n); return x && x.level === gc.level && tagOk(x.tag, filters); });
-        var c = choice(keyBase + j, step, trait + ': ' + gc.label + (gc.optional ? ' (if you take this option)' : ''), gc.count,
-          names.map(function (n) { var x = D.findSpell(n); return { v: x.name, label: x.name, pre: x.school }; }), Object.assign({ spellChoice: true }, extra || {}));
+        var names =
+          gc.names ||
+          (D.spellLists[gc.list] || []).filter(function (n) {
+            var x = D.findSpell(n);
+            return x && x.level === gc.level && tagOk(x.tag, filters);
+          });
+        var c = choice(
+          keyBase + j,
+          step,
+          trait + ': ' + gc.label + (gc.optional ? ' (if you take this option)' : ''),
+          gc.count,
+          names.map(function (n) {
+            var x = D.findSpell(n);
+            return { v: x.name, label: x.name, pre: x.school };
+          }),
+          Object.assign({ spellChoice: true }, extra || {})
+        );
         if (gc.optional) c.missing = 0;
-        c.picked.forEach(function (n) { innate.push({ src: src, trait: trait, kind: step === 'lineage' ? 'lineage' : 'feat', name: n, minLevel: 1, ability: gc.ability, per: '', picked: true }); });
+        c.picked.forEach(function (n) {
+          innate.push({
+            src: src,
+            trait: trait,
+            kind: step === 'lineage' ? 'lineage' : 'feat',
+            name: n,
+            minLevel: 1,
+            ability: gc.ability,
+            per: '',
+            picked: true
+          });
+        });
       });
     }
 
@@ -285,174 +623,474 @@
     function choice(key, step, label, count, options, extra) {
       var c = Object.assign({ key: key, step: step, label: label, count: count, options: options }, extra || {});
       var valid = {};
-      options.forEach(function (o) { if (!o.disabled) valid[o.v] = 1; });
+      options.forEach(function (o) {
+        if (!o.disabled) valid[o.v] = 1;
+      });
       // a single pick replaces; with several to pick you may take more than the usual number (a warning says so)
-      c.picked = arr(picks[key]).filter(function (v, i, all) { return valid[v] && all.indexOf(v) === i; });
+      c.picked = arr(picks[key]).filter(function (v, i, all) {
+        return valid[v] && all.indexOf(v) === i;
+      });
       if (count <= 1 && !c.multi) c.picked = c.picked.slice(0, Math.max(0, count));
       c.missing = Math.max(0, count - c.picked.length);
       c.over = Math.max(0, c.picked.length - count);
-      if (c.over) out.warnings.push(label + ': ' + c.picked.length + ' chosen, the usual number is ' + count + '. Fine if your game allows more.');
+      if (c.over)
+        out.warnings.push(
+          label + ': ' + c.picked.length + ' chosen, the usual number is ' + count + '. Fine if your game allows more.'
+        );
       out.choices.push(c);
       return c;
     }
     function opts(list, known) {
-      return list.map(function (v) { return { v: v, label: v, disabled: known ? known.indexOf(v) >= 0 : false }; });
+      return list.map(function (v) {
+        return { v: v, label: v, disabled: known ? known.indexOf(v) >= 0 : false };
+      });
     }
-    function own(key) { return arr(picks[key]); }
+    function own(key) {
+      return arr(picks[key]);
+    }
     // options for a "pick N you don't already have" choice: things known from elsewhere are disabled
     function freshChoice(key, step, label, count, list, bucket, extra) {
       var mine = own(key);
-      var known = prof[bucket].filter(function (v) { return mine.indexOf(v) < 0; });
-      var cl = (claimed && claimed[bucket]) || {}, fx = fixedSrc[bucket] || {};
+      var known = prof[bucket].filter(function (v) {
+        return mine.indexOf(v) < 0;
+      });
+      var cl = (claimed && claimed[bucket]) || {},
+        fx = fixedSrc[bucket] || {};
       var options = list.map(function (v) {
-        var by = cl[v] && cl[v].key !== key ? cl[v] : null, from = fx[v];
+        var by = cl[v] && cl[v].key !== key ? cl[v] : null,
+          from = fx[v];
         var dis = known.indexOf(v) >= 0 || !!by || !!from;
-        return { v: v, label: v, group: bucket === 'languages' ? R.languageGroup(v) : '', disabled: dis, why: !dis ? '' : from ? 'from ' + from : by ? 'picked in ' + by.label : 'you already have it' };
+        return {
+          v: v,
+          label: v,
+          group: bucket === 'languages' ? R.languageGroup(v) : '',
+          disabled: dis,
+          why: !dis ? '' : from ? 'from ' + from : by ? 'picked in ' + by.label : 'you already have it'
+        };
       });
       var c = choice(key, step, label, count, options, Object.assign({ bucket: bucket }, extra || {}));
-      if (claimed) arr(picks[key]).forEach(function (v) {
-        var o = options.filter(function (x) { return x.v === v; })[0];
-        if (o && o.disabled && c.picked.indexOf(v) < 0) out.warnings.push(label + ': ' + v + ' was dropped because it is already ' + (o.why === 'you already have it' ? 'yours from elsewhere' : o.why.replace(/^from /, 'from ').replace(/^picked in /, 'picked in ')) + '. Pick another one.');
-      });
+      if (claimed)
+        arr(picks[key]).forEach(function (v) {
+          var o = options.filter(function (x) {
+            return x.v === v;
+          })[0];
+          if (o && o.disabled && c.picked.indexOf(v) < 0)
+            out.warnings.push(
+              label +
+                ': ' +
+                v +
+                ' was dropped because it is already ' +
+                (o.why === 'you already have it'
+                  ? 'yours from elsewhere'
+                  : o.why.replace(/^from /, 'from ').replace(/^picked in /, 'picked in ')) +
+                '. Pick another one.'
+            );
+        });
       prof[bucket] = uniq(prof[bucket].concat(c.picked));
       return c;
     }
-    function skillList(from) { return !from || from === 'any' || from[0] === 'Any' ? Object.keys(D.skills) : from; }
+    function skillList(from) {
+      return !from || from === 'any' || from[0] === 'Any' ? Object.keys(D.skills) : from;
+    }
     function addTools(list, keyBase, step, labelPrefix, extra) {
       var pending = [];
       arr(list).forEach(function (t, i) {
         var p = R.parseTool(t);
-        if (p.fixed) { prof.tools.push(p.fixed); fixed('tools', [p.fixed], 'your ' + (step === 'background' && bg ? 'background (' + bg.n + ')' : step === 'lineage' && L ? 'lineage (' + L.name + ')' : step)); } else pending.push([p, i]);
+        if (p.fixed) {
+          prof.tools.push(p.fixed);
+          fixed(
+            'tools',
+            [p.fixed],
+            'your ' +
+              (step === 'background' && bg
+                ? 'background (' + bg.n + ')'
+                : step === 'lineage' && L
+                  ? 'lineage (' + L.name + ')'
+                  : step)
+          );
+        } else pending.push([p, i]);
       });
       return function () {
         pending.forEach(function (x) {
           var p = x[0];
-          var from = p.orLanguage ? p.from.concat(R.choosableLanguages().filter(function (l) { return prof.languages.indexOf(l) < 0; })) : p.from;
-          var c = freshChoice(keyBase + '.tool' + x[1], step, labelPrefix + ': ' + p.label, p.count, from, 'tools', extra);
-          if (p.orLanguage) c.picked.forEach(function (v) {
-            if (R.allLanguages().indexOf(v) >= 0) { prof.languages.push(v); prof.tools.splice(prof.tools.indexOf(v), 1); }
-          });
+          var from = p.orLanguage
+            ? p.from.concat(
+                R.choosableLanguages().filter(function (l) {
+                  return prof.languages.indexOf(l) < 0;
+                })
+              )
+            : p.from;
+          var c = freshChoice(
+            keyBase + '.tool' + x[1],
+            step,
+            labelPrefix + ': ' + p.label,
+            p.count,
+            from,
+            'tools',
+            extra
+          );
+          if (p.orLanguage)
+            c.picked.forEach(function (v) {
+              if (R.allLanguages().indexOf(v) >= 0) {
+                prof.languages.push(v);
+                prof.tools.splice(prof.tools.indexOf(v), 1);
+              }
+            });
         });
       };
     }
-    var later = [], later2 = []; // "pick something new" choices run after all fixed grants are known; expertise last
+    var later = [],
+      later2 = []; // "pick something new" choices run after all fixed grants are known; expertise last
     var styleKeys = [];
 
     // ----- lineage -----
     if (L) {
       if (L.a === 'flex') {
         if (ch.flexMode === '111') {
-          choice('lin.flex111', 'lineage', 'Ability scores: +1 to three different abilities', 3, opts(AB)).picked.forEach(function (a) { bonus[a] += 1; });
+          choice(
+            'lin.flex111',
+            'lineage',
+            'Ability scores: +1 to three different abilities',
+            3,
+            opts(AB)
+          ).picked.forEach(function (a) {
+            bonus[a] += 1;
+          });
         } else {
           var f2 = choice('lin.flex2', 'lineage', 'Ability scores: +2 to one ability', 1, opts(AB));
-          f2.picked.forEach(function (a) { bonus[a] += 2; });
-          choice('lin.flex1', 'lineage', 'Ability scores: +1 to a different ability', 1, opts(AB, f2.picked)).picked.forEach(function (a) { bonus[a] += 1; });
+          f2.picked.forEach(function (a) {
+            bonus[a] += 2;
+          });
+          choice(
+            'lin.flex1',
+            'lineage',
+            'Ability scores: +1 to a different ability',
+            1,
+            opts(AB, f2.picked)
+          ).picked.forEach(function (a) {
+            bonus[a] += 1;
+          });
         }
       } else {
         for (var ak in L.a) if (bonus[ak] !== undefined) bonus[ak] += L.a[ak];
-        if (L.plus2) choice('lin.plus2', 'lineage', 'Ability scores: +2 to one ability', L.plus2, opts(AB)).picked.forEach(function (a) { bonus[a] += 2; });
-        if (L.ac) choice('lin.ac', 'lineage', 'Ability scores: +1 to ' + L.ac + ' other abilit' + (L.ac > 1 ? 'ies' : 'y'), L.ac,
-          opts(AB, Object.keys(L.a).filter(function (k) { return L.a[k] >= 2; }))).picked.forEach(function (a) { bonus[a] += 1; });
+        if (L.plus2)
+          choice('lin.plus2', 'lineage', 'Ability scores: +2 to one ability', L.plus2, opts(AB)).picked.forEach(
+            function (a) {
+              bonus[a] += 2;
+            }
+          );
+        if (L.ac)
+          choice(
+            'lin.ac',
+            'lineage',
+            'Ability scores: +1 to ' + L.ac + ' other abilit' + (L.ac > 1 ? 'ies' : 'y'),
+            L.ac,
+            opts(
+              AB,
+              Object.keys(L.a).filter(function (k) {
+                return L.a[k] >= 2;
+              })
+            )
+          ).picked.forEach(function (a) {
+            bonus[a] += 1;
+          });
       }
-      L.pick.forEach(function (p, i) { choice('lin.pick' + i, 'lineage', p.label, 1, opts(p.from)); });
-      prof.languages = prof.languages.concat(L.lang); fixed('languages', L.lang, 'your lineage (' + L.name + ')');
-      prof.skills = prof.skills.concat(L.sk); fixed('skills', L.sk, 'your lineage (' + L.name + ')');
+      L.pick.forEach(function (p, i) {
+        choice('lin.pick' + i, 'lineage', p.label, 1, opts(p.from));
+      });
+      prof.languages = prof.languages.concat(L.lang);
+      fixed('languages', L.lang, 'your lineage (' + L.name + ')');
+      prof.skills = prof.skills.concat(L.sk);
+      fixed('skills', L.sk, 'your lineage (' + L.name + ')');
       prof.saves = prof.saves.concat(L.saves);
-      prof.armor = prof.armor.concat(L.prof.armor); prof.weapons = prof.weapons.concat(L.prof.weapons);
-      prof.res = prof.res.concat(L.res); prof.imm = prof.imm.concat(L.imm);
+      prof.armor = prof.armor.concat(L.prof.armor);
+      prof.weapons = prof.weapons.concat(L.prof.weapons);
+      prof.res = prof.res.concat(L.res);
+      prof.imm = prof.imm.concat(L.imm);
       hooks.hpPerLevel += L.hpPerLevel || 0;
       senses.dv = L.dv || 0;
       var linTools = addTools(L.prof.tools, 'lin', 'lineage', 'Lineage tool');
       later.push(function () {
-        L.skc.forEach(function (s, i) { freshChoice('lin.skill' + i, 'lineage', 'Lineage skill proficienc' + (s.n > 1 ? 'ies' : 'y'), s.n, skillList(s.from), 'skills'); });
+        L.skc.forEach(function (s, i) {
+          freshChoice(
+            'lin.skill' + i,
+            'lineage',
+            'Lineage skill proficienc' + (s.n > 1 ? 'ies' : 'y'),
+            s.n,
+            skillList(s.from),
+            'skills'
+          );
+        });
         linTools();
-        if (L.lc) freshChoice('lin.lang', 'lineage', 'Lineage language' + (L.lc > 1 ? 's' : ''), L.lc, R.choosableLanguages(), 'languages');
+        if (L.lc)
+          freshChoice(
+            'lin.lang',
+            'lineage',
+            'Lineage language' + (L.lc > 1 ? 's' : ''),
+            L.lc,
+            R.choosableLanguages(),
+            'languages'
+          );
       });
-      L.tr.forEach(function (t) { out.features.push({ src: L.name, kind: 'lineage', n: t[0], t: t[1] }); });
-      L.tr.forEach(function (t, i) { grantSpells(t[1], L.subName && L.subName.indexOf(L.name) < 0 ? L.name + ' (' + L.subName + ')' : (L.subName || L.name), t[0], 'lin.spell' + i + '.', 'lineage'); });
-      if (innate.some(function (x) { return /chosen with your lineage/.test(x.ability); }) || L.tr.some(function (t) { return /chosen with your lineage/.test(R.spellsInText(t[1]).choices.map(function (c) { return c.ability; }).join()); }))
-        out.linSpellAbility = choice('lin.spellab', 'lineage', 'Spellcasting ability for your lineage spells', 1, opts(['INT', 'WIS', 'CHA'])).picked[0] || '';
-      for (var fi = 0; fi < (L.feat || 0); fi++) feats.push({ slot: 'linfeat' + fi, step: 'lineage', label: 'Lineage feat' });
+      L.tr.forEach(function (t) {
+        out.features.push({ src: L.name, kind: 'lineage', n: t[0], t: t[1] });
+      });
+      L.tr.forEach(function (t, i) {
+        grantSpells(
+          t[1],
+          L.subName && L.subName.indexOf(L.name) < 0 ? L.name + ' (' + L.subName + ')' : L.subName || L.name,
+          t[0],
+          'lin.spell' + i + '.',
+          'lineage'
+        );
+      });
+      if (
+        innate.some(function (x) {
+          return /chosen with your lineage/.test(x.ability);
+        }) ||
+        L.tr.some(function (t) {
+          return /chosen with your lineage/.test(
+            R.spellsInText(t[1])
+              .choices.map(function (c) {
+                return c.ability;
+              })
+              .join()
+          );
+        })
+      )
+        out.linSpellAbility =
+          choice(
+            'lin.spellab',
+            'lineage',
+            'Spellcasting ability for your lineage spells',
+            1,
+            opts(['INT', 'WIS', 'CHA'])
+          ).picked[0] || '';
+      for (var fi = 0; fi < (L.feat || 0); fi++)
+        feats.push({ slot: 'linfeat' + fi, step: 'lineage', label: 'Lineage feat' });
     }
 
     // ----- classes (one pass per class the character has levels in) -----
     entries.forEach(function (E) {
-      var cls = E.cls, clv = E.level, K = 'cls.' + cls.id + '.', X = { clsId: cls.id };
-      var mc = E.first ? null : (MC_PROF[cls.id] || {});
+      var cls = E.cls,
+        clv = E.level,
+        K = 'cls.' + cls.id + '.',
+        X = { clsId: cls.id };
+      var mc = E.first ? null : MC_PROF[cls.id] || {};
       var sc = clv >= cls.subclassLevel ? R.subclass(E.subclass) : null;
       if (sc && sc.c !== cls.id) sc = null;
       E.sc = sc;
       var fsOpts = function (list, key) {
         return list.map(function (n) {
-          var taken = styleKeys.some(function (k) { return k !== key && own(k).indexOf(n) >= 0; });
+          var taken = styleKeys.some(function (k) {
+            return k !== key && own(k).indexOf(n) >= 0;
+          });
           return { v: n, label: n, t: D.fightingStyles[n] || '', disabled: taken };
         });
       };
 
       if (E.first) {
-        prof.armor = prof.armor.concat(cls.armor); prof.weapons = prof.weapons.concat(cls.weapons);
+        prof.armor = prof.armor.concat(cls.armor);
+        prof.weapons = prof.weapons.concat(cls.weapons);
         prof.saves = prof.saves.concat(cls.saves);
       } else {
-        prof.armor = prof.armor.concat(mc.armor || []); prof.weapons = prof.weapons.concat(mc.weapons || []);
+        prof.armor = prof.armor.concat(mc.armor || []);
+        prof.weapons = prof.weapons.concat(mc.weapons || []);
       }
-      prof.languages = prof.languages.concat(cls.languages || []); fixed('languages', cls.languages, 'your class (' + cls.name + ')');
-      var clsTools = addTools(E.first ? cls.tools : (mc.tools || []), 'cls.' + cls.id, 'class', cls.name + ' tool', X);
+      prof.languages = prof.languages.concat(cls.languages || []);
+      fixed('languages', cls.languages, 'your class (' + cls.name + ')');
+      var clsTools = addTools(E.first ? cls.tools : mc.tools || [], 'cls.' + cls.id, 'class', cls.name + ' tool', X);
       later.push(function () {
-        if (E.first) freshChoice(K + 'skills', 'class', cls.name + ' skills', cls.skillChoose, skillList(cls.skillList), 'skills', X);
-        else if (mc.skills) freshChoice(K + 'skills', 'class', cls.name + ' skill (multiclass)', mc.skills, skillList(mc.skillFrom || cls.skillList), 'skills', X);
+        if (E.first)
+          freshChoice(
+            K + 'skills',
+            'class',
+            cls.name + ' skills',
+            cls.skillChoose,
+            skillList(cls.skillList),
+            'skills',
+            X
+          );
+        else if (mc.skills)
+          freshChoice(
+            K + 'skills',
+            'class',
+            cls.name + ' skill (multiclass)',
+            mc.skills,
+            skillList(mc.skillFrom || cls.skillList),
+            'skills',
+            X
+          );
         clsTools();
       });
       cls.features.forEach(function (f) {
         if (f.l > clv) return;
         if (f.grants && f.grants.saves) prof.saves = prof.saves.concat(f.grants.saves);
         if (/^Ability Score Improvement/.test(f.n)) return;
-        out.features.push({ src: cls.name, kind: 'class', clsId: cls.id, n: f.n, l: f.l, t: f.t, long: R.longText(cls.id, f.n) });
+        out.features.push({
+          src: cls.name,
+          kind: 'class',
+          clsId: cls.id,
+          n: f.n,
+          l: f.l,
+          t: f.t,
+          long: R.longText(cls.id, f.n)
+        });
       });
       cls.asiLevels.forEach(function (l) {
-        if (l <= clv) feats.push({ slot: 'asi.' + cls.id + '.' + l, step: 'abilities', label: cls.name + ' level ' + l, asi: true });
+        if (l <= clv)
+          feats.push({
+            slot: 'asi.' + cls.id + '.' + l,
+            step: 'abilities',
+            label: cls.name + ' level ' + l,
+            asi: true
+          });
       });
 
       if (cls.fightingStyleLevel && clv >= cls.fightingStyleLevel) {
         styleKeys.push(K + 'fs');
-        choice(K + 'fs', 'class', 'Fighting Style', 1, fsOpts(cls.fightingStyles.filter(function (n) { return tagOk(/\(UA\)/.test(n) ? 'ua' : 'official', filters); }), K + 'fs'), { group: 'Fighting Style', clsId: cls.id });
+        choice(
+          K + 'fs',
+          'class',
+          'Fighting Style',
+          1,
+          fsOpts(
+            cls.fightingStyles.filter(function (n) {
+              return tagOk(/\(UA\)/.test(n) ? 'ua' : 'official', filters);
+            }),
+            K + 'fs'
+          ),
+          { group: 'Fighting Style', clsId: cls.id }
+        );
       }
-      var col = function (name) { var v = cls.columns[name]; v = v ? v[clv - 1] : 0; return typeof v === 'number' ? v : 0; };
-      var optList = function (list, textIdx, preIdx) {
-        return list.map(function (x) { return { v: x[0], label: x[0], pre: preIdx != null ? x[preIdx] : '', t: x[textIdx] }; });
+      var col = function (name) {
+        var v = cls.columns[name];
+        v = v ? v[clv - 1] : 0;
+        return typeof v === 'number' ? v : 0;
       };
-      var G = function (group) { return { group: group, clsId: cls.id, clv: clv }; };
+      var optList = function (list, textIdx, preIdx) {
+        return list.map(function (x) {
+          return { v: x[0], label: x[0], pre: preIdx != null ? x[preIdx] : '', t: x[textIdx] };
+        });
+      };
+      var G = function (group) {
+        return { group: group, clsId: cls.id, clv: clv };
+      };
       if (cls.id === 'warlock') {
-        if (col('Invocations Known')) choice(K + 'invocations', 'class', 'Eldritch Invocations', col('Invocations Known'), optList(D.invocations, 2, 1), G('Eldritch Invocation'));
-        if (clv >= 3) choice(K + 'boon', 'class', 'Pact Boon', 1, Object.keys(D.pactBoons).map(function (n) { return { v: n, label: n, t: D.pactBoons[n] }; }), G('Pact Boon'));
+        if (col('Invocations Known'))
+          choice(
+            K + 'invocations',
+            'class',
+            'Eldritch Invocations',
+            col('Invocations Known'),
+            optList(D.invocations, 2, 1),
+            G('Eldritch Invocation')
+          );
+        if (clv >= 3)
+          choice(
+            K + 'boon',
+            'class',
+            'Pact Boon',
+            1,
+            Object.keys(D.pactBoons).map(function (n) {
+              return { v: n, label: n, t: D.pactBoons[n] };
+            }),
+            G('Pact Boon')
+          );
       }
       if (cls.id === 'sorcerer' && clv >= 3)
-        choice(K + 'metamagic', 'class', 'Metamagic', steps(clv, [[3, 2], [10, 3], [17, 4]]), Object.keys(D.metamagic).map(function (n) { return { v: n, label: n, t: D.metamagic[n] }; }), G('Metamagic'));
+        choice(
+          K + 'metamagic',
+          'class',
+          'Metamagic',
+          steps(clv, [
+            [3, 2],
+            [10, 3],
+            [17, 4]
+          ]),
+          Object.keys(D.metamagic).map(function (n) {
+            return { v: n, label: n, t: D.metamagic[n] };
+          }),
+          G('Metamagic')
+        );
       if (cls.id === 'artificer' && col('Infusions Known')) {
         // each replicated item beyond the first uses up one more infusion known
-        var repLv = {}; R.replicable().forEach(function (r) { repLv[r[0]] = r[1]; });
-        var reps = own(K + 'infusions').indexOf('Replicate Magic Item') >= 0 ? own(K + 'replicate').filter(function (n) { return repLv[n] <= clv; }) : [];
-        choice(K + 'infusions', 'class', 'Infusions Known', col('Infusions Known') - Math.max(0, reps.length - 1), optList(D.infusions, 2, 1), G('Infusion'));
+        var repLv = {};
+        R.replicable().forEach(function (r) {
+          repLv[r[0]] = r[1];
+        });
+        var reps =
+          own(K + 'infusions').indexOf('Replicate Magic Item') >= 0
+            ? own(K + 'replicate').filter(function (n) {
+                return repLv[n] <= clv;
+              })
+            : [];
+        choice(
+          K + 'infusions',
+          'class',
+          'Infusions Known',
+          col('Infusions Known') - Math.max(0, reps.length - 1),
+          optList(D.infusions, 2, 1),
+          G('Infusion')
+        );
         if (reps.length || own(K + 'infusions').indexOf('Replicate Magic Item') >= 0)
-          choice(K + 'replicate', 'class', 'Replicate Magic Item: which items', Math.max(1, reps.length), R.replicable().map(function (r) {
-            var x = D.magicItems.filter(function (i) { return i[0] === r[0] || (r[0] === 'Belt of Hill Giant Strength' && i[0] === 'Belt of Giant Strength'); })[0];
-            return { v: r[0], label: r[0], pre: ord(r[1]) + ' level', t: x ? x[2] + (x[3] ? ', requires attunement' : '') : 'Wondrous item', disabled: r[1] > clv, why: r[1] > clv ? 'from ' + ord(r[1]) + ' level' : '' };
-          }), Object.assign(G('Replicated item'), { multi: true, note: 'Pick one item each time you take this infusion. Each item after the first uses one more of your infusions known.' }));
+          choice(
+            K + 'replicate',
+            'class',
+            'Replicate Magic Item: which items',
+            Math.max(1, reps.length),
+            R.replicable().map(function (r) {
+              var x = D.magicItems.filter(function (i) {
+                return i[0] === r[0] || (r[0] === 'Belt of Hill Giant Strength' && i[0] === 'Belt of Giant Strength');
+              })[0];
+              return {
+                v: r[0],
+                label: r[0],
+                pre: ord(r[1]) + ' level',
+                t: x ? x[2] + (x[3] ? ', requires attunement' : '') : 'Wondrous item',
+                disabled: r[1] > clv,
+                why: r[1] > clv ? 'from ' + ord(r[1]) + ' level' : ''
+              };
+            }),
+            Object.assign(G('Replicated item'), {
+              multi: true,
+              note: 'Pick one item each time you take this infusion. Each item after the first uses one more of your infusions known.'
+            })
+          );
       }
       if (cls.id === 'blood-hunter' && col('Blood Curses Known'))
-        choice(K + 'curses', 'class', 'Blood Curses', col('Blood Curses Known'), optList(D.bloodCurses, 2, 1), G('Blood Curse'));
-      if (EXPERTISE[cls.id]) later2.push(function () {
-        var n = 0; EXPERTISE[cls.id].forEach(function (e) { if (clv >= e[0]) n += e[1]; });
-        if (!n) return;
-        var list = prof.skills.slice(); if (cls.id === 'rogue') list.push("Thieves' tools");
-        freshChoice(K + 'expertise', 'class', cls.name + ' Expertise', n, list, 'expertise', X);
-      });
+        choice(
+          K + 'curses',
+          'class',
+          'Blood Curses',
+          col('Blood Curses Known'),
+          optList(D.bloodCurses, 2, 1),
+          G('Blood Curse')
+        );
+      if (EXPERTISE[cls.id])
+        later2.push(function () {
+          var n = 0;
+          EXPERTISE[cls.id].forEach(function (e) {
+            if (clv >= e[0]) n += e[1];
+          });
+          if (!n) return;
+          var list = prof.skills.slice();
+          if (cls.id === 'rogue') list.push("Thieves' tools");
+          freshChoice(K + 'expertise', 'class', cls.name + ' Expertise', n, list, 'expertise', X);
+        });
 
       // subclass
       if (sc) {
-        var SK = 'sc.' + cls.id + '.', g = sc.grants || {};
-        prof.armor = prof.armor.concat(g.armor || []); prof.weapons = prof.weapons.concat(g.weapons || []);
+        var SK = 'sc.' + cls.id + '.',
+          g = sc.grants || {};
+        prof.armor = prof.armor.concat(g.armor || []);
+        prof.weapons = prof.weapons.concat(g.weapons || []);
         prof.languages = prof.languages.concat(g.languages || []);
-        if (clv >= (g.skillsAt || 0)) { prof.skills = prof.skills.concat(g.skills || []); fixed('skills', g.skills, 'your ' + (sc ? sc.name : cls.name)); prof.expertise = prof.expertise.concat(g.expertise || []); }
+        if (clv >= (g.skillsAt || 0)) {
+          prof.skills = prof.skills.concat(g.skills || []);
+          fixed('skills', g.skills, 'your ' + (sc ? sc.name : cls.name));
+          prof.expertise = prof.expertise.concat(g.expertise || []);
+        }
         if (clv >= (g.savesAt || 0)) prof.saves = prof.saves.concat(g.saves || []);
         if (g.darkvision) senses.dv = Math.max(senses.dv, g.darkvision);
         if (g.darkvisionBonus) senses.dv = senses.dv ? senses.dv + g.darkvisionBonus : g.darkvisionBonus;
@@ -460,82 +1098,285 @@
         if (g.unarmoredAC) hooks.unarmoredAC = Math.max(hooks.unarmoredAC, g.unarmoredAC);
         var scTools = addTools(g.tools, 'sc.' + cls.id, 'class', sc.name + ' tool', X);
         var vnames = sc.variants ? Object.keys(sc.variants) : sc.variantList;
-        if (vnames) E.variant = choice(SK + 'variant', 'class', sc.variantLabel || 'Option', 1, opts(vnames), X).picked[0];
+        if (vnames)
+          E.variant = choice(SK + 'variant', 'class', sc.variantLabel || 'Option', 1, opts(vnames), X).picked[0];
         later.push(function () {
           scTools();
           (sc.choices || []).forEach(function (c, i) {
-            var key = SK + 'choice' + i, n = c.count || 1;
-            if (c.counts) { n = 0; for (var lv in c.counts) if (clv >= +lv) n = c.counts[lv]; }
+            var key = SK + 'choice' + i,
+              n = c.count || 1;
+            if (c.counts) {
+              n = 0;
+              for (var lv in c.counts) if (clv >= +lv) n = c.counts[lv];
+            }
             if (c.l && clv < c.l) return;
             if (!n) return;
-            if (c.type === 'skill') freshChoice(key, 'class', sc.name + ' skill' + (n > 1 ? 's' : ''), n, skillList(c.from), 'skills', X);
-            else if (c.type === 'language') freshChoice(key, 'class', sc.name + ' language' + (n > 1 ? 's' : ''), n, R.choosableLanguages(), 'languages', X);
-            else if (c.type === 'tool') freshChoice(key, 'class', sc.name + ' tool', n, c.from === 'artisan' ? D.tools["Artisan's tools"] : (Array.isArray(c.from) ? c.from : R.allTools()), 'tools', X);
+            if (c.type === 'skill')
+              freshChoice(key, 'class', sc.name + ' skill' + (n > 1 ? 's' : ''), n, skillList(c.from), 'skills', X);
+            else if (c.type === 'language')
+              freshChoice(
+                key,
+                'class',
+                sc.name + ' language' + (n > 1 ? 's' : ''),
+                n,
+                R.choosableLanguages(),
+                'languages',
+                X
+              );
+            else if (c.type === 'tool')
+              freshChoice(
+                key,
+                'class',
+                sc.name + ' tool',
+                n,
+                c.from === 'artisan' ? D.tools["Artisan's tools"] : Array.isArray(c.from) ? c.from : R.allTools(),
+                'tools',
+                X
+              );
             else if (c.type === 'skillOrLanguage') {
-              var mine = own(key), langs = R.choosableLanguages().filter(function (l) { return prof.languages.indexOf(l) < 0 || mine.indexOf(l) >= 0; });
-              var sk = skillList(c.from).filter(function (s) { return prof.skills.indexOf(s) < 0 || mine.indexOf(s) >= 0; });
-              choice(key, 'class', sc.name + ': a skill or a language', n, opts(sk.concat(langs)), X).picked.forEach(function (v) {
-                (D.skills[v] ? prof.skills : prof.languages).push(v);
+              var mine = own(key),
+                langs = R.choosableLanguages().filter(function (l) {
+                  return prof.languages.indexOf(l) < 0 || mine.indexOf(l) >= 0;
+                });
+              var sk = skillList(c.from).filter(function (s) {
+                return prof.skills.indexOf(s) < 0 || mine.indexOf(s) >= 0;
               });
+              choice(key, 'class', sc.name + ': a skill or a language', n, opts(sk.concat(langs)), X).picked.forEach(
+                function (v) {
+                  (D.skills[v] ? prof.skills : prof.languages).push(v);
+                }
+              );
             } else if (c.type === 'fightingStyle') {
               styleKeys.push(key);
-              choice(key, 'class', sc.name + ' Fighting Style', 1, fsOpts(c.from === 'class' ? cls.fightingStyles : c.from, key), G('Fighting Style'));
+              choice(
+                key,
+                'class',
+                sc.name + ' Fighting Style',
+                1,
+                fsOpts(c.from === 'class' ? cls.fightingStyles : c.from, key),
+                G('Fighting Style')
+              );
             } else if (c.type === 'maneuver') {
-              choice(key, 'class', 'Maneuvers', n, D.maneuvers.map(function (m) { return { v: m[0], label: m[0], t: m[1] }; }), G('Maneuver'));
+              choice(
+                key,
+                'class',
+                'Maneuvers',
+                n,
+                D.maneuvers.map(function (m) {
+                  return { v: m[0], label: m[0], t: m[1] };
+                }),
+                G('Maneuver')
+              );
             }
           });
-          if (sc.id === 'monk:four-elements') choice(SK + 'disciplines', 'class', 'Elemental Disciplines (plus Elemental Attunement)', steps(clv, [[3, 1], [6, 2], [11, 3], [17, 4]]),
-            D.disciplines.filter(function (d) { return d[0] !== 'Elemental Attunement'; }).map(function (d) { return { v: d[0], label: d[0], pre: d[1] ? 'Level ' + d[1] : '', t: d[2], disabled: d[1] > clv }; }), G('Elemental Discipline'));
-          if (sc.id === 'fighter:arcane-archer') choice(SK + 'shots', 'class', 'Arcane Shot options', steps(clv, [[3, 2], [7, 3], [10, 4], [15, 5], [18, 6]]),
-            D.arcaneShots.map(function (m) { return { v: m[0], label: m[0], t: m[1] }; }), G('Arcane Shot'));
-          if (sc.id === 'fighter:rune-knight') choice(SK + 'runes', 'class', 'Runes', steps(clv, [[3, 2], [7, 3], [10, 4], [15, 5]]),
-            D.runes.map(function (m) { return { v: m[0], label: m[0], t: m[1] }; }), G('Rune'));
+          if (sc.id === 'monk:four-elements')
+            choice(
+              SK + 'disciplines',
+              'class',
+              'Elemental Disciplines (plus Elemental Attunement)',
+              steps(clv, [
+                [3, 1],
+                [6, 2],
+                [11, 3],
+                [17, 4]
+              ]),
+              D.disciplines
+                .filter(function (d) {
+                  return d[0] !== 'Elemental Attunement';
+                })
+                .map(function (d) {
+                  return { v: d[0], label: d[0], pre: d[1] ? 'Level ' + d[1] : '', t: d[2], disabled: d[1] > clv };
+                }),
+              G('Elemental Discipline')
+            );
+          if (sc.id === 'fighter:arcane-archer')
+            choice(
+              SK + 'shots',
+              'class',
+              'Arcane Shot options',
+              steps(clv, [
+                [3, 2],
+                [7, 3],
+                [10, 4],
+                [15, 5],
+                [18, 6]
+              ]),
+              D.arcaneShots.map(function (m) {
+                return { v: m[0], label: m[0], t: m[1] };
+              }),
+              G('Arcane Shot')
+            );
+          if (sc.id === 'fighter:rune-knight')
+            choice(
+              SK + 'runes',
+              'class',
+              'Runes',
+              steps(clv, [
+                [3, 2],
+                [7, 3],
+                [10, 4],
+                [15, 5]
+              ]),
+              D.runes.map(function (m) {
+                return { v: m[0], label: m[0], t: m[1] };
+              }),
+              G('Rune')
+            );
         });
         sc.features.forEach(function (f) {
-          if (f.l <= clv) out.features.push({ src: sc.name, kind: 'subclass', clsId: cls.id, n: f.n, l: f.l, t: f.t, long: R.longText(sc.id, f.n) });
+          if (f.l <= clv)
+            out.features.push({
+              src: sc.name,
+              kind: 'subclass',
+              clsId: cls.id,
+              n: f.n,
+              l: f.l,
+              t: f.t,
+              long: R.longText(sc.id, f.n)
+            });
         });
-        if (sc.id === 'monk:four-elements') { var ea = D.disciplines.filter(function (d) { return d[0] === 'Elemental Attunement'; })[0]; if (ea) out.features.push({ src: 'Elemental Discipline', kind: 'option', clsId: cls.id, n: ea[0], t: ea[2] }); }
+        if (sc.id === 'monk:four-elements') {
+          var ea = D.disciplines.filter(function (d) {
+            return d[0] === 'Elemental Attunement';
+          })[0];
+          if (ea) out.features.push({ src: 'Elemental Discipline', kind: 'option', clsId: cls.id, n: ea[0], t: ea[2] });
+        }
       }
     });
 
     // ----- background -----
     if (bg) {
-      prof.skills = prof.skills.concat(bg.sk || []); fixed('skills', bg.sk, 'your background (' + bg.n + ')');
-      prof.languages = prof.languages.concat(bg.lang || []); fixed('languages', bg.lang, 'your background (' + bg.n + ')');
+      prof.skills = prof.skills.concat(bg.sk || []);
+      fixed('skills', bg.sk, 'your background (' + bg.n + ')');
+      prof.languages = prof.languages.concat(bg.lang || []);
+      fixed('languages', bg.lang, 'your background (' + bg.n + ')');
       var bgTools = addTools(bg.tools, 'bg', 'background', 'Background tool');
       later.push(function () {
-        if (bg.skc) freshChoice('bg.skills', 'background', 'Background skill' + (bg.skc.n > 1 ? 's' : ''), bg.skc.n, skillList(bg.skc.from), 'skills');
+        if (bg.skc)
+          freshChoice(
+            'bg.skills',
+            'background',
+            'Background skill' + (bg.skc.n > 1 ? 's' : ''),
+            bg.skc.n,
+            skillList(bg.skc.from),
+            'skills'
+          );
         bgTools();
-        if (bg.lc) freshChoice('bg.lang', 'background', 'Background language' + (bg.lc > 1 ? 's' : ''), bg.lc, R.choosableLanguages(), 'languages');
+        if (bg.lc)
+          freshChoice(
+            'bg.lang',
+            'background',
+            'Background language' + (bg.lc > 1 ? 's' : ''),
+            bg.lc,
+            R.choosableLanguages(),
+            'languages'
+          );
       });
       if (bg.f) out.features.push({ src: bg.n, kind: 'background', n: bg.f[0], t: bg.f[1] });
-      (bg.feat || []).forEach(function (n, i) { feats.push({ slot: 'bgfeat' + i, step: 'background', label: 'Background feat', fixed: n }); });
-      if (bg.featChoice) feats.push({ slot: 'bgfeatc', step: 'background', label: 'Background feat', from: bg.featChoice });
+      (bg.feat || []).forEach(function (n, i) {
+        feats.push({ slot: 'bgfeat' + i, step: 'background', label: 'Background feat', fixed: n });
+      });
+      if (bg.featChoice)
+        feats.push({ slot: 'bgfeatc', step: 'background', label: 'Background feat', from: bg.featChoice });
       if (bg.spells) for (var bl in bg.spells) bgSpells = bgSpells.concat(bg.spells[bl]);
     }
 
     // ----- ability score improvements and feats -----
     // What each feat lets you choose or gives you beyond its summary: maneuvers, metamagic, spells, skills,
     // weapons, resistances… Choices show under the feat on the step where you took it.
-    var AB_FULL = { STR: 'Strength', DEX: 'Dexterity', CON: 'Constitution', INT: 'Intelligence', WIS: 'Wisdom', CHA: 'Charisma' };
-    var CASTER_AB = { bard: 'Charisma', cleric: 'Wisdom', druid: 'Wisdom', sorcerer: 'Charisma', warlock: 'Charisma', wizard: 'Intelligence', artificer: 'Intelligence' };
-    var ATTACK_CANTRIPS = ['Chill Touch', 'Eldritch Blast', 'Fire Bolt', 'Produce Flame', 'Ray of Frost', 'Shocking Grasp', 'Thorn Whip', 'Primal Savagery'];
+    var AB_FULL = {
+      STR: 'Strength',
+      DEX: 'Dexterity',
+      CON: 'Constitution',
+      INT: 'Intelligence',
+      WIS: 'Wisdom',
+      CHA: 'Charisma'
+    };
+    var CASTER_AB = {
+      bard: 'Charisma',
+      cleric: 'Wisdom',
+      druid: 'Wisdom',
+      sorcerer: 'Charisma',
+      warlock: 'Charisma',
+      wizard: 'Intelligence',
+      artificer: 'Intelligence'
+    };
+    var ATTACK_CANTRIPS = [
+      'Chill Touch',
+      'Eldritch Blast',
+      'Fire Bolt',
+      'Produce Flame',
+      'Ray of Frost',
+      'Shocking Grasp',
+      'Thorn Whip',
+      'Primal Savagery'
+    ];
     out.featUses = [];
     function featExtras(f, slot, chosenAb) {
-      var S = slot.slot, X = { asiSlot: S }, step = slot.step;
+      var S = slot.slot,
+        X = { asiSlot: S },
+        step = slot.step;
       var spellOpts = function (test) {
-        return Object.keys(D.spells).map(function (k) { return D.spells[k]; }).filter(function (x) { return tagOk(x.tag, filters) && test(x); })
-          .sort(function (a, b) { return a.name < b.name ? -1 : 1; }).map(function (x) { return { v: x.name, label: x.name, pre: (x.level ? 'Level ' + x.level + ' ' : 'Cantrip · ') + x.school }; });
+        return Object.keys(D.spells)
+          .map(function (k) {
+            return D.spells[k];
+          })
+          .filter(function (x) {
+            return tagOk(x.tag, filters) && test(x);
+          })
+          .sort(function (a, b) {
+            return a.name < b.name ? -1 : 1;
+          })
+          .map(function (x) {
+            return { v: x.name, label: x.name, pre: (x.level ? 'Level ' + x.level + ' ' : 'Cantrip · ') + x.school };
+          });
       };
-      var onList = function (cls) { var L = D.spellLists[cls] || []; return function (x) { return L.indexOf(x.name) >= 0; }; };
+      var onList = function (cls) {
+        var L = D.spellLists[cls] || [];
+        return function (x) {
+          return L.indexOf(x.name) >= 0;
+        };
+      };
       function spellPick(key, label, n, test, ability, per) {
-        var c = choice(S + '.' + key, step, f.n + ': ' + label, n, spellOpts(test), Object.assign({ spellChoice: true }, X));
-        c.picked.forEach(function (name) { var sp = D.findSpell(name); innate.push({ src: f.n, trait: f.n, kind: 'feat', name: name, minLevel: 1, ability: ability || '', per: sp.level ? (per || '1/long rest') : '', slots: false, picked: true }); });
+        var c = choice(
+          S + '.' + key,
+          step,
+          f.n + ': ' + label,
+          n,
+          spellOpts(test),
+          Object.assign({ spellChoice: true }, X)
+        );
+        c.picked.forEach(function (name) {
+          var sp = D.findSpell(name);
+          innate.push({
+            src: f.n,
+            trait: f.n,
+            kind: 'feat',
+            name: name,
+            minLevel: 1,
+            ability: ability || '',
+            per: sp.level ? per || '1/long rest' : '',
+            slots: false,
+            picked: true
+          });
+        });
         return c;
       }
-      var lvl = function (n) { return function (x) { return x.level === n; }; };
-      var school = function (n, list) { return function (x) { return x.level === n && list.indexOf(x.school) >= 0; }; };
-      var both = function (a, b) { return function (x) { return a(x) && b(x); }; };
+      var lvl = function (n) {
+        return function (x) {
+          return x.level === n;
+        };
+      };
+      var school = function (n, list) {
+        return function (x) {
+          return x.level === n && list.indexOf(x.school) >= 0;
+        };
+      };
+      var both = function (a, b) {
+        return function (x) {
+          return a(x) && b(x);
+        };
+      };
       var mental = chosenAb && AB_FULL[chosenAb];
       // spells the summary names: they use the ability the feat raised
       innate.forEach(function (x) {
@@ -543,115 +1384,418 @@
         if (/chosen with your lineage/.test(x.ability)) x.ability = ''; // that wording is for lineages; feats use the ability they raise
         if (!x.ability && mental && /INT|WIS|CHA/.test(chosenAb)) x.ability = mental;
       });
-      var uses = function (name, max, rest) { out.featUses.push({ name: name, max: max, rest: rest, feat: f.n }); };
+      var uses = function (name, max, rest) {
+        out.featUses.push({ name: name, max: max, rest: rest, feat: f.n });
+      };
       switch (f.n) {
         case 'Martial Adept':
-          choice(S + '.man', step, 'Martial Adept: maneuvers', 2, D.maneuvers.map(function (m) { return { v: m[0], label: m[0], t: m[1] }; }), Object.assign({ group: 'Maneuver' }, X));
-          uses('Superiority Die (d6, Martial Adept)', 1, 'short'); break;
+          choice(
+            S + '.man',
+            step,
+            'Martial Adept: maneuvers',
+            2,
+            D.maneuvers.map(function (m) {
+              return { v: m[0], label: m[0], t: m[1] };
+            }),
+            Object.assign({ group: 'Maneuver' }, X)
+          );
+          uses('Superiority Die (d6, Martial Adept)', 1, 'short');
+          break;
         case 'Metamagic Adept':
-          choice(S + '.mm', step, 'Metamagic Adept: Metamagic options', 2, Object.keys(D.metamagic).map(function (n) { return { v: n, label: n, t: D.metamagic[n] }; }), Object.assign({ group: 'Metamagic' }, X));
-          uses('Sorcery Points (Metamagic Adept)', 2, 'long'); break;
+          choice(
+            S + '.mm',
+            step,
+            'Metamagic Adept: Metamagic options',
+            2,
+            Object.keys(D.metamagic).map(function (n) {
+              return { v: n, label: n, t: D.metamagic[n] };
+            }),
+            Object.assign({ group: 'Metamagic' }, X)
+          );
+          uses('Sorcery Points (Metamagic Adept)', 2, 'long');
+          break;
         case 'Fighting Initiate':
           styleKeys.push(S + '.fs');
-          choice(S + '.fs', step, 'Fighting Initiate: Fighting Style', 1, R.cls('fighter').fightingStyles.filter(function (n) { return tagOk(/\(UA\)/.test(n) ? 'ua' : 'official', filters); }).map(function (n) {
-            var taken = styleKeys.some(function (k) { return k !== S + '.fs' && own(k).indexOf(n) >= 0; });
-            return { v: n, label: n, t: D.fightingStyles[n] || '', disabled: taken, why: taken ? 'you already have it' : '' };
-          }), Object.assign({ group: 'Fighting Style' }, X)); break;
-        case 'Magic Initiate': case 'Ritual Caster': {
-          var classes = f.n === 'Ritual Caster' ? ['bard', 'cleric', 'druid', 'sorcerer', 'warlock', 'wizard'] : ['bard', 'cleric', 'druid', 'sorcerer', 'warlock', 'wizard'];
-          var mc = choice(S + '.cls', step, f.n + ': class', 1, classes.map(function (id) { return { v: id, label: R.cls(id).name }; }), X).picked[0];
+          choice(
+            S + '.fs',
+            step,
+            'Fighting Initiate: Fighting Style',
+            1,
+            R.cls('fighter')
+              .fightingStyles.filter(function (n) {
+                return tagOk(/\(UA\)/.test(n) ? 'ua' : 'official', filters);
+              })
+              .map(function (n) {
+                var taken = styleKeys.some(function (k) {
+                  return k !== S + '.fs' && own(k).indexOf(n) >= 0;
+                });
+                return {
+                  v: n,
+                  label: n,
+                  t: D.fightingStyles[n] || '',
+                  disabled: taken,
+                  why: taken ? 'you already have it' : ''
+                };
+              }),
+            Object.assign({ group: 'Fighting Style' }, X)
+          );
+          break;
+        case 'Magic Initiate':
+        case 'Ritual Caster': {
+          var classes =
+            f.n === 'Ritual Caster'
+              ? ['bard', 'cleric', 'druid', 'sorcerer', 'warlock', 'wizard']
+              : ['bard', 'cleric', 'druid', 'sorcerer', 'warlock', 'wizard'];
+          var mc = choice(
+            S + '.cls',
+            step,
+            f.n + ': class',
+            1,
+            classes.map(function (id) {
+              return { v: id, label: R.cls(id).name };
+            }),
+            X
+          ).picked[0];
           if (!mc) break;
           if (f.n === 'Magic Initiate') {
             spellPick('c', 'cantrips', 2, both(onList(mc), lvl(0)), CASTER_AB[mc]);
             spellPick('s', '1st-level spell', 1, both(onList(mc), lvl(1)), CASTER_AB[mc]);
-          } else spellPick('r', '1st-level rituals', 2, function (x) { return x.level === 1 && x.ritual && onList(mc)(x); }, CASTER_AB[mc], 'ritual');
-          break; }
+          } else
+            spellPick(
+              'r',
+              '1st-level rituals',
+              2,
+              function (x) {
+                return x.level === 1 && x.ritual && onList(mc)(x);
+              },
+              CASTER_AB[mc],
+              'ritual'
+            );
+          break;
+        }
         case 'Artificer Initiate':
           spellPick('c', 'cantrip', 1, both(onList('artificer'), lvl(0)), 'Intelligence');
           spellPick('s', '1st-level spell', 1, both(onList('artificer'), lvl(1)), 'Intelligence');
-          later.push(function () { freshChoice(S + '.tool', step, 'Artificer Initiate: artisan’s tools', 1, D.tools["Artisan's tools"], 'tools', X); }); break;
+          later.push(function () {
+            freshChoice(
+              S + '.tool',
+              step,
+              'Artificer Initiate: artisan’s tools',
+              1,
+              D.tools["Artisan's tools"],
+              'tools',
+              X
+            );
+          });
+          break;
         case 'Aberrant Dragonmark':
           spellPick('c', 'sorcerer cantrip', 1, both(onList('sorcerer'), lvl(0)), 'Constitution');
-          spellPick('s', '1st-level sorcerer spell', 1, both(onList('sorcerer'), lvl(1)), 'Constitution', '1/short rest'); break;
-        case 'Fey Touched': spellPick('s', '1st-level divination or enchantment spell', 1, school(1, ['Divination', 'Enchantment']), mental); break;
-        case 'Shadow Touched': spellPick('s', '1st-level illusion or necromancy spell', 1, school(1, ['Illusion', 'Necromancy']), mental); break;
+          spellPick(
+            's',
+            '1st-level sorcerer spell',
+            1,
+            both(onList('sorcerer'), lvl(1)),
+            'Constitution',
+            '1/short rest'
+          );
+          break;
+        case 'Fey Touched':
+          spellPick(
+            's',
+            '1st-level divination or enchantment spell',
+            1,
+            school(1, ['Divination', 'Enchantment']),
+            mental
+          );
+          break;
+        case 'Shadow Touched':
+          spellPick('s', '1st-level illusion or necromancy spell', 1, school(1, ['Illusion', 'Necromancy']), mental);
+          break;
         case 'Spell Sniper': {
           var sab = choice(S + '.ab', step, 'Spell Sniper: cast it with', 1, opts(['INT', 'WIS', 'CHA']), X).picked[0];
-          spellPick('c', 'attack cantrip', 1, function (x) { return ATTACK_CANTRIPS.indexOf(x.name) >= 0; }, sab ? AB_FULL[sab] : ''); break; }
+          spellPick(
+            'c',
+            'attack cantrip',
+            1,
+            function (x) {
+              return ATTACK_CANTRIPS.indexOf(x.name) >= 0;
+            },
+            sab ? AB_FULL[sab] : ''
+          );
+          break;
+        }
         case 'Strixhaven Initiate': {
-          var stab = choice(S + '.ab', step, 'Strixhaven Initiate: cast them with', 1, opts(['INT', 'WIS', 'CHA']), X).picked[0];
+          var stab = choice(S + '.ab', step, 'Strixhaven Initiate: cast them with', 1, opts(['INT', 'WIS', 'CHA']), X)
+            .picked[0];
           spellPick('c', 'cantrips', 2, lvl(0), stab ? AB_FULL[stab] : '');
-          spellPick('s', '1st-level spell', 1, lvl(1), stab ? AB_FULL[stab] : ''); break; }
+          spellPick('s', '1st-level spell', 1, lvl(1), stab ? AB_FULL[stab] : '');
+          break;
+        }
         case 'Initiate of High Sorcery': {
-          var MOONS = { 'Solinari (abjuration, divination)': ['Abjuration', 'Divination'], 'Lunitari (illusion, transmutation)': ['Illusion', 'Transmutation'], 'Nuitari (enchantment, necromancy)': ['Enchantment', 'Necromancy'] };
-          var moon = choice(S + '.moon', step, 'Initiate of High Sorcery: moon', 1, opts(Object.keys(MOONS)), X).picked[0];
-          var hab = choice(S + '.ab', step, 'Initiate of High Sorcery: cast them with', 1, opts(['INT', 'WIS', 'CHA']), X).picked[0];
-          innate.forEach(function (x) { if (x.src === f.n && !x.ability && hab) x.ability = AB_FULL[hab]; });
-          if (moon) spellPick('s', '1st-level spells', 2, school(1, MOONS[moon]), hab ? AB_FULL[hab] : ''); break; }
-        case 'Adept of the Black Robes': spellPick('s', '2nd-level enchantment or necromancy spell', 1, school(2, ['Enchantment', 'Necromancy'])); break;
-        case 'Adept of the Red Robes': spellPick('s', '2nd-level illusion or transmutation spell', 1, school(2, ['Illusion', 'Transmutation'])); uses('Magical Balance', pb, 'long'); break;
-        case 'Adept of the White Robes': spellPick('s', '2nd-level abjuration or divination spell', 1, school(2, ['Abjuration', 'Divination'])); break;
+          var MOONS = {
+            'Solinari (abjuration, divination)': ['Abjuration', 'Divination'],
+            'Lunitari (illusion, transmutation)': ['Illusion', 'Transmutation'],
+            'Nuitari (enchantment, necromancy)': ['Enchantment', 'Necromancy']
+          };
+          var moon = choice(S + '.moon', step, 'Initiate of High Sorcery: moon', 1, opts(Object.keys(MOONS)), X)
+            .picked[0];
+          var hab = choice(
+            S + '.ab',
+            step,
+            'Initiate of High Sorcery: cast them with',
+            1,
+            opts(['INT', 'WIS', 'CHA']),
+            X
+          ).picked[0];
+          innate.forEach(function (x) {
+            if (x.src === f.n && !x.ability && hab) x.ability = AB_FULL[hab];
+          });
+          if (moon) spellPick('s', '1st-level spells', 2, school(1, MOONS[moon]), hab ? AB_FULL[hab] : '');
+          break;
+        }
+        case 'Adept of the Black Robes':
+          spellPick('s', '2nd-level enchantment or necromancy spell', 1, school(2, ['Enchantment', 'Necromancy']));
+          break;
+        case 'Adept of the Red Robes':
+          spellPick('s', '2nd-level illusion or transmutation spell', 1, school(2, ['Illusion', 'Transmutation']));
+          uses('Magical Balance', pb, 'long');
+          break;
+        case 'Adept of the White Robes':
+          spellPick('s', '2nd-level abjuration or divination spell', 1, school(2, ['Abjuration', 'Divination']));
+          break;
         case 'Divinely Favored': {
           var ALIGN = { Good: 'Cure Wounds', Neutral: 'Protection from Evil and Good', Evil: 'Inflict Wounds' };
-          var al = choice(S + '.al', step, 'Divinely Favored: your alignment', 1, opts(Object.keys(ALIGN)), X).picked[0];
-          if (al && D.findSpell(ALIGN[al])) innate.push({ src: f.n, trait: f.n, kind: 'feat', name: ALIGN[al], minLevel: 1, ability: 'Wisdom', per: '1/long rest' });
-          innate.forEach(function (x) { if (x.src === f.n && !x.ability) x.ability = 'Wisdom'; }); break; }
-        case 'Quicksmithing': spellPick('r', '1st-level rituals', 2, function (x) { return x.level === 1 && x.ritual; }, 'Intelligence', 'ritual'); break;
+          var al = choice(S + '.al', step, 'Divinely Favored: your alignment', 1, opts(Object.keys(ALIGN)), X)
+            .picked[0];
+          if (al && D.findSpell(ALIGN[al]))
+            innate.push({
+              src: f.n,
+              trait: f.n,
+              kind: 'feat',
+              name: ALIGN[al],
+              minLevel: 1,
+              ability: 'Wisdom',
+              per: '1/long rest'
+            });
+          innate.forEach(function (x) {
+            if (x.src === f.n && !x.ability) x.ability = 'Wisdom';
+          });
+          break;
+        }
+        case 'Quicksmithing':
+          spellPick(
+            'r',
+            '1st-level rituals',
+            2,
+            function (x) {
+              return x.level === 1 && x.ritual;
+            },
+            'Intelligence',
+            'ritual'
+          );
+          break;
         case 'Scion of the Outer Planes': {
-          var PLANES = { 'Chaotic (psychic, Minor Illusion)': ['psychic', 'Minor Illusion'], 'Evil (necrotic, Chill Touch)': ['necrotic', 'Chill Touch'], 'Good (radiant, Sacred Flame)': ['radiant', 'Sacred Flame'], 'Lawful (force, Message)': ['force', 'Message'], 'Neutral (poison, Druidcraft)': ['poison', 'Druidcraft'], 'The Outlands (psychic, Mage Hand)': ['psychic', 'Mage Hand'] };
-          var pl = choice(S + '.plane', step, 'Scion of the Outer Planes: plane', 1, opts(Object.keys(PLANES)), X).picked[0];
-          if (pl) { prof.res.push(PLANES[pl][0].charAt(0).toUpperCase() + PLANES[pl][0].slice(1)); innate.push({ src: f.n, trait: f.n, kind: 'feat', name: PLANES[pl][1], minLevel: 1, ability: 'Intelligence, Wisdom or Charisma', per: '' }); }
-          break; }
-        case 'Elemental Adept': choice(S + '.el', step, 'Elemental Adept: damage type', 1, opts(['Acid', 'Cold', 'Fire', 'Lightning', 'Thunder']), X); break;
+          var PLANES = {
+            'Chaotic (psychic, Minor Illusion)': ['psychic', 'Minor Illusion'],
+            'Evil (necrotic, Chill Touch)': ['necrotic', 'Chill Touch'],
+            'Good (radiant, Sacred Flame)': ['radiant', 'Sacred Flame'],
+            'Lawful (force, Message)': ['force', 'Message'],
+            'Neutral (poison, Druidcraft)': ['poison', 'Druidcraft'],
+            'The Outlands (psychic, Mage Hand)': ['psychic', 'Mage Hand']
+          };
+          var pl = choice(S + '.plane', step, 'Scion of the Outer Planes: plane', 1, opts(Object.keys(PLANES)), X)
+            .picked[0];
+          if (pl) {
+            prof.res.push(PLANES[pl][0].charAt(0).toUpperCase() + PLANES[pl][0].slice(1));
+            innate.push({
+              src: f.n,
+              trait: f.n,
+              kind: 'feat',
+              name: PLANES[pl][1],
+              minLevel: 1,
+              ability: 'Intelligence, Wisdom or Charisma',
+              per: ''
+            });
+          }
+          break;
+        }
+        case 'Elemental Adept':
+          choice(
+            S + '.el',
+            step,
+            'Elemental Adept: damage type',
+            1,
+            opts(['Acid', 'Cold', 'Fire', 'Lightning', 'Thunder']),
+            X
+          );
+          break;
         case 'Weapon Master':
-          choice(S + '.w', step, 'Weapon Master: weapons', 4, D.weapons.map(function (w) { return { v: w[0], label: w[0], pre: w[1] }; }), X).picked.forEach(function (w) { prof.weapons.push(w + 's'); }); break;
-        case 'Prodigy': later.push(function () { freshChoice(S + '.tool', step, 'Prodigy: tool', 1, R.allTools(), 'tools', X); }); break;
-        case 'Squat Nimbleness': later.push(function () { freshChoice(S + '.sk', step, 'Squat Nimbleness: skill', 1, ['Acrobatics', 'Athletics'], 'skills', X); }); break;
-        case 'Skilled': later.push(function () {
-          // any mix of three skills or tools
-          if (!picks[S + '.sk3'] && picks[S + '.fsk']) picks[S + '.sk3'] = picks[S + '.fsk']; // saved before tools were allowed
-          var mine = own(S + '.sk3'), sk = Object.keys(D.skills), tl = R.allTools();
-          var c = choice(S + '.sk3', step, 'Skilled: three skills or tools', 3, sk.concat(tl).map(function (v) {
-            var have = (prof.skills.indexOf(v) >= 0 || prof.tools.indexOf(v) >= 0) && mine.indexOf(v) < 0;
-            return { v: v, label: v, group: sk.indexOf(v) >= 0 ? 'Skills' : 'Tools', disabled: have, why: have ? 'you already have it' : '' };
-          }), X);
-          c.picked.forEach(function (v) { (D.skills[v] ? prof.skills : prof.tools).push(v); });
-        }); break;
-        case 'Chef': prof.tools.push("Cook's utensils"); break;
-        case 'Poisoner': prof.tools.push("Poisoner's kit"); break;
-        case 'Gunner': prof.weapons.push('Firearms'); break;
-        case 'Tavern Brawler': prof.weapons.push('Improvised weapons'); break;
-        case 'Keenness of the Stone Giant': senses.dv = senses.dv ? senses.dv : 60; break;
-        case 'Ember of the Fire Giant': prof.res.push('Fire'); break;
-        case 'Fury of the Frost Giant': prof.res.push('Cold'); break;
-        case 'Infernal Constitution': prof.res.push('Cold', 'Poison'); break;
-        case 'Lucky': uses('Luck points', 3, 'long'); break;
-        case 'Cruel (HB)': uses('Cruelty dice', pb, 'long'); break;
-        case 'Gift of the Chromatic Dragon': uses('Chromatic Infusion', 1, 'long'); uses('Reactive Resistance', pb, 'long'); break;
-        case 'Gift of the Metallic Dragon': uses('Protective Wings', pb, 'long'); break;
+          choice(
+            S + '.w',
+            step,
+            'Weapon Master: weapons',
+            4,
+            D.weapons.map(function (w) {
+              return { v: w[0], label: w[0], pre: w[1] };
+            }),
+            X
+          ).picked.forEach(function (w) {
+            prof.weapons.push(w + 's');
+          });
+          break;
+        case 'Prodigy':
+          later.push(function () {
+            freshChoice(S + '.tool', step, 'Prodigy: tool', 1, R.allTools(), 'tools', X);
+          });
+          break;
+        case 'Squat Nimbleness':
+          later.push(function () {
+            freshChoice(S + '.sk', step, 'Squat Nimbleness: skill', 1, ['Acrobatics', 'Athletics'], 'skills', X);
+          });
+          break;
+        case 'Skilled':
+          later.push(function () {
+            // any mix of three skills or tools
+            if (!picks[S + '.sk3'] && picks[S + '.fsk']) picks[S + '.sk3'] = picks[S + '.fsk']; // saved before tools were allowed
+            var mine = own(S + '.sk3'),
+              sk = Object.keys(D.skills),
+              tl = R.allTools();
+            var c = choice(
+              S + '.sk3',
+              step,
+              'Skilled: three skills or tools',
+              3,
+              sk.concat(tl).map(function (v) {
+                var have = (prof.skills.indexOf(v) >= 0 || prof.tools.indexOf(v) >= 0) && mine.indexOf(v) < 0;
+                return {
+                  v: v,
+                  label: v,
+                  group: sk.indexOf(v) >= 0 ? 'Skills' : 'Tools',
+                  disabled: have,
+                  why: have ? 'you already have it' : ''
+                };
+              }),
+              X
+            );
+            c.picked.forEach(function (v) {
+              (D.skills[v] ? prof.skills : prof.tools).push(v);
+            });
+          });
+          break;
+        case 'Chef':
+          prof.tools.push("Cook's utensils");
+          break;
+        case 'Poisoner':
+          prof.tools.push("Poisoner's kit");
+          break;
+        case 'Gunner':
+          prof.weapons.push('Firearms');
+          break;
+        case 'Tavern Brawler':
+          prof.weapons.push('Improvised weapons');
+          break;
+        case 'Keenness of the Stone Giant':
+          senses.dv = senses.dv ? senses.dv : 60;
+          break;
+        case 'Ember of the Fire Giant':
+          prof.res.push('Fire');
+          break;
+        case 'Fury of the Frost Giant':
+          prof.res.push('Cold');
+          break;
+        case 'Infernal Constitution':
+          prof.res.push('Cold', 'Poison');
+          break;
+        case 'Lucky':
+          uses('Luck points', 3, 'long');
+          break;
+        case 'Cruel (HB)':
+          uses('Cruelty dice', pb, 'long');
+          break;
+        case 'Gift of the Chromatic Dragon':
+          uses('Chromatic Infusion', 1, 'long');
+          uses('Reactive Resistance', pb, 'long');
+          break;
+        case 'Gift of the Metallic Dragon':
+          uses('Protective Wings', pb, 'long');
+          break;
         case 'Critter Friend (UA)':
-          innate.push({ src: f.n, trait: f.n, kind: 'feat', name: 'Speak with Animals', minLevel: 1, ability: '', per: 'at will' }, { src: f.n, trait: f.n, kind: 'feat', name: 'Animal Friendship', minLevel: 1, ability: '', per: '1/long rest', picked: true });
-          /* falls through */
-        case 'Barbed Hide (UA)': case "Everybody's Friend (UA)": {
+          innate.push(
+            {
+              src: f.n,
+              trait: f.n,
+              kind: 'feat',
+              name: 'Speak with Animals',
+              minLevel: 1,
+              ability: '',
+              per: 'at will'
+            },
+            {
+              src: f.n,
+              trait: f.n,
+              kind: 'feat',
+              name: 'Animal Friendship',
+              minLevel: 1,
+              ability: '',
+              per: '1/long rest',
+              picked: true
+            }
+          );
+        /* falls through */
+        case 'Barbed Hide (UA)':
+        case "Everybody's Friend (UA)": {
           // proficiency, or expertise if you already have it
-          var sks = { 'Barbed Hide (UA)': ['Intimidation'], 'Critter Friend (UA)': ['Animal Handling'], "Everybody's Friend (UA)": ['Deception', 'Persuasion'] }[f.n];
-          later2.unshift(function () { sks.forEach(function (k) { if (prof.skills.indexOf(k) >= 0) prof.expertise.push(k); else prof.skills.push(k); }); }); break; }
+          var sks = {
+            'Barbed Hide (UA)': ['Intimidation'],
+            'Critter Friend (UA)': ['Animal Handling'],
+            "Everybody's Friend (UA)": ['Deception', 'Persuasion']
+          }[f.n];
+          later2.unshift(function () {
+            sks.forEach(function (k) {
+              if (prof.skills.indexOf(k) >= 0) prof.expertise.push(k);
+              else prof.skills.push(k);
+            });
+          });
+          break;
+        }
       }
       // limited uses the summary states ("Proficiency bonus uses per long rest", "Once per short or long rest")
-      if (!out.featUses.some(function (u) { return u.feat === f.n; }) && !innate.some(function (x) { return x.src === f.n && x.kind === 'feat' && x.picked; })) {
+      if (
+        !out.featUses.some(function (u) {
+          return u.feat === f.n;
+        }) &&
+        !innate.some(function (x) {
+          return x.src === f.n && x.kind === 'feat' && x.picked;
+        })
+      ) {
         var hasSp = R.spellsInText(f.t).spells.length;
-        var m = /proficiency bonus (?:uses|times) per long rest/i.test(f.t) ? [pb, 'long'] : hasSp ? null : /once per short or long rest/i.test(f.t) ? [1, 'short'] : /once per (?:long )?rest/i.test(f.t) ? [1, /long rest/.test(f.t) ? 'long' : 'short'] : null;
+        var m = /proficiency bonus (?:uses|times) per long rest/i.test(f.t)
+          ? [pb, 'long']
+          : hasSp
+            ? null
+            : /once per short or long rest/i.test(f.t)
+              ? [1, 'short']
+              : /once per (?:long )?rest/i.test(f.t)
+                ? [1, /long rest/.test(f.t) ? 'long' : 'short']
+                : null;
         if (m) uses(f.n, m[0], m[1]);
       }
     }
-    var featNames = D.feats.filter(function (f) { return tagOk(f.tag, filters); });
+    var featNames = D.feats.filter(function (f) {
+      return tagOk(f.tag, filters);
+    });
     out.feats = [];
     feats.forEach(function (slot) {
-      var mode = slot.asi ? ((ch.asi || {})[slot.slot] || 'asi') : 'feat';
+      var mode = slot.asi ? (ch.asi || {})[slot.slot] || 'asi' : 'feat';
       slot.mode = mode;
       if (mode === 'asi') {
         ['a1', 'a2'].forEach(function (k) {
-          choice(slot.slot + '.' + k, slot.step, slot.label + ': +1 to', 1, opts(AB), { asiSlot: slot.slot, inline: true }).picked.forEach(function (a) { bonus[a] += 1; });
+          choice(slot.slot + '.' + k, slot.step, slot.label + ': +1 to', 1, opts(AB), {
+            asiSlot: slot.slot,
+            inline: true
+          }).picked.forEach(function (a) {
+            bonus[a] += 1;
+          });
         });
         return;
       }
@@ -659,7 +1803,16 @@
       if (slot.fixed) f = R.feat(slot.fixed);
       else {
         var list = slot.from ? slot.from.map(R.feat).filter(Boolean) : featNames;
-        var fc = choice(slot.slot + '.feat', slot.step, slot.label, 1, list.map(function (x) { return { v: x.n, label: x.n + (x.pre ? '  (requires: ' + x.pre + ')' : ''), t: x.t }; }), { asiSlot: slot.slot, select: true });
+        var fc = choice(
+          slot.slot + '.feat',
+          slot.step,
+          slot.label,
+          1,
+          list.map(function (x) {
+            return { v: x.n, label: x.n + (x.pre ? '  (requires: ' + x.pre + ')' : ''), t: x.t };
+          }),
+          { asiSlot: slot.slot, select: true }
+        );
         f = fc.picked.length ? R.feat(fc.picked[0]) : null;
       }
       if (!f) return;
@@ -669,134 +1822,344 @@
       grantSpells(f.t, f.n, f.n, slot.slot + '.fsp', slot.step, { asiSlot: slot.slot });
       if (f.n === 'Eldritch Adept') {
         // one invocation; those with a prerequisite need warlock levels (and that warlock prerequisite met)
-        var wl = entries.filter(function (e) { return e.id === 'warlock'; })[0];
-        choice(slot.slot + '.inv', slot.step, 'Eldritch Adept: invocation', 1, D.invocations.map(function (x) {
-          var lv = +((x[1] || '').match(/(\d+)\w\w level/) || [])[1] || 0;
-          var dis = !!x[1] && (!wl || wl.level < lv);
-          return { v: x[0], label: x[0], pre: x[1], t: x[2], disabled: dis, why: dis ? (wl ? 'needs warlock level ' + lv : 'needs warlock levels (' + x[1] + ')') : '' };
-        }), { asiSlot: slot.slot, group: 'Eldritch Invocation' });
+        var wl = entries.filter(function (e) {
+          return e.id === 'warlock';
+        })[0];
+        choice(
+          slot.slot + '.inv',
+          slot.step,
+          'Eldritch Adept: invocation',
+          1,
+          D.invocations.map(function (x) {
+            var lv = +((x[1] || '').match(/(\d+)\w\w level/) || [])[1] || 0;
+            var dis = !!x[1] && (!wl || wl.level < lv);
+            return {
+              v: x[0],
+              label: x[0],
+              pre: x[1],
+              t: x[2],
+              disabled: dis,
+              why: dis ? (wl ? 'needs warlock level ' + lv : 'needs warlock levels (' + x[1] + ')') : ''
+            };
+          }),
+          { asiSlot: slot.slot, group: 'Eldritch Invocation' }
+        );
       }
       var chosenAb = null;
       if (f.asi && f.asi.length === 1 && f.asi[0] !== 'ANY') chosenAb = f.asi[0];
       else if (f.asi && f.asi.length) {
-        var fa = choice(slot.slot + '.fa', slot.step, f.n + ': +1 to', 1, opts(f.asi[0] === 'ANY' ? AB : f.asi), { asiSlot: slot.slot });
+        var fa = choice(slot.slot + '.fa', slot.step, f.n + ': +1 to', 1, opts(f.asi[0] === 'ANY' ? AB : f.asi), {
+          asiSlot: slot.slot
+        });
         chosenAb = fa.picked[0] || null;
       }
-      if (chosenAb) { bonus[chosenAb] += 1; if (f.saveFromAsi) prof.saves.push(chosenAb); }
+      if (chosenAb) {
+        bonus[chosenAb] += 1;
+        if (f.saveFromAsi) prof.saves.push(chosenAb);
+      }
       featExtras(f, slot, chosenAb);
-      hooks.init += f.init || 0; hooks.speed += f.speed || 0; hooks.hpPerLevel += f.hpPerLevel || 0; hooks.passive += f.passive || 0;
+      hooks.init += f.init || 0;
+      hooks.speed += f.speed || 0;
+      hooks.hpPerLevel += f.hpPerLevel || 0;
+      hooks.passive += f.passive || 0;
       if (f.unarmoredAC) hooks.unarmoredAC = Math.max(hooks.unarmoredAC, f.unarmoredAC);
-      prof.armor = prof.armor.concat(f.armor || []); prof.languages = prof.languages.concat(f.lang || []);
+      prof.armor = prof.armor.concat(f.armor || []);
+      prof.languages = prof.languages.concat(f.lang || []);
       later.push(function () {
-        if (f.skc) freshChoice(slot.slot + '.fsk', slot.step, f.n + ': skill' + (f.skc > 1 ? 's' : ''), f.skc, Object.keys(D.skills), 'skills', { asiSlot: slot.slot });
-        if (f.lc) freshChoice(slot.slot + '.flang', slot.step, f.n + ': language' + (f.lc > 1 ? 's' : ''), f.lc, R.choosableLanguages(), 'languages', { asiSlot: slot.slot });
-        if (f.expertise) later2.push(function () { freshChoice(slot.slot + '.fex', slot.step, f.n + ': expertise', f.expertise, prof.skills.slice(), 'expertise', { asiSlot: slot.slot }); });
+        if (f.skc)
+          freshChoice(
+            slot.slot + '.fsk',
+            slot.step,
+            f.n + ': skill' + (f.skc > 1 ? 's' : ''),
+            f.skc,
+            Object.keys(D.skills),
+            'skills',
+            { asiSlot: slot.slot }
+          );
+        if (f.lc)
+          freshChoice(
+            slot.slot + '.flang',
+            slot.step,
+            f.n + ': language' + (f.lc > 1 ? 's' : ''),
+            f.lc,
+            R.choosableLanguages(),
+            'languages',
+            { asiSlot: slot.slot }
+          );
+        if (f.expertise)
+          later2.push(function () {
+            freshChoice(
+              slot.slot + '.fex',
+              slot.step,
+              f.n + ': expertise',
+              f.expertise,
+              prof.skills.slice(),
+              'expertise',
+              { asiSlot: slot.slot }
+            );
+          });
       });
     });
     out.featSlots = feats;
 
-    later.forEach(function (fn) { fn(); });
-    later2.forEach(function (fn) { fn(); });
-    prof.languages = prof.languages.concat(xlist('languages')); prof.tools = prof.tools.concat(xlist('tools'));
-    prof.armor = prof.armor.concat(xlist('armor')); prof.weapons = prof.weapons.concat(xlist('weapons'));
-    Object.keys(X.skills || {}).forEach(function (k) {
-      var v = X.skills[k]; if (!D.skills[k] || !v) return;
-      if (v === 'none') { prof.skills = prof.skills.filter(function (x) { return x !== k; }); prof.expertise = prof.expertise.filter(function (x) { return x !== k; }); return; }
-      prof.skills.push(k); if (v === 'exp') prof.expertise.push(k); else if (v === 'prof') prof.expertise = prof.expertise.filter(function (x) { return x !== k; });
+    later.forEach(function (fn) {
+      fn();
     });
-    (X.saves || []).forEach(function (a) { prof.saves.push(a); });
-    ['armor', 'weapons', 'tools', 'languages', 'skills', 'expertise', 'saves', 'res', 'imm'].forEach(function (k) { prof[k] = uniq(prof[k]); });
+    later2.forEach(function (fn) {
+      fn();
+    });
+    prof.languages = prof.languages.concat(xlist('languages'));
+    prof.tools = prof.tools.concat(xlist('tools'));
+    prof.armor = prof.armor.concat(xlist('armor'));
+    prof.weapons = prof.weapons.concat(xlist('weapons'));
+    Object.keys(X.skills || {}).forEach(function (k) {
+      var v = X.skills[k];
+      if (!D.skills[k] || !v) return;
+      if (v === 'none') {
+        prof.skills = prof.skills.filter(function (x) {
+          return x !== k;
+        });
+        prof.expertise = prof.expertise.filter(function (x) {
+          return x !== k;
+        });
+        return;
+      }
+      prof.skills.push(k);
+      if (v === 'exp') prof.expertise.push(k);
+      else if (v === 'prof')
+        prof.expertise = prof.expertise.filter(function (x) {
+          return x !== k;
+        });
+    });
+    (X.saves || []).forEach(function (a) {
+      prof.saves.push(a);
+    });
+    ['armor', 'weapons', 'tools', 'languages', 'skills', 'expertise', 'saves', 'res', 'imm'].forEach(function (k) {
+      prof[k] = uniq(prof[k]);
+    });
     out.prof = prof;
-    var has = function (id) { return entries.filter(function (e) { return e.id === id; })[0] || null; };
+    var has = function (id) {
+      return (
+        entries.filter(function (e) {
+          return e.id === id;
+        })[0] || null
+      );
+    };
 
     // ----- ability scores -----
     out.abilities = {};
     AB.forEach(function (a) {
-      var base = +(ch.base || {})[a] || 0, total = base + bonus[a], cap = free.abilityCap ? 30 : 20, extra = xn(a);
-      if (has('barbarian') && has('barbarian').level >= 20 && (a === 'STR' || a === 'CON')) { extra += 4; cap = Math.max(cap, 24); }
+      var base = +(ch.base || {})[a] || 0,
+        total = base + bonus[a],
+        cap = free.abilityCap ? 30 : 20,
+        extra = xn(a);
+      if (has('barbarian') && has('barbarian').level >= 20 && (a === 'STR' || a === 'CON')) {
+        extra += 4;
+        cap = Math.max(cap, 24);
+      }
       total = Math.max(1, Math.min(free.abilityCap ? 30 : cap, Math.min(cap, total) + extra));
-      if (!free.abilityCap && base + bonus[a] > 20) out.warnings.push(D.abilityNames[a] + ' is capped at 20 (you can switch this limit off in Details).');
+      if (!free.abilityCap && base + bonus[a] > 20)
+        out.warnings.push(D.abilityNames[a] + ' is capped at 20 (you can switch this limit off in Details).');
       out.abilities[a] = { base: base, bonus: total - base, total: total, mod: R.mod(total) };
     });
-    var M = function (a) { return out.abilities[a].mod; };
-    out.pointsSpent = AB.reduce(function (n, a) { var c = D.pointBuyCost[ch.base[a]]; return n + (c === undefined ? 99 : c); }, 0);
-    if (entries.length > 1) entries.forEach(function (e) {
-      var okReq = (MC_REQ[e.id] || []).every(function (g) { return g.some(function (a) { return out.abilities[a].total >= 13; }); });
-      if (!okReq) out.warnings.push('Multiclassing with ' + e.cls.name + ' needs ' + R.multiclassReq(e.id) + '.');
-    });
+    var M = function (a) {
+      return out.abilities[a].mod;
+    };
+    out.pointsSpent = AB.reduce(function (n, a) {
+      var c = D.pointBuyCost[ch.base[a]];
+      return n + (c === undefined ? 99 : c);
+    }, 0);
+    if (entries.length > 1)
+      entries.forEach(function (e) {
+        var okReq = (MC_REQ[e.id] || []).every(function (g) {
+          return g.some(function (a) {
+            return out.abilities[a].total >= 13;
+          });
+        });
+        if (!okReq) out.warnings.push('Multiclassing with ' + e.cls.name + ' needs ' + R.multiclassReq(e.id) + '.');
+      });
 
     // ----- saves, skills -----
     out.saves = {};
-    AB.forEach(function (a) { var p = prof.saves.indexOf(a) >= 0; out.saves[a] = { prof: p, total: M(a) + (p ? pb : 0) }; });
+    AB.forEach(function (a) {
+      var p = prof.saves.indexOf(a) >= 0;
+      out.saves[a] = { prof: p, total: M(a) + (p ? pb : 0) };
+    });
     var joat = has('bard') && has('bard').level >= 2 ? Math.floor(pb / 2) : 0;
     out.skills = {};
     Object.keys(D.skills).forEach(function (s) {
-      var p = prof.skills.indexOf(s) >= 0, e = p && prof.expertise.indexOf(s) >= 0;
-      out.skills[s] = { ability: D.skills[s], prof: p, expertise: e, total: M(D.skills[s]) + (e ? pb * 2 : p ? pb : joat) + (+(X.skillBonus || {})[s] || 0) };
+      var p = prof.skills.indexOf(s) >= 0,
+        e = p && prof.expertise.indexOf(s) >= 0;
+      out.skills[s] = {
+        ability: D.skills[s],
+        prof: p,
+        expertise: e,
+        total: M(D.skills[s]) + (e ? pb * 2 : p ? pb : joat) + (+(X.skillBonus || {})[s] || 0)
+      };
     });
     out.passive = 10 + out.skills.Perception.total + hooks.passive + xn('passive');
     out.init = M('DEX') + hooks.init + joat + (L && L.initProf ? pb : 0) + xn('init');
 
     // ----- hit points: full die at character level 1, average for every level after -----
     var perLevel = M('CON') + hooks.hpPerLevel;
-    var dice = 0, diceMax = 0;
+    var dice = 0,
+      diceMax = 0;
     entries.forEach(function (e) {
-      var hd = e.cls.hitDie, avg = hd / 2 + 1;
+      var hd = e.cls.hitDie,
+        avg = hd / 2 + 1;
       dice += e.first ? hd + (e.level - 1) * avg : e.level * avg;
       diceMax += hd * e.level;
     });
-    if (!entries.length) { dice = 8; diceMax = 8; }
+    if (!entries.length) {
+      dice = 8;
+      diceMax = 8;
+    }
     out.hitDie = entries[0] ? entries[0].cls.hitDie : 8;
-    out.hitDice = entries.length ? entries.map(function (e) { return e.level + 'd' + e.cls.hitDie; }).join(' + ') : '1d8';
+    out.hitDice = entries.length
+      ? entries
+          .map(function (e) {
+            return e.level + 'd' + e.cls.hitDie;
+          })
+          .join(' + ')
+      : '1d8';
     out.hpAvg = dice + level * perLevel + hooks.hpFlat;
     out.hpMax = diceMax + level * perLevel + hooks.hpFlat;
-    out.hp = Math.max(level, ch.hpMode === 'manual' && ch.hpManual > 0 ? (ch.hpManual | 0) : ch.hpMode === 'max' ? out.hpMax : out.hpAvg) + xn('hp');
+    out.hp =
+      Math.max(
+        level,
+        ch.hpMode === 'manual' && ch.hpManual > 0 ? ch.hpManual | 0 : ch.hpMode === 'max' ? out.hpMax : out.hpAvg
+      ) + xn('hp');
 
     // ----- magic bonuses on gear: magic items (+1, +2, +3) and the infusions or invocations that enchant one item -----
-    var picked = {}; out.choices.forEach(function (c) { arr(c.picked).forEach(function (p) { picked[p] = 1; }); });
-    var artLv = has('artificer') ? has('artificer').level : 0, eb = artLv >= 10 ? 2 : 1;
-    var BOOSTS = [['Enhanced Weapon', 'weapon', eb, 'attack and damage rolls'], ['Radiant Weapon', 'weapon', 1, 'attack and damage rolls'], ['Returning Weapon', 'weapon', 1, 'attack and damage rolls (a thrown weapon)'],
-      ['Improved Pact Weapon', 'weapon', 1, 'attack and damage rolls (your pact weapon, if it has no bonus of its own)'], ['Enhanced Defense', 'armor', eb, 'AC (armor or shield)'], ['Repulsion Shield', 'shield', 1, 'AC (a shield)'],
-      ['Enhanced Arcane Focus', 'focus', eb, 'spell attack rolls (a rod, staff or wand you use as a focus)']];
-    var magic = ch.magic || {}, boostOn = ch.boostOn || {};
-    var weaponKeys = arr(ch.weapons).map(function (n) { return 'w:' + n; }).concat(arr(ch.customWeapons).map(function (w) { return 'c:' + w.id; }));
-    out.gearBoosts = BOOSTS.filter(function (b) { return picked[b[0]]; }).map(function (b) {
-      var cands = b[1] === 'weapon' ? weaponKeys : b[1] === 'armor' ? (ch.armor && !/^spell:/.test(ch.armor) ? ['armor'] : []).concat(ch.shield ? ['shield'] : []) : b[1] === 'shield' ? (ch.shield ? ['shield'] : []) : ['focus'];
-      var t = boostOn[b[0]]; if (cands.indexOf(t) < 0) t = cands.length === 1 ? cands[0] : ''; // only one place it can go: it goes there by itself
+    var picked = {};
+    out.choices.forEach(function (c) {
+      arr(c.picked).forEach(function (p) {
+        picked[p] = 1;
+      });
+    });
+    var artLv = has('artificer') ? has('artificer').level : 0,
+      eb = artLv >= 10 ? 2 : 1;
+    var BOOSTS = [
+      ['Enhanced Weapon', 'weapon', eb, 'attack and damage rolls'],
+      ['Radiant Weapon', 'weapon', 1, 'attack and damage rolls'],
+      ['Returning Weapon', 'weapon', 1, 'attack and damage rolls (a thrown weapon)'],
+      [
+        'Improved Pact Weapon',
+        'weapon',
+        1,
+        'attack and damage rolls (your pact weapon, if it has no bonus of its own)'
+      ],
+      ['Enhanced Defense', 'armor', eb, 'AC (armor or shield)'],
+      ['Repulsion Shield', 'shield', 1, 'AC (a shield)'],
+      ['Enhanced Arcane Focus', 'focus', eb, 'spell attack rolls (a rod, staff or wand you use as a focus)']
+    ];
+    var magic = ch.magic || {},
+      boostOn = ch.boostOn || {};
+    var weaponKeys = arr(ch.weapons)
+      .map(function (n) {
+        return 'w:' + n;
+      })
+      .concat(
+        arr(ch.customWeapons).map(function (w) {
+          return 'c:' + w.id;
+        })
+      );
+    out.gearBoosts = BOOSTS.filter(function (b) {
+      return picked[b[0]];
+    }).map(function (b) {
+      var cands =
+        b[1] === 'weapon'
+          ? weaponKeys
+          : b[1] === 'armor'
+            ? (ch.armor && !/^spell:/.test(ch.armor) ? ['armor'] : []).concat(ch.shield ? ['shield'] : [])
+            : b[1] === 'shield'
+              ? ch.shield
+                ? ['shield']
+                : []
+              : ['focus'];
+      var t = boostOn[b[0]];
+      if (cands.indexOf(t) < 0) t = cands.length === 1 ? cands[0] : ''; // only one place it can go: it goes there by itself
       return { n: b[0], kind: b[1], bonus: b[2], what: b[3], target: t, cands: cands };
     });
     // magic bonuses don't add up on one item: the best one counts
-    function gearBonus(key) { var v = +magic[key] || 0, src = v ? 'magic' : ''; out.gearBoosts.forEach(function (b) { if (b.target === key && b.bonus > v) { v = b.bonus; src = b.n; } }); return { v: v, src: src }; }
+    function gearBonus(key) {
+      var v = +magic[key] || 0,
+        src = v ? 'magic' : '';
+      out.gearBoosts.forEach(function (b) {
+        if (b.target === key && b.bonus > v) {
+          v = b.bonus;
+          src = b.n;
+        }
+      });
+      return { v: v, src: src };
+    }
     out.gearBonus = gearBonus;
 
     // ----- armor class -----
-    var armor = D.armor.filter(function (a) { return a[0] === ch.armor; })[0];
+    var armor = D.armor.filter(function (a) {
+      return a[0] === ch.armor;
+    })[0];
     // armour the player made: ch.armor is "custom:<id>"
-    var custA = !armor && /^custom:/.test(ch.armor || '') ? arr(ch.customArmor).filter(function (a) { return 'custom:' + a.id === ch.armor; })[0] : null;
+    var custA =
+      !armor && /^custom:/.test(ch.armor || '')
+        ? arr(ch.customArmor).filter(function (a) {
+            return 'custom:' + a.id === ch.armor;
+          })[0]
+        : null;
     var armorKind = armor ? armor[1] : custA ? custA.kind || 'Light' : '';
     out.armorKind = armorKind;
-    var styles = styleKeys.reduce(function (a, k) { var c = out.choices.filter(function (x) { return x.key === k; })[0]; return a.concat(c ? c.picked : []); }, []);
+    var styles = styleKeys.reduce(function (a, k) {
+      var c = out.choices.filter(function (x) {
+        return x.key === k;
+      })[0];
+      return a.concat(c ? c.picked : []);
+    }, []);
     var ac, acNote;
     if (custA) {
-      var cdex = custA.dex === 'none' || armorKind === 'Heavy' ? 0 : custA.dex === '2' ? Math.min(M('DEX'), 2) : M('DEX');
-      ac = (+custA.ac || 10) + cdex + (+custA.bonus || 0); acNote = custA.n || 'Custom armor';
+      var cdex =
+        custA.dex === 'none' || armorKind === 'Heavy' ? 0 : custA.dex === '2' ? Math.min(M('DEX'), 2) : M('DEX');
+      ac = (+custA.ac || 10) + cdex + (+custA.bonus || 0);
+      acNote = custA.n || 'Custom armor';
       if (+custA.bonus) acNote += ' (' + R.fmt(+custA.bonus) + ')';
-      if (armorKind !== 'Natural' && styles.indexOf('Defense') >= 0) { ac += 1; acNote += ', Defense'; }
-      if (+custA.str && out.abilities.STR.total < +custA.str) out.warnings.push((custA.n || 'Your armor') + ' needs Strength ' + custA.str + ' (speed is reduced by 10 ft otherwise).');
-      if (/^(Light|Medium|Heavy)$/.test(armorKind) && prof.armor.indexOf(armorKind + ' armor') < 0 && prof.armor.indexOf('All armor') < 0) out.warnings.push('Not proficient with ' + armorKind.toLowerCase() + ' armor.');
+      if (armorKind !== 'Natural' && styles.indexOf('Defense') >= 0) {
+        ac += 1;
+        acNote += ', Defense';
+      }
+      if (+custA.str && out.abilities.STR.total < +custA.str)
+        out.warnings.push(
+          (custA.n || 'Your armor') + ' needs Strength ' + custA.str + ' (speed is reduced by 10 ft otherwise).'
+        );
+      if (
+        /^(Light|Medium|Heavy)$/.test(armorKind) &&
+        prof.armor.indexOf(armorKind + ' armor') < 0 &&
+        prof.armor.indexOf('All armor') < 0
+      )
+        out.warnings.push('Not proficient with ' + armorKind.toLowerCase() + ' armor.');
     } else if (armor) {
-      var hasFeat = function (n) { return out.feats.some(function (x) { return x.n === n; }); };
+      var hasFeat = function (n) {
+        return out.feats.some(function (x) {
+          return x.n === n;
+        });
+      };
       var dexCap = armor[1] === 'Medium' && armor[4] === 2 && hasFeat('Medium Armor Master') ? 3 : armor[4];
       var dex = armor[1] === 'Heavy' ? 0 : dexCap === null ? M('DEX') : Math.min(M('DEX'), dexCap);
-      ac = armor[3] + dex; acNote = armor[0];
-      if (styles.indexOf('Defense') >= 0) { ac += 1; acNote += ', Defense'; }
-      if (armor[5] && out.abilities.STR.total < armor[5]) out.warnings.push(armor[0] + ' needs Strength ' + armor[5] + ' (speed is reduced by 10 ft otherwise).');
+      ac = armor[3] + dex;
+      acNote = armor[0];
+      if (styles.indexOf('Defense') >= 0) {
+        ac += 1;
+        acNote += ', Defense';
+      }
+      if (armor[5] && out.abilities.STR.total < armor[5])
+        out.warnings.push(armor[0] + ' needs Strength ' + armor[5] + ' (speed is reduced by 10 ft otherwise).');
       var cat = armor[1] + ' armor';
-      if (prof.armor.indexOf(cat) < 0 && prof.armor.indexOf('All armor') < 0) out.warnings.push('Not proficient with ' + cat.toLowerCase() + '.');
+      if (prof.armor.indexOf(cat) < 0 && prof.armor.indexOf('All armor') < 0)
+        out.warnings.push('Not proficient with ' + cat.toLowerCase() + '.');
     } else {
       var cands = [[10 + M('DEX'), 'Unarmored']];
       // Unarmored Defense comes only from whichever of these classes was taken first
-      var ud = entries.filter(function (e) { return e.id === 'barbarian' || e.id === 'monk'; })[0];
+      var ud = entries.filter(function (e) {
+        return e.id === 'barbarian' || e.id === 'monk';
+      })[0];
       if (ud && ud.id === 'barbarian') cands.push([10 + M('DEX') + M('CON'), 'Unarmored Defense']);
       if (ud && ud.id === 'monk' && !ch.shield) cands.push([10 + M('DEX') + M('WIS'), 'Unarmored Defense']);
       if (hooks.unarmoredAC) cands.push([hooks.unarmoredAC + M('DEX'), 'Natural resilience']);
@@ -805,34 +2168,79 @@
       // Mage Armor (the spell): 13 + Dex while wearing no armor; the best of these counts, they don't stack
       if (ch.armor === 'spell:mage-armor') {
         cands.push([13 + M('DEX'), 'Mage Armor']);
-        var knowsMA = Object.keys(ch.spells || {}).some(function (k) { var sp = ch.spells[k] || {}; return arr(sp.c).concat(arr(sp.k), arr(sp.p)).indexOf('Mage Armor') >= 0; }) ||
-          innate.concat(arr(ch.extraSpells)).some(function (x) { return (x.name || x.n) === 'Mage Armor'; });
-        if (!knowsMA) out.warnings.push('Mage Armor is on, but it is not among your spells. Fine if it comes from an item, a feat or another caster.');
+        var knowsMA =
+          Object.keys(ch.spells || {}).some(function (k) {
+            var sp = ch.spells[k] || {};
+            return arr(sp.c).concat(arr(sp.k), arr(sp.p)).indexOf('Mage Armor') >= 0;
+          }) ||
+          innate.concat(arr(ch.extraSpells)).some(function (x) {
+            return (x.name || x.n) === 'Mage Armor';
+          });
+        if (!knowsMA)
+          out.warnings.push(
+            'Mage Armor is on, but it is not among your spells. Fine if it comes from an item, a feat or another caster.'
+          );
       }
-      cands.sort(function (a, b) { return b[0] - a[0]; });
-      ac = cands[0][0]; acNote = cands[0][1];
+      cands.sort(function (a, b) {
+        return b[0] - a[0];
+      });
+      ac = cands[0][0];
+      acNote = cands[0][1];
     }
-    if (armor || custA) { var gA = gearBonus('armor'); if (gA.v) { ac += gA.v; acNote += ' +' + gA.v + (gA.src !== 'magic' ? ' (' + gA.src + ')' : ''); } }
-    if (L && L.fixedAC) { ac = L.fixedAC; acNote = 'Natural armor'; }
+    if (armor || custA) {
+      var gA = gearBonus('armor');
+      if (gA.v) {
+        ac += gA.v;
+        acNote += ' +' + gA.v + (gA.src !== 'magic' ? ' (' + gA.src + ')' : '');
+      }
+    }
+    if (L && L.fixedAC) {
+      ac = L.fixedAC;
+      acNote = 'Natural armor';
+    }
     if (ch.shield) {
       var sb = ch.shieldBonus != null && ch.shieldBonus !== '' ? +ch.shieldBonus : 2;
-      ac += sb; acNote += ', shield' + (sb !== 2 ? ' (' + R.fmt(sb) + ')' : '');
-      var gS = gearBonus('shield'); if (gS.v) { ac += gS.v; acNote += ' +' + gS.v + (gS.src !== 'magic' ? ' (' + gS.src + ')' : ''); }
-      if (!prof.armor.some(function (a) { return /^Shields/.test(a); })) out.warnings.push('Not proficient with shields.');
+      ac += sb;
+      acNote += ', shield' + (sb !== 2 ? ' (' + R.fmt(sb) + ')' : '');
+      var gS = gearBonus('shield');
+      if (gS.v) {
+        ac += gS.v;
+        acNote += ' +' + gS.v + (gS.src !== 'magic' ? ' (' + gS.src + ')' : '');
+      }
+      if (
+        !prof.armor.some(function (a) {
+          return /^Shields/.test(a);
+        })
+      )
+        out.warnings.push('Not proficient with shields.');
     }
     if (L && L.acBonus) ac += L.acBonus;
-    if (xn('ac')) { ac += xn('ac'); acNote += ' · ' + (xn('ac') > 0 ? '+' : '') + xn('ac') + ' extra'; }
-    out.ac = ac; out.acNote = acNote;
+    if (xn('ac')) {
+      ac += xn('ac');
+      acNote += ' · ' + (xn('ac') > 0 ? '+' : '') + xn('ac') + ' extra';
+    }
+    out.ac = ac;
+    out.acNote = acNote;
 
     // ----- speed and senses -----
     var speed = (L ? L.sp : 30) + hooks.speed;
     var heavy = armorKind === 'Heavy';
     if (has('barbarian') && has('barbarian').level >= 5 && !heavy) speed += 10;
-    if (has('monk') && has('monk').level >= 2 && (!armorKind || armorKind === 'Natural') && !ch.shield) speed += steps(has('monk').level, [[2, 10], [6, 15], [10, 20], [14, 25], [18, 30]]);
+    if (has('monk') && has('monk').level >= 2 && (!armorKind || armorKind === 'Natural') && !ch.shield)
+      speed += steps(has('monk').level, [
+        [2, 10],
+        [6, 15],
+        [10, 20],
+        [14, 25],
+        [18, 30]
+      ]);
     speed += xn('speed');
     out.speed = speed;
     out.moves = [];
-    if (L) ['fly', 'swim', 'climb'].forEach(function (k) { if (L[k]) out.moves.push(k + ' ' + (L[k] === true ? speed : L[k]) + ' ft'); });
+    if (L)
+      ['fly', 'swim', 'climb'].forEach(function (k) {
+        if (L[k]) out.moves.push(k + ' ' + (L[k] === true ? speed : L[k]) + ' ft');
+      });
     entries.forEach(function (e) {
       var g = e.sc && e.sc.grants;
       if (g && g.swim) out.moves.push('swim ' + g.swim + ' ft');
@@ -842,124 +2250,260 @@
     out.size = L ? L.sz : 'Medium';
 
     // ----- weapons -----
-    out.attacks = arr(ch.weapons).map(function (name) {
-      var w = D.weapons.filter(function (x) { return x[0] === name; })[0];
-      if (!w) return null;
-      var props = w[5].toLowerCase(), ranged = /Ranged/.test(w[1]), fin = /finesse/.test(props);
-      var monk = has('monk') && (w[0] === 'Shortsword' || (/Simple Melee/.test(w[1]) && !/two-handed|heavy/.test(props)));
-      var ab = ranged ? 'DEX' : (fin || monk) ? (M('DEX') > M('STR') ? 'DEX' : 'STR') : 'STR';
-      var plural = (w[0] + 's').toLowerCase();
-      var ok = prof.weapons.some(function (p) {
-        p = p.toLowerCase();
-        return p === plural || (p === 'simple weapons' && /^Simple/.test(w[1])) || (p === 'martial weapons' && /^Martial/.test(w[1]));
-      });
-      var gW = gearBonus('w:' + w[0]);
-      var hit = M(ab) + (ok ? pb : 0) + gW.v, dmgB = M(ab) + gW.v;
-      if (ranged && styles.indexOf('Archery') >= 0) hit += 2;
-      if (!ranged && styles.indexOf('Dueling') >= 0 && !/two-handed/.test(props)) dmgB += 2;
-      var dmg = w[3];
-      if (/^\d+d\d+/.test(dmg)) dmg = dmg.replace(/^(\d+d\d+)/, '$1' + (dmgB ? (dmgB > 0 ? ' + ' : ' - ') + Math.abs(dmgB) : ''));
-      return { name: w[0], hit: hit, damage: dmg, props: w[5], proficient: ok, plus: gW.v, plusFrom: gW.src };
-    }).filter(Boolean);
+    out.attacks = arr(ch.weapons)
+      .map(function (name) {
+        var w = D.weapons.filter(function (x) {
+          return x[0] === name;
+        })[0];
+        if (!w) return null;
+        var props = w[5].toLowerCase(),
+          ranged = /Ranged/.test(w[1]),
+          fin = /finesse/.test(props);
+        var monk =
+          has('monk') && (w[0] === 'Shortsword' || (/Simple Melee/.test(w[1]) && !/two-handed|heavy/.test(props)));
+        var ab = ranged ? 'DEX' : fin || monk ? (M('DEX') > M('STR') ? 'DEX' : 'STR') : 'STR';
+        var plural = (w[0] + 's').toLowerCase();
+        var ok = prof.weapons.some(function (p) {
+          p = p.toLowerCase();
+          return (
+            p === plural ||
+            (p === 'simple weapons' && /^Simple/.test(w[1])) ||
+            (p === 'martial weapons' && /^Martial/.test(w[1]))
+          );
+        });
+        var gW = gearBonus('w:' + w[0]);
+        var hit = M(ab) + (ok ? pb : 0) + gW.v,
+          dmgB = M(ab) + gW.v;
+        if (ranged && styles.indexOf('Archery') >= 0) hit += 2;
+        if (!ranged && styles.indexOf('Dueling') >= 0 && !/two-handed/.test(props)) dmgB += 2;
+        var dmg = w[3];
+        if (/^\d+d\d+/.test(dmg))
+          dmg = dmg.replace(/^(\d+d\d+)/, '$1' + (dmgB ? (dmgB > 0 ? ' + ' : ' - ') + Math.abs(dmgB) : ''));
+        return { name: w[0], hit: hit, damage: dmg, props: w[5], proficient: ok, plus: gW.v, plusFrom: gW.src };
+      })
+      .filter(Boolean);
     // weapons the player made
     arr(ch.customWeapons).forEach(function (w) {
-      var ranged = !!w.ranged, props = String(w.props || '');
-      var ab = w.ability === 'finesse' ? (M('DEX') > M('STR') ? 'DEX' : 'STR') : AB.indexOf(w.ability) >= 0 ? w.ability : ranged ? 'DEX' : 'STR';
+      var ranged = !!w.ranged,
+        props = String(w.props || '');
+      var ab =
+        w.ability === 'finesse'
+          ? M('DEX') > M('STR')
+            ? 'DEX'
+            : 'STR'
+          : AB.indexOf(w.ability) >= 0
+            ? w.ability
+            : ranged
+              ? 'DEX'
+              : 'STR';
       var gC = gearBonus('c:' + w.id);
-      var hit = M(ab) + (w.prof !== false ? pb : 0) + (+w.hit || 0) + gC.v, dmgB = M(ab) + (+w.dmgBonus || 0) + gC.v;
+      var hit = M(ab) + (w.prof !== false ? pb : 0) + (+w.hit || 0) + gC.v,
+        dmgB = M(ab) + (+w.dmgBonus || 0) + gC.v;
       if (ranged && styles.indexOf('Archery') >= 0) hit += 2;
       if (!ranged && styles.indexOf('Dueling') >= 0 && !/two-handed/i.test(props)) dmgB += 2;
       var dice = String(w.dmg || '1d4').trim();
-      var dmg = dice + (dmgB ? (dmgB > 0 ? ' + ' : ' - ') + Math.abs(dmgB) : '') + (w.type ? ' ' + String(w.type).toLowerCase() : '');
-      out.attacks.push({ name: w.n || 'Custom weapon', hit: hit, damage: dmg, props: [ranged ? 'Ranged' + (w.range ? ' (' + w.range + ')' : '') : 'Melee', props].filter(Boolean).join(', '), proficient: w.prof !== false, custom: w.id, ability: ab, plus: gC.v, plusFrom: gC.src });
+      var dmg =
+        dice +
+        (dmgB ? (dmgB > 0 ? ' + ' : ' - ') + Math.abs(dmgB) : '') +
+        (w.type ? ' ' + String(w.type).toLowerCase() : '');
+      out.attacks.push({
+        name: w.n || 'Custom weapon',
+        hit: hit,
+        damage: dmg,
+        props: [ranged ? 'Ranged' + (w.range ? ' (' + w.range + ')' : '') : 'Melee', props].filter(Boolean).join(', '),
+        proficient: w.prof !== false,
+        custom: w.id,
+        ability: ab,
+        plus: gC.v,
+        plusFrom: gC.src
+      });
     });
 
     // ----- spellcasting: one entry per class that casts, plus shared slots -----
     out.casters = [];
-    var casterLevel = 0, slotClasses = 0, pact = null;
+    var casterLevel = 0,
+      slotClasses = 0,
+      pact = null;
     entries.forEach(function (E) {
-      var cls = E.cls, sc = E.sc, clv = E.level;
-      var cast = cls.casting ? cls.casting : (sc && sc.casting ? sc.casting : null);
+      var cls = E.cls,
+        sc = E.sc,
+        clv = E.level;
+      var cast = cls.casting ? cls.casting : sc && sc.casting ? sc.casting : null;
       if (!cast) return;
       var active = cast.cantrips[clv - 1] > 0 || (cast.known ? cast.known[clv - 1] > 0 : true) || cast.kind === 'full';
       if (cast.kind === 'half' && clv < 2) active = false;
       if (!active) return;
-      var S = { clsId: cls.id, name: cast === cls.casting ? cls.name : sc.name, ability: cast.ability, kind: cast.kind, note: cast.note || '', level: clv };
-      S.dc = 8 + pb + M(cast.ability) + xn('spellDC'); S.atk = pb + M(cast.ability) + xn('spellAtk') + gearBonus('focus').v;
+      var S = {
+        clsId: cls.id,
+        name: cast === cls.casting ? cls.name : sc.name,
+        ability: cast.ability,
+        kind: cast.kind,
+        note: cast.note || '',
+        level: clv
+      };
+      S.dc = 8 + pb + M(cast.ability) + xn('spellDC');
+      S.atk = pb + M(cast.ability) + xn('spellAtk') + gearBonus('focus').v;
       S.ownSlots = R.slotsFor(cast.kind, clv);
       if (cast.kind === 'pact') {
-        S.pact = { n: cast.pactSlots[clv - 1], level: cast.pactLevel[clv - 1] }; S.maxLevel = S.pact.level;
+        S.pact = { n: cast.pactSlots[clv - 1], level: cast.pactLevel[clv - 1] };
+        S.maxLevel = S.pact.level;
         pact = pact ? { n: pact.n + S.pact.n, level: Math.max(pact.level, S.pact.level) } : S.pact;
       } else {
-        S.maxLevel = S.ownSlots.length; slotClasses++;
-        casterLevel += cast.kind === 'full' ? clv : cast.kind === 'half' ? Math.floor(clv / 2) : cast.kind === 'half-up' ? Math.ceil(clv / 2) : Math.floor(clv / 3);
+        S.maxLevel = S.ownSlots.length;
+        slotClasses++;
+        casterLevel +=
+          cast.kind === 'full'
+            ? clv
+            : cast.kind === 'half'
+              ? Math.floor(clv / 2)
+              : cast.kind === 'half-up'
+                ? Math.ceil(clv / 2)
+                : Math.floor(clv / 3);
       }
       S.cantripsMax = cast.cantrips[clv - 1] || 0;
       var names = (D.spellLists[cast.list || cls.id] || []).slice();
-      (sc && sc.extraSpellLists || []).forEach(function (l) { names = names.concat(D.spellLists[l] || []); });
+      ((sc && sc.extraSpellLists) || []).forEach(function (l) {
+        names = names.concat(D.spellLists[l] || []);
+      });
       var always = [];
       if (sc) {
         var tables = [sc.spells || {}];
         if (sc.variants && E.variant) tables.push(sc.variants[E.variant] || {});
         tables.forEach(function (tb) {
           for (var k in tb) {
-            if (sc.expanded) { if (+k <= S.maxLevel) names = names.concat(tb[k]); }
-            else if (+k <= clv) always = always.concat(tb[k]);
+            if (sc.expanded) {
+              if (+k <= S.maxLevel) names = names.concat(tb[k]);
+            } else if (+k <= clv) always = always.concat(tb[k]);
           }
         });
         always = always.concat(sc.bonusCantrips || []);
       }
       names = names.concat(bgSpells);
       var seen = {};
-      S.list = names.map(function (n) { return D.findSpell(n) || null; }).filter(function (s) {
-        if (!s || seen[s.name] || s.level > S.maxLevel || !tagOk(s.tag, filters)) return false;
-        seen[s.name] = 1; return true;
-      }).sort(function (a, b) { return a.level - b.level || (a.name < b.name ? -1 : 1); });
+      S.list = names
+        .map(function (n) {
+          return D.findSpell(n) || null;
+        })
+        .filter(function (s) {
+          if (!s || seen[s.name] || s.level > S.maxLevel || !tagOk(s.tag, filters)) return false;
+          seen[s.name] = 1;
+          return true;
+        })
+        .sort(function (a, b) {
+          return a.level - b.level || (a.name < b.name ? -1 : 1);
+        });
       S.always = uniq(always);
       var half = cast.kind === 'half' || cast.kind === 'half-up';
-      if (cast.spellbook) { S.mode = 'spellbook'; S.knownMax = 6 + 2 * (clv - 1); S.preparedMax = Math.max(1, M(cast.ability) + clv); }
-      else if (cast.prepared) { S.mode = 'prepared'; S.knownMax = Math.max(1, M(cast.ability) + (half ? Math.floor(clv / 2) : clv)); }
-      else { S.mode = 'known'; S.knownMax = cast.known[clv - 1]; }
-      if (free.spells) { // no maximum on how many, still only this class's own list
+      if (cast.spellbook) {
+        S.mode = 'spellbook';
+        S.knownMax = 6 + 2 * (clv - 1);
+        S.preparedMax = Math.max(1, M(cast.ability) + clv);
+      } else if (cast.prepared) {
+        S.mode = 'prepared';
+        S.knownMax = Math.max(1, M(cast.ability) + (half ? Math.floor(clv / 2) : clv));
+      } else {
+        S.mode = 'known';
+        S.knownMax = cast.known[clv - 1];
+      }
+      if (free.spells) {
+        // no maximum on how many, still only this class's own list
         S.unlimited = true;
         S.limits = { cantrips: S.cantripsMax, known: S.knownMax, prepared: S.preparedMax };
-        S.cantripsMax = S.cantripsMax ? 999 : 0; S.knownMax = 999; if (S.preparedMax) S.preparedMax = 999;
+        S.cantripsMax = S.cantripsMax ? 999 : 0;
+        S.knownMax = 999;
+        if (S.preparedMax) S.preparedMax = 999;
       }
-      var inList = {}; S.list.forEach(function (s) { inList[s.name] = s; });
+      var inList = {};
+      S.list.forEach(function (s) {
+        inList[s.name] = s;
+      });
       var sp = (ch.spells || {})[cls.id] || {};
-      S.cantrips = arr(sp.c).filter(function (n) { return inList[n] && inList[n].level === 0; }).slice(0, S.cantripsMax);
-      S.known = arr(sp.k).filter(function (n) { return inList[n] && inList[n].level > 0 && S.always.indexOf(n) < 0; }).slice(0, S.knownMax);
-      S.prepared = S.mode === 'spellbook' ? arr(sp.p).filter(function (n) { return S.known.indexOf(n) >= 0; }).slice(0, S.preparedMax) : [];
-      S.missing = S.unlimited ? 0 : (S.cantripsMax - S.cantrips.length) + (S.knownMax - S.known.length);
+      S.cantrips = arr(sp.c)
+        .filter(function (n) {
+          return inList[n] && inList[n].level === 0;
+        })
+        .slice(0, S.cantripsMax);
+      S.known = arr(sp.k)
+        .filter(function (n) {
+          return inList[n] && inList[n].level > 0 && S.always.indexOf(n) < 0;
+        })
+        .slice(0, S.knownMax);
+      S.prepared =
+        S.mode === 'spellbook'
+          ? arr(sp.p)
+              .filter(function (n) {
+                return S.known.indexOf(n) >= 0;
+              })
+              .slice(0, S.preparedMax)
+          : [];
+      S.missing = S.unlimited ? 0 : S.cantripsMax - S.cantrips.length + (S.knownMax - S.known.length);
       E.spell = S;
       out.casters.push(S);
     });
     // One spellcasting class uses its own table; several add up to a combined caster level.
-    var one = out.casters.filter(function (s) { return !s.pact; })[0];
-    out.slots = slotClasses > 1 ? (casterLevel > 0 ? D.fullCasterSlots[Math.min(20, casterLevel) - 1] : []) : (one ? one.ownSlots : []);
+    var one = out.casters.filter(function (s) {
+      return !s.pact;
+    })[0];
+    out.slots =
+      slotClasses > 1
+        ? casterLevel > 0
+          ? D.fullCasterSlots[Math.min(20, casterLevel) - 1]
+          : []
+        : one
+          ? one.ownSlots
+          : [];
     out.casterLevel = slotClasses > 1 ? casterLevel : 0;
     out.pact = pact;
     out.spell = out.casters[0] || null;
 
     // ----- spells from the lineage, feats and the player's own list -----
-    var ABNAME = { Strength: 'STR', Dexterity: 'DEX', Constitution: 'CON', Intelligence: 'INT', Wisdom: 'WIS', Charisma: 'CHA' };
+    var ABNAME = {
+      Strength: 'STR',
+      Dexterity: 'DEX',
+      Constitution: 'CON',
+      Intelligence: 'INT',
+      Wisdom: 'WIS',
+      Charisma: 'CHA'
+    };
     arr(ch.extraSpells).forEach(function (x, i) {
       var sp = x && D.findSpell(x.n);
-      if (sp) innate.push({ name: sp.name, src: x.src || '', trait: '', kind: 'extra', minLevel: 1, per: x.per || '', ability: '', index: i });
+      if (sp)
+        innate.push({
+          name: sp.name,
+          src: x.src || '',
+          trait: '',
+          kind: 'extra',
+          minLevel: 1,
+          per: x.per || '',
+          ability: '',
+          index: i
+        });
     });
     var seenInnate = {};
-    out.innate = innate.filter(function (x) { var k = x.kind + '|' + x.name; if (seenInnate[k]) return false; seenInnate[k] = 1; return true; }).map(function (x) {
-      var ab = ABNAME[x.ability] || (/chosen with your lineage/.test(x.ability) ? out.linSpellAbility : '') || '';
-      var r = Object.assign({}, x, { ab: ab, ready: level >= x.minLevel, spell: D.findSpell(x.name) });
-      if (ab) { r.dc = 8 + pb + M(ab) + xn('spellDC'); r.atk = pb + M(ab) + xn('spellAtk'); }
-      return r;
-    });
+    out.innate = innate
+      .filter(function (x) {
+        var k = x.kind + '|' + x.name;
+        if (seenInnate[k]) return false;
+        seenInnate[k] = 1;
+        return true;
+      })
+      .map(function (x) {
+        var ab = ABNAME[x.ability] || (/chosen with your lineage/.test(x.ability) ? out.linSpellAbility : '') || '';
+        var r = Object.assign({}, x, { ab: ab, ready: level >= x.minLevel, spell: D.findSpell(x.name) });
+        if (ab) {
+          r.dc = 8 + pb + M(ab) + xn('spellDC');
+          r.atk = pb + M(ab) + xn('spellAtk');
+        }
+        return r;
+      });
 
     // ----- chosen options become features -----
     out.choices.forEach(function (c) {
       if (!c.group) return;
       c.picked.forEach(function (v) {
-        var o = c.options.filter(function (x) { return x.v === v; })[0];
+        var o = c.options.filter(function (x) {
+          return x.v === v;
+        })[0];
         out.features.push({ src: c.group, kind: 'option', clsId: c.clsId, n: v, t: o ? o.t : '' });
       });
     });
@@ -968,70 +2512,152 @@
     out.resources = [];
     entries.forEach(function (e) {
       e.resources = [];
-      for (var cn in e.cls.columns) { var cv = e.cls.columns[cn][e.level - 1]; if (cv !== '-' && cv !== 0) { e.resources.push([cn, cv]); out.resources.push([cn, cv]); } }
+      for (var cn in e.cls.columns) {
+        var cv = e.cls.columns[cn][e.level - 1];
+        if (cv !== '-' && cv !== 0) {
+          e.resources.push([cn, cv]);
+          out.resources.push([cn, cv]);
+        }
+      }
     });
 
     // ----- equipment text (starting gear comes from the first class only) -----
     out.equipment = [];
-    if (entries[0]) entries[0].cls.equipment.forEach(function (line, i) {
-      var o = R.parseEquip(line);
-      out.equipment.push(o.length > 1 ? o[Math.min(o.length - 1, (ch.eq || {})[i] | 0)] : line);
-    });
+    if (entries[0])
+      entries[0].cls.equipment.forEach(function (line, i) {
+        var o = R.parseEquip(line);
+        out.equipment.push(o.length > 1 ? o[Math.min(o.length - 1, (ch.eq || {})[i] | 0)] : line);
+      });
     if (bg && bg.eq) out.equipment.push(bg.eq);
 
     // ----- inventory: weight, carrying capacity, coins, attunement -----
     var inv = { items: [], weight: 0, attuned: 0 };
-    var lb = function (v) { var m = /^(\d+)\/(\d+)/.exec(v); return m ? m[1] / m[2] : parseFloat(v) || 0; };
+    var lb = function (v) {
+      var m = /^(\d+)\/(\d+)/.exec(v);
+      return m ? m[1] / m[2] : parseFloat(v) || 0;
+    };
     if (armor) inv.weight += armor[7];
     if (custA) inv.weight += +custA.w || 0;
-    arr(ch.customWeapons).forEach(function (w) { inv.weight += +w.w || 0; });
+    arr(ch.customWeapons).forEach(function (w) {
+      inv.weight += +w.w || 0;
+    });
     if (ch.shield) inv.weight += D.shield.weight;
-    arr(ch.weapons).forEach(function (name) { var w = D.weapons.filter(function (x) { return x[0] === name; })[0]; if (w) inv.weight += lb(w[4]); });
+    arr(ch.weapons).forEach(function (name) {
+      var w = D.weapons.filter(function (x) {
+        return x[0] === name;
+      })[0];
+      if (w) inv.weight += lb(w[4]);
+    });
     arr(ch.items).forEach(function (it) {
-      var q = Math.max(0, +it.qty || 0), w = Math.max(0, +it.w || 0);
+      var q = Math.max(0, +it.qty || 0),
+        w = Math.max(0, +it.w || 0);
       inv.weight += q * w;
       if (it.att && it.attuned) inv.attuned++;
       inv.items.push(it);
     });
-    var money = ch.money || {}, coinCount = 0;
-    ['pp', 'gp', 'ep', 'sp', 'cp'].forEach(function (k) { coinCount += Math.max(0, +money[k] || 0); });
+    var money = ch.money || {},
+      coinCount = 0;
+    ['pp', 'gp', 'ep', 'sp', 'cp'].forEach(function (k) {
+      coinCount += Math.max(0, +money[k] || 0);
+    });
     inv.coinWeight = coinCount / 50;
     inv.weight = Math.round((inv.weight + inv.coinWeight) * 100) / 100;
-    inv.gpValue = Math.round(((+money.pp || 0) * 10 + (+money.gp || 0) + (+money.ep || 0) / 2 + (+money.sp || 0) / 10 + (+money.cp || 0) / 100) * 100) / 100;
+    inv.gpValue =
+      Math.round(
+        ((+money.pp || 0) * 10 +
+          (+money.gp || 0) +
+          (+money.ep || 0) / 2 +
+          (+money.sp || 0) / 10 +
+          (+money.cp || 0) / 100) *
+          100
+      ) / 100;
     var sizeMult = /^Tiny/.test(out.size) ? 0.5 : /^(Large)/.test(out.size) ? 2 : /^Huge/.test(out.size) ? 4 : 1;
     inv.capacity = out.abilities.STR.total * 15 * sizeMult;
     inv.pushDrag = inv.capacity * 2;
-    inv.attuneMax = has('artificer') ? steps(has('artificer').level, [[1, 3], [10, 4], [14, 5], [18, 6]]) : 3;
-    if (inv.weight > inv.capacity) out.warnings.push('Carrying ' + inv.weight + ' lb, over your capacity of ' + inv.capacity + ' lb.');
-    if (inv.attuned > inv.attuneMax) out.warnings.push('Attuned to ' + inv.attuned + ' items; the usual limit is ' + inv.attuneMax + '. Fine if your game allows more.');
+    inv.attuneMax = has('artificer')
+      ? steps(has('artificer').level, [
+          [1, 3],
+          [10, 4],
+          [14, 5],
+          [18, 6]
+        ])
+      : 3;
+    if (inv.weight > inv.capacity)
+      out.warnings.push('Carrying ' + inv.weight + ' lb, over your capacity of ' + inv.capacity + ' lb.');
+    if (inv.attuned > inv.attuneMax)
+      out.warnings.push(
+        'Attuned to ' + inv.attuned + ' items; the usual limit is ' + inv.attuneMax + '. Fine if your game allows more.'
+      );
     out.inv = inv;
 
     // ----- things that get used up and come back on a rest -----
     out.trackers = R.trackers(out, ch);
 
     // ----- completeness per step -----
-    out.todo = { lineage: 0, 'class': 0, abilities: 0, background: 0, spells: 0, equipment: 0, details: 0 };
+    out.todo = { lineage: 0, class: 0, abilities: 0, background: 0, spells: 0, equipment: 0, details: 0 };
     if (!lin) out.todo.lineage++;
     if (!entries.length) out.todo['class']++;
-    entries.forEach(function (e) { if (e.level >= e.cls.subclassLevel && !e.sc) out.todo['class']++; });
+    entries.forEach(function (e) {
+      if (e.level >= e.cls.subclassLevel && !e.sc) out.todo['class']++;
+    });
     if (!bg) out.todo.background++;
-    out.choices.forEach(function (c) { out.todo[c.step] += c.missing; });
-    out.casters.forEach(function (s) { out.todo.spells += Math.max(0, s.missing); });
+    out.choices.forEach(function (c) {
+      out.todo[c.step] += c.missing;
+    });
+    out.casters.forEach(function (s) {
+      out.todo.spells += Math.max(0, s.missing);
+    });
     if (ch.method === 'pointbuy' && out.pointsSpent !== 27) out.todo.abilities++;
-    if (ch.method === 'array' && AB.map(function (a) { return ch.base[a]; }).sort().join() !== D.standardArray.slice().sort().join()) out.todo.abilities++;
+    if (
+      ch.method === 'array' &&
+      AB.map(function (a) {
+        return ch.base[a];
+      })
+        .sort()
+        .join() !== D.standardArray.slice().sort().join()
+    )
+      out.todo.abilities++;
     return out;
   }
 
   // Limited uses to tick off during play, with the rest that brings them back.
   // key: where the used count is saved (ch.track.used[key]); rest: 'short' (short or long rest) or 'long'.
   R.trackers = function (d, ch) {
-    var t = [], M = function (a) { return d.abilities[a].mod; }, lv = function (id) { var e = d.classes.filter(function (x) { return x.id === id; })[0]; return e ? e.level : 0; };
-    var sc = function (id) { return d.classes.some(function (e) { return e.sc && e.sc.id === id; }); };
-    function add(group, name, max, rest, note) { if (max > 0) t.push({ key: 'res:' + name, group: group, name: name, max: max, rest: rest, note: note || '' }); }
-    (d.slots || []).forEach(function (n, i) { if (n) t.push({ key: 'slot' + (i + 1), group: 'slots', name: 'Level ' + (i + 1), max: n, rest: 'long', level: i + 1 }); });
-    if (d.pact && d.pact.n) t.push({ key: 'pact', group: 'slots', name: 'Pact slots (level ' + d.pact.level + ')', max: d.pact.n, rest: 'short', level: d.pact.level, pact: true });
+    var t = [],
+      M = function (a) {
+        return d.abilities[a].mod;
+      },
+      lv = function (id) {
+        var e = d.classes.filter(function (x) {
+          return x.id === id;
+        })[0];
+        return e ? e.level : 0;
+      };
+    var sc = function (id) {
+      return d.classes.some(function (e) {
+        return e.sc && e.sc.id === id;
+      });
+    };
+    function add(group, name, max, rest, note) {
+      if (max > 0) t.push({ key: 'res:' + name, group: group, name: name, max: max, rest: rest, note: note || '' });
+    }
+    (d.slots || []).forEach(function (n, i) {
+      if (n)
+        t.push({ key: 'slot' + (i + 1), group: 'slots', name: 'Level ' + (i + 1), max: n, rest: 'long', level: i + 1 });
+    });
+    if (d.pact && d.pact.n)
+      t.push({
+        key: 'pact',
+        group: 'slots',
+        name: 'Pact slots (level ' + d.pact.level + ')',
+        max: d.pact.n,
+        rest: 'short',
+        level: d.pact.level,
+        pact: true
+      });
     var L;
-    if ((L = lv('barbarian'))) add('Barbarian', 'Rage', L >= 20 ? 0 : [2, 2, 3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6, 6][L - 1], 'long');
+    if ((L = lv('barbarian')))
+      add('Barbarian', 'Rage', L >= 20 ? 0 : [2, 2, 3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6, 6][L - 1], 'long');
     if ((L = lv('bard'))) add('Bard', 'Bardic Inspiration', Math.max(1, M('CHA')), L >= 5 ? 'short' : 'long');
     if ((L = lv('cleric')) >= 2) add('Cleric', 'Channel Divinity', L >= 18 ? 3 : L >= 6 ? 2 : 1, 'short');
     if ((L = lv('druid')) >= 2 && L < 20) add('Druid', 'Wild Shape', 2, 'short');
@@ -1048,59 +2674,134 @@
       if (L >= 3) add('Paladin', 'Channel Divinity', 1, 'short');
     }
     if ((L = lv('sorcerer')) >= 2) add('Sorcerer', 'Sorcery Points', L, 'long');
-    if ((L = lv('wizard'))) add('Wizard', 'Arcane Recovery', 1, 'long', 'On a short rest, get back spell slots worth up to half your wizard level: untick them below.');
+    if ((L = lv('wizard')))
+      add(
+        'Wizard',
+        'Arcane Recovery',
+        1,
+        'long',
+        'On a short rest, get back spell slots worth up to half your wizard level: untick them below.'
+      );
     if ((L = lv('artificer')) >= 7) add('Artificer', 'Flash of Genius', Math.max(1, M('INT')), 'long');
-    if ((L = lv('blood-hunter'))) add('Blood Hunter', 'Blood Maledict', L >= 17 ? 4 : L >= 13 ? 3 : L >= 6 ? 2 : 1, 'short');
+    if ((L = lv('blood-hunter')))
+      add('Blood Hunter', 'Blood Maledict', L >= 17 ? 4 : L >= 13 ? 3 : L >= 6 ? 2 : 1, 'short');
     if ((L = lv('rogue')) >= 20) add('Rogue', 'Stroke of Luck', 1, 'short');
     // lineage traits with a use limit
     (d.L ? d.L.tr : []).forEach(function (tr) {
-      var txt = tr[1], pb = /proficiency bonus (times|uses)/i.test(txt);
-      if (!/\b(once|twice|times|uses?)\b[^.]*\b(short|long) rest/i.test(txt) || /^(After each|A 4-hour|Meditate|During a short rest)/.test(txt)) return;
+      var txt = tr[1],
+        pb = /proficiency bonus (times|uses)/i.test(txt);
+      if (
+        !/\b(once|twice|times|uses?)\b[^.]*\b(short|long) rest/i.test(txt) ||
+        /^(After each|A 4-hour|Meditate|During a short rest)/.test(txt)
+      )
+        return;
       if (R.spellsInText(txt).spells.length) return; // lineage spells are tracked with the spells
       add('Lineage', tr[0], pb ? d.pb : 1, /short or long rest|short rest/.test(txt) ? 'short' : 'long');
     });
-    (d.featUses || []).forEach(function (u) { add('Feats', u.name, u.max, u.rest); });
+    (d.featUses || []).forEach(function (u) {
+      add('Feats', u.name, u.max, u.rest);
+    });
     // invocations and infusions with limited uses or charges
-    var pickedNames = {}; (d.choices || []).forEach(function (c) { arr(c.picked).forEach(function (p) { pickedNames[p] = 1; }); });
-    var dawn = function (n) { return 'Gets back ' + n + ' at dawn; a long rest here refills it all, so untick what didn’t come back.'; };
-    [['Invocations', 'Bewitching Whispers', 1, 'long', 'Compulsion, with a warlock slot'], ['Invocations', 'Dreadful Word', 1, 'long', 'Confusion, with a warlock slot'],
-      ['Invocations', 'Minions of Chaos', 1, 'long', 'Conjure Elemental, with a warlock slot'], ['Invocations', 'Mire the Mind', 1, 'long', 'Slow, with a warlock slot'],
-      ['Invocations', 'Sculptor of Flesh', 1, 'long', 'Polymorph, with a warlock slot'], ['Invocations', 'Sign of Ill Omen', 1, 'long', 'Bestow Curse, with a warlock slot'],
-      ['Invocations', 'Thief of Five Fates', 1, 'long', 'Bane, with a warlock slot'], ['Invocations', 'Trickster\u2019s Escape', 1, 'long', 'Freedom of Movement, no slot'],
-      ['Invocations', 'Trickster\'s Escape', 1, 'long', 'Freedom of Movement, no slot'], ['Invocations', 'Undying Servitude', 1, 'long', 'Animate Dead, no slot'],
-      ['Invocations', 'Gift of the Depths', 1, 'long', 'Water Breathing, no slot'], ['Invocations', 'Gift of the Protectors', 1, 'long', 'A creature named in the book drops to 1 HP instead'],
-      ['Invocations', 'Cloak of Flies', 1, 'short', ''], ['Invocations', 'Ghostly Gaze', 1, 'short', ''], ['Invocations', 'Tomb of Levistus', 1, 'short', ''],
-      ['Invocations', 'Bond of the Talisman', d.pb, 'long', 'Teleport to the talisman’s wearer'], ['Invocations', 'Protection of the Talisman', d.pb, 'long', 'The wearer adds a d4 to a failed save'],
-      ['Infusions', 'Armor of Magical Strength', 6, 'long', dawn('1d6')], ['Infusions', 'Mind Sharpener', 4, 'long', dawn('1d4')], ['Infusions', 'Radiant Weapon', 4, 'long', dawn('1d4')],
-      ['Infusions', 'Repulsion Shield', 4, 'long', dawn('1d4')], ['Infusions', 'Spell-Refueling Ring', 1, 'long', 'Once per day, at dawn']
+    var pickedNames = {};
+    (d.choices || []).forEach(function (c) {
+      arr(c.picked).forEach(function (p) {
+        pickedNames[p] = 1;
+      });
+    });
+    var dawn = function (n) {
+      return 'Gets back ' + n + ' at dawn; a long rest here refills it all, so untick what didn’t come back.';
+    };
+    [
+      ['Invocations', 'Bewitching Whispers', 1, 'long', 'Compulsion, with a warlock slot'],
+      ['Invocations', 'Dreadful Word', 1, 'long', 'Confusion, with a warlock slot'],
+      ['Invocations', 'Minions of Chaos', 1, 'long', 'Conjure Elemental, with a warlock slot'],
+      ['Invocations', 'Mire the Mind', 1, 'long', 'Slow, with a warlock slot'],
+      ['Invocations', 'Sculptor of Flesh', 1, 'long', 'Polymorph, with a warlock slot'],
+      ['Invocations', 'Sign of Ill Omen', 1, 'long', 'Bestow Curse, with a warlock slot'],
+      ['Invocations', 'Thief of Five Fates', 1, 'long', 'Bane, with a warlock slot'],
+      ['Invocations', 'Trickster\u2019s Escape', 1, 'long', 'Freedom of Movement, no slot'],
+      ['Invocations', "Trickster's Escape", 1, 'long', 'Freedom of Movement, no slot'],
+      ['Invocations', 'Undying Servitude', 1, 'long', 'Animate Dead, no slot'],
+      ['Invocations', 'Gift of the Depths', 1, 'long', 'Water Breathing, no slot'],
+      ['Invocations', 'Gift of the Protectors', 1, 'long', 'A creature named in the book drops to 1 HP instead'],
+      ['Invocations', 'Cloak of Flies', 1, 'short', ''],
+      ['Invocations', 'Ghostly Gaze', 1, 'short', ''],
+      ['Invocations', 'Tomb of Levistus', 1, 'short', ''],
+      ['Invocations', 'Bond of the Talisman', d.pb, 'long', 'Teleport to the talisman’s wearer'],
+      ['Invocations', 'Protection of the Talisman', d.pb, 'long', 'The wearer adds a d4 to a failed save'],
+      ['Infusions', 'Armor of Magical Strength', 6, 'long', dawn('1d6')],
+      ['Infusions', 'Mind Sharpener', 4, 'long', dawn('1d4')],
+      ['Infusions', 'Radiant Weapon', 4, 'long', dawn('1d4')],
+      ['Infusions', 'Repulsion Shield', 4, 'long', dawn('1d4')],
+      ['Infusions', 'Spell-Refueling Ring', 1, 'long', 'Once per day, at dawn']
     ].forEach(function (x) {
-      if (!pickedNames[x[1]] || t.some(function (y) { return y.name === x[1]; })) return;
-      var info = ((x[0] === 'Infusions' ? D.infusions : D.invocations) || []).filter(function (r) { return r[0] === x[1] || r[0].replace(/’/g, "'") === x[1]; })[0];
+      if (
+        !pickedNames[x[1]] ||
+        t.some(function (y) {
+          return y.name === x[1];
+        })
+      )
+        return;
+      var info = ((x[0] === 'Infusions' ? D.infusions : D.invocations) || []).filter(function (r) {
+        return r[0] === x[1] || r[0].replace(/’/g, "'") === x[1];
+      })[0];
       add(x[0], x[1], x[2], x[3], info ? info[2] + (x[0] === 'Infusions' && x[4] ? ' · ' + x[4] : '') : x[4]);
     });
     // once-per-rest lineage and feat spells
     (d.innate || []).forEach(function (x) {
       if (!x.ready || !/\/(short|long) rest/.test(x.per)) return;
-      t.push({ key: 'inn:' + x.name, group: 'spells', name: x.name, max: 1, rest: /short/.test(x.per) ? 'short' : 'long', note: (x.kind === 'feat' ? 'Feat: ' : '') + x.src + (x.slots ? ' (can also use a slot)' : '') });
+      t.push({
+        key: 'inn:' + x.name,
+        group: 'spells',
+        name: x.name,
+        max: 1,
+        rest: /short/.test(x.per) ? 'short' : 'long',
+        note: (x.kind === 'feat' ? 'Feat: ' : '') + x.src + (x.slots ? ' (can also use a slot)' : '')
+      });
     });
-    arr(ch.counters).forEach(function (c) { t.push({ key: 'ctr:' + c.id, group: 'own', name: c.n || 'Counter', max: Math.max(1, +c.max || 1), rest: c.rest || '', own: c }); });
+    arr(ch.counters).forEach(function (c) {
+      t.push({
+        key: 'ctr:' + c.id,
+        group: 'own',
+        name: c.n || 'Counter',
+        max: Math.max(1, +c.max || 1),
+        rest: c.rest || '',
+        own: c
+      });
+    });
     var used = (ch.track && ch.track.used) || {};
-    t.forEach(function (x) { x.used = Math.max(0, Math.min(x.max, +used[x.key] || 0)); x.left = x.max - x.used; });
+    t.forEach(function (x) {
+      x.used = Math.max(0, Math.min(x.max, +used[x.key] || 0));
+      x.left = x.max - x.used;
+    });
     return t;
   };
   // What a rest brings back. Returns a short list of what changed, for the message on screen.
   R.rest = function (ch, d, kind) {
-    var tr = ch.track = ch.track || {}, used = tr.used = tr.used || {}, got = [];
+    var tr = (ch.track = ch.track || {}),
+      used = (tr.used = tr.used || {}),
+      got = [];
     d.trackers.forEach(function (x) {
       if (!x.used || !(kind === 'long' ? x.rest : x.rest === 'short')) return;
-      delete used[x.key]; got.push(x.name.replace(/^Level (\d)$/, 'level $1 slots'));
+      delete used[x.key];
+      got.push(x.name.replace(/^Level (\d)$/, 'level $1 slots'));
     });
     if (kind === 'long') {
       if (tr.hp != null && tr.hp < d.hp) got.push('hit points');
-      tr.hp = null; tr.temp = 0; tr.deathOk = 0; tr.deathFail = 0;
-      var hd = +tr.hd || 0, back = Math.min(hd, Math.max(1, Math.floor(d.level / 2)));
-      if (back) { tr.hd = hd - back; got.push(back + ' hit ' + (back === 1 ? 'die' : 'dice')); }
-      if (+tr.exh > 0) { tr.exh = +tr.exh - 1; got.push('one level of exhaustion'); }
+      tr.hp = null;
+      tr.temp = 0;
+      tr.deathOk = 0;
+      tr.deathFail = 0;
+      var hd = +tr.hd || 0,
+        back = Math.min(hd, Math.max(1, Math.floor(d.level / 2)));
+      if (back) {
+        tr.hd = hd - back;
+        got.push(back + ' hit ' + (back === 1 ? 'die' : 'dice'));
+      }
+      if (+tr.exh > 0) {
+        tr.exh = +tr.exh - 1;
+        got.push('one level of exhaustion');
+      }
     }
     return got;
   };
@@ -1108,7 +2809,12 @@
   // "(a) X or (b) Y" -> ["X", "Y"]
   R.parseEquip = function (line) {
     if (!/^\(a\)/.test(line)) return [line];
-    return line.split(/\s*(?:,?\s*or\s+)?\([a-d]\)\s*/).filter(Boolean).map(function (s) { return s.charAt(0).toUpperCase() + s.slice(1); });
+    return line
+      .split(/\s*(?:,?\s*or\s+)?\([a-d]\)\s*/)
+      .filter(Boolean)
+      .map(function (s) {
+        return s.charAt(0).toUpperCase() + s.slice(1);
+      });
   };
 
   root.Rules = R;
