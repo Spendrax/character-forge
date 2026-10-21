@@ -288,6 +288,7 @@ Nothing to install: it works from the normal app, on any network (same room or o
 - **DM:** Encounters → **📱 Open the table** shows a 4-digit code and a QR code. **Run it** asks the players for initiative; their rolls land in the initiative order (matched by name, or taking a "Player 1" slot). **Next turn** is shown on their phones. Keep the Encounters page open during the fight (a reload reopens the same table).
 - **Players:** scan the QR code, or open the character → Session → type the code → **Join**. Then **🎲 Roll** for initiative, or type the total rolled with real dice and **Send**. The phone shows the round and whose turn it is, and buzzes on your turn.
 - **Treasure:** on Treasures, players at the table show up with 📱 in **Share it out**: their share of the coins and the items you hand them go straight to their phone, where they tap **Add to (character)**.
+- **Roll for it:** when several players want the same item, tap **🎲 Roll for it** next to it. Players tap **I want it** on their phone (or the DM ticks who wants it), then **Roll!**: everyone gets a d20, ties roll again, and the item goes to the winner. The result shows on every phone.
 - How: the phones talk directly to the DM's device (WebRTC, encrypted). The free PeerJS service (peerjs.com) only helps them find each other; only names and initiative numbers are exchanged.
 
 Everywhere a roll is made for you (concentration saves, hit dice, initiative), you can also type what you rolled with your own dice.

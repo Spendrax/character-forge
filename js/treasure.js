@@ -135,6 +135,7 @@
     }
     function isOn(sp, c, list) { return sp.who[c.id] != null ? sp.who[c.id] !== false : !(list.some(function (x) { return x.phone; }) && !c.phone); } // with players at the table, their phones are ticked first
     function label(c) { return (c.name || 'Unnamed') + (c.phone ? ' 📱' : ''); }
+    function phoneWants(key) { var tb = table(), cl = tb && (tb.state.claims || []).filter(function (c) { return c.key === key; })[0]; return cl ? cl.wants : []; }
     function sendGift(c, coins, items) { var tb = table(); if (!tb || !c.phone) return; root.Table.dm(tb.code, tb.key, { gift: { to: c.phone, coins: coins || {}, items: items || [], from: (state().from && state().from.title) || 'treasure' } }).catch(function () {}); }
     function splitHtml() {
       var s = state(), sp = s.split = s.split || { coins: {}, who: {}, give: {} }, cs = chars(), t = s.last;
@@ -147,8 +148,15 @@
         '<div class="toolbar">' + (t ? btn('treFill', 'Use the coins just rolled', {}, 'btn small') : '') + btn('treSplit', 'Split between ' + picked.length + ' character' + (picked.length === 1 ? '' : 's'), {}, 'btn primary') + '</div>';
       var things = t ? t.items.map(function (it, i) { return ['m' + i, it.n, it]; }).concat([].concat.apply([], t.valuables.map(function (v, j) { return v.names.map(function (n, k) { return ['v' + j + '-' + k, n + ' (' + v.value + ' gp)', { val: v.value, n: n, kind: v.kind }]; }); }))) : [];
       if (things.length) h += '<h4>Items</h4>' + things.map(function (x) {
-        var given = sp.give[x[0]];
-        return '<div class="toolbar"><b>' + esc(x[1]) + '</b>' + (given ? '<span class="small muted">→ ' + esc(given) + '</span>' : '<select data-tregive="' + x[0] + '" aria-label="Give ' + esc(x[1]) + ' to">' + '<option value="">Give to…</option>' + cs.map(function (c) { return '<option value="' + c.id + '">' + esc(label(c)) + '</option>'; }).join('') + '</select>') + '</div>';
+        var given = sp.give[x[0]], ro = (sp.roll || {})[x[0]];
+        var row = '<div class="toolbar"><b>' + esc(x[1]) + '</b>' + (given ? '<span class="small muted">→ ' + esc(given) + '</span>' : '<select data-tregive="' + x[0] + '" aria-label="Give ' + esc(x[1]) + ' to">' + '<option value="">Give to…</option>' + cs.map(function (c) { return '<option value="' + c.id + '">' + esc(label(c)) + '</option>'; }).join('') + '</select>' + btn('treRollOff', ro ? 'Cancel the roll' : '🎲 Roll for it', { v: x[0] }, 'btn small')) + '</div>';
+        if (ro && !given) {
+          var wantsPhone = phoneWants(x[0]);
+          row += '<div class="tre-rolloff"><span class="small">Who wants it? </span>' + cs.map(function (c) { var on = ro.who[c.id] != null ? ro.who[c.id] : wantsPhone.indexOf(c.phone) >= 0; return btn('treRollWho', esc(label(c)) + (c.phone && wantsPhone.indexOf(c.phone) >= 0 ? ' ✋' : ''), { v: x[0], c: c.id }, 'pill small' + (on ? ' on' : '')); }).join('') +
+            (table() ? '<span class="small muted"> Players who tap “I want it” on their phone get ✋.</span>' : '') + '<div class="toolbar">' + btn('treRollGo', '🎲 Roll! Highest d20 wins', { v: x[0] }, 'btn small primary') + '</div></div>';
+        }
+        if (ro && ro.result) row += '<p class="small rest-msg">' + esc(ro.result) + '</p>';
+        return row;
       }).join('');
       return h + (sp.msg ? '<p class="small rest-msg">' + esc(sp.msg) + '</p>' : '') + '</div>';
     }
@@ -178,6 +186,33 @@
       treKind: function (v) { state().kind = v; },
       treRoll: function () { roll(); },
       treClear: function () { var s = state(); s.from = null; },
+      treRollOff: function (v) {
+        var s = state(), sp = s.split, t = s.last, tb = table(); sp.roll = sp.roll || {};
+        if (sp.roll[v] && !sp.roll[v].result) { delete sp.roll[v]; if (tb) root.Table.dm(tb.code, tb.key, { claimDrop: v }).catch(function () {}); return; }
+        var name = v[0] === 'm' ? (t.items[+v.slice(1)] || {}).n : ((t.valuables[+v.slice(1).split('-')[0]] || { names: [] }).names[+v.split('-')[1]] || 'a treasure');
+        sp.roll[v] = { who: {}, result: '', n: name };
+        if (tb) root.Table.dm(tb.code, tb.key, { claim: { key: v, n: name } }).catch(function () {});
+      },
+      treRollWho: function (v, el) {
+        var sp = state().split, ro = sp.roll && sp.roll[v], c = el.getAttribute('data-c'); if (!ro) return;
+        var cur = ro.who[c] != null ? ro.who[c] : (chars().filter(function (x) { return x.id === c; })[0] || {}).phone && phoneWants(v).indexOf(c.slice(4)) >= 0;
+        ro.who[c] = !cur;
+      },
+      treRollGo: function (v) {
+        var sp = state().split, ro = sp.roll && sp.roll[v], cs = chars(), wants = phoneWants(v); if (!ro) return;
+        var who = cs.filter(function (c) { return ro.who[c.id] != null ? ro.who[c.id] : c.phone && wants.indexOf(c.phone) >= 0; });
+        if (who.length < 1) { ro.result = 'Pick who wants it first.'; return; }
+        var d20 = function () { return 1 + Math.floor(Math.random() * 20); }, rolls = who.map(function (c) { return { c: c, r: d20() }; }), lines = [];
+        for (var round = 0; round < 10; round++) { // roll again between those tied for the top
+          rolls.sort(function (a, b) { return b.r - a.r; });
+          lines.push(rolls.map(function (x) { return label(x.c).replace(' 📱', '') + ' ' + x.r; }).join(', '));
+          var top = rolls.filter(function (x) { return x.r === rolls[0].r; }); if (top.length === 1) break;
+          rolls = top.map(function (x) { return { c: x.c, r: d20() }; });
+        }
+        var win = rolls[0].c, text = ro.n + ': ' + lines.join(' · tie, again: ') + ' → ' + label(win).replace(' 📱', '') + ' gets it!';
+        giveThing(v, win.id); ro.result = text;
+        var tb = table(); if (tb) root.Table.dm(tb.code, tb.key, { claimResult: { key: v, text: text } }).catch(function () {});
+      },
       treFill: function () { var s = state(); s.split = s.split || { coins: {}, who: {}, give: {} }; s.split.coins = Object.assign({}, s.last ? s.last.coins : {}); s.split.msg = ''; },
       treSplit: function () {
         var s = state(), sp = s.split = s.split || { coins: {}, who: {}, give: {} }, list0 = chars(), who = list0.filter(function (c) { return isOn(sp, c, list0); }); if (!who.length) { sp.msg = 'Tick at least one character.'; return; }

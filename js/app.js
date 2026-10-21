@@ -609,6 +609,10 @@
     var h = '<div class="panel tbl-me' + (mine ? ' my-turn' : '') + '"><div class="toolbar" style="margin:0"><b>📱 Table ' + J.code + '</b>' + (S.round ? '<span>Round ' + S.round + ' · ' + (mine ? '<b>your turn!</b>' : 'turn: ' + esc(S.turn || '—')) + '</span>' : '<span class="small muted">' + (S.open ? 'the fight is starting' : 'waiting for the DM') + '</span>') + '<span class="spacer"></span>' + btn('tblLeave', 'Leave', {}, 'btn small') + '</div>';
     if (S.open && me.init == null) h += '<div class="toolbar"><b>Initiative</b>' + btn('tblRoll', '🎲 Roll (' + R.fmt(d.init) + ')', {}, 'btn small primary') + '<span class="small">or I rolled</span><input type="number" id="tbl-mine" data-tblmine="1" value="' + esc(ui.tblMine || '') + '" placeholder="total" style="width:5rem">' + btn('tblSend', 'Send', {}, 'btn small') + '</div>';
     else if (me.init != null) h += '<p class="small">Your initiative: <b>' + me.init + '</b> ' + btn('tblRedo', 'change', {}, 'linkbtn') + '</p>';
+    (S.claims || []).forEach(function (c) {
+      var mine = c.wants.indexOf(J.id) >= 0;
+      h += '<div class="tbl-gift">🎲 <b>' + esc(c.n) + '</b> ' + (c.result ? '<div class="small">' + esc(c.result) + '</div>' : '<span class="small muted">is up for grabs: tap if you want it, the dice decide.</span><div class="toolbar">' + btn('tblWant', mine ? '✋ I’m in (tap to back out)' : 'I want it', { v: c.key }, 'btn small' + (mine ? '' : ' primary')) + '</div>') + '</div>';
+    });
     (me.gifts || []).forEach(function (g) {
       var coins = ['pp', 'gp', 'ep', 'sp', 'cp'].filter(function (k) { return +g.coins[k] > 0; }).map(function (k) { return (+g.coins[k]).toLocaleString('en') + ' ' + k; });
       var what = coins.concat((g.items || []).map(function (i) { return String(i.n || 'an item'); }));
@@ -1838,6 +1842,7 @@
       if (!g) return; takeGift(g); Table.ackGift(J.code, J.id, J.token, v).catch(function () {});
       me.gifts = me.gifts.filter(function (x) { return x.gid !== v; }); ui.tblMsg = 'Added to ' + (ch.name || 'your character') + ': see Items.';
     },
+    tblWant: function (v) { var J = (store.tableJoin || {})[ch.id], S = ui.tstate, c = S && (S.claims || []).filter(function (x) { return x.key === v; })[0]; if (!J || !c) return; var on = c.wants.indexOf(J.id) < 0; Table.want(J.code, J.id, J.token, v, on).catch(function () {}); c.wants = on ? c.wants.concat([J.id]) : c.wants.filter(function (x) { return x !== J.id; }); },
     tblGiftNo: function (v) { var J = (store.tableJoin || {})[ch.id], S = ui.tstate, me = J && S && S.players.filter(function (p) { return p.id === J.id; })[0]; if (!J) return; Table.ackGift(J.code, J.id, J.token, v).catch(function () {}); if (me) me.gifts = (me.gifts || []).filter(function (x) { return x.gid !== v; }); },
     tblHintOk: function () { ui.tblHint = ''; },
     tblLeave: function () { if (store.tableJoin) delete store.tableJoin[ch.id]; Table.stop(); ui.tstate = null; ui.tblMsg = ''; },

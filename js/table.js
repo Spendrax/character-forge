@@ -10,7 +10,7 @@
     return lib = lib || new Promise(function (ok, no) { var s = document.createElement('script'); s.src = 'js/vendor/peerjs.min.js'; s.onload = ok; s.onerror = function () { lib = null; no(new Error('Couldn’t load the table (offline?).')); }; document.head.appendChild(s); });
   }
   function rnd(n) { var a = new Uint8Array(n); crypto.getRandomValues(a); return Array.prototype.map.call(a, function (b) { return ('0' + b.toString(16)).slice(-2); }).join(''); }
-  function pub(s) { return { code: s.code, v: s.v, open: s.open, round: s.round, turn: s.turn, players: s.players.map(function (p) { return { id: p.id, name: p.name, init: p.init, bonus: p.bonus, gifts: p.gifts || [] }; }) }; }
+  function pub(s) { return { code: s.code, v: s.v, open: s.open, round: s.round, turn: s.turn, claims: s.claims || [], players: s.players.map(function (p) { return { id: p.id, name: p.name, init: p.init, bonus: p.bonus, gifts: p.gifts || [] }; }) }; }
 
   // ---------- the DM's side: host ----------
   var host = null; // { peer, state, conns: [], key, cb }
@@ -31,6 +31,9 @@
         var q = s.players.filter(function (x) { return x.id === m.id && x.token === m.token; })[0];
         if (!q) return conn.send({ t: 'error', error: 'Join the table again.', gone: true });
         q.init = m.init == null ? null : num(m.init, -20, 60); broadcast();
+      } else if (m.t === 'want') { // a player wants (or no longer wants) an item the DM put up for grabs
+        var w = s.players.filter(function (x) { return x.id === m.id && x.token === m.token; })[0], cl = (s.claims || []).filter(function (c) { return c.key === m.key; })[0];
+        if (w && cl && !cl.result) { cl.wants = cl.wants.filter(function (id) { return id !== w.id; }); if (m.on) cl.wants.push(w.id); broadcast(); }
       } else if (m.t === 'gotGift') { // the player took (or refused) something the DM sent
         var r = s.players.filter(function (x) { return x.id === m.id && x.token === m.token; })[0];
         if (r) { r.gifts = (r.gifts || []).filter(function (g) { return g.gid !== m.gid; }); broadcast(); }
@@ -100,6 +103,7 @@
         });
       });
     },
+    want: function (code, id, token, key, on) { return send(code, { t: 'want', id: id, token: token, key: key, on: !!on }); },
     ackGift: function (code, id, token, gid) { return send(code, { t: 'gotGift', id: id, token: token, gid: gid }); },
     // the table this device is running as DM, if any (for the Treasures page)
     hostInfo: function () { if (host) return { code: host.state.code, key: host.key, state: pub(host.state) }; var h = hosted(); return h ? { code: h.code, key: h.key, state: pub(h.state) } : null; },
@@ -112,6 +116,9 @@
         if ('round' in what) s.round = +what.round || 0;
         if ('turn' in what) s.turn = String(what.turn || '').slice(0, 60);
         if (what.kick) s.players = s.players.filter(function (p) { return p.id !== what.kick; });
+        if (what.claim) { s.claims = (s.claims || []).filter(function (c) { return c.key !== what.claim.key; }).concat([{ key: String(what.claim.key).slice(0, 20), n: String(what.claim.n || '').slice(0, 80), wants: [], result: '' }]).slice(-8); }
+        if (what.claimResult) { (s.claims || []).forEach(function (c) { if (c.key === what.claimResult.key) c.result = String(what.claimResult.text || '').slice(0, 300); }); }
+        if (what.claimDrop) s.claims = (s.claims || []).filter(function (c) { return c.key !== what.claimDrop; });
         if (what.gift) { var to = s.players.filter(function (p) { return p.id === what.gift.to; })[0]; if (to) { to.gifts = (to.gifts || []).concat([{ gid: rnd(4), coins: what.gift.coins || {}, items: (what.gift.items || []).slice(0, 20), from: String(what.gift.from || '').slice(0, 80) }]).slice(-20); } }
         if (what.close) { host.conns.forEach(function (c) { try { c.send({ t: 'closed' }); } catch (e) { /* gone */ } }); var pe = host.peer; host = null; try { localStorage.removeItem(HOSTKEY); } catch (e) { /* ignore */ } setTimeout(function () { pe.destroy(); }, 300); return { ok: true }; }
         broadcast(); return pub(s);
