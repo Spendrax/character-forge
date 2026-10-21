@@ -483,7 +483,9 @@
         (rows || '<p class="muted">Add creatures with + from the list.</p>') +
         '<div class="toolbar">' +
         btn('pfeClear', 'Clear', {}, 'btn small') +
-        '</div></div></div></div>' +
+        '</div></div>' +
+        (root.SavedEnc ? root.SavedEnc.html('pf2') : '') +
+        '</div></div>' +
         (E.view
           ? '<div class="enc-modal" role="dialog"><div class="toolbar">' +
             btn('pfeViewClose', '✕ Close', {}, 'btn') +
@@ -1736,6 +1738,47 @@
       if (a('data-pfem') || a('data-pfename') || a('data-pfef') != null) return 'render';
       return null;
     }
+    // planned encounters: saved with a name and notes, opened or run later (js/saved-enc.js)
+    if (root.SavedEnc)
+      root.SavedEnc.register('pf2', {
+        list: function () {
+          return (store.pf2Encounters = store.pf2Encounters || []);
+        },
+        cur: enc,
+        load: function (e) {
+          e.run = null;
+          store.pf2Enc = e;
+        },
+        fresh: function () {
+          var e = enc();
+          return { name: '', notes: '', party: e.party, lvl: e.lvl, n: e.n, mons: [], run: null };
+        },
+        summary: function (e) {
+          var p = partyById(e.party),
+            lvl = p && p.m.length ? partyLevel(p) : +e.lvl || 1,
+            n = p && p.m.length ? p.m.length : +e.n || 4,
+            mons = e.mons
+              .map(function (x) {
+                var m = mon(x.id);
+                return m ? { lv: adjLv(m, x.adj), count: x.count } : null;
+              })
+              .filter(Boolean),
+            c = e.mons.reduce(function (a, x) {
+              return a + x.count;
+            }, 0);
+          return (
+            c +
+            ' creature' +
+            (c === 1 ? '' : 's') +
+            (mons.length ? ' · ' + rate(lvl, n, mons).threat + ' for level ' + lvl : '')
+          );
+        },
+        run: function () {
+          actions.pfeRun();
+          ui.section = 'pf2-enc';
+        },
+        save: function () {}
+      });
     return {
       html: html,
       partyHtml: partyHtml,

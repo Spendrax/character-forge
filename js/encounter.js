@@ -604,7 +604,6 @@
           );
         })
         .join('');
-      var saved = store.encounters || [];
       return (
         '<div class="panel"><div class="toolbar" style="margin:0"><h3 style="margin:0">Encounter</h3><span class="spacer"></span>' +
         btn('encRun', root.Icon('swords') + ' Run it', {}, 'btn primary') +
@@ -625,20 +624,8 @@
         btn('encRandom', root.Icon('d20') + ' Random encounter', {}, 'btn small') +
         btn('encClear', 'Clear', {}, 'btn small') +
         '</div>' +
-        '<div class="toolbar enc-tools"><input type="text" id="enc-name" data-encname="1" placeholder="Name this encounter" value="' +
-        esc(enc.name || '') +
-        '">' +
-        btn('encSave', 'Save', {}, 'btn small') +
-        (saved.length
-          ? '<select data-encload="1" aria-label="Load a saved encounter"><option value="">Load a saved one…</option>' +
-            saved
-              .map(function (s) {
-                return '<option value="' + s.id + '">' + esc(s.name || 'Untitled') + '</option>';
-              })
-              .join('') +
-            '</select>'
-          : '') +
-        '</div></div>'
+        '</div></div>' +
+        (root.SavedEnc ? root.SavedEnc.html('dnd') : '')
       );
     }
 
@@ -1103,18 +1090,6 @@
       encRandom: function () {
         E.msg = randomEncounter(cur());
       },
-      encSave: function () {
-        var enc = cur();
-        store.encounters = store.encounters || [];
-        var copy = JSON.parse(JSON.stringify(enc));
-        copy.id = copy.id || R.uid();
-        enc.id = copy.id;
-        store.encounters = store.encounters.filter(function (s) {
-          return s.id !== copy.id;
-        });
-        store.encounters.unshift(copy);
-        E.msg = 'Saved “' + (copy.name || 'Untitled') + '”.';
-      },
       encView: function (v) {
         E.open = v;
       },
@@ -1234,10 +1209,6 @@
         }
         return 'save';
       }
-      if (a('data-encname')) {
-        cur().name = t.value;
-        return 'save';
-      }
       if (a('data-encparty') != null) {
         var p = cur().party[+a('data-encparty')];
         if (p) p[a('data-f')] = Math.max(1, Math.min(20, Math.round(+t.value) || 1));
@@ -1294,14 +1265,7 @@
         cur().party.push({ charId: t.value });
         return 'render';
       }
-      if (a('data-encload') && t.value) {
-        var s = (store.encounters || []).filter(function (x) {
-          return x.id === t.value;
-        })[0];
-        if (s) store.encounter = JSON.parse(JSON.stringify(s));
-        return 'render';
-      }
-      if (a('data-encparty') != null || a('data-encname')) return 'render';
+      if (a('data-encparty') != null) return 'render';
       if (a('data-encinit')) {
         var run = store.encRun,
           k = run.list[run.turn] && run.list[run.turn].k;
@@ -1332,6 +1296,33 @@
       }
       return null;
     }
+    // planned encounters: saved with a name and notes, opened or run later (js/saved-enc.js)
+    if (root.SavedEnc)
+      root.SavedEnc.register('dnd', {
+        list: function () {
+          return (store.encounters = store.encounters || []);
+        },
+        cur: cur,
+        load: function (e) {
+          store.encounter = e;
+        },
+        fresh: function () {
+          return { name: '', notes: '', party: JSON.parse(JSON.stringify(cur().party)), mons: [] };
+        },
+        summary: function (e) {
+          var n = e.mons.reduce(function (a, x) {
+            return a + x.count;
+          }, 0);
+          return n + ' monster' + (n === 1 ? '' : 's') + (n && MON.find(e.mons[0].id) ? ' · ' + rated(e).label : '');
+        },
+        run: function () {
+          actions.encRun();
+          ui.section = 'encounters';
+        },
+        save: function () {
+          api.save && api.save();
+        }
+      });
     return { html: html, partyPage: partyPage, actions: actions, onInput: onInput, onChange: onChange };
   };
   root.EncounterUI.rate = rate;

@@ -132,6 +132,9 @@ var ENC = window.EncounterUI({
 Object.keys(ENC.actions).forEach(function (k) {
   actions[k] = ENC.actions[k];
 });
+Object.keys(SavedEnc.actions).forEach(function (k) {
+  actions[k] = SavedEnc.actions[k];
+});
 load();
 if (store.game === 'mm' && ui.section === 'home') ui.section = 'mm-home';
 if (store.game === 'pf2' && ui.section === 'home') ui.section = 'pf2-home';

@@ -1359,6 +1359,7 @@
             btn('mmeRun', (root.Icon ? root.Icon('swords') : '') + ' Run the fight', {}, 'btn primary') +
             '</div></div>'
           : '') +
+        (root.SavedEnc ? root.SavedEnc.html('mm') : '') +
         '</main>'
       );
     }
@@ -1815,6 +1816,42 @@
       }
       return null;
     }
+    // planned encounters: saved with a name and notes, opened or run later (js/saved-enc.js)
+    if (root.SavedEnc)
+      root.SavedEnc.register('mm', {
+        list: function () {
+          return (store.mmEncounters = store.mmEncounters || []);
+        },
+        cur: E,
+        load: function (e) {
+          e.run = null;
+          e.msg = '';
+          store.mmEnc = e;
+        },
+        fresh: function () {
+          var e = E();
+          return {
+            name: '',
+            notes: '',
+            pl: e.pl,
+            n: e.n,
+            kind: e.kind,
+            role: e.role,
+            team: e.team,
+            foes: [],
+            run: null
+          };
+        },
+        summary: function (e) {
+          var n = e.foes.length;
+          return n + ' foe' + (n === 1 ? '' : 's') + ' · PL ' + e.pl;
+        },
+        run: function () {
+          if (!E().foes.length) return;
+          actions.mmeRun();
+          ui.section = 'mm-enc';
+        }
+      });
     return {
       html: html,
       partyPage: partyPage,
