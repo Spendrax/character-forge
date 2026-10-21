@@ -1,5 +1,6 @@
 // The DM's corner (D&D, Pathfinder 2e, M&M 3e): the DM tools in one place, and the table with the players' phones:
-// who is there and how they're doing, private messages, handouts (a picture for some or all), and roll requests.
+// who is there and how they're doing, what happens to their characters (damage, conditions, inspiration, rests, XP),
+// roll requests and secret rolls, messages, shared notes, handouts, the NPCs and quests they know, and the session log.
 (function (root) {
   'use strict';
   var AB = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'];
@@ -42,6 +43,88 @@
     'Survival',
     'Thievery'
   ];
+  // the conditions the DM can put on a character, per game (the names each game's character pages use)
+  var CONDS = {
+    dnd: [
+      'Blinded',
+      'Charmed',
+      'Deafened',
+      'Frightened',
+      'Grappled',
+      'Incapacitated',
+      'Invisible',
+      'Paralyzed',
+      'Petrified',
+      'Poisoned',
+      'Prone',
+      'Restrained',
+      'Stunned',
+      'Unconscious'
+    ],
+    pf2: [
+      'Blinded',
+      'Clumsy',
+      'Concealed',
+      'Confused',
+      'Controlled',
+      'Dazzled',
+      'Deafened',
+      'Doomed',
+      'Drained',
+      'Encumbered',
+      'Enfeebled',
+      'Fascinated',
+      'Fatigued',
+      'Fleeing',
+      'Frightened',
+      'Grabbed',
+      'Hidden',
+      'Immobilized',
+      'Invisible',
+      'Off-Guard',
+      'Paralyzed',
+      'Persistent Damage',
+      'Petrified',
+      'Prone',
+      'Quickened',
+      'Restrained',
+      'Sickened',
+      'Slowed',
+      'Stunned',
+      'Stupefied',
+      'Unconscious',
+      'Wounded'
+    ],
+    mm: [
+      'Asleep',
+      'Blind',
+      'Bound',
+      'Compelled',
+      'Controlled',
+      'Dazed',
+      'Deaf',
+      'Debilitated',
+      'Defenseless',
+      'Disabled',
+      'Entranced',
+      'Exhausted',
+      'Fatigued',
+      'Hindered',
+      'Immobile',
+      'Impaired',
+      'Incapacitated',
+      'Paralyzed',
+      'Prone',
+      'Restrained',
+      'Staggered',
+      'Stunned',
+      'Surprised',
+      'Transformed',
+      'Unaware',
+      'Vulnerable',
+      'Weakened'
+    ]
+  };
   var MM_AB = ['STR', 'STA', 'AGL', 'DEX', 'FGT', 'INT', 'AWE', 'PRE'];
   var MM_SK = [
     'Acrobatics',
@@ -530,8 +613,14 @@
         '<div class="toolbar"><input type="text" id="dm-title" data-dm="title" value="' +
         esc(M.title) +
         '" placeholder="Title (optional)" style="flex:1;min-width:10rem"><label class="btn">🖼 Pick a picture…<input type="file" id="dmHandoutFile" accept="image/*" hidden></label></div>' +
+        '<textarea id="dm-hotext" data-dm="hoText" rows="2" placeholder="Text to go with it (optional; or send text alone)">' +
+        esc(M.hoText || '') +
+        '</textarea>' +
         '<span class="small">For:</span>' +
         whoPills(st, (M.hoTo = M.hoTo || {}), 'dmHoTo') +
+        '<div class="toolbar">' +
+        btn('dmHoText', 'Send the text only', {}, 'btn small') +
+        '</div>' +
         (M.hoBusy ? '<p class="small muted">Sending…</p>' : '');
       var list = (st.handouts || []).slice().reverse();
       if (list.length)
@@ -567,37 +656,337 @@
         '</dl></details>'
       );
     }
+
+    // ---------- acting on the players' characters: damage, healing, conditions, inspiration, rests, XP ----------
+    function fxHtml(st) {
+      var g = api.game(),
+        conds = CONDS[g] || [],
+        to = (M.fxTo = M.fxTo || {});
+      return (
+        '<div class="panel dm-fx"><h3>On their characters</h3><p class="small muted">Changes land on the players’ phones at once.</p>' +
+        '<span class="small">Who:</span>' +
+        whoPills(st, to, 'dmFxTo') +
+        '<div class="toolbar"><input type="number" min="0" id="dm-amt" data-dm="amt" value="' +
+        esc(M.amt || '') +
+        '" placeholder="' +
+        (g === 'mm' ? 'rank' : 'amount') +
+        '" style="width:5.5rem">' +
+        btn('dmFx', g === 'mm' ? '💥 Hit (damage rank)' : '💥 Damage', { v: 'dmg' }, 'btn small') +
+        btn('dmFx', g === 'mm' ? '❤ Recover' : '❤ Heal', { v: 'heal' }, 'btn small') +
+        '</div><div class="toolbar"><select data-dm="cond" aria-label="Condition">' +
+        conds
+          .map(function (c) {
+            return '<option' + (M.cond === c ? ' selected' : '') + '>' + esc(c) + '</option>';
+          })
+          .join('') +
+        '</select>' +
+        btn('dmFx', 'Add', { v: 'condOn' }, 'btn small') +
+        btn('dmFx', 'Remove', { v: 'condOff' }, 'btn small') +
+        '</div><div class="toolbar">' +
+        btn('dmFx', g === 'dnd' ? '✨ Inspiration' : '✨ Hero point', { v: 'insp' }, 'btn small') +
+        (g === 'dnd'
+          ? btn('dmFx', '☾ Short rest', { v: 'rest:short' }, 'btn small') +
+            btn('dmFx', '☀ Long rest', { v: 'rest:long' }, 'btn small')
+          : g === 'pf2'
+            ? btn('dmFx', '☾ Rest for the night', { v: 'rest:long' }, 'btn small')
+            : '') +
+        '</div><div class="toolbar"><input type="number" min="0" id="dm-xp" data-dm="xp" value="' +
+        esc(M.xp || '') +
+        '" placeholder="' +
+        (g === 'mm' ? 'points' : 'XP') +
+        '" style="width:5.5rem">' +
+        btn('dmFx', g === 'mm' ? 'Give power points' : 'Give XP', { v: 'xp' }, 'btn small') +
+        (g === 'mm' ? '' : btn('dmFx', '🎉 Level up (milestone)', { v: 'level' }, 'btn small')) +
+        (M.fxMsg ? '<span class="small rest-msg">' + esc(M.fxMsg) + '</span>' : '') +
+        '</div></div>'
+      );
+    }
+    // ---------- rolls: what the players roll in the app, and the DM's secret rolls for them ----------
+    function rollsHtml(st) {
+      var log = (st.log || []).slice(-25).reverse(),
+        keys = {};
+      st.players.forEach(function (p) {
+        Object.keys((p.status && p.status.bon) || {}).forEach(function (k) {
+          keys[k] = 1;
+        });
+      });
+      var list = Object.keys(keys).sort(function (a, b) {
+        return /^Passive|^Perception/.test(b) - /^Passive|^Perception/.test(a) || (a < b ? -1 : 1);
+      });
+      if (!M.sec || !keys[M.sec]) M.sec = list[0] || '';
+      return (
+        '<div class="panel"><h3>Secret roll</h3><p class="small muted">Roll for the players without them knowing: noticing a trap, seeing through a lie. Only you see the results.</p>' +
+        (list.length
+          ? '<div class="toolbar"><select data-dm="sec" aria-label="What to roll">' +
+            list
+              .map(function (k) {
+                return '<option' + (M.sec === k ? ' selected' : '') + '>' + esc(k) + '</option>';
+              })
+              .join('') +
+            '</select>' +
+            btn('dmSecret', '🎲 Roll secretly', {}, 'btn small primary') +
+            '</div><span class="small">For:</span>' +
+            whoPills(st, (M.secTo = M.secTo || {}), 'dmSecTo') +
+            (M.secRes
+              ? '<ul class="dm-ans">' +
+                M.secRes
+                  .map(function (r) {
+                    return (
+                      '<li>' +
+                      esc(r.n) +
+                      ': <b>' +
+                      r.total +
+                      '</b> <span class="small muted">' +
+                      (r.passive ? 'passive' : 'd20 ' + r.roll + ' ' + (r.b >= 0 ? '+' : '') + r.b) +
+                      '</span></li>'
+                    );
+                  })
+                  .join('') +
+                '</ul><p class="small muted">' +
+                esc(M.secLabel) +
+                '</p>'
+              : '')
+          : '<p class="small muted">The players’ bonuses arrive once their phones have joined.</p>') +
+        '</div><div class="panel"><div class="toolbar" style="margin:0"><h3 style="margin:0">Table rolls</h3><span class="spacer"></span>' +
+        (log.length ? btn('dmLogClear', 'Clear', {}, 'btn tiny') : '') +
+        '</div>' +
+        (log.length
+          ? '<ul class="tbl-log">' +
+            log
+              .map(function (r) {
+                return (
+                  '<li><span class="small muted">' +
+                  clock(r.at) +
+                  '</span> <b>' +
+                  esc(r.name) +
+                  '</b> ' +
+                  esc(r.label) +
+                  ': <b>' +
+                  r.total +
+                  '</b> <span class="small muted">' +
+                  esc(r.detail) +
+                  (r.dmOnly ? ' · only you' : '') +
+                  '</span></li>'
+                );
+              })
+              .join('') +
+            '</ul>'
+          : '<p class="small muted">Rolls the players make with the app’s dice show up here (each player chooses: everyone, only you, or not shared).</p>') +
+        '</div>'
+      );
+    }
+    function clock(t) {
+      var d = new Date(t);
+      return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+    }
+    // ---------- notes shared with the DM, and the DM's notes to the players ----------
+    function notesHtml(st) {
+      var got = (st.notes || []).filter(function (n) {
+          return n.from !== 'dm';
+        }),
+        sent = (st.notes || []).filter(function (n) {
+          return n.from === 'dm';
+        });
+      return (
+        '<div class="panel"><h3>Shared notes</h3>' +
+        (got.length
+          ? got
+              .slice()
+              .reverse()
+              .map(function (n) {
+                return (
+                  '<div class="tbl-note"><b>' +
+                  esc(n.title || 'A note') +
+                  '</b> <span class="small muted">from ' +
+                  esc(n.fromName) +
+                  (n.to === 'all' ? ', to everyone' : '') +
+                  '</span><div class="small">' +
+                  esc(n.text).replace(/\n/g, '<br>') +
+                  '</div></div>'
+                );
+              })
+              .join('')
+          : '<p class="small muted">Notes the players share with you (or with everyone) show up here.</p>') +
+        '<div class="tbl-note-new"><b class="small">Share a note with the players</b><input type="text" id="dm-ntitle" data-dm="ntitle" value="' +
+        esc(M.ntitle || '') +
+        '" placeholder="Title"><textarea id="dm-ntext" data-dm="ntext" rows="3" placeholder="A clue, a map description, a letter they found… They can save it to their notes.">' +
+        esc(M.ntext || '') +
+        '</textarea><span class="small">For:</span>' +
+        whoPills(st, (M.nTo = M.nTo || {}), 'dmNTo') +
+        '<div class="toolbar">' +
+        btn('dmNote', 'Share', {}, 'btn small primary') +
+        '</div></div>' +
+        (sent.length
+          ? '<p class="small muted">You shared: ' +
+            sent
+              .map(function (n) {
+                return esc(n.title || 'a note') + ' ' + btn('dmNoteDrop', '✕', { v: n.nid }, 'btn tiny');
+              })
+              .join(' · ') +
+            '</p>'
+          : '') +
+        '</div>'
+      );
+    }
+    // ---------- story: the people and quests the players know about, and the session log and recap ----------
+    function lore() {
+      var L = (store.dmLore = store.dmLore || {});
+      return (L[api.game()] = L[api.game()] || []);
+    }
+    function revealed() {
+      return lore()
+        .filter(function (l) {
+          return l.shown;
+        })
+        .map(function (l) {
+          return { lid: l.lid, kind: l.kind, name: l.name, text: l.text, done: l.done, pic: l.pic };
+        });
+    }
+    function pushLore(st) {
+      var want = JSON.stringify(revealed());
+      if (st && JSON.stringify(st.lore || []) !== want && M.loreSent !== want) {
+        M.loreSent = want;
+        dm({ lore: JSON.parse(want) });
+      }
+    }
+    function loreHtml() {
+      var L = lore(),
+        E = M.loreEdit,
+        row = function (l) {
+          if (E === l.lid)
+            return (
+              '<div class="dm-lore editing"><input type="text" id="dm-l-name" data-dml="name" value="' +
+              esc(l.name) +
+              '" placeholder="Name"><textarea id="dm-l-text" data-dml="text" rows="2" placeholder="What the players know (they see this)">' +
+              esc(l.text || '') +
+              '</textarea><textarea id="dm-l-secret" data-dml="secret" rows="2" placeholder="Your private notes (only you see these)">' +
+              esc(l.secret || '') +
+              '</textarea><div class="toolbar">' +
+              (l.kind === 'npc'
+                ? '<label class="btn small">🖼 ' +
+                  (l.pic ? 'Change' : 'Add') +
+                  ' a portrait<input type="file" id="dmLorePic" accept="image/*" hidden></label>'
+                : '') +
+              btn('dmLoreDone', 'Done', {}, 'btn small primary') +
+              btn('dmLoreRm', 'Delete', { v: l.lid }, 'btn small danger') +
+              '</div></div>'
+            );
+          return (
+            '<div class="dm-lore' +
+            (l.shown ? ' shown' : '') +
+            '">' +
+            (l.pic ? '<img src="' + l.pic + '" alt="">' : '') +
+            '<div class="dm-lore-what"><b>' +
+            esc(l.name || 'Unnamed') +
+            '</b>' +
+            (l.done ? ' <span class="small good">✓ done</span>' : '') +
+            (l.text ? '<div class="small">' + esc(l.text) + '</div>' : '') +
+            (l.secret ? '<div class="small muted">🔒 ' + esc(l.secret) + '</div>' : '') +
+            '</div><div class="se-btns">' +
+            btn(
+              'dmLoreShow',
+              l.shown ? '👁 Shown' : 'Hidden',
+              { v: l.lid },
+              'btn small' + (l.shown ? ' primary' : '')
+            ) +
+            (l.kind === 'quest' ? btn('dmLoreDoneQ', l.done ? 'Not done' : 'Done ✓', { v: l.lid }, 'btn small') : '') +
+            btn('dmLoreEdit', 'Edit', { v: l.lid }, 'btn small') +
+            '</div></div>'
+          );
+        };
+      var npcs = L.filter(function (l) {
+          return l.kind === 'npc';
+        }),
+        quests = L.filter(function (l) {
+          return l.kind === 'quest';
+        });
+      return (
+        '<div class="panel"><h3>People and quests</h3><p class="small muted">Keep your NPCs and quests here. Tap <b>Hidden</b> to show one to the players: they see the name, what they know and the portrait, never your private notes.</p>' +
+        '<h4>Quests</h4>' +
+        (quests.map(row).join('') || '<p class="small muted">None yet.</p>') +
+        btn('dmLoreAdd', '+ Quest', { v: 'quest' }, 'btn small') +
+        '<h4>People</h4>' +
+        (npcs.map(row).join('') || '<p class="small muted">None yet.</p>') +
+        btn('dmLoreAdd', '+ Person', { v: 'npc' }, 'btn small') +
+        '</div>'
+      );
+    }
+    function sessionHtml(st) {
+      var ev = st.events || [];
+      return (
+        '<div class="panel"><h3>Session log</h3><p class="small muted">Kept as you play: who joined, fights, loot, roll-offs.</p>' +
+        (ev.length
+          ? '<ul class="dm-events">' +
+            ev
+              .slice(-40)
+              .reverse()
+              .map(function (e) {
+                return '<li><span class="small muted">' + clock(e.at) + '</span> ' + esc(e.text) + '</li>';
+              })
+              .join('') +
+            '</ul>'
+          : '') +
+        '<h4>Recap</h4><textarea id="dm-recap" data-dm="recap" rows="5" placeholder="What happened tonight. It goes into every player’s notes.">' +
+        esc(M.recap || '') +
+        '</textarea><div class="toolbar">' +
+        btn('dmRecapFill', 'Start from the log', {}, 'btn small') +
+        btn('dmRecap', 'Send to everyone’s notes', {}, 'btn small primary') +
+        btn('dmNewSession', 'New session (clear the log)', {}, 'btn small') +
+        '</div>' +
+        (M.recapMsg ? '<p class="small rest-msg">' + esc(M.recapMsg) + '</p>' : '') +
+        '</div>'
+      );
+    }
+    var TABS = [
+      ['table', 'Table'],
+      ['talk', 'Messages and notes'],
+      ['rolls', 'Rolls'],
+      ['story', 'Story']
+    ];
     function html() {
       var st = St(),
-        on = tbl() && st;
+        on = tbl() && st,
+        tab = M.tab || 'table';
+      if (on) pushLore(st);
+      var body = '';
+      if (on && st.players.length) {
+        if (tab === 'table') body = fxHtml(st) + asksHtml(st);
+        else if (tab === 'talk') body = msgsHtml(st) + notesHtml(st) + handoutsHtml(st);
+        else if (tab === 'rolls') body = rollsHtml(st);
+      } else if (tab !== 'story')
+        body = on
+          ? '<p class="small muted">Once players join you can act on their characters, message them, send handouts and ask for rolls here.</p>'
+          : '';
+      if (tab === 'story') body = loreHtml() + (on ? sessionHtml(st) : '');
       return (
         '<main class="home dm-page"><h2>' +
         (api.game() === 'dnd' ? 'DM' : 'GM') +
         '</h2>' +
         tilesHtml() +
         tableHtml() +
-        (on && st.players.length
-          ? asksHtml(st) + msgsHtml(st) + handoutsHtml(st)
-          : on
-            ? '<p class="small muted">Once players join you can message them, send handouts and ask for rolls here.</p>'
-            : '') +
+        '<nav class="mm-tabs dm-tabs">' +
+        TABS.map(function (t) {
+          return btn('dmTab', t[1], { v: t[0] }, 'mm-tab' + (tab === t[0] ? ' on' : ''));
+        }).join('') +
+        '</nav>' +
+        body +
         refHtml() +
         '</main>'
       );
     }
     // a picture, shrunk so it travels quickly to the phones
-    function shrink(file) {
+    function shrink(file, size) {
       return new Promise(function (ok, no) {
         var fr = new FileReader();
         fr.onload = function () {
           var im = new Image();
           im.onload = function () {
-            var k = Math.min(1, 1280 / Math.max(im.width, im.height)),
+            var k = Math.min(1, (size || 1280) / Math.max(im.width, im.height)),
               c = document.createElement('canvas');
             c.width = Math.round(im.width * k);
             c.height = Math.round(im.height * k);
             c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
-            ok(c.toDataURL('image/jpeg', 0.8));
+            ok(c.toDataURL('image/jpeg', size ? 0.7 : 0.8));
           };
           im.onerror = function () {
             no(new Error('That file isn’t a picture this browser can read.'));
@@ -610,7 +999,24 @@
         fr.readAsDataURL(file);
       });
     }
+    function targets(st, sel) {
+      var p = picked(sel);
+      return p === 'all'
+        ? st.players
+        : st.players.filter(function (x) {
+            return p.indexOf(x.id) >= 0;
+          });
+    }
     var actions = {
+      dmShow: function (v, el) {
+        root.DMUI.show(el.getAttribute('data-t'), el.getAttribute('data-x'));
+        M.shown = el.getAttribute('data-t');
+        el.textContent = '📱 Shown';
+        return false;
+      },
+      dmTab: function (v) {
+        M.tab = v;
+      },
       dmOpen: function () {
         M.msg = '';
         T()
@@ -620,6 +1026,7 @@
               store.encTable = { code: j.code, key: j.key };
               M.st = null;
               M.showQr = true;
+              M.loreSent = '';
               api.save();
               api.render();
             },
@@ -652,6 +1059,15 @@
       dmHoTo: function (v) {
         toggle(M.hoTo, v);
       },
+      dmFxTo: function (v) {
+        toggle(M.fxTo, v);
+      },
+      dmSecTo: function (v) {
+        toggle(M.secTo, v);
+      },
+      dmNTo: function (v) {
+        toggle(M.nTo, v);
+      },
       dmSend: function () {
         var el = document.getElementById('dm-text'),
           tx = (el ? el.value : M.text).trim();
@@ -671,7 +1087,8 @@
         var kv = K().v,
           p = kv.split(':');
         dm({
-          ask: { kind: p[0], key: p[1], label: kindLabel(kv), dc: +M.dc || 0, secret: !!M.secret, to: picked(M.askTo) }
+          ask: { kind: p[0], key: p[1], label: kindLabel(kv), dc: +M.dc || 0, secret: !!M.secret, to: picked(M.askTo) },
+          event: 'Asked for ' + kindLabel(kv) + (M.dc ? ' (DC ' + M.dc + ')' : '') + '.'
         });
         return false;
       },
@@ -679,28 +1096,213 @@
         dm({ askDrop: v });
         return false;
       },
+      dmHoText: function () {
+        var el = document.getElementById('dm-hotext'),
+          tx = String((el ? el.value : M.hoText) || '').trim();
+        if (!tx) return false;
+        dm({ handout: { img: '', title: M.title, text: tx, to: picked(M.hoTo || {}) } });
+        M.title = M.hoText = '';
+      },
       dmHoDrop: function (v) {
         dm({ handoutDrop: v });
+        return false;
+      },
+      // damage, healing, a condition, inspiration, a rest, XP or a level-up, for the chosen players
+      dmFx: function (v) {
+        var st = St(),
+          who = targets(st, M.fxTo || {}),
+          g = api.game(),
+          ids = who.map(function (p) {
+            return p.id;
+          }),
+          names = who
+            .map(function (p) {
+              return p.name;
+            })
+            .join(', '),
+          amt = Math.abs(Math.round(+M.amt || 0)),
+          xp = Math.abs(Math.round(+M.xp || 0)),
+          fx,
+          ev;
+        if (!ids.length) return;
+        if (v === 'dmg' || v === 'heal') {
+          if (!amt && !(g === 'mm' && v === 'heal')) {
+            M.fxMsg = 'Type the amount first.';
+            return;
+          }
+          fx = { k: v, n: amt };
+          ev =
+            v === 'dmg'
+              ? names + (g === 'mm' ? ' took a hit, rank ' + amt : ' took ' + amt + ' damage')
+              : names + (g === 'mm' ? ' recovered' : ' healed ' + amt);
+        } else if (v === 'condOn' || v === 'condOff') {
+          var c = CONDS[g].indexOf(M.cond) >= 0 ? M.cond : CONDS[g][0];
+          fx = { k: 'cond', c: c, on: v === 'condOn' };
+          ev = names + (v === 'condOn' ? ' became ' : ' is no longer ') + c.toLowerCase();
+        } else if (v === 'insp') {
+          fx = { k: 'insp' };
+          ev = names + (g === 'dnd' ? ' got inspiration' : ' got a hero point');
+        } else if (/^rest:/.test(v)) {
+          fx = { k: 'rest', c: v.slice(5) };
+          ev = 'The ' + (v === 'rest:short' ? 'party took a short rest' : 'party rested');
+        } else if (v === 'xp') {
+          if (!xp) {
+            M.fxMsg = 'Type the ' + (g === 'mm' ? 'points' : 'XP') + ' first.';
+            return;
+          }
+          fx = { k: 'xp', n: xp };
+          ev = names + ' earned ' + xp + (g === 'mm' ? ' power point' + (xp === 1 ? '' : 's') : ' XP');
+        } else if (v === 'level') {
+          fx = { k: 'level' };
+          ev = names + ' levelled up';
+        }
+        fx.to = ids;
+        dm({ fx: fx, event: ev + '.' });
+        M.fxMsg = ev + '.';
+        M.amt = '';
+        return false;
+      },
+      dmSecret: function () {
+        var st = St(),
+          k = M.sec,
+          passive = /^Passive/.test(k);
+        M.secLabel = k + ', rolled ' + clock(Date.now());
+        M.secRes = targets(st, M.secTo || {})
+          .filter(function (p) {
+            return p.status && p.status.bon && p.status.bon[k] != null;
+          })
+          .map(function (p) {
+            var b = p.status.bon[k],
+              r = 1 + Math.floor(Math.random() * 20);
+            return { n: p.name, b: b, roll: r, total: passive ? b : r + b, passive: passive };
+          });
+      },
+      dmLogClear: function () {
+        dm({ clearLog: true });
+        return false;
+      },
+      dmNote: function () {
+        var ti = (document.getElementById('dm-ntitle') || {}).value || M.ntitle || '',
+          tx = (document.getElementById('dm-ntext') || {}).value || M.ntext || '';
+        if (!String(ti + tx).trim()) return false;
+        dm({ note: { to: picked(M.nTo || {}), title: ti, text: tx } });
+        M.ntitle = M.ntext = '';
+      },
+      dmNoteDrop: function (v) {
+        dm({ noteDrop: v });
+        return false;
+      },
+      dmLoreAdd: function (v) {
+        var l = {
+          lid: 'l' + Date.now().toString(36),
+          kind: v,
+          name: '',
+          text: '',
+          secret: '',
+          shown: false,
+          done: false,
+          pic: ''
+        };
+        lore().push(l);
+        M.loreEdit = l.lid;
+        api.save();
+      },
+      dmLoreEdit: function (v) {
+        M.loreEdit = v;
+      },
+      dmLoreDone: function () {
+        M.loreEdit = '';
+        M.loreSent = '';
+        api.save();
+      },
+      dmLoreRm: function (v) {
+        var L = lore();
+        L.splice(
+          L.map(function (l) {
+            return l.lid;
+          }).indexOf(v),
+          1
+        );
+        M.loreEdit = '';
+        api.save();
+      },
+      dmLoreShow: function (v) {
+        lore().forEach(function (l) {
+          if (l.lid === v) l.shown = !l.shown;
+        });
+        api.save();
+      },
+      dmLoreDoneQ: function (v) {
+        lore().forEach(function (l) {
+          if (l.lid === v) l.done = !l.done;
+        });
+        api.save();
+      },
+      dmRecapFill: function () {
+        var ev = (St() || {}).events || [];
+        M.recap = ev
+          .filter(function (e) {
+            return !/joined the table|table opened|new session/i.test(e.text);
+          })
+          .map(function (e) {
+            return '- ' + e.text;
+          })
+          .join('\n');
+      },
+      dmRecap: function () {
+        var el = document.getElementById('dm-recap'),
+          tx = String((el ? el.value : M.recap) || '').trim();
+        if (!tx) {
+          M.recapMsg = 'Write the recap first.';
+          return;
+        }
+        dm({
+          note: { to: 'all', title: 'Session recap, ' + new Date().toLocaleDateString(), text: tx, recap: true },
+          event: 'Recap sent to the players.'
+        });
+        M.recapMsg = 'Sent: it is now in every player’s notes.';
+        M.recap = '';
+      },
+      dmNewSession: function () {
+        dm({ clearEvents: true, clearLog: true });
+        M.recapMsg = '';
         return false;
       }
     };
     function onInput(t) {
-      var k = t.getAttribute('data-dm');
-      if (!k || k === 'kind' || k === 'secret') return null;
+      var k = t.getAttribute('data-dm'),
+        l = t.getAttribute('data-dml');
+      if (l) {
+        lore().forEach(function (x) {
+          if (x.lid === M.loreEdit) x[l] = t.value;
+        });
+        api.save();
+        return 'keep';
+      }
+      if (!k || k === 'kind' || k === 'secret' || k === 'cond' || k === 'sec') return null;
       M[k] = t.value;
       return 'keep';
     }
     function onChange(t) {
-      if (t.id === 'dmHandoutFile') {
-        var f = t.files && t.files[0];
+      if (t.id === 'dmHandoutFile' || t.id === 'dmLorePic') {
+        var f = t.files && t.files[0],
+          pic = t.id === 'dmLorePic';
         t.value = '';
         if (!f) return 'render';
-        M.hoBusy = true;
-        shrink(f).then(
+        M.hoBusy = !pic;
+        shrink(f, pic ? 160 : 0).then(
           function (img) {
             M.hoBusy = false;
-            dm({ handout: { img: img, title: M.title, to: picked(M.hoTo) } });
-            M.title = '';
+            if (pic) {
+              lore().forEach(function (x) {
+                if (x.lid === M.loreEdit) x.pic = img;
+              });
+              api.save();
+              api.render();
+            } else {
+              dm({ handout: { img: img, title: M.title, text: M.hoText || '', to: picked(M.hoTo) } });
+              M.title = M.hoText = '';
+            }
           },
           function (e) {
             M.hoBusy = false;
@@ -710,13 +1312,46 @@
         );
         return 'render';
       }
+      if (t.getAttribute('data-dml')) return 'keep';
       var k = t.getAttribute('data-dm');
       if (!k) return null;
       if (k === 'secret') M.secret = t.checked;
       else if (k === 'kind') M.kind[api.game()] = t.value;
       else M[k] = t.value;
-      return k === 'kind' || k === 'secret' ? 'render' : 'keep';
+      return k === 'kind' || k === 'secret' || k === 'sec' ? 'render' : 'keep';
     }
     return { html: html, actions: actions, onInput: onInput, onChange: onChange };
+  };
+  // "Show to the table" from anywhere (a monster, an item, a villain): a handout for every player
+  root.DMUI.show = function (title, text, img) {
+    var T = root.Table,
+      h = T && T.hostInfo && T.hostInfo();
+    if (!h || !h.state.players.length) return false;
+    T.dm(h.code, h.key, {
+      handout: { title: title, text: text, img: img || '', to: 'all' },
+      event: 'Showed the players: ' + title + '.'
+    }).catch(function () {});
+    return true;
+  };
+  // the button that does it, shown only to a DM whose table has players
+  root.DMUI.button = function (title, text) {
+    if (!root.DMUI.ready()) return '';
+    var e = function (s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    };
+    return (
+      '<button type="button" class="btn tiny dm-show noprint" data-act="dmShow" data-t="' +
+      e(title) +
+      '" data-x="' +
+      e(String(text || '').slice(0, 5000)) +
+      '" title="Show the players (name and description, not the numbers)">📱 Show the players</button>'
+    );
+  };
+  root.DMUI.ready = function () {
+    var T = root.Table,
+      h = T && T.hostInfo && T.hostInfo();
+    return !!(h && h.state.players.length);
   };
 })(typeof window !== 'undefined' ? window : globalThis);

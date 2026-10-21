@@ -775,12 +775,7 @@
     function pushTurn() {
       var t = tbl(),
         run = store.encRun;
-      if (!t || !root.Table) return;
-      root.Table.dm(
-        t.code,
-        t.key,
-        run ? { round: run.round, turn: (run.list[run.turn] || {}).n || '' } : { open: false, round: 0, turn: '' }
-      ).catch(function () {});
+      if (t && root.Table) root.Table.pushRun(run);
     }
 
     // ----- running: initiative, hit points, turns -----
@@ -1104,14 +1099,7 @@
         }
         startRun(enc);
         E.msg = '';
-        var t = tbl();
-        if (t && root.Table)
-          root.Table.dm(t.code, t.key, {
-            open: true,
-            reset: true,
-            round: 1,
-            turn: (store.encRun.list[0] || {}).n || ''
-          }).catch(function () {});
+        if (tbl() && root.Table) root.Table.pushRun(store.encRun, true);
       },
       tblOpen: function () {
         E.tmsg = '';

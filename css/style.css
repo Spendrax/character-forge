@@ -4497,3 +4497,127 @@ html.dice3d-lock body {
   gap: 0.3rem;
   align-items: center;
 }
+
+/* the table, more: news, turn order, shared notes and rolls, people and quests, music */
+.tbl-news {
+  margin: 0.5rem 0;
+  padding: 0.4rem 0.7rem;
+  border-radius: 8px;
+  background: var(--soft);
+  display: grid;
+  gap: 0.2rem;
+}
+.tbl-news .btn {
+  justify-self: start;
+}
+.tbl-order {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  align-items: center;
+  margin: 0.4rem 0;
+  font-size: 0.9rem;
+}
+.tbl-order span {
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+}
+.tbl-order span.now {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+}
+.tbl-order span.me {
+  font-weight: 700;
+}
+.tbl-order .tbl-arrow {
+  border: 0;
+  padding: 0;
+  color: var(--muted, #888);
+}
+.tbl-next {
+  color: var(--accent);
+  margin-right: 0.4rem;
+}
+.tbl-fold {
+  margin-top: 0.5rem;
+  border-top: 1px solid var(--line);
+  padding-top: 0.4rem;
+}
+.tbl-fold summary {
+  cursor: pointer;
+}
+.tbl-note {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.35rem 0.6rem;
+  margin: 0.35rem 0;
+}
+.tbl-note-new {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+}
+.tbl-log {
+  list-style: none;
+  padding: 0;
+  margin: 0.3rem 0;
+  display: grid;
+  gap: 0.2rem;
+}
+.tbl-lore {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  margin: 0.35rem 0;
+}
+.tbl-lore img,
+.dm-lore img {
+  width: 3.5rem;
+  height: 3.5rem;
+  object-fit: cover;
+  border-radius: 8px;
+  flex: none;
+}
+.tbl-music {
+  margin-top: 0.5rem;
+}
+.tbl-ho-text {
+  margin-top: 0.3rem;
+}
+.dm-tabs {
+  margin: 0.8rem 0;
+}
+.dm-lore {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.7rem;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.4rem 0.6rem;
+  margin: 0.35rem 0;
+}
+.dm-lore.shown {
+  border-color: var(--accent);
+}
+.dm-lore.editing {
+  display: grid;
+}
+.dm-lore-what {
+  flex: 1;
+  min-width: 12rem;
+}
+.dm-events {
+  list-style: none;
+  padding: 0;
+  margin: 0.3rem 0;
+  max-height: 16rem;
+  overflow-y: auto;
+  display: grid;
+  gap: 0.15rem;
+}
+.dm-show {
+  margin: 0.3rem 0;
+}

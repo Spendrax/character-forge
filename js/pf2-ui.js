@@ -1378,9 +1378,67 @@
                 return c + (T.conds[c] > 1 ? ' ' + T.conds[c] : '');
               })
               .concat(T.dying ? ['Dying ' + T.dying] : []),
-            conc: ''
+            conc: '',
+            bon: (function () {
+              var b = { Perception: d.perception.v };
+              ['fortitude', 'reflex', 'will'].forEach(function (k) {
+                b[k[0].toUpperCase() + k.slice(1) + ' save'] = d.saves[k].v;
+              });
+              Object.keys(d.skills).forEach(function (k) {
+                b[d.skills[k].n] = d.skills[k].v;
+              });
+              return b;
+            })()
           };
-        }
+        },
+        gm: 'GM',
+        // what the GM sends: returns what to tell the player, and whether a level-up is waiting
+        effect: function (f) {
+          if (f.k === 'dmg' || f.k === 'heal') {
+            actions.pfHp(f.k === 'dmg' ? -Math.abs(f.n) : Math.abs(f.n));
+            return {
+              msg:
+                f.k === 'dmg' ? 'You take ' + Math.abs(f.n) + ' damage.' : 'You heal ' + Math.abs(f.n) + ' hit points.'
+            };
+          }
+          if (f.k === 'cond') {
+            T.conds = T.conds || {};
+            if (f.on) T.conds[f.c] = T.conds[f.c] || 1;
+            else delete T.conds[f.c];
+            return { msg: (f.on ? 'You are now ' : 'No longer ') + f.c.toLowerCase() + '.' };
+          }
+          if (f.k === 'insp') {
+            T.hero = Math.min(3, (T.hero || 0) + 1);
+            return { msg: 'The GM gives you a hero point!' };
+          }
+          if (f.k === 'rest') {
+            actions.pfRest();
+            return { msg: 'Rested: hit points, spell slots and focus points are back.' };
+          }
+          if (f.k === 'xp') {
+            ch.xp = (+ch.xp || 0) + f.n;
+            return {
+              msg: 'You gain ' + f.n + ' XP (now ' + ch.xp + ').',
+              level: ch.xp >= 1000 && (ch.level || 1) < 20
+            };
+          }
+          if (f.k === 'level') return { msg: 'The GM says: level up!', level: true };
+          return null;
+        },
+        levelUp: function () {
+          if (+ch.xp >= 1000) ch.xp -= 1000;
+          U.tab = 'build';
+          U.msg = 'Level up: raise the level on the Build tab and make the new choices.';
+          root.scrollTo(0, 0);
+        },
+        notes: function () {
+          return ch.notes ? [{ id: 'notes', title: (ch.name || 'My') + ' notes', text: ch.notes }] : [];
+        },
+        addNote: function (title, text) {
+          ch.notes =
+            (ch.notes ? ch.notes + '\n\n' : '') + '## ' + String(title || 'From the table') + '\n' + String(text || '');
+        },
+        rest: [['long', 'Rest for the night']]
       };
     }
     function playTab(ch, d) {
@@ -3314,7 +3372,7 @@
         });
       },
       pfRoll: function (v, el) {
-        if (root.Dice3D) root.Dice3D.roll({ d20: 1 }, +v);
+        if (root.Dice3D) root.Dice3D.roll({ d20: 1 }, +v, el.getAttribute('data-l'));
         return false;
       },
       pfDmg: function (v) {

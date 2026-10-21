@@ -537,6 +537,7 @@
         (m.mine ? ' <span class="tag">yours</span>' : '') +
         (root.Sounds ? root.Sounds.button(m, 'sb-sound') : '') +
         '</h2>' +
+        (root.DMUI ? root.DMUI.button(who, [m.size, m.type].filter(Boolean).join(' ')) : '') +
         '<div class="sb-sub">' +
         esc(
           [m.size, (m.type || '') + (m.sub ? ' (' + m.sub + ')' : '')].filter(Boolean).join(' ') +
@@ -622,7 +623,9 @@
         '<article class="statblock"><h2 class="sb-name">' +
         esc(m.n) +
         (root.Sounds ? root.Sounds.button(m, 'sb-sound') : '') +
-        '</h2><div class="sb-sub">' +
+        '</h2>' +
+        (root.DMUI ? root.DMUI.button(m.n, [m.size, m.type].filter(Boolean).join(' ')) : '') +
+        '<div class="sb-sub">' +
         esc(m.size + ' ' + m.type + (m.sub ? ' (' + m.sub + ')' : '') + (m.al ? ', ' + m.al : '')) +
         '</div><hr>' +
         line('Armor Class', m.acv) +

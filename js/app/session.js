@@ -79,153 +79,102 @@ function trackRow(x) {
     '</span></div>'
   );
 }
-// ---------- joining the DM's table from this phone ----------
-function tableJoinHtml() {
-  if (!window.Table) return '';
-  if (ui.tping === undefined) {
-    ui.tping = 'wait';
-    Table.ping().then(function (j) {
-      ui.tping = j;
-      if (j) render();
-    });
-  }
-  if (!ui.tping || ui.tping === 'wait') return '';
-  var J = (store.tableJoin || {})[ch.id],
-    S = ui.tstate;
-  if (!J)
-    return (
-      '<div class="panel compact-row"><b>📱 DM’s table</b><input type="text" inputmode="numeric" maxlength="4" id="tbl-code" data-tblcode="1" value="' +
-      esc(ui.tblCode || '') +
-      '" placeholder="code" style="width:5.5rem">' +
-      btn('tblJoin', ui.tblBusy ? 'Joining…' : 'Join', {}, 'btn small primary') +
-      (ui.tblMsg ? '<span class="small ' + (ui.tblBusy ? 'muted' : 'bad') + '">' + esc(ui.tblMsg) + '</span>' : '') +
-      '</div>'
-    );
-  Table.setCreds(J.code, J.id, J.token);
-  Table.watch(J.code, function (st, err) {
-    if (!st) {
-      delete store.tableJoin[ch.id];
-      ui.tstate = null;
-      ui.tblMsg = 'The table was closed.';
-      save();
-      render();
-      return;
-    }
-    var me = st.players.filter(function (p) {
-      return p.id === J.id;
-    })[0];
-    if (!me) {
-      delete store.tableJoin[ch.id];
-      ui.tstate = null;
-      ui.tblMsg = 'The DM removed you from the table.';
-      save();
-      render();
-      return;
-    }
-    var mine = st.turn && st.turn.trim().toLowerCase() === String(me.name).trim().toLowerCase();
-    if (mine && !(ui.tstate && ui.tstate.turn === st.turn && ui.tstate.round === st.round) && navigator.vibrate)
-      navigator.vibrate([120, 80, 120]);
-    var news = (st.msgs || []).length + (st.asks || []).length + (st.handouts || []).length,
-      was = ui.tstate
-        ? (ui.tstate.msgs || []).length + (ui.tstate.asks || []).length + (ui.tstate.handouts || []).length
-        : news;
-    if (news > was && navigator.vibrate) navigator.vibrate(150);
-    if (
-      (me.gifts || []).length >
-        (
-          (
-            (ui.tstate &&
-              ui.tstate.players.filter(function (p) {
-                return p.id === J.id;
-              })[0]) ||
-            {}
-          ).gifts || []
-        ).length &&
-      navigator.vibrate
-    )
-      navigator.vibrate(200);
-    ui.tstate = st;
-    render();
-  });
-  if (!S)
-    return (
-      '<div class="panel compact-row"><b>📱 Table ' + J.code + '</b><span class="small muted">connecting…</span></div>'
-    );
-  var me =
-      S.players.filter(function (p) {
-        return p.id === J.id;
-      })[0] || {},
-    mine =
-      S.turn &&
-      S.turn.trim().toLowerCase() ===
-        String(me.name || '')
-          .trim()
-          .toLowerCase();
-  var h =
-    '<div class="panel tbl-me' +
-    (mine ? ' my-turn' : '') +
-    '"><div class="toolbar" style="margin:0"><b>📱 Table ' +
-    J.code +
-    '</b>' +
-    (S.round
-      ? '<span>Round ' + S.round + ' · ' + (mine ? '<b>your turn!</b>' : 'turn: ' + esc(S.turn || '—')) + '</span>'
-      : '<span class="small muted">' + (S.open ? 'the fight is starting' : 'waiting for the DM') + '</span>') +
-    '<span class="spacer"></span>' +
-    btn('tblLeave', 'Leave', {}, 'btn small') +
-    '</div>';
-  if (S.open && me.init == null)
-    h +=
-      '<div class="toolbar"><b>Initiative</b>' +
-      btn('tblRoll', '🎲 Roll (' + R.fmt(d.init) + ')', {}, 'btn small primary') +
-      '<span class="small">or I rolled</span><input type="number" id="tbl-mine" data-tblmine="1" value="' +
-      esc(ui.tblMine || '') +
-      '" placeholder="total" style="width:5rem">' +
-      btn('tblSend', 'Send', {}, 'btn small') +
-      '</div>';
-  else if (me.init != null)
-    h += '<p class="small">Your initiative: <b>' + me.init + '</b> ' + btn('tblRedo', 'change', {}, 'linkbtn') + '</p>';
-  (S.claims || []).forEach(function (c) {
-    var mine = c.wants.indexOf(J.id) >= 0;
-    h +=
-      '<div class="tbl-gift">🎲 <b>' +
-      esc(c.n) +
-      '</b> ' +
-      (c.result
-        ? '<div class="small">' + esc(c.result) + '</div>'
-        : '<span class="small muted">is up for grabs: tap if you want it, the dice decide.</span><div class="toolbar">' +
-          btn(
-            'tblWant',
-            mine ? '✋ I’m in (tap to back out)' : 'I want it',
-            { v: c.key },
-            'btn small' + (mine ? '' : ' primary')
-          ) +
-          '</div>') +
-      '</div>';
-  });
-  (me.gifts || []).forEach(function (g) {
-    var coins = ['pp', 'gp', 'ep', 'sp', 'cp']
-      .filter(function (k) {
-        return +g.coins[k] > 0;
-      })
-      .map(function (k) {
-        return (+g.coins[k]).toLocaleString('en') + ' ' + k;
+// ---------- the DM's table, from this phone (the panel itself is js/table-ui.js, shared by the three games) ----------
+// what the panel needs to know about this character, and how to apply what the DM sends
+function tableWho() {
+  var T = (ch.track = ch.track || {});
+  return {
+    key: ch.id,
+    gm: 'DM',
+    name: ch.name,
+    init: d.init,
+    bonus: askBonus,
+    take: takeGift,
+    status: function () {
+      var bon = { 'Passive Perception': d.passive };
+      Object.keys(d.skills).forEach(function (k) {
+        bon[k] = d.skills[k].total;
       });
-    var what = coins.concat(
-      (g.items || []).map(function (i) {
-        return String(i.n || 'an item');
-      })
-    );
-    h +=
-      '<div class="tbl-gift">🎁 <b>From the DM:</b> ' +
-      esc(what.join(', ') || 'nothing') +
-      '<div class="toolbar">' +
-      btn('tblGift', 'Add to ' + esc(ch.name || 'my character'), { v: g.gid }, 'btn small primary') +
-      btn('tblGiftNo', 'Not for me', { v: g.gid }, 'btn small') +
-      '</div></div>';
-  });
-  h += tableDmHtml(J, S);
-  sendStatus(J);
-  return h + (ui.tblMsg ? '<p class="small rest-msg">' + esc(ui.tblMsg) + '</p>' : '') + '</div>';
+      Object.keys(d.saves).forEach(function (k) {
+        bon[k + ' save'] = d.saves[k].total;
+      });
+      return {
+        hp: T.hp == null ? d.hp : T.hp,
+        max: d.hp,
+        temp: +T.temp || 0,
+        ac: d.ac,
+        conds: Object.keys(T.conds || {}).concat(+T.exh ? ['Exhaustion ' + T.exh] : []),
+        conc: T.conc || '',
+        bon: bon
+      };
+    },
+    // returns what to tell the player, and whether a level-up is waiting
+    effect: function (f) {
+      if (f.k === 'dmg' || f.k === 'heal') {
+        ui.concAt = 0;
+        actions.hpAdj(f.k === 'dmg' ? -Math.abs(f.n) : Math.abs(f.n));
+        return {
+          msg:
+            (f.k === 'dmg' ? 'You take ' + Math.abs(f.n) + ' damage.' : 'You heal ' + Math.abs(f.n) + ' hit points.') +
+            (f.k === 'dmg' && T.conc
+              ? ' Concentration check below (DC ' + Math.max(10, Math.floor(Math.abs(f.n) / 2)) + ').'
+              : '')
+        };
+      }
+      if (f.k === 'cond') {
+        T.conds = T.conds || {};
+        if (f.on && !T.conds[f.c]) actions.condToggle(f.c);
+        else if (!f.on && T.conds[f.c]) actions.condToggle(f.c);
+        return { msg: (f.on ? 'You are now ' : 'No longer ') + f.c.toLowerCase() + '.' };
+      }
+      if (f.k === 'insp') {
+        T.insp = true;
+        return { msg: 'The DM gives you inspiration!' };
+      }
+      if (f.k === 'rest') {
+        var got = R.rest(ch, d, f.c === 'short' ? 'short' : 'long');
+        return {
+          msg:
+            (f.c === 'short' ? 'Short rest' : 'Long rest') +
+            ': ' +
+            (got.length ? 'got back ' + got.join(', ') + '.' : 'nothing was used.')
+        };
+      }
+      if (f.k === 'xp') {
+        ch.xp = Math.max(+ch.xp || D.xpByLevel[d.level - 1] || 0, 0) + f.n;
+        var next = D.xpByLevel[d.level];
+        return {
+          msg: 'You gain ' + f.n.toLocaleString('en') + ' XP (now ' + ch.xp.toLocaleString('en') + ').',
+          level: d.level < 20 && next != null && ch.xp >= next
+        };
+      }
+      if (f.k === 'level') return { msg: 'The DM says: level up!', level: d.level < 20 };
+      return null;
+    },
+    levelUp: function () {
+      actions.levelUp();
+    },
+    notes: function () {
+      return (ch.journal || []).map(function (n) {
+        return { id: n.id, title: n.t, text: n.x };
+      });
+    },
+    addNote: function (title, text) {
+      ch.journal = (ch.journal || []).concat([
+        {
+          id: 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+          t: String(title || 'From the table').slice(0, 80),
+          c: 'Session',
+          x: String(text || ''),
+          at: new Date().toISOString().slice(0, 10)
+        }
+      ]);
+    },
+    rest: [
+      ['short', 'Short rest'],
+      ['long', 'Long rest']
+    ]
+  };
 }
 // what the DM sent this player: roll requests, handouts and messages, and a box to answer
 function askBonus(a) {
@@ -234,110 +183,6 @@ function askBonus(a) {
     : a.kind === 'skill'
       ? (d.skills[a.key] || {}).total || 0
       : ((d.abilities || {})[a.key] || {}).mod || 0;
-}
-function tableDmHtml(J, S) {
-  var h = '';
-  (S.asks || []).forEach(function (a) {
-    var r = a.ans[J.id],
-      b = askBonus(a);
-    h +=
-      '<div class="tbl-gift">🎲 <b>The DM asks: ' +
-      esc(a.label) +
-      '</b>' +
-      (a.dc ? ' <span class="small">DC ' + a.dc + '</span>' : '') +
-      (r
-        ? '<div class="small">You sent <b>' +
-          r.total +
-          '</b>' +
-          (r.ok == null ? '' : r.ok ? ' <span class="good">success</span>' : ' <span class="bad">fail</span>') +
-          '</div>'
-        : '<div class="toolbar">' +
-          btn('tblAskRoll', '🎲 Roll (' + R.fmt(b) + ')', { v: a.rid }, 'btn small primary') +
-          '<span class="small">or I rolled</span><input type="number" id="tbl-ans-' +
-          a.rid +
-          '" data-tblans="' +
-          a.rid +
-          '" value="' +
-          esc((ui.tblAns || {})[a.rid] || '') +
-          '" placeholder="total" style="width:5rem">' +
-          btn('tblAskSend', 'Send', { v: a.rid }, 'btn small') +
-          '</div>') +
-      '</div>';
-  });
-  (S.handouts || [])
-    .slice()
-    .reverse()
-    .forEach(function (x) {
-      var img = Table.handoutImg(x.hid);
-      h +=
-        '<div class="tbl-gift tbl-handout">📜 <b>' +
-        esc(x.title || 'Handout from the DM') +
-        '</b>' +
-        (img
-          ? '<button type="button" class="tbl-ho-img" data-act="tblHoBig" data-v="' +
-            esc(x.hid) +
-            '"><img src="' +
-            img +
-            '" alt="' +
-            esc(x.title || 'Handout') +
-            '"></button>'
-          : '<span class="small muted"> loading…</span>') +
-        '</div>';
-    });
-  if (ui.tblHoBig && Table.handoutImg(ui.tblHoBig))
-    h +=
-      '<button type="button" class="tbl-ho-big" data-act="tblHoBig" data-v="" aria-label="Close"><img src="' +
-      Table.handoutImg(ui.tblHoBig) +
-      '" alt="Handout"></button>';
-  var msgs = (S.msgs || []).slice(-8);
-  h +=
-    '<details class="tbl-chat"' +
-    (ui.tblChat || (msgs.length && msgs[msgs.length - 1].from === 'dm') ? ' open' : '') +
-    '><summary><b>✉ Messages</b>' +
-    (msgs.length ? ' <span class="small muted">(' + msgs.length + ')</span>' : '') +
-    '</summary>' +
-    (msgs.length
-      ? '<ul class="dm-msgs">' +
-        msgs
-          .map(function (m) {
-            var mine = m.from === J.id;
-            return (
-              '<li class="' +
-              (mine ? 'out' : 'in') +
-              '"><span class="small muted">' +
-              (mine ? 'You, to the DM' : m.to === 'all' ? 'DM, to everyone' : 'DM, just for you') +
-              '</span><div>' +
-              esc(m.text).replace(/\n/g, '<br>') +
-              '</div></li>'
-            );
-          })
-          .join('') +
-        '</ul>'
-      : '') +
-    '<div class="toolbar"><input type="text" id="tbl-say" data-tblsay="1" value="' +
-    esc(ui.tblSay || '') +
-    '" placeholder="Message the DM (only they see it)" style="flex:1;min-width:10rem">' +
-    btn('tblSay', 'Send', {}, 'btn small') +
-    '</div></details>';
-  return h;
-}
-// tell the DM how this character is doing, when it changes
-function sendStatus(J) {
-  var T = ch.track || {},
-    st = {
-      hp: T.hp == null ? d.hp : T.hp,
-      max: d.hp,
-      temp: +T.temp || 0,
-      ac: d.ac,
-      conds: Object.keys(T.conds || {}).concat(+T.exh ? ['Exhaustion ' + T.exh] : []),
-      conc: T.conc || ''
-    };
-  var k = J.code + JSON.stringify(st);
-  if (ui.tblSent === k) return;
-  ui.tblSent = k;
-  Table.status(J.code, st).catch(function () {
-    ui.tblSent = '';
-  });
 }
 // take what the DM sent: coins into the purse, items into the inventory (only plain fields are kept)
 function takeGift(g) {
@@ -378,21 +223,6 @@ function takeGift(g) {
           }
     );
   });
-}
-function sendInit(v) {
-  var J = (store.tableJoin || {})[ch.id];
-  if (!J) return;
-  Table.roll(J.code, J.id, J.token, v).then(
-    function (st) {
-      ui.tstate = st;
-      ui.tblMine = '';
-      render();
-    },
-    function (e) {
-      ui.tblMsg = e.message;
-      render();
-    }
-  );
 }
 function hitDieSizes() {
   var z = [];
@@ -759,7 +589,7 @@ function stepPlay() {
   var T = ch.track || {},
     hp = T.hp == null ? d.hp : T.hp,
     hdUsed = Math.min(d.level, +T.hd || 0);
-  var h = '<h2>Session</h2>' + tableJoinHtml() + restBarHtml();
+  var h = '<h2>Session</h2>' + TP.html(tableWho()) + restBarHtml();
   h +=
     '<div class="panel"><h3>Hit points</h3><div class="hp-row"><label>Current <input type="number" id="trk-hp" data-trk="hp" value="' +
     hp +

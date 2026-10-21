@@ -842,6 +842,7 @@
     d.dur = Math.max(700, Math.min(1500, 650 + far * 1.4));
     el.querySelector('.dice3d-result').innerHTML = '<small>Rolling…</small>';
   }
+  var rollLabel = '';
   function showResult() {
     var groups = {},
       sum = 0;
@@ -865,6 +866,14 @@
             : ''
         : '';
     lastText = sum + mod + ' (' + detail + ')';
+    // tell the app (a player at the DM's table may share the roll)
+    try {
+      root.dispatchEvent(
+        new CustomEvent('cf-roll', { detail: { label: rollLabel || describe(), total: sum + mod, detail: detail } })
+      );
+    } catch (e) {
+      /* old browser */
+    }
     el.querySelector('.dice3d-result').innerHTML =
       '<b>' + (sum + mod) + '</b>' + nat + '<small>' + detail.replace(/</g, '&lt;') + '</small>';
   }
@@ -910,6 +919,7 @@
       });
       if (tot < 20) counts[v] = Math.min(10, (counts[v] || 0) + 1);
     }
+    rollLabel = '';
     if (a === 'dec') counts[v] = Math.max(0, (counts[v] || 0) - 1);
     if (a === 'minc') mod = Math.min(30, mod + 1);
     if (a === 'mdec') mod = Math.max(-30, mod - 1);
@@ -996,9 +1006,11 @@
     open: openRoller,
     close: close,
     place: place,
-    roll: function (c, m) {
+    // label: what the roll is for ("Stealth"), shown to the table when shared
+    roll: function (c, m, label) {
       counts = c;
       mod = m || 0;
+      rollLabel = label || '';
       openRoller();
       roll();
     },

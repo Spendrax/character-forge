@@ -46,6 +46,9 @@ Object.keys(BOOKS.actions).forEach(function (k) {
   actions[k] = BOOKS.actions[k];
 });
 var TP = window.TablePanel({
+  playMusic: function (m) {
+    AUD.play(m);
+  },
   esc: esc,
   btn: btn,
   ui: ui,

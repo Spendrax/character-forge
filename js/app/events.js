@@ -204,14 +204,6 @@ document.addEventListener('input', function (e) {
     if (ui.ddb) ui.ddb.v = t.value;
     return;
   }
-  if (t.getAttribute && t.getAttribute('data-tblcode')) {
-    ui.tblCode = t.value;
-    return;
-  }
-  if (t.getAttribute && t.getAttribute('data-tblmine')) {
-    ui.tblMine = t.value;
-    return;
-  }
   if (ui.section === 'audio') {
     var au = AUD.onInput(t);
     if (au === 'render') render();
@@ -228,15 +220,6 @@ document.addEventListener('input', function (e) {
     var dr = DMV.onInput(t);
     if (dr === 'render') render();
     if (dr) return;
-  }
-  if (t.getAttribute && t.getAttribute('data-tblsay')) {
-    ui.tblSay = t.value;
-    return;
-  }
-  if (t.getAttribute && t.getAttribute('data-tblans')) {
-    ui.tblAns = ui.tblAns || {};
-    ui.tblAns[t.getAttribute('data-tblans')] = t.value;
-    return;
   }
   if (ui.section === 'treasure') {
     var tr = TRE.onInput(t);
@@ -395,7 +378,6 @@ document.addEventListener('change', function (e) {
     if (dc === 'render') render();
     if (dc) return;
   }
-  if (a('data-tblsay') || a('data-tblans')) return;
   if (a('data-mon') != null) return;
   if (a('data-mymon') != null) {
     if (t.tagName === 'SELECT') return;
@@ -482,10 +464,6 @@ document.addEventListener('change', function (e) {
     ui.xfer[a('data-xfer')] = t.checked;
     ui.xfer.link = '';
     ui.xfer.qr = '';
-  } else if (a('data-tblcode')) {
-    ui.tblCode = t.value;
-  } else if (a('data-tblmine')) {
-    ui.tblMine = t.value;
   } else if (a('data-bardie')) {
     var TB = (ch.track = ch.track || {});
     TB.bardDie = t.value;

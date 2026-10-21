@@ -249,6 +249,7 @@
       var sv = m.sv || {};
       return (
         '<div class="pf-desc pf-stat-block">' +
+        (root.DMUI ? root.DMUI.button(m.n, (m.t || []).join(', ')) : '') +
         traits(
           (m.t || []).concat(
             m.size

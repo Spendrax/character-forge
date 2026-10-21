@@ -71,7 +71,9 @@ function itemDescHtml(it, readOnly) {
       BOOKS_MD(srd) +
       '<p class="small muted">From the free rules (SRD 5.1, CC-BY-4.0).' +
       link +
-      '</p></div>'
+      '</p>' +
+      (window.DMUI ? DMUI.button(it.n, srd) : '') +
+      '</div>'
     );
   var mine = !it.desc && window.ItemTexts && ItemTexts.get(it.n);
   if (mine)
@@ -80,7 +82,9 @@ function itemDescHtml(it, readOnly) {
       BOOKS_MD(mine.d) +
       '<p class="small muted">From your imported item texts (kept on this device).' +
       link +
-      '</p></div>'
+      '</p>' +
+      (window.DMUI ? DMUI.button(it.n, mine.d) : '') +
+      '</div>'
     );
   if (readOnly)
     return (

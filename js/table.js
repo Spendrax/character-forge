@@ -1,7 +1,12 @@
 // The table: players' phones and the DM's device talk directly, phone to phone (WebRTC, through the free PeerJS
 // service to find each other). Works from the normal app, on any network, no install.
 // The DM's device holds the table; players connect to it with a 4-digit code. Each phone only receives what is
-// meant for it (its own messages, gifts, roll requests and handouts).
+// meant for it (its own messages, gifts, roll requests, handouts and shared notes).
+//
+// What the DM's device keeps (state): players (name, initiative, status, gifts, fx = effects to apply: damage,
+// conditions, inspiration, rests, XP, level-ups), msgs, asks (roll requests), handouts, claims (roll-offs),
+// order (initiative order shown on the phones), log (rolls players share), notes (notes shared between people
+// at the table), lore (NPCs and quests the DM has revealed), music (what the DM is playing), events (the session log).
 (function (root) {
   'use strict';
   var PREFIX = 'charforge-table-',
@@ -50,6 +55,10 @@
       round: s.round,
       turn: s.turn,
       claims: s.claims || [],
+      order: s.order || [],
+      ti: s.ti || 0,
+      lore: s.lore || [],
+      music: s.music || null,
       players: s.players.map(function (p) {
         return {
           id: p.id,
@@ -57,9 +66,17 @@
           init: p.init,
           bonus: p.bonus,
           status: p.status || null,
-          gifts: dm || p.id === pid ? p.gifts || [] : []
+          gifts: dm || p.id === pid ? p.gifts || [] : [],
+          fx: dm || p.id === pid ? p.fx || [] : []
         };
       }),
+      log: (s.log || []).filter(function (r) {
+        return dm || !r.dmOnly || r.from === pid;
+      }),
+      notes: (s.notes || []).filter(function (n) {
+        return dm ? n.from === 'dm' || n.to === 'all' || n.to.indexOf('dm') >= 0 : n.from === pid || mine(n.to);
+      }),
+      events: dm ? s.events || [] : [],
       msgs: (s.msgs || []).filter(function (m) {
         return dm || m.from === pid || mine(m.to);
       }),
@@ -85,6 +102,21 @@
         return mine(h.to);
       })
     };
+  }
+  // the session log, kept on the DM's device: what happened, for the recap
+  function event(s, text) {
+    if (text) s.events = (s.events || []).concat([{ at: Date.now(), text: str(text, 300) }]).slice(-300);
+  }
+  // a shared note, from a player or the DM, to some or all
+  function addNote(s, from, fromName, n, to) {
+    var tx = str(n.text, 5000).trim(),
+      ti = str(n.title, 80).trim();
+    if (!tx && !ti) return;
+    s.notes = (s.notes || [])
+      .concat([
+        { nid: rnd(4), from: from, fromName: fromName, to: to, title: ti, text: tx, recap: !!n.recap, at: Date.now() }
+      ])
+      .slice(-60);
   }
 
   // ---------- the DM's side: host ----------
@@ -156,6 +188,7 @@
           init: null
         };
         s.players.push(np);
+        event(s, np.name + ' joined the table.');
         conn.pid = np.id;
         conn.send({ t: 'joined', id: np.id, token: np.token });
         broadcast();
@@ -193,7 +226,34 @@
         p.gifts = (p.gifts || []).filter(function (g) {
           return g.gid !== m.gid;
         });
-      else if (m.t === 'msg') {
+      else if (m.t === 'gotFx')
+        p.fx = (p.fx || []).filter(function (f) {
+          return f.fid !== m.fid;
+        });
+      else if (m.t === 'rolled') {
+        s.log = (s.log || [])
+          .concat([
+            {
+              at: Date.now(),
+              from: p.id,
+              name: p.name,
+              label: str(m.label, 60),
+              total: num(m.total, -99, 999),
+              detail: str(m.detail, 120),
+              dmOnly: !!m.dmOnly
+            }
+          ])
+          .slice(-40);
+      } else if (m.t === 'note') {
+        var nto =
+          m.to === 'all'
+            ? 'all'
+            : (Array.isArray(m.to) ? m.to : []).slice(0, 17).map(function (v) {
+                return str(v, 16);
+              });
+        if (nto !== 'all' && !nto.length) return;
+        addNote(s, p.id, p.name, m, nto);
+      } else if (m.t === 'msg') {
         var tx = str(m.text, 1000).trim();
         if (!tx) return;
         s.msgs = (s.msgs || [])
@@ -217,8 +277,15 @@
             return str(c, 24);
           }),
           conc: str(st.conc, 60),
-          txt: str(st.txt, 100)
+          txt: str(st.txt, 100),
+          bon: {}
         };
+        // bonuses the DM may roll secretly (passive Perception, Insight…)
+        Object.keys(st.bon || {})
+          .slice(0, 50)
+          .forEach(function (k) {
+            p.status.bon[str(k, 30)] = num(st.bon[k], -20, 60);
+          });
       } else return;
       broadcast();
     });
@@ -391,7 +458,11 @@
           players: [],
           msgs: [],
           asks: [],
-          handouts: []
+          handouts: [],
+          notes: [],
+          log: [],
+          lore: [],
+          events: [{ at: Date.now(), text: 'The table opened.' }]
         }).then(
           function () {
             return { code: code, key: key, lan: [] };
@@ -460,6 +531,15 @@
     status: function (code, st) {
       return asPlayer(code, 'status', { st: st });
     },
+    ackFx: function (code, fid) {
+      return asPlayer(code, 'gotFx', { fid: fid });
+    },
+    shareRoll: function (code, r) {
+      return asPlayer(code, 'rolled', r);
+    },
+    shareNote: function (code, to, title, text) {
+      return asPlayer(code, 'note', { to: to, title: title, text: text });
+    },
     handoutImg: function (hid) {
       return guestImgs[hid] || hostImgs[hid] || '';
     },
@@ -503,7 +583,10 @@
         }
         if (what.claimResult) {
           (s.claims || []).forEach(function (c) {
-            if (c.key === what.claimResult.key) c.result = str(what.claimResult.text, 300);
+            if (c.key === what.claimResult.key) {
+              c.result = str(what.claimResult.text, 300);
+              event(s, c.result);
+            }
           });
         }
         if (what.claimDrop)
@@ -515,6 +598,19 @@
             return p.id === what.gift.to;
           })[0];
           if (gto) {
+            var gw = Object.keys(what.gift.coins || {})
+              .filter(function (k) {
+                return +what.gift.coins[k] > 0;
+              })
+              .map(function (k) {
+                return what.gift.coins[k] + ' ' + k;
+              })
+              .concat(
+                (what.gift.items || []).map(function (i) {
+                  return i && i.n;
+                })
+              );
+            event(s, gto.name + ' was given ' + gw.join(', ') + '.');
             gto.gifts = (gto.gifts || [])
               .concat([
                 {
@@ -563,7 +659,14 @@
         if (what.handout) {
           var hid = rnd(4);
           hostImgs[hid] = what.handout.img;
-          var h = { hid: hid, title: str(what.handout.title, 80), to: to(what.handout.to), at: Date.now() };
+          if (!what.handout.img) delete hostImgs[hid];
+          var h = {
+            hid: hid,
+            title: str(what.handout.title, 80),
+            text: str(what.handout.text, 5000),
+            to: to(what.handout.to),
+            at: Date.now()
+          };
           s.handouts = (s.handouts || []).concat([h]).slice(-12);
           host.conns.forEach(function (c) {
             if (c.pid && forPlayer(c.pid)(h)) sendHandout(c, h);
@@ -576,6 +679,50 @@
           delete hostImgs[what.handoutDrop];
         }
         if (what.clearMsgs) s.msgs = [];
+        // effects for some players' characters: damage, healing, conditions, inspiration, a rest, XP, a level-up
+        if (what.fx) {
+          var f = what.fx,
+            tgt =
+              f.to === 'all'
+                ? s.players
+                : s.players.filter(function (p) {
+                    return (Array.isArray(f.to) ? f.to : [f.to]).indexOf(p.id) >= 0;
+                  });
+          tgt.forEach(function (p) {
+            p.fx = (p.fx || [])
+              .concat([
+                { fid: rnd(4), k: str(f.k, 10), n: num(f.n, -9999, 99999), c: str(f.c, 30), on: f.on !== false }
+              ])
+              .slice(-20);
+          });
+        }
+        if ('order' in what) {
+          s.order = (what.order || []).slice(0, 60).map(function (o) {
+            return { n: str(o.n, 60), pc: !!o.pc };
+          });
+          s.ti = num(what.ti, 0, 59);
+        }
+        if (what.note) addNote(s, 'dm', 'DM', what.note, to(what.note.to));
+        if (what.noteDrop)
+          s.notes = (s.notes || []).filter(function (n) {
+            return n.nid !== what.noteDrop;
+          });
+        if (what.lore)
+          s.lore = what.lore.slice(0, 60).map(function (l) {
+            return {
+              lid: str(l.lid, 20),
+              kind: l.kind === 'quest' ? 'quest' : 'npc',
+              name: str(l.name, 80),
+              text: str(l.text, 2000),
+              done: !!l.done,
+              pic: /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(l.pic || '') && l.pic.length < 40000 ? l.pic : ''
+            };
+          });
+        if ('music' in what)
+          s.music = what.music && what.music.u ? { u: str(what.music.u, 300), t: str(what.music.t, 80) } : null;
+        if (what.event) event(s, what.event);
+        if (what.clearEvents) s.events = [{ at: Date.now(), text: 'A new session starts.' }];
+        if (what.clearLog) s.log = [];
         if (what.close) {
           host.conns.forEach(function (c) {
             try {
@@ -669,15 +816,31 @@
     pushRun: function (run, start) {
       var h = root.Table.hostInfo();
       if (!h) return;
+      var foes = run
+        ? run.list
+            .filter(function (x) {
+              return !x.pc;
+            })
+            .map(function (x) {
+              return x.n;
+            })
+        : [];
       root.Table.dm(
         h.code,
         h.key,
         run
-          ? Object.assign(start ? { open: true, reset: true } : {}, {
-              round: run.round,
-              turn: (run.list[run.turn] || {}).n || ''
-            })
-          : { open: false, round: 0, turn: '' }
+          ? Object.assign(
+              start ? { open: true, reset: true, event: 'A fight started: ' + foes.join(', ') + '.' } : {},
+              {
+                round: run.round,
+                turn: (run.list[run.turn] || {}).n || '',
+                order: run.list.map(function (x) {
+                  return { n: x.n, pc: !!x.pc };
+                }),
+                ti: run.turn
+              }
+            )
+          : { open: false, round: 0, turn: '', order: [], ti: 0, event: 'The fight ended.' }
       ).catch(function () {});
     },
     // follow a table: the DM's own (several pages may listen, by name) or one joined as a player

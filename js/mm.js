@@ -1459,8 +1459,61 @@
               ' · ' +
               hp +
               ' hero point' +
-              (hp === 1 ? '' : 's')
+              (hp === 1 ? '' : 's'),
+            bon: (function () {
+              var b = {};
+              DEF.forEach(function (x) {
+                b[x[1]] = d.def[x[0]] - (x[0] === 'tough' ? bruise : 0);
+              });
+              Object.keys(d.skills).forEach(function (k) {
+                b[k] = d.skills[k].total;
+              });
+              return b;
+            })()
           };
+        },
+        gm: 'GM',
+        // what the GM sends: returns what to tell the player
+        effect: function (f) {
+          if (f.k === 'dmg') {
+            U.dmgRank = Math.abs(f.n);
+            return { msg: 'You’re hit: damage rank ' + Math.abs(f.n) + '. Make the Toughness check below.' };
+          }
+          if (f.k === 'heal') {
+            T.dmg = 0;
+            T.bruise = 0;
+            return { msg: 'You recover: damage and bruises are gone.' };
+          }
+          if (f.k === 'cond') {
+            T.conds = T.conds || {};
+            if (f.on) T.conds[f.c] = 1;
+            else delete T.conds[f.c];
+            return { msg: (f.on ? 'You are now ' : 'No longer ') + f.c.toLowerCase() + '.' };
+          }
+          if (f.k === 'insp') {
+            T.hp = Math.min(20, hp + 1);
+            return { msg: 'The GM gives you a hero point!' };
+          }
+          if (f.k === 'xp') {
+            h.extra = (+h.extra || 0) + f.n;
+            return {
+              msg:
+                'You earn ' +
+                f.n +
+                ' power point' +
+                (f.n === 1 ? '' : 's') +
+                ': spend ' +
+                (f.n === 1 ? 'it' : 'them') +
+                ' on the hero’s traits.'
+            };
+          }
+          return null;
+        },
+        notes: function () {
+          return h.notes ? [{ id: 'notes', title: (h.name || 'Hero') + ' notes', text: h.notes }] : [];
+        },
+        addNote: function (title, text) {
+          h.notes = (h.notes ? h.notes + '\n\n' : '') + String(title || 'From the table') + ':\n' + String(text || '');
         }
       };
       var out =

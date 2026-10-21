@@ -637,7 +637,8 @@
         }).join(' · ') +
         ' · Init ' +
         fmt(f.init) +
-        '</div>';
+        '</div>' +
+        (root.DMUI ? root.DMUI.button(h ? h.name : f.n, f.about) : '');
       if (!open) return '<div class="panel mm-power mme-foe">' + head + line + '</div>';
       return (
         '<div class="panel mm-power open mme-foe">' +

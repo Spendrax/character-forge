@@ -427,19 +427,33 @@
       audPlay: function (v, el) {
         playing = playing && playing.u === v ? null : { u: v, t: el.getAttribute('data-t') };
         drawDock();
+        toTable();
       },
       audStop: function () {
         playing = null;
         drawDock();
+        toTable();
       }
     };
+    // when the DM has the table open, the players' phones can follow the music
+    function toTable() {
+      var T = root.Table,
+        h = T && T.hostInfo && T.hostInfo();
+      if (h) T.dm(h.code, h.key, { music: playing }).catch(function () {});
+    }
+    // what the DM is playing, on a player's phone
+    function play(m) {
+      var u = m && cleanUrl(m.u);
+      playing = u ? { u: u, t: String(m.t || '').slice(0, 80) } : null;
+      drawDock();
+    }
     function onInput(t) {
       var k = t.getAttribute('data-aud');
       if (k == null) return null;
       S[k] = t.value;
       return 'none';
     }
-    return { html: html, actions: actions, onInput: onInput, after: place };
+    return { html: html, actions: actions, onInput: onInput, after: place, play: play };
   };
   root.AudioUI.spotifyEmbed = spotifyEmbed;
   root.AudioUI.cleanUrl = cleanUrl;

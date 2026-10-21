@@ -605,7 +605,7 @@ function stepSheet() {
     (ch.alignment ? '<span><b>Alignment</b> ' + esc(ch.alignment) + '</span>' : '') +
     (ch.player ? '<span><b>Player</b> ' + esc(ch.player) + '</span>' : '') +
     '<span><b>XP</b> ' +
-    D.xpByLevel[d.level - 1].toLocaleString('en') +
+    (ch.xp != null ? +ch.xp : D.xpByLevel[d.level - 1]).toLocaleString('en') +
     '</span><span><b>Size</b> ' +
     esc(d.size || 'Medium') +
     '</span></div></div><div class="sheet-cols"><div>' +
