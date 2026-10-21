@@ -1265,6 +1265,19 @@
     }
 
     // ----- Sheet -----
+    // the AC right now: with the shield raised, its bonus is added
+    function acNow(ch, d) {
+      return d.ac.v + (d.shield && trk(ch).raised ? d.shield.ac : 0);
+    }
+    function raiseBox(ch, d) {
+      return d.shield
+        ? '<label class="check-line"><input type="checkbox" data-pfraise="1"' +
+            (trk(ch).raised ? ' checked' : '') +
+            '> <span>Shield raised (+' +
+            d.shield.ac +
+            ' AC)</span></label>'
+        : '';
+    }
     function trk(ch) {
       return (ch.track = ch.track || { hp: null, temp: 0, hero: 1, focus: null, dying: 0, wounded: 0, conds: {} });
     }
@@ -1372,7 +1385,7 @@
             hp: T.hp == null ? d.hp.max : T.hp,
             max: d.hp.max,
             temp: +T.temp || 0,
-            ac: d.ac.v,
+            ac: acNow(ch, d),
             conds: Object.keys(T.conds || {})
               .map(function (c) {
                 return c + (T.conds[c] > 1 ? ' ' + T.conds[c] : '');
@@ -1448,8 +1461,9 @@
       return (
         (api.tp ? api.tp.html(who(ch, d)) : '') +
         hpBox(ch, d) +
+        raiseBox(ch, d) +
         '<div class="pf-stats">' +
-        stat('AC', d.ac.v) +
+        stat('AC', acNow(ch, d) + (trk(ch).raised && d.shield ? ' 🛡' : '')) +
         ['fortitude', 'reflex', 'will']
           .map(function (s) {
             return stat(s[0].toUpperCase() + s.slice(1), fmt(d.saves[s].v));
@@ -1477,17 +1491,20 @@
         );
       };
       h +=
+        raiseBox(ch, d) +
         '<div class="pf-stats">' +
         stat(
           'AC',
-          d.ac.v,
+          acNow(ch, d),
           d.ac.rank,
-          (d.armor ? esc(d.armor.e.n) : 'unarmored') + (d.ac.dexCap != null ? ' · Dex cap ' + d.ac.dexCap : '')
+          (T.raised && d.shield ? 'shield raised (+' + d.shield.ac + ') · ' : '') +
+            (d.armor ? esc(d.armor.e.n) : 'unarmored') +
+            (d.ac.dexCap != null ? ' · Dex cap ' + d.ac.dexCap : '')
         ) +
         (d.shield
           ? stat(
-              T.raised ? 'AC, shield raised' : 'Shield raised',
-              d.ac.v + d.shield.ac,
+              T.raised ? 'Shield (raised)' : 'Shield',
+              '+' + d.shield.ac,
               null,
               esc(d.shield.e.n) +
                 ' · Hardness ' +
@@ -2069,20 +2086,14 @@
         arm = d.armor,
         sh = d.shield;
       var h =
-        '<div class="panel pf-bigstat"><div><small>Armor Class</small><b>' +
-        d.ac.v +
+        '<div class="panel pf-bigstat"><div><small>Armor Class' +
+        (sh && T.raised ? ', shield raised' : '') +
+        '</small><b>' +
+        acNow(ch, d) +
         '</b>' +
         teml(d.ac.rank) +
         '</div>' +
-        (sh
-          ? '<label class="check-line"><input type="checkbox" data-pfraise="1"' +
-            (T.raised ? ' checked' : '') +
-            '> <span>Shield raised: <b>AC ' +
-            (d.ac.v + sh.ac) +
-            '</b> (+' +
-            sh.ac +
-            ' circumstance)</span></label>'
-          : '') +
+        raiseBox(ch, d) +
         '<p class="small">10 + Dex ' +
         d.ac.dex +
         (d.ac.dexCap != null ? ' (cap ' + d.ac.dexCap + ')' : '') +
