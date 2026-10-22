@@ -37,16 +37,9 @@ var actions = {
     ui.step = 'play';
     ui.scrollToStep = true;
   },
-  levelUp: function () {
-    ui.mode = 'build';
-    ui.step = 'class';
-    ui.scrollToStep = true;
-    if (ch.classes.length === 1 && d.level < 20) {
-      ch.classes[0].level++;
-      ui.clsTab = ch.classes[0].cls;
-    } // several classes: pick which one on the Class step
-  },
+  // levelUp and the level-up screen: levelup.js
   step: function (v) {
+    ui.lvl = null;
     ui.step = v;
     ui.picEdit = false;
     ui.packAdded = null;

@@ -153,6 +153,10 @@ function render() {
     notes: stepNotes,
     play: stepPlay
   }[ui.step]();
+  if (ui.lvl && ui.lvl.id !== ch.id) ui.lvl = null;
+  if (ui.lvl) body = stepLevelUp();
+  else if (ui.lvlMsg) body = '<p class="panel rest-msg">⬆ ' + esc(ui.lvlMsg) + '</p>' + body;
+  ui.lvlMsg = '';
   // a player's sheet sent from their phone to the DM's table: a copy, replaced when they connect again
   if (ch.fromTable)
     body =
@@ -213,10 +217,12 @@ function render() {
   var SHOWN = visibleSteps();
   var modeBar =
     ui.mode === 'play'
-      ? '<div class="toolbar mode-bar noprint">' +
-        btn('levelUp', '⬆ Level up', {}, 'btn primary') +
-        btn('editChar', '✎ Edit character') +
-        '</div>'
+      ? ui.lvl
+        ? ''
+        : '<div class="toolbar mode-bar noprint">' +
+          btn('levelUp', '⬆ Level up', {}, 'btn primary') +
+          btn('editChar', '✎ Edit character') +
+          '</div>'
       : complete(ch, d)
         ? '<div class="toolbar mode-bar noprint"><span class="small">This character is complete.</span>' +
           btn('donePlay', '✓ Done — go to Session', {}, 'btn primary') +
@@ -308,11 +314,12 @@ function render() {
   var i = SHOWN.map(function (s) {
     return s[0];
   }).indexOf(ui.step);
-  var foot =
-    '<div class="toolbar noprint" style="margin-top:1.5rem">' +
-    (i > 0 ? btn('step', '← ' + SHOWN[i - 1][1], { v: SHOWN[i - 1][0] }) : '') +
-    (i < SHOWN.length - 1 ? btn('step', SHOWN[i + 1][1] + ' →', { v: SHOWN[i + 1][0] }, 'btn primary') : '') +
-    '</div>';
+  var foot = ui.lvl
+    ? ''
+    : '<div class="toolbar noprint" style="margin-top:1.5rem">' +
+      (i > 0 ? btn('step', '← ' + SHOWN[i - 1][1], { v: SHOWN[i - 1][0] }) : '') +
+      (i < SHOWN.length - 1 ? btn('step', SHOWN[i + 1][1] + ' →', { v: SHOWN[i + 1][0] }, 'btn primary') : '') +
+      '</div>';
   // on narrow screens the side panel is hidden: keep the character's numbers in view at the bottom
   var mini =
     '<div class="mini-bar noprint" aria-label="Character summary"><b>' +

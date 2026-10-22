@@ -138,7 +138,7 @@ Their effects count too: weapon and tool proficiencies, resistances, Medium Armo
 
 ### Finished characters
 
-A character with every choice made opens on **Session**, with only Session, My spells, Items and Sheet as tabs. **⬆ Level up** (adds a level when there's one class) and **✎ Edit character** bring the building steps back; **✓ Done — go to Session** hides them again.
+A character with every choice made opens on **Session**, with only Session, My spells, Items and Sheet as tabs. **⬆ Level up** opens the level-up screen: pick the class that gains the level (or a new one to multiclass), take the **average** hit points or **roll** the hit die (🎲 in the app, or type your own roll; Constitution is added), see what the new level brings, then confirm; it takes you to the step with any new choice to make (subclass, feat, spells). Rolled hit points add up level by level. **✎ Edit character** brings the building steps back; **✓ Done — go to Session** hides them again.
 On phones and narrow windows a bar at the bottom keeps the character's AC, HP, speed, initiative and ability modifiers in view.
 
 ### Session: keep track during a game
