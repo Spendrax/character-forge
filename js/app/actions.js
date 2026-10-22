@@ -572,6 +572,10 @@ var actions = {
     N.draftCat = '';
     ui.noteCat = '';
   },
+  noteStyle: function (v, el) {
+    ch.noteStyle = Object.assign({}, ch.noteStyle);
+    ch.noteStyle[el.getAttribute('data-k')] = v;
+  },
   noteCat: function (v) {
     ui.noteCat = v;
   },

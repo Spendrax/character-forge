@@ -125,6 +125,7 @@
       if (!p)
         return (
           '<main class="mon-main"><h2>Party</h2><p class="muted">Keep your players’ characters here (class, level, AC, HP, Perception). Encounters uses them for the XP budget and their hit points carry over between fights.</p>' +
+          (api.pt ? api.pt.html('pf2') : '') +
           btn('pfeNew', '+ New party', {}, 'btn primary') +
           '</main>'
         );
@@ -188,7 +189,9 @@
         })
         .join('');
       return (
-        '<main class="mon-main"><h2>Party</h2><div class="toolbar">' +
+        '<main class="mon-main"><h2>Party</h2>' +
+        (api.pt ? api.pt.html('pf2') : '') +
+        '<div class="toolbar">' +
         (list.length > 1
           ? '<select data-pfepick="1" aria-label="Choose a party">' +
             list

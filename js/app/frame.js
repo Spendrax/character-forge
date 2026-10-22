@@ -153,6 +153,13 @@ function render() {
     notes: stepNotes,
     play: stepPlay
   }[ui.step]();
+  // a player's sheet sent from their phone to the DM's table: a copy, replaced when they connect again
+  if (ch.fromTable)
+    body =
+      '<p class="panel small rest-msg">📱 ' +
+      esc((ch.fromTable.player || 'A player') + '’s sheet, sent from their phone') +
+      '. It is replaced each time they connect to your table, so changes made here don’t last.</p>' +
+      body;
   var top =
     '<header class="top">' +
     btn('section', 'Character Forge', { v: 'home' }, 'brand linkish') +

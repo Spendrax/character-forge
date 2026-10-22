@@ -2,11 +2,46 @@
 // Part of the app: these files share one scope (see “How the code is organized” in README.md), loaded in order by index.html.
 'use strict';
 
+// the players' sheets kept on the DM's device, and secrets for one player (js/party-table.js)
+var PT = window.PartyTable({
+  esc: esc,
+  btn: btn,
+  ui: ui,
+  store: store,
+  normalize: normalize,
+  // a player's sheet, opened on its Sheet page in its own game
+  open: function (game, id) {
+    store.game = game;
+    if (game === 'pf2') {
+      ui.section = 'pf2-chars';
+      actions.pfOpen(id);
+      actions.pfTab('sheet');
+    } else if (game === 'mm') {
+      actions.mmOpen(id);
+      actions.mmTab('sheet');
+    } else {
+      actions.openChar(id);
+      ui.mode = 'play';
+      ui.step = 'sheet';
+    }
+  },
+  save: function () {
+    save();
+  },
+  render: function () {
+    render();
+  }
+});
+Object.keys(PT.actions).forEach(function (k) {
+  actions[k] = PT.actions[k];
+});
+if (window.Table) Table.onSheet = PT.receive;
 var GEN = window.GeneratorsUI({ esc: esc, btn: btn, ui: ui, store: store });
 Object.keys(GEN.actions).forEach(function (k) {
   actions[k] = GEN.actions[k];
 });
 var DMV = window.DMUI({
+  pt: PT,
   esc: esc,
   btn: btn,
   ui: ui,
@@ -83,6 +118,7 @@ Object.keys(MMV.actions).forEach(function (k) {
   actions[k] = MMV.actions[k];
 });
 var MME = window.MMEnc({
+  pt: PT,
   esc: esc,
   btn: btn,
   ui: ui,
@@ -93,6 +129,7 @@ var MME = window.MMEnc({
   }
 });
 var PFV = window.PF2UI({
+  pt: PT,
   esc: esc,
   btn: btn,
   ui: ui,
@@ -127,6 +164,7 @@ Object.keys(TRE.actions).forEach(function (k) {
   actions[k] = TRE.actions[k];
 });
 var ENC = window.EncounterUI({
+  pt: PT,
   esc: esc,
   btn: btn,
   ui: ui,

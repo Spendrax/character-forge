@@ -195,6 +195,7 @@
       if (!pt)
         return (
           '<main class="mon-main"><h2>Party</h2><p class="muted">Keep your players’ characters here (name, class, level, AC, hit points). The encounter builder uses them to tell how hard a fight is, and their hit points carry over from fight to fight.</p>' +
+          (api.pt ? api.pt.html('dnd') : '') +
           btn('partyNew', '+ New party', {}, 'btn primary') +
           '</main>'
         );
@@ -261,7 +262,9 @@
         })
         .join('');
       return (
-        '<main class="mon-main"><h2>Party</h2><datalist id="pm-classes">' +
+        '<main class="mon-main"><h2>Party</h2>' +
+        (api.pt ? api.pt.html('dnd') : '') +
+        '<datalist id="pm-classes">' +
         classes +
         '</datalist>' +
         '<div class="toolbar">' +

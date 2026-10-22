@@ -1445,7 +1445,14 @@
           ch.notes =
             (ch.notes ? ch.notes + '\n\n' : '') + '## ' + String(title || 'From the table') + '\n' + String(text || '');
         },
-        rest: [['long', 'Rest for the night']]
+        rest: [['long', 'Rest for the night']],
+        style: ch.noteStyle,
+        // the whole character for the GM; the private notes stay on this phone
+        sheet: function () {
+          var c = JSON.parse(JSON.stringify(ch));
+          delete c.notes;
+          return { game: 'pf2', data: c };
+        }
       };
     }
     function playTab(ch, d) {
@@ -2706,7 +2713,18 @@
         '</datalist>' +
         btn('pfLangAdd', '+', {}, 'btn small') +
         '</div></div>' +
-        '<label class="field"><span>Notes</span><textarea id="pf-notes" data-pff="notes" rows="8">' +
+        (root.NoteStyle
+          ? '<div class="field"><span>Note style: the colour and font of your notes, and of what you share at the table</span>' +
+            root.NoteStyle.picker(
+              ch.noteStyle,
+              'pfNoteStyle',
+              esc(ch.name || 'Your character') + ' writes like this.'
+            ) +
+            '</div>'
+          : '') +
+        '<label class="field"><span>Notes</span><textarea id="pf-notes" data-pff="notes" rows="8" style="' +
+        (root.NoteStyle ? root.NoteStyle.css(ch.noteStyle) : '') +
+        '">' +
         esc(ch.notes || '') +
         '</textarea></label>' +
         '<div class="toolbar"><input type="search" id="pf-nq" data-pfnq="1" placeholder="Find a word in the notes…" value="' +
@@ -3004,6 +3022,7 @@
           store: store,
           render: render,
           ts: api.ts,
+          pt: api.pt,
           need: need,
           waitHtml: waitHtml,
           md: md,
@@ -3346,6 +3365,12 @@
           var T = trk(ch),
             k = el.getAttribute('data-k');
           T[k] = Math.max(0, Math.min(4, (T[k] || 0) + +el.getAttribute('data-d')));
+        });
+      },
+      pfNoteStyle: function (v, el) {
+        chg(function (ch) {
+          ch.noteStyle = Object.assign({}, ch.noteStyle);
+          ch.noteStyle[el.getAttribute('data-k')] = v;
         });
       },
       pfRest: function () {

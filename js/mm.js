@@ -727,7 +727,12 @@
           })
           .join('') +
         '</div></div>' +
-        txt('notes', h.notes, 'Origin, look, personality…', 'Notes', 1)
+        txt('notes', h.notes, 'Origin, look, personality…', 'Notes', 1) +
+        (root.NoteStyle
+          ? '<div class="field"><span>Note style: the colour and font of your notes, and of what you share at the table</span>' +
+            root.NoteStyle.picker(h.noteStyle, 'mmNoteStyle', esc(h.name || 'Your hero') + ' writes like this.') +
+            '</div>'
+          : '')
       );
     }
     function abilities(h, d) {
@@ -1397,7 +1402,13 @@
               .join('') +
             '</ul>'
           : '') +
-        (h.notes ? '<h3>Notes</h3><p>' + esc(h.notes).replace(/\n/g, '<br>') + '</p>' : '') +
+        (h.notes
+          ? '<h3>Notes</h3><p style="' +
+            (root.NoteStyle ? root.NoteStyle.css(h.noteStyle) : '') +
+            '">' +
+            esc(h.notes).replace(/\n/g, '<br>') +
+            '</p>'
+          : '') +
         '</article>'
       );
     }
@@ -1499,6 +1510,11 @@
         },
         addNote: function (title, text) {
           h.notes = (h.notes ? h.notes + '\n\n' : '') + String(title || 'From the table') + ':\n' + String(text || '');
+        },
+        style: h.noteStyle,
+        // the whole hero for the GM
+        sheet: function () {
+          return { game: 'mm', data: JSON.parse(JSON.stringify(h)) };
         }
       };
       var out =
@@ -1699,6 +1715,11 @@
       mmPrint: function () {
         root.print();
         return false;
+      },
+      mmNoteStyle: function (v, el) {
+        var h = hero();
+        h.noteStyle = Object.assign({}, h.noteStyle);
+        h.noteStyle[el.getAttribute('data-k')] = v;
       },
       mmHp: function (v) {
         var T = (hero().track = hero().track || {});

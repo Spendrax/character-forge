@@ -285,6 +285,13 @@
         })
         .join(', ');
     }
+    // what a player writes, in their note style (js/note-style.js)
+    function styleOf(st, pid) {
+      var p = st.players.filter(function (x) {
+        return x.id === pid;
+      })[0];
+      return root.NoteStyle && p && p.status ? root.NoteStyle.css(p.status.style) : '';
+    }
     function picked(sel) {
       var ids = Object.keys(sel).filter(function (k) {
         return sel[k];
@@ -502,8 +509,10 @@
                   '<li class="' +
                   (mine ? 'out' : 'in') +
                   '"><span class="small muted">' +
-                  (mine ? 'To ' + esc(names(st, m.to)) : 'From ' + esc(m.fromName)) +
-                  '</span><div>' +
+                  (mine ? (m.whisper ? '🤫 Secret to ' : 'To ') + esc(names(st, m.to)) : 'From ' + esc(m.fromName)) +
+                  '</span><div style="' +
+                  (mine ? '' : styleOf(st, m.from)) +
+                  '">' +
                   esc(m.text).replace(/\n/g, '<br>') +
                   '</div></li>'
                 );
@@ -800,7 +809,9 @@
                   '</b> <span class="small muted">from ' +
                   esc(n.fromName) +
                   (n.to === 'all' ? ', to everyone' : '') +
-                  '</span><div class="small">' +
+                  '</span><div class="small" style="' +
+                  styleOf(st, n.from) +
+                  '">' +
                   esc(n.text).replace(/\n/g, '<br>') +
                   '</div></div>'
                 );
@@ -956,7 +967,7 @@
       }
       var body = '';
       if (on && st.players.length) {
-        if (tab === 'table') body = fxHtml(st) + asksHtml(st);
+        if (tab === 'table') body = (api.pt ? api.pt.whisperHtml() : '') + fxHtml(st) + asksHtml(st);
         else if (tab === 'talk') body = msgsHtml(st) + notesHtml(st) + handoutsHtml(st);
         else if (tab === 'rolls') body = rollsHtml(st);
       } else if (tab !== 'story')

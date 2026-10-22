@@ -173,7 +173,19 @@ function tableWho() {
     rest: [
       ['short', 'Short rest'],
       ['long', 'Long rest']
-    ]
+    ],
+    style: ch.noteStyle,
+    // the whole character for the DM; the private journal stays on this phone
+    sheet: function () {
+      var c = JSON.parse(JSON.stringify(ch));
+      delete c.journal;
+      if (c.notes) {
+        delete c.notes.session;
+        delete c.notes.draftTitle;
+        delete c.notes.draftCat;
+      }
+      return { game: 'dnd', data: c };
+    }
   };
 }
 // what the DM sent this player: roll requests, handouts and messages, and a box to answer

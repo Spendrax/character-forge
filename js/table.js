@@ -280,7 +280,12 @@
           }),
           conc: str(st.conc, 60),
           txt: str(st.txt, 100),
-          bon: {}
+          bon: {},
+          // the player's note style: a colour and a font, used for what they write
+          style: {
+            c: /^#[0-9a-f]{6}$/i.test((st.style || {}).c || '') ? st.style.c : '',
+            f: /^(serif|sans|hand|type|fancy|round)$/.test((st.style || {}).f || '') ? st.style.f : ''
+          }
         };
         // bonuses the DM may roll secretly (passive Perception, Insight…)
         Object.keys(st.bon || {})
@@ -288,6 +293,16 @@
           .forEach(function (k) {
             p.status.bon[str(k, 30)] = num(st.bon[k], -20, 60);
           });
+      } else if (m.t === 'sheet') {
+        // the player's character sheet, for the DM to keep (not shared with the other players, not in the state)
+        if (typeof m.data !== 'object' || !m.data || JSON.stringify(m.data).length > 2e6) return;
+        if (root.Table.onSheet)
+          try {
+            root.Table.onSheet({ player: p.name, game: str(m.game, 4), data: m.data });
+          } catch (e) {
+            /* the DM's page decides */
+          }
+        return;
       } else return;
       broadcast();
     });
@@ -533,6 +548,9 @@
     status: function (code, st) {
       return asPlayer(code, 'status', { st: st });
     },
+    sendSheet: function (code, game, data) {
+      return asPlayer(code, 'sheet', { game: game, data: data });
+    },
     ackFx: function (code, fid) {
       return asPlayer(code, 'gotFx', { fid: fid });
     },
@@ -632,6 +650,7 @@
                 fromName: 'DM',
                 to: to(what.msg.to),
                 text: str(what.msg.text, 1000),
+                whisper: !!what.msg.whisper,
                 at: Date.now()
               }
             ])

@@ -213,6 +213,11 @@ function stepDetails() {
     t('appearance', 'Appearance', 1) +
     t('backstory', 'Backstory', 1) +
     t('other', 'Other notes', 1) +
+    (window.NoteStyle
+      ? '<div class="field"><span>Note style: the colour and font of your notes, and of what you share at the table</span>' +
+        NoteStyle.picker(ch.noteStyle, 'noteStyle', esc(ch.name || 'Your character') + ' writes like this.') +
+        '</div>'
+      : '') +
     '</div>' +
     limitsHtml()
   );
@@ -398,7 +403,9 @@ function stepNotes() {
       })
       .join('') +
     '</div>' +
-    '<label class="field"><span>Note</span><textarea id="f-session" class="notes-big" data-text="notes.session" placeholder="What happened, who you met…">' +
+    '<label class="field"><span>Note</span><textarea id="f-session" class="notes-big" data-text="notes.session" placeholder="What happened, who you met…" style="' +
+    noteCss() +
+    '">' +
     esc(N.session || '') +
     '</textarea></label>' +
     '<div class="toolbar">' +
@@ -498,7 +505,11 @@ function stepNotes() {
                   if (!r.html) r.html = rt.html;
                   return '<span class="small muted">' + r.n + '×</span><span class="note-peek">' + r.html + '</span>';
                 })()
-              : '<span class="small muted note-peek">' + esc(String(n.x || '').slice(0, 90)) + '</span>') +
+              : '<span class="small muted note-peek" style="' +
+                noteCss() +
+                '">' +
+                esc(String(n.x || '').slice(0, 90)) +
+                '</span>') +
           '</summary>' +
           '<div class="row"><label class="field"><span>Title</span><input type="text" id="jn-' +
           n.id +
@@ -518,7 +529,9 @@ function stepNotes() {
           n.id +
           '-x" class="notes-mid" data-jnote="' +
           n.id +
-          '" data-f="x">' +
+          '" data-f="x" style="' +
+          noteCss() +
+          '">' +
           esc(n.x || '') +
           '</textarea>' +
           '<div class="toolbar">' +
@@ -529,6 +542,10 @@ function stepNotes() {
       .join('') +
     '</div>'
   );
+}
+// the character's note style (js/note-style.js), for the text of its notes
+function noteCss() {
+  return window.NoteStyle ? NoteStyle.css(ch.noteStyle) : '';
 }
 function stepSheet() {
   // skills sit right under the proficiencies, before the spells

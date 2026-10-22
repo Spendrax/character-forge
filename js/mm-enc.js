@@ -928,6 +928,7 @@
       if (!t)
         return (
           '<main class="mon-main"><h2>Party</h2><p class="muted">Keep your players’ heroes here: power level, defenses, hero points and the damage they’ve taken. Encounters uses them to set the power level, and damage carries over from fight to fight.</p>' +
+          (api.pt ? api.pt.html('mm') : '') +
           btn('mmtNew', '+ New party', {}, 'btn primary') +
           '</main>'
         );
@@ -992,6 +993,7 @@
         .join('');
       return (
         '<main class="mon-main"><h2>Party</h2>' +
+        (api.pt ? api.pt.html('mm') : '') +
         '<div class="toolbar">' +
         (list.length > 1
           ? '<select data-mmtpick="1" aria-label="Choose a party">' +

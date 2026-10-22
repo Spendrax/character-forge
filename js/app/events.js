@@ -176,6 +176,7 @@ document.addEventListener('input', function (e) {
       return t.getAttribute(n);
     };
   if (TP.onInput(t)) return;
+  if (PT.onInput(t)) return;
   if (SavedEnc.onInput(t)) return save();
   if (ui.section === 'books' || ui.section === 'mm-rules') {
     var bk = BOOKS.onInput(t);

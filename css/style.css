@@ -4738,3 +4738,59 @@ html.dice3d-lock body {
   word-break: break-all;
   user-select: all;
 }
+
+/* note style: colour dots and font samples */
+.note-style {
+  display: grid;
+  gap: 0.4rem;
+}
+.note-colors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.note-dot {
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  background: var(--ink);
+  cursor: pointer;
+}
+.note-dot.on {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+.note-fonts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+.note-sample {
+  margin: 0;
+  font-size: 1.05rem;
+}
+/* a secret from the DM: hidden until tapped */
+.tbl-whisper {
+  display: grid;
+  gap: 0.15rem;
+  width: 100%;
+  text-align: left;
+  margin: 0.5rem 0;
+  padding: 0.6rem 0.8rem;
+  border-radius: 10px;
+  border: 2px dashed var(--accent);
+  background: var(--soft);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+.tbl-whisper small {
+  opacity: 0.7;
+}
+.tbl-whisper.open {
+  border-style: solid;
+}
+.party-hints .pill {
+  text-align: left;
+}

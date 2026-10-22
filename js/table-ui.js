@@ -9,7 +9,9 @@
 //   status() → { hp, max, temp, ac, conds, conc, txt, bon: { 'Insight': 3, … } },
 //   take(gift) → adds coins and items to the character,
 //   effect(fx) → applies damage, healing, a condition, inspiration, a rest, XP; returns { msg, level },
-//   levelUp(), notes() → [{ id, title, text }], addNote(title, text), rest: [[kind, label]] (rests the DM can call)
+//   levelUp(), notes() → [{ id, title, text }], addNote(title, text), rest: [[kind, label]] (rests the DM can call),
+//   style: { c, f } (the character's note colour and font, js/note-style.js),
+//   sheet() → { game, data } (the whole character, without private notes, kept by the DM)
 // }
 (function (root) {
   'use strict';
@@ -111,6 +113,56 @@
         api.playMusic(st.music);
       U.st = st;
     }
+    // the whole character goes to the DM when the phone connects, then again when it changes (at most twice a minute)
+    function sendSheet(j, who) {
+      if (!who.sheet) return;
+      var sh = who.sheet(),
+        key = j.code + who.key + JSON.stringify(sh).length + ':' + JSON.stringify(sh).slice(0, 2000);
+      if (U.sheetKey === key || U.sheetWait) return;
+      U.sheetKey = key;
+      U.sheetWait = true;
+      root.Table.sendSheet(j.code, sh.game, sh.data).catch(function () {
+        U.sheetKey = '';
+      });
+      setTimeout(function () {
+        U.sheetWait = false;
+        if (W) api.render();
+      }, 30000);
+    }
+    // what someone at the table writes, in their note style
+    function styleOf(S, pid) {
+      var p = (S.players || []).filter(function (x) {
+        return x.id === pid;
+      })[0];
+      return root.NoteStyle && p && p.status ? root.NoteStyle.css(p.status.style) : '';
+    }
+    // secrets from the DM: hidden until tapped, so no one looking at the phone sees them
+    function whispersHtml(S) {
+      var list = (S.msgs || [])
+        .filter(function (m) {
+          return m.whisper && m.from === 'dm';
+        })
+        .slice(-4)
+        .reverse();
+      return list
+        .map(function (m) {
+          var open = (U.peek || {})[m.mid];
+          return (
+            '<button type="button" class="tbl-whisper' +
+            (open ? ' open' : '') +
+            '" data-act="tpPeek" data-v="' +
+            esc(m.mid) +
+            '">🤫 ' +
+            (open
+              ? '<span>' + para(m.text) + '</span><small>tap to hide</small>'
+              : '<b>A secret from the ' +
+                GM() +
+                '</b><small>only for you: tap to read, keep your screen to yourself</small>') +
+            '</button>'
+          );
+        })
+        .join('');
+    }
     function ack(f) {
       var j = J();
       if (j) root.Table.ackFx(j.code, f.fid).catch(function () {});
@@ -179,6 +231,7 @@
         '</div>';
       h +=
         newsHtml() +
+        whispersHtml(S) +
         orderHtml(S, p) +
         initHtml(S, p) +
         asksHtml(S, j) +
@@ -188,8 +241,10 @@
         musicHtml(S);
       h += msgsHtml(S, j) + notesHtml(S, j) + rollsHtml(S, j) + loreHtml(S);
       // the character's status, sent when it changes
-      var st = who.status(),
-        sk = j.code + JSON.stringify(st);
+      var st = who.status();
+      st.style = root.NoteStyle ? root.NoteStyle.clean(who.style) : {};
+      var sk = j.code + JSON.stringify(st);
+      sendSheet(j, who);
       if (U.sent !== sk) {
         U.sent = sk;
         Table.status(j.code, st).catch(function () {
@@ -430,7 +485,11 @@
       );
     }
     function msgsHtml(S, j) {
-      var msgs = (S.msgs || []).slice(-8),
+      var msgs = (S.msgs || [])
+          .filter(function (m) {
+            return !m.whisper;
+          })
+          .slice(-8),
         last = msgs[msgs.length - 1];
       return fold(
         'msgs',
@@ -446,7 +505,9 @@
                   (o ? 'out' : 'in') +
                   '"><span class="small muted">' +
                   (o ? 'You, to the ' + GM() : m.to === 'all' ? GM() + ', to everyone' : GM() + ', just for you') +
-                  '</span><div>' +
+                  '</span><div style="' +
+                  (o ? styleOf(S, j.id) : '') +
+                  '">' +
                   para(m.text) +
                   '</div></li>'
                 );
@@ -497,7 +558,9 @@
               ((U.kept || {})[n.nid] || n.recap
                 ? '<span class="small good">in your notes</span>'
                 : btn('tpKeep', 'Save to my notes', { v: n.nid }, 'btn tiny')) +
-              '</div><div class="small">' +
+              '</div><div class="small" style="' +
+              styleOf(S, n.from) +
+              '">' +
               para(n.text) +
               '</div></div>'
             );
@@ -746,6 +809,10 @@
       },
       tpGiftNo: function (v) {
         gotGift(v, false);
+      },
+      tpPeek: function (v) {
+        U.peek = U.peek || {};
+        U.peek[v] = !U.peek[v];
       },
       tpNewsOk: function () {
         U.news = [];
