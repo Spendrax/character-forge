@@ -708,6 +708,7 @@
         esc(S.q || '') +
         '" placeholder="Find…" aria-label="Find music" style="max-width:10rem"></div>' +
         spotifyPanel() +
+        shareHtml() +
         '<nav class="mm-tabs audio-tabs">' +
         [['all', 'All']]
           .concat(tabs())
@@ -912,13 +913,27 @@
       }
     };
     // when the DM has the table open, the players' phones can follow the music
+    // (only if the DM chose to share it: by default the music is the DM's alone)
     function toTable() {
       var T = root.Table,
-        h = T && T.hostInfo && T.hostInfo();
+        h = T && T.hostInfo && T.hostInfo(),
+        share = !!A().share;
       if (h)
         T.dm(h.code, h.key, {
-          music: playing ? { u: playing.u, t: (playing.what ? playing.what + ' · ' : '') + playing.t } : null
+          music: share && playing ? { u: playing.u, t: (playing.what ? playing.what + ' · ' : '') + playing.t } : null,
+          spid: share && remote() ? R.clientId() : ''
         }).catch(function () {});
+    }
+    // the switch for that, shown while the DM's table is open
+    function shareHtml() {
+      var T = root.Table,
+        h = T && T.hostInfo && T.hostInfo();
+      if (!h) return '';
+      return (
+        '<label class="check-line small audio-share"><input type="checkbox" data-aud="share"' +
+        (A().share ? ' checked' : '') +
+        '> <span>📱 Let the players’ phones play the music too (otherwise only you see and control it)</span></label>'
+      );
     }
     // what the DM is playing, on a player's phone
     function play(m) {
@@ -989,7 +1004,7 @@
           esc(R.redirect()) +
           '</code> (exactly this, then tap Add). Tick <b>Web API</b>, accept the terms, <b>Save</b>.</li>' +
           '<li>Open the app’s <b>Settings</b>, copy the <b>Client ID</b> and paste it below, then <b>Connect</b> and say yes on Spotify’s page.</li>' +
-          '<li>For your players: in the app’s <b>User Management</b>, add each player’s name and Spotify email (Spotify allows 5 people per personal app, you included). When they join your table, their Audio page gets your Client ID by itself: they just tap Connect.</li></ol>' +
+          '<li>Only you need this: the music plays on your Spotify. (If you ever let players’ phones play it too, add them in the app’s <b>User Management</b> with their Spotify account email; Spotify allows 5 people per personal app.)</li></ol>' +
           '<div class="toolbar"><input type="text" id="aud-spid" data-aud="spid" value="' +
           esc(S.spid || R.clientId() || tableId()) +
           '" placeholder="Client ID" autocomplete="off" style="flex:1;min-width:12rem">' +
@@ -1012,6 +1027,11 @@
     function onInput(t) {
       var k = t.getAttribute('data-aud');
       if (k == null) return null;
+      if (k === 'share') {
+        A().share = t.checked;
+        toTable();
+        return 'none';
+      }
       if (k === 'dev') {
         R.setDevice(t.value);
         return 'none';
