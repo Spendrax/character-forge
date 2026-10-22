@@ -375,9 +375,10 @@ const sw = fs.readFileSync(path.join(__dirname, '../sw.js'), 'utf8');
   assert.equal(AU.spotifyEmbed('https://open.spotify.com/playlist/37i9dQZF1DX?si=abc'), 'https://open.spotify.com/embed/playlist/37i9dQZF1DX');
   assert.equal(AU.spotifyEmbed('https://open.spotify.com/intl-fr/album/1A2b'), 'https://open.spotify.com/embed/album/1A2b');
   assert.equal(AU.spotifyEmbed('https://open.qobuz.com/playlist/123'), '');
-  require('../js/icons.js'); AU.MOODS.forEach(m => assert.ok(globalThis.Icon(m[2]).startsWith('<svg'), 'icon for ' + m[0])); // every mood has its own icon
-  AU.MOODS.forEach(m => assert.ok(AU.PICKS[m[0]].length >= 2 && AU.PICKS[m[0]].every(p => /^[A-Za-z0-9]{22}$/.test(p[0])), m[0])); // every scene has playable suggestions
-  ['standard', 'tough', 'boss'].forEach(f => assert.ok(AU.FIGHT[f].length >= 2, f)); Object.keys(AU.FIGHT_BY).forEach(k => assert.ok(AU.MOODS.some(m => m[0] === k), 'fight for a scene ' + k)); // every scene has its three fights
+  // every tab has music, every playlist named is a real Spotify id, and the fight button has its three fights
+  AU.TABS.forEach(t => assert.ok(AU.ITEMS.some(x => x[0] === t[0]), 'tab ' + t[1]));
+  AU.ITEMS.concat(AU.ITEMS_MM).forEach(x => { assert.ok(x[2].length >= 1, x[1]); x[2].concat(Object.values(x[3] || {})).forEach(k => assert.ok(AU.P[k] && /^[A-Za-z0-9]{22}$/.test(AU.P[k][0]), x[1] + ' ' + k)); });
+  ['standard', 'tough', 'boss'].forEach(f => assert.ok(AU.FIGHT[f].length >= 2 && AU.FIGHT[f].every(k => AU.P[k]), f));
   assert.equal(AU.cleanUrl('javascript:alert(1)'), ''); assert.equal(AU.cleanUrl('http://x.com'), ''); assert.ok(AU.cleanUrl(' https://open.qobuz.com/playlist/1 '));
 }
 

@@ -101,9 +101,9 @@ When you press **End fight** in Encounters, the app asks whether to roll treasur
 
 ### Audio
 
-Music sorted like DnDify: **categories** (Towns, Wilderness, Underground, Magic and darkness, Moods), each with its **scenes** (Tavern, Village, City, Castle and court, Temple, Travel, Forest, Snow and ice, Desert, Jungle, Sea and pirates, Camp and night, Caves, Dungeon, Tombs and undead, Feywild, Mystery, Horror, Villain's lair, Calm, Tension, Sad, Victory, Funny). Every scene has its **ambience** and three fights: **Standard**, **Tough** and **Boss**; one tap on a fight starts its music (fight music that suits the scene comes first, like pirate combat at sea or undead combat in the tombs). Add your own Spotify or Qobuz links to any scene's ambience or fight, or to one fight for every scene.
+Laid out like DnDify. Tabs: **All**, **Ambient** (Blacksmith, Campfire, Cavern, Chambers of Torture, Farmland, Forest, Haunted Place, Mountain Pass, Ocean, Ship, Storm, Tavern, Underwater, Workshop…), **Atmosphere** (Capital, Cathedral, Desert, Dungeon, Fey, Manor, Road, Saloon, Tavern, Town, Underdark, Wilderness), **Combat** (Assassins, Duel, Epic, Horrifying, Lighthearted), **Creatures** (Dwarves, Elves, Lizardfolk), **Monsters** (Aberrations to Vampires), **Mood** (Broken to Triumphant) and **Situation** (Bards, Chase, Halloween, Stealth), plus a search box. Tap a name to play it, tap again to stop; **⋯** shows its playlists and takes your own Spotify or Qobuz links.
 
-The Spotify player sits at the bottom and keeps playing while you use the app: **⏭** skips to the next song, **≡** opens the song list (tap one to play it), **✕** closes it. M&M has its own modern scenes.
+The round **⚔** button is always there: **Tough**, **Standard** or **Boss** fight music at once (tap the same one again for another playlist; at sea it starts with pirate combat, among the undead with undead combat). The Spotify player sits at the bottom and keeps playing while you use the app: **⏮** back to the start of the song, **⏯** play/pause, **⏭** next song, **≡** the song list (tap one to play it), **✕** close. M&M has its own modern scenes.
 
 ### Books
 

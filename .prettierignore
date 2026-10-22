@@ -1,3 +1,4 @@
 data/
 js/vendor/
 node_modules/
+test/

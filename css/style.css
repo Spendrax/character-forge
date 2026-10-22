@@ -2349,31 +2349,6 @@ html {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.audio-moods {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
-  gap: 0.5rem;
-  margin: 1rem 0;
-}
-.audio-mood {
-  font: inherit;
-  text-align: left;
-  padding: 0.7rem 0.8rem;
-  border: 1px solid var(--line, #0002);
-  border-radius: 0.6rem;
-  background: var(--panel);
-  color: var(--ink);
-  cursor: pointer;
-}
-.audio-mood.on {
-  border-color: var(--accent);
-  box-shadow: inset 0 0 0 1px var(--accent);
-  font-weight: 700;
-}
-.audio-mood small {
-  color: var(--muted);
-  font-weight: 400;
-}
 .audio-list {
   display: flex;
   flex-direction: column;
@@ -2406,10 +2381,143 @@ html {
   bottom: 0;
   z-index: 16;
   display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.25rem 0.4rem 0.3rem;
+  background: var(--panel);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.15);
+}
+.audio-now {
+  display: flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0 0.4rem;
+}
+.audio-now b {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.audio-ctl {
+  display: flex;
+  gap: 0.25rem;
+}
+/* without Spotify's remote control, the player's own buttons do the work */
+.audio-dock:not(.remote) [data-act='audPrev'],
+.audio-dock:not(.remote) [data-act='audToggle'] {
+  display: none;
+}
+.audio-tabs {
+  margin: 0.6rem 0;
+}
+.audio-rows {
+  display: grid;
+}
+.audio-row {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  border-bottom: 1px solid var(--line);
+}
+.audio-row.on {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-radius: 6px;
+}
+.audio-row.on .muted {
+  color: inherit;
+  opacity: 0.8;
+}
+.audio-name {
+  flex: 1;
+  text-align: left;
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  padding: 0.75rem 0.6rem;
+  cursor: pointer;
+}
+.audio-name small {
+  display: block;
+  font-size: 0.75rem;
+  opacity: 0.85;
+}
+.audio-more {
+  padding: 0.4rem 0 0.8rem 0.6rem;
+}
+/* the fight button: always at hand, opens Tough / Standard / Boss */
+.audio-fab-wrap {
+  position: fixed;
+  left: 1rem;
+  bottom: 1rem;
+  z-index: 17;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+body.has-dock .audio-fab-wrap {
+  bottom: 9rem;
+}
+body.has-dock.dock-big .audio-fab-wrap {
+  bottom: 26rem;
+}
+.audio-fab {
+  width: 3.4rem;
+  height: 3.4rem;
+  border-radius: 50%;
+  border: 0;
+  background: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+}
+.audio-fab .ico {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+.audio-fab.open {
+  transform: rotate(45deg);
+}
+.audio-fab-menu {
+  display: grid;
+  gap: 0.4rem;
+}
+.audio-fab-opt {
+  display: flex;
+  align-items: center;
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  background: none;
+  border: 0;
+  font: inherit;
+  color: var(--ink);
+  cursor: pointer;
+}
+.audio-fab-opt span {
   background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.85rem;
+}
+.audio-fab-opt i {
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+.audio-fab-opt.on i {
+  background: var(--accent);
+  color: var(--accent-ink);
 }
 .audio-dock:not(.on) {
   display: none;
@@ -2430,24 +2538,11 @@ html {
   height: 352px;
   max-height: 60vh;
 }
-.audio-dock-btns {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-.audio-cats {
-  margin: 0.6rem 0;
-}
-.audio-fights {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin: 0.3rem 0 0.6rem;
-}
+
 body.has-dock::after {
   content: '';
   display: block;
-  height: 90px;
+  height: 130px;
 }
 body.has-dock.dock-big::after {
   height: 360px;
@@ -2465,22 +2560,6 @@ body.has-dock.dock-big::after {
 .ico .ia {
   fill: var(--accent);
   fill-opacity: 0.22;
-}
-.audio-mood {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-}
-.audio-mood .ico {
-  width: 1.7rem;
-  height: 1.7rem;
-  color: var(--ink);
-}
-.audio-mood.on .ico {
-  color: var(--accent);
-}
-.audio-mood.on .ico .ia {
-  fill-opacity: 0.35;
 }
 .ico-h {
   display: flex;

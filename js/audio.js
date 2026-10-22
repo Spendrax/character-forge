@@ -1,290 +1,305 @@
-// Audio: music for the table, in categories and scenes (in the style of DnDify). Each scene has its ambience and
-// three fights: Standard, Tough and Boss. Suggested Spotify playlists, searches on Spotify and Qobuz, your own
-// playlists, and a Spotify player docked at the bottom that keeps playing while you move around the app, with a
-// Skip button and the song list to jump to another song.
+// Audio: music for the table, laid out like DnDify. Tabs (All, Ambient, Atmosphere, Combat, Creatures, Monsters,
+// Mood, Situation), one tap on a name plays it, and a fight button that is always there: Tough, Standard or Boss.
+// Music comes from public Spotify playlists (or your own links) and plays in a player docked at the bottom that
+// keeps going while you use the rest of the app, with previous / play-pause / next.
 (function (root) {
   'use strict';
-  // categories of scenes: [id, name, [[scene id, name, icon (js/icons.js), search words], …]]
-  var CATS = [
-    [
-      'towns',
-      'Towns',
-      [
-        ['tavern', 'Tavern', 'tankard', 'tavern fantasy music'],
-        ['village', 'Village', 'house', 'medieval village ambience'],
-        ['town', 'City', 'city', 'medieval city ambience'],
-        ['castle', 'Castle and court', 'trophy', 'royal court medieval music'],
-        ['temple', 'Temple', 'candle', 'fantasy temple choir ambience']
-      ]
-    ],
-    [
-      'wild',
-      'Wilderness',
-      [
-        ['travel', 'Travel', 'signpost', 'fantasy adventure travel music'],
-        ['forest', 'Forest', 'tree', 'enchanted forest ambience'],
-        ['snow', 'Snow and ice', 'moon', 'frozen north fantasy ambience'],
-        ['desert', 'Desert', 'sun', 'desert fantasy music'],
-        ['jungle', 'Jungle', 'tree', 'jungle tribal fantasy music'],
-        ['sea', 'Sea and pirates', 'ship', 'pirate sea shanty ambience'],
-        ['camp', 'Camp and night', 'campfire', 'campfire night ambience']
-      ]
-    ],
-    [
-      'under',
-      'Underground',
-      [
-        ['caves', 'Caves', 'candle', 'cave ambience dark'],
-        ['dungeon', 'Dungeon', 'candle', 'dark dungeon ambience'],
-        ['tombs', 'Tombs and undead', 'skull', 'crypt undead ambience']
-      ]
-    ],
-    [
-      'magic',
-      'Magic and darkness',
-      [
-        ['magic', 'Feywild and wonder', 'sparkle', 'magical fantasy ambient music'],
-        ['mystery', 'Mystery', 'eye', 'mystery investigation fantasy music'],
-        ['horror', 'Horror', 'skull', 'dark horror ambience'],
-        ['evil', 'Villain’s lair', 'dragon', 'dark villain lair music']
-      ]
-    ],
-    [
-      'moods',
-      'Moods',
-      [
-        ['calm', 'Calm', 'sun', 'calm peaceful fantasy music'],
-        ['tension', 'Tension and chase', 'bolt', 'tense chase fantasy music'],
-        ['sad', 'Sad moment', 'rain', 'sad emotional fantasy music'],
-        ['victory', 'Victory', 'trophy', 'triumphant victory fantasy music'],
-        ['funny', 'Funny', 'lute', 'whimsical comedic fantasy music']
-      ]
-    ]
+  // [tab id, tab name]
+  var TABS = [
+    ['amb', 'Ambient'],
+    ['atm', 'Atmosphere'],
+    ['cmb', 'Combat'],
+    ['cre', 'Creatures'],
+    ['mon', 'Monsters'],
+    ['mood', 'Mood'],
+    ['sit', 'Situation']
   ];
-  // Mutants & Masterminds is set in our time: modern scenes instead of taverns and dungeons.
-  var CATS_MM = [
-    [
-      'scenes',
-      'Scenes',
-      [
-        ['hq', 'Headquarters', 'house', 'lofi chill beats'],
-        ['city', 'City at night', 'city', 'synthwave night drive'],
-        ['hero', 'Hero moment', 'bolt', 'epic heroic cinematic music'],
-        ['chase', 'Action and chase', 'car', 'action movie chase music'],
-        ['villain', 'Villain', 'mask', 'villain theme dark'],
-        ['tech', 'Tech and hacking', 'laptop', 'cyberpunk hacker music'],
-        ['noir', 'Investigation', 'eye', 'noir detective jazz'],
-        ['tension', 'Tension', 'candle', 'suspense thriller soundtrack'],
-        ['space', 'Space and cosmic', 'rocket', 'space ambient sci-fi'],
-        ['msad', 'Sad moment', 'rain', 'sad emotional music'],
-        ['mwin', 'Victory', 'trophy', 'triumphant superhero music']
-      ]
-    ]
-  ];
-  // Suggested Spotify playlists for each scene's ambience (public D&D playlists): [playlist id, name]
-  var PICKS = {
-    tavern: [
-      ['2Ca3Hi7H5ASwu7jsNCIddE', 'Medieval Tavern Music'],
-      ['3U50OBVK3wZUcUmL9FmsSs', 'DnD: Inn'],
-      ['3h7Z499ZxaYawJ2UMeYtlZ', '🍻 DnD'],
-      ['2IZI0N8iQdxOdwuAVoYrZR', 'Medieval Tavern (500+ tracks)']
-    ],
-    village: [
-      ['11DtJxzdFDOsAVzn2ofQd8', 'DnD - Medieval Village'],
-      ['6mQdL9qWFhi1HuGvzx3dTx', 'DnD: Village']
-    ],
-    town: [
-      ['5gnpcmfGRl8GaJlxyVMh4U', 'DnD City'],
-      ['1TjK2l1WU0hwRxJsAkSTA1', 'DnD: City'],
-      ['1BabADdkcNNQ9Kmnfvxj9a', 'Medieval Town'],
-      ['6Vt84DWKqLOjVv1rH4iuUF', 'DnD Metropolis']
-    ],
-    castle: [
-      ['5ysi5SP1mmaxfBgrYNjagV', 'DnD: Royal Court'],
-      ['7D7fnlZrBGpRbrZtOg8bYt', 'DnD Honor'],
-      ['4QYLgjCriwTPsM50xBABlE', 'DnD - Majestic Atmosphere']
-    ],
-    temple: [
-      ['3ou7uWdndh8T7Xd3u0LoMp', 'DnD: Temple'],
-      ['2PMNCtbjUKcHuxvezr421y', 'DnD - Pagan']
-    ],
-    travel: [
-      ['19OuMlyNc07MIJQeTVMwIe', 'DnD - Fantasy Exploration'],
-      ['608H1khJ4FbOSgtNOFqxxW', 'DnD Voyage'],
-      ['19lrJbgreBfi4HlLYOsPyV', 'D&D Adventure Music'],
-      ['3LGcymlXO40dcbLiRsFfLm', 'Adventuring Music']
-    ],
-    forest: [
-      ['6WHwtLXHwxH9AEC4qo4tYX', 'Elven Forest Ambience'],
-      ['5lYc0l9TVNRRcl9Nfz6HLU', 'DnD: Forest'],
-      ['05RgD6XFGztjwadz9yvW5H', 'Enchanted Forest']
-    ],
-    snow: [
-      ['4HN1dZLsqoNTF6dAhHDrR2', 'DnD - Snow & Ice'],
-      ['2HL9NWdKkWuD66WDA9hfpX', 'DnD: Ice'],
-      ['7rTE7yXRCqoDpihnFHTUyH', 'DnD: North']
-    ],
-    desert: [
-      ['0p3a3aXtnHJeh5lvV48rc1', 'DnD: Desert'],
-      ['5804wUcuihLAVLVSy6j5Dj', 'DnD Desert']
-    ],
-    jungle: [
-      ['4uy8VyF97m6VULvsLZYPSU', 'DnD: Jungle'],
-      ['2Bia9tnJxDaIJL68JIj4Zj', 'DnD Tropical']
-    ],
-    sea: [
-      ['54ZvOysRXaSu1x246yNJwD', 'DnD Pirates'],
-      ['4dduFQ9aDvl4C2o3Fm3ejw', 'DnD: Pirates'],
-      ['6wzHc9LYCHuTCvvXezlyKu', 'Sea Shanty Ambient'],
-      ['4LjYUCXVlw2qeVFluqnkm5', 'DnD Underwater']
-    ],
-    camp: [
-      ['3nNhKHeLppJl9x7NpGf0l7', 'DnD Campfire'],
-      ['4eKJflaVoy3EGAJsA6Nfq1', 'DnD - Night Atmosphere'],
-      ['3Mj4KgXSruvhHvsllw392U', 'Resting by the Campfire']
-    ],
-    caves: [
-      ['6jlaEq49yMXmlZgZstYOJj', 'DnD - Caves'],
-      ['4MDzUUHA0V2UC9nKNJxkXV', 'DnD - Ambient Exploration']
-    ],
-    dungeon: [
-      ['3h7mjadevdr4tJFXVvH6Cu', 'DnD Dungeon'],
-      ['61r7AoxyRCmo03tIoKpPko', 'Ambient: Dungeon'],
-      ['429Y5dm8z0On9pxh0tY9Eq', 'Creepy Dungeon Music']
-    ],
-    tombs: [
-      ['4ZtKPv97GaE4Lms9Cmcdoa', 'DnD - Underground Tombs'],
-      ['429Y5dm8z0On9pxh0tY9Eq', 'Creepy Dungeon Music']
-    ],
-    magic: [
-      ['0dceOYAFCYpmx9NLtr2QyD', 'DnD Enchanted'],
-      ['2Lvwt0Bw7QVAXWdXI62Jiz', 'DnD: Magical'],
-      ['1yYMz2aZf9qyUcQmeiYjip', 'Feywild Ambience']
-    ],
-    mystery: [
-      ['5b9mcDxvx3cycciPw8C4wn', 'DnD: Mystical'],
-      ['3Yxt8Z4pnjQ6uFZKEK30al', 'Investigation & Mystery'],
-      ['6eSxCnwg3fEHD0UCdXYGdL', 'Mysterious DnD Music']
-    ],
-    horror: [
-      ['0uADzKu4SM1f4yHKRuclZH', '💀 DnD'],
-      ['4iXZaoFkgsa16MzC844L1m', 'DnD: Horror'],
-      ['6cXCERlllosIgL02ewXHEs', 'Ominous Dark Fantasy']
-    ],
-    evil: [
-      ['3QDYKaubqxQBtvoC6P5eg3', 'DnD Villains'],
-      ['3wNE68CF5CVx4hskDKsozC', 'DnD: Evil'],
-      ['4pRdDmM1OYlJ0j7TDOCiI3', 'DnD: Grimdark']
-    ],
-    calm: [
-      ['14bqvFqpVAOteR34ANLXNp', 'DnD - Peaceful Atmosphere'],
-      ['7sdVk3vZxrvvYrHDi9BrNK', 'DnD - Calm']
-    ],
-    tension: [
-      ['0OhKwGjFeChOrtPGBdyVtL', 'DnD Intense'],
-      ['11hKhHtkhfXj4cqLry3ms3', 'DnD - Battle Preparation']
-    ],
-    sad: [
-      ['0zD8flCSvPCOV4lqbjnUCE', 'DnD Emotional'],
-      ['0TKsFw6NQ57ZqhbJrjVHhM', 'Sad DnD Themes'],
-      ['1Mbdl2LIOk9MvpadoBXNG8', 'Sad & Melancholic']
-    ],
-    victory: [
-      ['43f1nm2QS6UHLm4TvktpBk', 'Triumphant Scenes'],
-      ['5QvlKRARFeT2SQXVTA6zQ0', 'D&D Victory']
-    ],
-    funny: [
-      ['0vov8lSCtTuWVxFwR6qs5j', 'DnD Antics'],
-      ['3h7Z499ZxaYawJ2UMeYtlZ', '🍻 DnD']
-    ],
-    // M&M
-    hq: [['37i9dQZF1DWWQRwui0ExPn', 'lofi beats']],
-    city: [
-      ['0iAeUtwINlqfjwAyQ4ykur', 'Synthwave - Night Drive'],
-      ['2CiqzE8dKtmgpWAR6TbTIF', 'Blade Runner Vibes / Night Driving']
-    ],
-    hero: [
-      ['4JdBmthvT9VSfpuDu3itVq', 'Heroic Cinematic Music'],
-      ['0dQJTXwu3ZEL7ZyWI3YYQp', 'Best Epic Heroic Musics']
-    ],
-    chase: [
-      ['37i9dQZF1DX76Wlfdnj7AP', 'Beast Mode'],
-      ['1CnAtW2mIejhmERcoQN9Yx', 'Drive Soundtrack']
-    ],
-    villain: [
-      ['4R2fMrgc2tkyKD5bwEXlDa', 'Songs that make you feel like the villain'],
-      ['17V25rm8DeYNsU4YaZfYUK', 'Feel like a villain']
-    ],
-    tech: [
-      ['3UkdZt86rkqMOFvuWrt92O', 'Cyberpunk Radar'],
-      ['11WEQezlbeZ7O5k7r6A64r', 'Cyberpunk: Edgerunners']
-    ],
-    noir: [
-      ['0Bhwoi6JTUFqjzmZoABfqP', 'Jazz Noir'],
-      ['1FDVy3qAIVCiBkFV8TdRDj', 'Beat It, Toots - Noir Jazz']
-    ],
-    space: [['6Hui516oyyhckcM744zX8L', 'Space Sounds']],
-    msad: [
-      ['37i9dQZF1DX3YSRoSdA634', 'Life Sucks'],
-      ['1Mbdl2LIOk9MvpadoBXNG8', 'Sad & Melancholic']
-    ],
-    mwin: [
-      ['0dQJTXwu3ZEL7ZyWI3YYQp', 'Best Epic Heroic Musics'],
-      ['43f1nm2QS6UHLm4TvktpBk', 'Triumphant Scenes']
-    ]
+  // Public Spotify playlists, by id: [playlist id, name]
+  var P = {
+    tavernMusic: ['2Ca3Hi7H5ASwu7jsNCIddE', 'Medieval Tavern Music'],
+    tavern500: ['2IZI0N8iQdxOdwuAVoYrZR', 'Medieval Tavern (500+ tracks)'],
+    inn: ['3U50OBVK3wZUcUmL9FmsSs', 'DnD: Inn'],
+    beer: ['3h7Z499ZxaYawJ2UMeYtlZ', '🍻 DnD'],
+    medVillage: ['11DtJxzdFDOsAVzn2ofQd8', 'DnD - Medieval Village'],
+    village: ['6mQdL9qWFhi1HuGvzx3dTx', 'DnD: Village'],
+    city: ['5gnpcmfGRl8GaJlxyVMh4U', 'DnD City'],
+    city2: ['1TjK2l1WU0hwRxJsAkSTA1', 'DnD: City'],
+    medTown: ['1BabADdkcNNQ9Kmnfvxj9a', 'Medieval Town'],
+    metropolis: ['6Vt84DWKqLOjVv1rH4iuUF', 'DnD Metropolis'],
+    industry: ['17vDg0I6pu5jEUPgR3pbMA', 'DnD: Industry Town'],
+    steampunk: ['1R8VzEy3XxrXCXHJOKwjio', 'DnD Steampunk'],
+    royal: ['5ysi5SP1mmaxfBgrYNjagV', 'DnD: Royal Court'],
+    honor: ['7D7fnlZrBGpRbrZtOg8bYt', 'DnD Honor'],
+    majestic: ['4QYLgjCriwTPsM50xBABlE', 'DnD - Majestic Atmosphere'],
+    temple: ['3ou7uWdndh8T7Xd3u0LoMp', 'DnD: Temple'],
+    pagan: ['2PMNCtbjUKcHuxvezr421y', 'DnD - Pagan'],
+    western: ['1C1lfZvH0YI9AvCKVmFuKX', 'DnD Western'],
+    exploration: ['19OuMlyNc07MIJQeTVMwIe', 'DnD - Fantasy Exploration'],
+    voyage: ['608H1khJ4FbOSgtNOFqxxW', 'DnD Voyage'],
+    adventure: ['19lrJbgreBfi4HlLYOsPyV', 'D&D Adventure Music'],
+    adventuring: ['3LGcymlXO40dcbLiRsFfLm', 'Adventuring Music'],
+    elvenForest: ['6WHwtLXHwxH9AEC4qo4tYX', 'Elven Forest Ambience'],
+    forest: ['5lYc0l9TVNRRcl9Nfz6HLU', 'DnD: Forest'],
+    night: ['4eKJflaVoy3EGAJsA6Nfq1', 'DnD - Night Atmosphere'],
+    north: ['7rTE7yXRCqoDpihnFHTUyH', 'DnD: North'],
+    snow: ['4HN1dZLsqoNTF6dAhHDrR2', 'DnD - Snow & Ice'],
+    desert: ['0p3a3aXtnHJeh5lvV48rc1', 'DnD: Desert'],
+    desert2: ['5804wUcuihLAVLVSy6j5Dj', 'DnD Desert'],
+    jungle: ['4uy8VyF97m6VULvsLZYPSU', 'DnD: Jungle'],
+    tropical: ['2Bia9tnJxDaIJL68JIj4Zj', 'DnD Tropical'],
+    pirates: ['54ZvOysRXaSu1x246yNJwD', 'DnD Pirates'],
+    pirates2: ['4dduFQ9aDvl4C2o3Fm3ejw', 'DnD: Pirates'],
+    shanty: ['6wzHc9LYCHuTCvvXezlyKu', 'Sea Shanty Ambient'],
+    underwater: ['4LjYUCXVlw2qeVFluqnkm5', 'DnD Underwater'],
+    stormy: ['37i9dQZF1DX2pSTOxoPbx9', 'Dark & Stormy'],
+    campfire: ['3nNhKHeLppJl9x7NpGf0l7', 'DnD Campfire'],
+    restCamp: ['3Mj4KgXSruvhHvsllw392U', 'Resting by the Campfire'],
+    caves: ['6jlaEq49yMXmlZgZstYOJj', 'DnD - Caves'],
+    ambientExpl: ['4MDzUUHA0V2UC9nKNJxkXV', 'DnD - Ambient Exploration'],
+    ambient: ['58M8X6nRfKaZ4T60jbN2we', 'DnD Ambient'],
+    dungeon: ['3h7mjadevdr4tJFXVvH6Cu', 'DnD Dungeon'],
+    ambDungeon: ['61r7AoxyRCmo03tIoKpPko', 'Ambient: Dungeon'],
+    creepyDungeon: ['429Y5dm8z0On9pxh0tY9Eq', 'Creepy Dungeon Music'],
+    tombs: ['4ZtKPv97GaE4Lms9Cmcdoa', 'DnD - Underground Tombs'],
+    enchanted: ['0dceOYAFCYpmx9NLtr2QyD', 'DnD Enchanted'],
+    magical: ['2Lvwt0Bw7QVAXWdXI62Jiz', 'DnD: Magical'],
+    feywild: ['1yYMz2aZf9qyUcQmeiYjip', 'Feywild Ambience'],
+    feywild2: ['1WUw0WdF59lT81yPGBwWgL', 'The Feywild'],
+    mystical: ['5b9mcDxvx3cycciPw8C4wn', 'DnD: Mystical'],
+    investigation: ['3Yxt8Z4pnjQ6uFZKEK30al', 'Investigation & Mystery'],
+    mysterious: ['6eSxCnwg3fEHD0UCdXYGdL', 'Mysterious DnD Music'],
+    skull: ['0uADzKu4SM1f4yHKRuclZH', '💀 DnD'],
+    horror: ['4iXZaoFkgsa16MzC844L1m', 'DnD: Horror'],
+    horror2: ['1zrjG0me3fUh9N5OCtslrB', 'D&D Horror'],
+    ominous: ['6cXCERlllosIgL02ewXHEs', 'Ominous Dark Fantasy'],
+    villains: ['3QDYKaubqxQBtvoC6P5eg3', 'DnD Villains'],
+    evil: ['3wNE68CF5CVx4hskDKsozC', 'DnD: Evil'],
+    grimdark: ['4pRdDmM1OYlJ0j7TDOCiI3', 'DnD: Grimdark'],
+    hags: ['4E2DIO7FkrKwaAovtLNhQy', 'DnD: Encounter - Hags'],
+    peaceful: ['14bqvFqpVAOteR34ANLXNp', 'DnD - Peaceful Atmosphere'],
+    calm: ['7sdVk3vZxrvvYrHDi9BrNK', 'DnD - Calm'],
+    ambivalent: ['73pCDb9X1xlNeHJCR4PAoT', 'DnD - Ambivalent'],
+    intense: ['0OhKwGjFeChOrtPGBdyVtL', 'DnD Intense'],
+    prep: ['11hKhHtkhfXj4cqLry3ms3', 'DnD - Battle Preparation'],
+    emotional: ['0zD8flCSvPCOV4lqbjnUCE', 'DnD Emotional'],
+    sadThemes: ['0TKsFw6NQ57ZqhbJrjVHhM', 'Sad DnD Themes'],
+    melancholic: ['1Mbdl2LIOk9MvpadoBXNG8', 'Sad & Melancholic'],
+    triumphant: ['43f1nm2QS6UHLm4TvktpBk', 'Triumphant Scenes'],
+    victory: ['5QvlKRARFeT2SQXVTA6zQ0', 'D&D Victory'],
+    heroic: ['4JdBmthvT9VSfpuDu3itVq', 'Heroic Cinematic Music'],
+    antics: ['0vov8lSCtTuWVxFwR6qs5j', 'DnD Antics'],
+    // fights
+    battle: ['4u5owGgsXdeYchDcjvwJ3c', 'DnD - Combat: Battle'],
+    combat: ['5OfeOCp481xOMkF4qBAdlW', 'DnD Combat'],
+    standardCombat: ['7z2A20lZolZDLxxF9RoHqq', 'Standard Combat DnD Music'],
+    skirmish: ['2XQfjcb2nxZxGGMu6U0XuK', 'DnD - Combat: Skirmish'],
+    badass: ['5aphGVaTdGyHHHE7TtnagV', 'DnD - Combat: Badass'],
+    tough: ['20YH21X0z9zYbo79RV1LP9', 'DnD - Combat: Tough'],
+    epic: ['2F5ZKGK8TnUKjYioLOQELM', 'DnD - Combat: Epic'],
+    epicFight: ['6OyPwuASwrP8vfWQt7RVNy', 'DnD: Combat - Epic Fight'],
+    epicCombat: ['1bbIcqTRI5oCXeXMCV8nij', 'Epic Combat'],
+    tribal: ['0WNwpEkesczJMbG2ECYweA', 'DnD - Combat: Tribal'],
+    undead: ['2yu6oinocQbtXglQyEjtKm', 'DnD - Combat: Undead'],
+    duel: ['7hj4gDJFjyJjvDYfDOYekF', 'DnD: Duel'],
+    pirateCombat: ['2NpfgBvsELK9hKRzWGnCY5', 'DnD: Combat - Pirates'],
+    nautical: ['23wwFIDNQukMeGOIEIYSY3', 'Nautical Combat'],
+    boss: ['6oDoHB1ORtOgQZtd0lSLpS', 'DnD Boss'],
+    bossBattle: ['70fkeaVPT2L827fdLbBWkp', 'DnD: Boss Battle'],
+    bossHigh: ['5J22LSj5myp2fwxBVrtGab', 'High-Intensity Boss Fights'],
+    bossEpic: ['5WnB6wpclrPltZNYBjQQ7c', 'Epic Boss Music']
   };
-  // The three fights every scene has
+  // [tab, name, playlists (keys of P), fight music that suits it better: { standard, tough, boss } (optional)]
+  var ITEMS = [
+    ['amb', 'Blacksmith', ['industry', 'medVillage']],
+    ['amb', 'Campfire', ['campfire', 'restCamp']],
+    ['amb', 'Cavern', ['caves', 'ambientExpl']],
+    ['amb', 'Chambers of Torture', ['creepyDungeon', 'grimdark']],
+    ['amb', 'Farmland', ['village', 'peaceful']],
+    ['amb', 'Forest (Night)', ['night', 'elvenForest']],
+    ['amb', 'Forest', ['elvenForest', 'forest']],
+    ['amb', 'Haunted Place', ['skull', 'horror'], { standard: 'undead' }],
+    ['amb', 'Mountain Pass', ['north', 'exploration']],
+    ['amb', 'Mystical', ['mystical', 'pagan']],
+    ['amb', 'Ocean', ['shanty', 'voyage'], { standard: 'pirateCombat', tough: 'nautical' }],
+    ['amb', 'Ship', ['pirates', 'pirates2'], { standard: 'pirateCombat', tough: 'nautical' }],
+    ['amb', 'Storm', ['stormy', 'ominous']],
+    ['amb', 'Tavern', ['tavernMusic', 'beer'], { standard: 'badass' }],
+    ['amb', 'Underwater', ['underwater', 'shanty'], { tough: 'nautical' }],
+    ['amb', 'Workshop', ['steampunk', 'industry']],
+    ['atm', 'Capital', ['metropolis', 'city2']],
+    ['atm', 'Cathedral', ['temple', 'majestic']],
+    ['atm', 'Desert', ['desert', 'desert2']],
+    ['atm', 'Dungeon', ['dungeon', 'ambDungeon']],
+    ['atm', 'Fey', ['enchanted', 'feywild']],
+    ['atm', 'Manor', ['royal', 'majestic']],
+    ['atm', 'Road', ['voyage', 'adventure']],
+    ['atm', 'Saloon', ['western', 'beer']],
+    ['atm', 'Tavern', ['inn', 'tavern500'], { standard: 'badass' }],
+    ['atm', 'Town', ['medTown', 'city']],
+    ['atm', 'Underdark', ['tombs', 'dungeon']],
+    ['atm', 'Wilderness', ['exploration', 'adventuring']],
+    ['cmb', 'Assassins', ['intense', 'skirmish']],
+    ['cmb', 'Duel', ['duel', 'skirmish']],
+    ['cmb', 'Epic', ['epic', 'epicFight']],
+    ['cmb', 'Horrifying', ['undead', 'villains']],
+    ['cmb', 'Lighthearted', ['badass', 'antics']],
+    ['cre', 'Dwarves', ['honor', 'industry']],
+    ['cre', 'Elves', ['elvenForest', 'enchanted']],
+    ['cre', 'Lizardfolk', ['jungle', 'tropical'], { standard: 'tribal' }],
+    ['mon', 'Aberrations', ['evil', 'ominous']],
+    ['mon', 'Beasts', ['tribal', 'jungle']],
+    ['mon', 'Dragons', ['boss', 'bossEpic'], { boss: 'bossEpic' }],
+    ['mon', 'Giants', ['epic', 'north']],
+    ['mon', 'Goblins', ['skirmish', 'badass']],
+    ['mon', 'Hags', ['hags', 'skull']],
+    ['mon', 'Orcs', ['battle', 'tribal']],
+    ['mon', 'Tribesmen', ['tribal', 'pagan'], { standard: 'tribal' }],
+    ['mon', 'Undead', ['undead', 'tombs'], { standard: 'undead' }],
+    ['mon', 'Vampires', ['grimdark', 'horror2'], { boss: 'villains' }],
+    ['mood', 'Broken', ['emotional', 'melancholic']],
+    ['mood', 'Calm', ['calm', 'peaceful']],
+    ['mood', 'Creepy', ['creepyDungeon', 'skull']],
+    ['mood', 'Denouement', ['ambivalent', 'emotional']],
+    ['mood', 'Disturbing', ['grimdark', 'horror2']],
+    ['mood', 'Dreamy', ['feywild', 'feywild2']],
+    ['mood', 'Eerie', ['ominous', 'skull']],
+    ['mood', 'Foreboding', ['prep', 'ominous']],
+    ['mood', 'Funeral', ['sadThemes', 'melancholic']],
+    ['mood', 'Horror', ['horror', 'horror2'], { standard: 'undead', boss: 'villains' }],
+    ['mood', 'Hypnotic', ['ambientExpl', 'ambient']],
+    ['mood', 'Inspiring', ['heroic', 'honor']],
+    ['mood', 'Joyful', ['victory', 'beer']],
+    ['mood', 'Magical', ['magical', 'enchanted']],
+    ['mood', 'Mysterious', ['mysterious', 'investigation']],
+    ['mood', 'Mystical', ['mystical', 'pagan']],
+    ['mood', 'Nightmare', ['horror2', 'evil']],
+    ['mood', 'Ominous', ['ominous', 'villains'], { boss: 'villains' }],
+    ['mood', 'Peaceful', ['peaceful', 'calm']],
+    ['mood', 'Pleasant', ['village', 'peaceful']],
+    ['mood', 'Respectful', ['royal', 'majestic']],
+    ['mood', 'Resurrection', ['majestic', 'triumphant']],
+    ['mood', 'Revelation', ['investigation', 'majestic']],
+    ['mood', 'Ridiculous', ['antics', 'beer']],
+    ['mood', 'Sadness', ['sadThemes', 'emotional']],
+    ['mood', 'Secrets', ['investigation', 'mystical']],
+    ['mood', 'Serious', ['honor', 'prep']],
+    ['mood', 'Somber', ['melancholic', 'ambivalent']],
+    ['mood', 'Suspense', ['intense', 'stormy']],
+    ['mood', 'Tense', ['prep', 'intense']],
+    ['mood', 'Triumphant', ['triumphant', 'victory']],
+    ['sit', 'Bards', ['tavernMusic', 'beer']],
+    ['sit', 'Chase', ['intense', 'battle']],
+    ['sit', 'Halloween', ['skull', 'horror']],
+    ['sit', 'Stealth', ['dungeon', 'investigation']]
+  ];
+  // the fight button: Tough, Standard, Boss
   var FIGHTS = [
-    ['standard', 'Standard fight', '⚔'],
-    ['tough', 'Tough fight', '💪'],
-    ['boss', 'Boss fight', '💀']
+    ['tough', 'Tough'],
+    ['standard', 'Standard'],
+    ['boss', 'Boss']
   ];
-  // fight music for any scene…
   var FIGHT = {
-    standard: [
-      ['4u5owGgsXdeYchDcjvwJ3c', 'DnD - Combat: Battle'],
-      ['5OfeOCp481xOMkF4qBAdlW', 'DnD Combat'],
-      ['7z2A20lZolZDLxxF9RoHqq', 'Standard Combat DnD Music']
-    ],
-    tough: [
-      ['20YH21X0z9zYbo79RV1LP9', 'DnD - Combat: Tough'],
-      ['2F5ZKGK8TnUKjYioLOQELM', 'DnD - Combat: Epic'],
-      ['1bbIcqTRI5oCXeXMCV8nij', 'Epic Combat']
-    ],
-    boss: [
-      ['6oDoHB1ORtOgQZtd0lSLpS', 'DnD Boss'],
-      ['70fkeaVPT2L827fdLbBWkp', 'DnD: Boss Battle'],
-      ['5J22LSj5myp2fwxBVrtGab', 'High-Intensity Boss Fights']
-    ]
+    standard: ['battle', 'combat', 'standardCombat'],
+    tough: ['tough', 'epic', 'epicCombat'],
+    boss: ['boss', 'bossBattle', 'bossHigh']
   };
-  var FIGHT_MM = {
-    standard: [['2FjygbVJiTiKaTlpiyuPIn', 'Superhero music']],
-    tough: [['1bbIcqTRI5oCXeXMCV8nij', 'Epic Combat']],
-    boss: [['4R2fMrgc2tkyKD5bwEXlDa', 'Songs that make you feel like the villain']]
-  };
-  // …and the fights that fit a scene better, shown first
-  var FIGHT_BY = {
-    sea: {
-      standard: [['2NpfgBvsELK9hKRzWGnCY5', 'DnD: Combat - Pirates']],
-      tough: [['23wwFIDNQukMeGOIEIYSY3', 'Nautical Combat']]
-    },
-    tombs: { standard: [['2yu6oinocQbtXglQyEjtKm', 'DnD - Combat: Undead']] },
-    horror: {
-      standard: [['2yu6oinocQbtXglQyEjtKm', 'DnD - Combat: Undead']],
-      boss: [['3QDYKaubqxQBtvoC6P5eg3', 'DnD Villains']]
-    },
-    evil: { boss: [['3QDYKaubqxQBtvoC6P5eg3', 'DnD Villains']] },
-    jungle: { standard: [['0WNwpEkesczJMbG2ECYweA', 'DnD - Combat: Tribal']] },
-    town: { tough: [['67mJqIMTiKKBwzvIwvaRWj', 'DnD: Combat - Industry Town']] },
-    tavern: { standard: [['5aphGVaTdGyHHHE7TtnagV', 'DnD - Combat: Badass']] }
-  };
+  // Mutants & Masterminds is set in our time: modern scenes instead of taverns and dungeons.
+  var TABS_MM = [['mm', 'Scenes']];
+  Object.assign(P, {
+    lofi: ['37i9dQZF1DWWQRwui0ExPn', 'lofi beats'],
+    nightDrive: ['0iAeUtwINlqfjwAyQ4ykur', 'Synthwave - Night Drive'],
+    bladeRunner: ['2CiqzE8dKtmgpWAR6TbTIF', 'Blade Runner Vibes / Night Driving'],
+    heroic2: ['0dQJTXwu3ZEL7ZyWI3YYQp', 'Best Epic Heroic Musics'],
+    beastMode: ['37i9dQZF1DX76Wlfdnj7AP', 'Beast Mode'],
+    drive: ['1CnAtW2mIejhmERcoQN9Yx', 'Drive Soundtrack'],
+    villainSongs: ['4R2fMrgc2tkyKD5bwEXlDa', 'Songs that make you feel like the villain'],
+    feelVillain: ['17V25rm8DeYNsU4YaZfYUK', 'Feel like a villain'],
+    cyberRadar: ['3UkdZt86rkqMOFvuWrt92O', 'Cyberpunk Radar'],
+    edgerunners: ['11WEQezlbeZ7O5k7r6A64r', 'Cyberpunk: Edgerunners'],
+    jazzNoir: ['0Bhwoi6JTUFqjzmZoABfqP', 'Jazz Noir'],
+    toots: ['1FDVy3qAIVCiBkFV8TdRDj', 'Beat It, Toots - Noir Jazz'],
+    space: ['6Hui516oyyhckcM744zX8L', 'Space Sounds'],
+    lifeSucks: ['37i9dQZF1DX3YSRoSdA634', 'Life Sucks'],
+    superhero: ['2FjygbVJiTiKaTlpiyuPIn', 'Superhero music']
+  });
+  var ITEMS_MM = [
+    ['mm', 'Headquarters', ['lofi']],
+    ['mm', 'City at night', ['nightDrive', 'bladeRunner']],
+    ['mm', 'Hero moment', ['heroic', 'heroic2']],
+    ['mm', 'Action and chase', ['beastMode', 'drive']],
+    ['mm', 'Villain', ['villainSongs', 'feelVillain']],
+    ['mm', 'Tech and hacking', ['cyberRadar', 'edgerunners']],
+    ['mm', 'Investigation', ['jazzNoir', 'toots']],
+    ['mm', 'Tension', ['stormy']],
+    ['mm', 'Space and cosmic', ['space']],
+    ['mm', 'Sad moment', ['lifeSucks', 'melancholic']],
+    ['mm', 'Victory', ['heroic2', 'triumphant']]
+  ];
+  var FIGHT_MM = { standard: ['superhero'], tough: ['epicCombat'], boss: ['villainSongs'] };
   var PL = 'https://open.spotify.com/playlist/';
-  // every scene, flat: [id, name, icon, search words]
-  function scenes(cats) {
-    return cats.reduce(function (out, c) {
-      return out.concat(c[2]);
-    }, []);
+  var slug = function (tab, name) {
+    return (
+      tab +
+      '-' +
+      String(name)
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')
+    );
+  };
+  // each item, ready to use: { id, tab, name, picks: [{u, t}], fights }
+  function build(items) {
+    return items.map(function (x) {
+      return {
+        id: slug(x[0], x[1]),
+        tab: x[0],
+        name: x[1],
+        picks: x[2].map(function (k) {
+          return { u: PL + P[k][0], t: P[k][1] };
+        }),
+        fights: x[3] || {}
+      };
+    });
   }
+  var ALL = build(ITEMS),
+    ALL_MM = build(ITEMS_MM);
+  // what the earlier Audio pages called their moods and scenes, so your own playlists move over
+  var OLD = {
+    tavern: 'amb-tavern',
+    town: 'atm-town',
+    travel: 'atm-road',
+    forest: 'amb-forest',
+    camp: 'amb-campfire',
+    dungeon: 'atm-dungeon',
+    mystery: 'mood-mysterious',
+    horror: 'mood-horror',
+    sea: 'amb-ship',
+    sad: 'mood-sadness',
+    victory: 'mood-triumphant',
+    magic: 'atm-fey',
+    village: 'amb-farmland',
+    castle: 'atm-manor',
+    temple: 'atm-cathedral',
+    snow: 'amb-mountain-pass',
+    desert: 'atm-desert',
+    jungle: 'cre-lizardfolk',
+    caves: 'amb-cavern',
+    tombs: 'mon-undead',
+    evil: 'mood-ominous',
+    calm: 'mood-calm',
+    tension: 'mood-tense',
+    funny: 'mood-ridiculous',
+    hq: 'mm-headquarters',
+    city: 'mm-city-at-night',
+    hero: 'mm-hero-moment',
+    chase: 'mm-action-and-chase',
+    villain: 'mm-villain',
+    tech: 'mm-tech-and-hacking',
+    noir: 'mm-investigation',
+    space: 'mm-space-and-cosmic',
+    msad: 'mm-sad-moment',
+    mwin: 'mm-victory'
+  };
 
   // Spotify links that can play inside the app: open.spotify.com/{playlist|album|track|episode|show|artist}/{id}
   function spotifyEmbed(u) {
@@ -313,11 +328,6 @@
       qobuz: 'https://www.qobuz.com/search?q=' + e
     };
   }
-  var asRows = function (list) {
-    return (list || []).map(function (p) {
-      return { u: PL + p[0], t: p[1] };
-    });
-  };
 
   root.AudioUI = function (api) {
     var esc = api.esc,
@@ -325,66 +335,71 @@
       ui = api.ui,
       store = api.store,
       gameFn = api.game;
-    // your own playlists: lists[scene] for the ambience, lists[scene + ':' + fight] for its fights
+    // your own playlists: lists[item id], and lists['*:tough'] (and standard, boss) for the fight button
     var A = function () {
-      var a = (store.audio = store.audio || { lists: {} });
-      // earlier versions kept Combat and Boss fight as moods of their own: they become fights of every scene
-      if (a.lists.combat || a.lists.boss) {
-        a.lists['*:standard'] = (a.lists['*:standard'] || []).concat(a.lists.combat || []);
-        a.lists['*:boss'] = (a.lists['*:boss'] || []).concat(a.lists.boss || []);
-        delete a.lists.combat;
-        delete a.lists.boss;
+      var a = (store.audio = store.audio || { lists: {} }),
+        L = a.lists;
+      if (!a.v2) {
+        Object.keys(L).forEach(function (k) {
+          var m = /^(\w+):(standard|tough|boss)$/.exec(k),
+            to = m ? '*:' + m[2] : k === 'combat' ? '*:standard' : k === 'boss' ? '*:boss' : OLD[k];
+          if (!to || to === k) return;
+          L[to] = (L[to] || []).concat(L[k]);
+          delete L[k];
+        });
+        a.v2 = true;
       }
       return a;
     };
-    var S = (ui.audio = ui.audio || { scene: 'tavern', sceneMM: 'hq', view: '', add: '', msg: '' });
+    var S = (ui.audio = ui.audio || {
+      tab: 'all',
+      tabMM: 'all',
+      q: '',
+      open: '',
+      add: '',
+      name: '',
+      msg: '',
+      fab: false
+    });
     function modern() {
       return !!gameFn && gameFn() === 'mm';
     }
-    function cats() {
-      return modern() ? CATS_MM : CATS;
+    function items() {
+      return modern() ? ALL_MM : ALL;
     }
-    var SK = function () {
-      return modern() ? 'sceneMM' : 'scene';
-    };
-    function curScene() {
-      var all = scenes(cats());
-      return (
-        all.filter(function (m) {
-          return m[0] === S[SK()];
-        })[0] || all[0]
-      );
+    function tabs() {
+      return modern() ? TABS_MM : TABS;
     }
-    function catOf(id) {
-      return (
-        cats().filter(function (c) {
-          return c[2].some(function (m) {
-            return m[0] === id;
-          });
-        })[0] || cats()[0]
-      );
+    function byId(id) {
+      return items().filter(function (x) {
+        return x.id === id;
+      })[0];
     }
-    // what a scene offers for its ambience ('') or one of its fights
-    function suggestions(id, fight) {
-      if (!fight) return asRows(PICKS[id]);
-      var base = modern() ? FIGHT_MM : FIGHT,
-        own = ((FIGHT_BY[id] || {})[fight] || []).concat(base[fight] || []),
+    function tabName(t) {
+      return (tabs().filter(function (x) {
+        return x[0] === t;
+      })[0] || ['', ''])[1];
+    }
+    // everything one item can play: your links first, then the suggestions
+    function playable(x) {
+      return (A().lists[x.id] || []).concat(x.picks);
+    }
+    function fightList(f) {
+      var base = (modern() ? FIGHT_MM : FIGHT)[f] || [],
+        cur = byId(S.current) || {},
+        own = (cur.fights || {})[f],
         seen = {};
-      return asRows(
-        own.reduce(function (out, p) {
-          if (!seen[p[0]]) out.push(p);
-          seen[p[0]] = 1;
+      return (A().lists['*:' + f] || []).concat(
+        (own ? [own] : []).concat(base).reduce(function (out, k) {
+          if (!seen[k]) out.push({ u: PL + P[k][0], t: P[k][1] });
+          seen[k] = 1;
           return out;
         }, [])
       );
     }
-    function mine(id, fight) {
-      var L = A().lists;
-      return fight ? (L[id + ':' + fight] || []).concat(L['*:' + fight] || []) : L[id] || [];
-    }
 
     // ---------- the player docked at the bottom ----------
-    var playing = null; // { u, t } shown in the dock
+    var playing = null; // { u, t, what } shown in the dock
     // The dock lives outside the app's page, so redrawing pages never stops the music.
     function dock() {
       var el = document.getElementById('audio-dock');
@@ -393,16 +408,19 @@
         el.id = 'audio-dock';
         el.className = 'audio-dock noprint';
         el.innerHTML =
-          '<div class="audio-frame"><div id="spotify-embed"></div></div><div class="audio-dock-btns">' +
+          '<div class="audio-now"><b></b><span class="audio-ctl">' +
+          '<button type="button" class="btn small" data-act="audPrev" title="Back to the start of the song" aria-label="Previous">⏮</button>' +
+          '<button type="button" class="btn small" data-act="audToggle" title="Play or pause" aria-label="Play or pause">⏯</button>' +
           '<button type="button" class="btn small" data-act="audSkip" title="Next song" aria-label="Next song">⏭</button>' +
           '<button type="button" class="btn small" data-act="audBig" title="Show the songs, tap one to play it" aria-label="Show the songs">≡</button>' +
-          '<button type="button" class="btn small" data-act="audStop" aria-label="Close the player">✕</button></div>';
+          '<button type="button" class="btn small" data-act="audStop" aria-label="Close the player">✕</button></span></div>' +
+          '<div class="audio-frame"><div id="spotify-embed"></div></div>';
         document.body.appendChild(el);
       }
       return el;
     }
-    // Spotify's iFrame API lets the app start the music itself, switch playlists without rebuilding the player and
-    // skip a song. If it doesn't answer quickly (offline, blocked), the plain player is used and you tap ▶ in it.
+    // Spotify's iFrame API lets the app start the music itself, switch playlists without rebuilding the player, and
+    // move within a song. If it doesn't answer quickly (offline, blocked), the plain player stays and you tap ▶ in it.
     var spot = null,
       ctl = null,
       apiState = '',
@@ -460,10 +478,13 @@
       var el = dock(),
         src = playing ? spotifyEmbed(playing.u) : '';
       document.body.classList.toggle('has-dock', !!src);
+      document.body.classList.toggle('dock-big', !!src && !!S.big);
       el.classList.toggle('on', !!src);
       el.classList.toggle('big', !!S.big);
-      document.body.classList.toggle('dock-big', !!src && !!S.big);
-      el.classList.toggle('can-skip', !!ctl);
+      el.classList.toggle('remote', !!ctl);
+      el.querySelector('.audio-now b').textContent = playing
+        ? (playing.what ? playing.what + ' · ' : '') + (playing.t || '')
+        : '';
       place();
       if (!src) {
         el.removeAttribute('data-src');
@@ -493,7 +514,7 @@
           { uri: uriOf(playing.u), width: '100%', height: 352 },
           function (c) {
             ctl = c;
-            el.classList.add('can-skip');
+            el.classList.add('remote');
             c.addListener('ready', function () {
               c.play();
             });
@@ -510,29 +531,38 @@
         h = m && root.getComputedStyle(m).display !== 'none' ? m.offsetHeight : 0;
       dock().style.bottom = h + 'px';
     }
-    function start(u, t) {
-      playing = { u: u, t: t || '' };
+    function start(u, t, what) {
+      playing = { u: u, t: t || '', what: what || '' };
       drawDock();
       toTable();
     }
+    function playItem(x) {
+      var all = playable(x),
+        first = all.filter(function (p) {
+          return spotifyEmbed(p.u);
+        })[0];
+      S.current = x.id;
+      if (first) start(first.u, first.t, x.name);
+      else if (all[0]) root.open(all[0].u, '_blank', 'noopener');
+    }
 
     // ---------- the page ----------
-    function row(x, i, mine, key) {
+    function row(x, i, key, what) {
       var sp = !!spotifyEmbed(x.u),
         on = playing && playing.u === x.u;
       return (
         '<div class="audio-item' +
         (on ? ' on' : '') +
         '">' +
-        (mine ? '<span class="tag">' + service(x.u) + '</span>' : '') +
+        (key ? '<span class="tag">' + service(x.u) + '</span>' : '') +
         '<b>' +
         esc(x.t || x.u) +
         '</b><span class="spacer"></span>' +
         (sp
           ? btn(
               'audPlay',
-              on ? '■ Stop' : '▶ Play here',
-              { v: x.u, t: x.t || '' },
+              on ? '■ Stop' : '▶ Play',
+              { v: x.u, t: x.t || '', w: what || '' },
               'btn small' + (on ? '' : ' primary')
             )
           : '') +
@@ -541,165 +571,168 @@
         '" target="_blank" rel="noopener">' +
         (sp ? 'Spotify ↗' : 'Open ↗') +
         '</a>' +
-        (mine && key ? btn('audRm', '✕', { v: i, k: key }, 'btn small') : '') +
+        (key ? btn('audRm', '✕', { v: i, k: key }, 'btn small') : '') +
         '</div>'
       );
     }
+    // under an item: your own playlists, the suggested ones, and a box to add one
+    function details(x) {
+      var mine = A().lists[x.id] || [],
+        sr = searches((modern() ? '' : 'dnd ') + x.name + ' music');
+      return (
+        '<div class="audio-more">' +
+        mine
+          .map(function (p, i) {
+            return row(p, i, x.id, x.name);
+          })
+          .join('') +
+        x.picks
+          .map(function (p) {
+            return row(p, 0, '', x.name);
+          })
+          .join('') +
+        '<div class="row audio-add"><label class="field"><span>Your own link</span><input type="url" id="aud-add" data-aud="add" value="' +
+        esc(S.add) +
+        '" placeholder="https://open.spotify.com/playlist/…"></label><label class="field"><span>Name <small class="muted">(optional)</small></span><input type="text" id="aud-name" data-aud="name" value="' +
+        esc(S.name || '') +
+        '"></label></div><div class="toolbar">' +
+        btn('audAdd', '+ Add to ' + esc(x.name), { v: x.id }, 'btn small') +
+        '<a class="small" href="' +
+        esc(sr.spotify) +
+        '" target="_blank" rel="noopener">Find more on Spotify</a><a class="small" href="' +
+        esc(sr.qobuz) +
+        '" target="_blank" rel="noopener">Qobuz</a>' +
+        (S.msg ? '<span class="small" style="color:var(--warn)">' + esc(S.msg) + '</span>' : '') +
+        '</div></div>'
+      );
+    }
+    // the fight button, always at hand: Tough, Standard or Boss
+    function fightFab() {
+      var open = S.fab;
+      return (
+        '<div class="audio-fab-wrap noprint">' +
+        (open
+          ? '<div class="audio-fab-menu">' +
+            FIGHTS.map(function (f) {
+              var on = playing && playing.what === f[1] + ' fight';
+              return (
+                '<button type="button" class="audio-fab-opt' +
+                (on ? ' on' : '') +
+                '" data-act="audFight" data-v="' +
+                f[0] +
+                '"><span>' +
+                f[1] +
+                '</span><i aria-hidden="true">' +
+                root.Icon('swords') +
+                '</i></button>'
+              );
+            }).join('') +
+            '</div>'
+          : '') +
+        '<button type="button" class="audio-fab' +
+        (open ? ' open' : '') +
+        '" data-act="audFab" aria-label="Fight music: Tough, Standard or Boss" title="Fight!">' +
+        root.Icon('swords') +
+        '</button></div>'
+      );
+    }
     function html() {
-      var m = curScene(),
-        cat = catOf(m[0]),
-        view = S.view || '',
-        fight = FIGHTS.filter(function (f) {
-          return f[0] === view;
-        })[0],
-        L = A().lists;
-      var h =
-        '<main class="mon-main audio-main"><h2>Audio</h2><p class="muted">Pick a scene, then ▶ Play here: the music plays in the player at the bottom and keeps going while you use the rest of the app. A fight breaks out? Tap Standard, Tough or Boss: the fight music starts at once. ⏭ skips a song, ≡ shows the songs.</p>';
-      // categories, then the scenes of the open one
-      if (cats().length > 1)
-        h +=
-          '<nav class="mm-tabs audio-cats">' +
-          cats()
-            .map(function (c) {
-              return btn('audCat', esc(c[1]), { v: c[0] }, 'mm-tab' + (c === cat ? ' on' : ''));
-            })
-            .join('') +
-          '</nav>';
-      h +=
-        '<div class="audio-moods">' +
-        cat[2]
-          .map(function (s) {
-            var n = (L[s[0]] || []).length;
+      var tab = (modern() ? S.tabMM : S.tab) || 'all',
+        q = String(S.q || '').toLowerCase(),
+        list = items().reduce(function (out, x) {
+          if ((tab === 'all' || x.tab === tab) && (!q || x.name.toLowerCase().indexOf(q) >= 0)) out.push(x);
+          return out;
+        }, []);
+      if (tab === 'all')
+        list.sort(function (a, b) {
+          return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
+        });
+      return (
+        '<main class="mon-main audio-main"><div class="toolbar" style="margin:0"><h2 style="margin:0">Audio</h2><span class="spacer"></span><input type="search" id="aud-q" data-aud="q" value="' +
+        esc(S.q || '') +
+        '" placeholder="Find…" aria-label="Find music" style="max-width:10rem"></div>' +
+        '<nav class="mm-tabs audio-tabs">' +
+        [['all', 'All']]
+          .concat(tabs())
+          .map(function (t) {
+            return btn('audTab', esc(t[1]), { v: t[0] }, 'mm-tab' + (tab === t[0] ? ' on' : ''));
+          })
+          .join('') +
+        '</nav><div class="audio-rows">' +
+        list
+          .map(function (x) {
+            var on = playing && S.current === x.id && playing.what === x.name,
+              open = S.open === x.id,
+              own = (A().lists[x.id] || []).length;
             return (
-              '<button type="button" class="audio-mood' +
-              (s[0] === m[0] ? ' on' : '') +
-              '" data-act="audScene" data-v="' +
-              s[0] +
-              '">' +
-              root.Icon(s[2]) +
-              ' ' +
-              esc(s[1]) +
-              (n ? ' <small>+' + n + '</small>' : '') +
-              '</button>'
+              '<div class="audio-row' +
+              (on ? ' on' : '') +
+              '"><button type="button" class="audio-name" data-act="audItem" data-v="' +
+              x.id +
+              '"><b>' +
+              esc(x.name) +
+              '</b>' +
+              (tab === 'all' && tabs().length > 1 ? ' <span class="muted">· ' + esc(tabName(x.tab)) + '</span>' : '') +
+              (on ? '<small>' + esc(playing.t) + '</small>' : '') +
+              '</button>' +
+              (own ? '<span class="tag">+' + own + '</span>' : '') +
+              btn('audMore', open ? '▾' : '⋯', { v: x.id }, 'btn small audio-more-btn') +
+              '</div>' +
+              (open ? details(x) : '')
             );
           })
           .join('') +
-        '</div>';
-      // the scene: its ambience and its three fights
-      h +=
-        '<div class="panel"><h3 class="ico-h">' +
-        root.Icon(m[2]) +
-        ' ' +
-        esc(m[1]) +
-        '</h3><div class="audio-fights">' +
-        btn('audView', '🎵 Ambience', { v: '' }, 'btn' + (!view ? ' primary' : '')) +
-        FIGHTS.map(function (f) {
-          return btn(
-            'audFight',
-            f[2] + ' ' + f[1].replace(' fight', ''),
-            { v: f[0] },
-            'btn audio-fight' + (view === f[0] ? ' primary' : '')
-          );
-        }).join('') +
-        '</div>';
-      var key = view ? m[0] + ':' + view : m[0],
-        sug = suggestions(m[0], view),
-        own = view ? L[key] || [] : L[m[0]] || [],
-        all = view ? L['*:' + view] || [] : [];
-      h +=
-        '<h4>' +
-        (fight ? esc(fight[1]) + ' music' : 'Ambience') +
-        '</h4><div class="audio-list">' +
-        sug
-          .map(function (x) {
-            return row(x, 0, false);
-          })
-          .join('') +
-        own
-          .map(function (x, i) {
-            return row(x, i, true, key);
-          })
-          .join('') +
-        all
-          .map(function (x, i) {
-            return row(x, i, true, '*:' + view);
-          })
-          .join('') +
-        '</div>';
-      var sr = searches(view ? (modern() ? 'superhero ' : 'fantasy ') + view + ' battle music' : m[3]);
-      h +=
-        '<p class="small muted">Suggested public ' +
-        (modern() ? '' : 'D&D ') +
-        'playlists on Spotify. Want something else? <a href="' +
-        esc(sr.spotify) +
-        '" target="_blank" rel="noopener">Find more on Spotify</a> · <a href="' +
-        esc(sr.qobuz) +
-        '" target="_blank" rel="noopener">Find on Qobuz</a></p></div>';
-      // your own playlists for what's open
-      h +=
-        '<div class="panel"><h3>Add your own: ' +
-        esc(m[1].toLowerCase()) +
-        (fight ? ', ' + esc(fight[1].toLowerCase()) : ', ambience') +
-        '</h3><p class="small muted">On Spotify or Qobuz, use Share → Copy link on a playlist or album, then paste it here.</p>' +
-        '<div class="row audio-add"><label class="field"><span>Paste a link</span><input type="url" id="aud-add" data-aud="add" value="' +
-        esc(S.add) +
-        '" placeholder="https://open.spotify.com/playlist/…"></label>' +
-        '<label class="field"><span>Name <small class="muted">(optional)</small></span><input type="text" id="aud-name" data-aud="name" value="' +
-        esc(S.name || '') +
-        '" placeholder="e.g. Cozy tavern"></label></div>' +
-        '<div class="toolbar">' +
-        btn('audAdd', '+ Add', {}, 'btn') +
-        (fight
-          ? '<label class="small"><input type="checkbox" data-aud="every"' +
-            (S.every ? ' checked' : '') +
-            '> for every scene’s ' +
-            esc(fight[1].toLowerCase()) +
-            '</label>'
-          : '') +
-        (S.msg ? '<span class="small" style="color:var(--warn)">' + esc(S.msg) + '</span>' : '') +
-        '</div>' +
-        '<p class="small muted">Spotify plays full songs when you are logged in to Spotify in this browser, otherwise 30-second previews. Qobuz links open the Qobuz app or website. Your playlists are kept in this browser on this device.</p></div>';
-      return h + '</main>';
+        (list.length ? '' : '<p class="muted">Nothing found.</p>') +
+        '</div><p class="small muted">Tap a name to play it, tap it again to stop. ⋯ shows its playlists and lets you add your own. The ⚔ button starts fight music anytime: Tough, Standard or Boss (tap the same one again for another playlist). Spotify plays full songs when you are logged in to Spotify in this browser, otherwise 30-second previews.</p>' +
+        fightFab() +
+        '</main>'
+      );
     }
     var actions = {
-      audCat: function (v) {
-        var c = cats().filter(function (x) {
-          return x[0] === v;
-        })[0];
-        if (c) S[SK()] = c[2][0][0];
-        S.view = '';
+      audTab: function (v) {
+        if (modern()) S.tabMM = v;
+        else S.tab = v;
+        S.open = '';
+        S.msg = '';
+        root.scrollTo(0, 0);
+      },
+      audItem: function (v) {
+        var x = byId(v);
+        if (!x) return;
+        if (playing && S.current === x.id && playing.what === x.name) {
+          playing = null;
+          drawDock();
+          toTable();
+          return;
+        }
+        playItem(x);
+      },
+      audMore: function (v) {
+        S.open = S.open === v ? '' : v;
         S.msg = '';
       },
-      audScene: function (v) {
-        S[SK()] = v;
-        S.msg = '';
-        // in the middle of a fight, changing scene keeps the fight going
+      audFab: function () {
+        S.fab = !S.fab;
       },
-      audView: function (v) {
-        S.view = v || '';
-        S.msg = '';
-      },
-      // one tap: open the fight and start its music
+      // the fight button: the scene's own fight music if it has some, else the general one
       audFight: function (v) {
-        S.view = v;
-        S.msg = '';
-        var m = curScene(),
-          first = mine(m[0], v)
-            .concat(suggestions(m[0], v))
-            .filter(function (x) {
-              return spotifyEmbed(x.u);
-            })[0];
-        if (first && !(playing && playing.u === first.u)) start(first.u, first.t);
+        var f = FIGHTS.filter(function (x) {
+            return x[0] === v;
+          })[0],
+          list = fightList(v),
+          i = playing && playing.what === f[1] + ' fight' ? (S.fightIx || 0) + 1 : 0, // tap again: the next playlist
+          p = list[i % list.length];
+        S.fightIx = i % list.length;
+        S.fab = false;
+        if (p) start(p.u, p.t, f[1] + ' fight');
       },
-      audAdd: function () {
-        var u = cleanUrl(S.add),
-          m = curScene(),
-          key = S.view ? (S.every ? '*' : m[0]) + ':' + S.view : m[0];
+      audAdd: function (v) {
+        var u = cleanUrl(S.add);
         if (!u) {
           S.msg = 'Paste a full link starting with https://';
           return;
         }
-        var L = (A().lists[key] = A().lists[key] || []);
+        var L = (A().lists[v] = A().lists[v] || []);
         if (
           L.some(function (x) {
             return x.u === u;
@@ -708,7 +741,7 @@
           S.msg = 'Already there.';
           return;
         }
-        L.push({ u: u, t: String(S.name || '').trim() });
+        L.unshift({ u: u, t: String(S.name || '').trim() });
         S.add = '';
         S.name = '';
         S.msg = '';
@@ -729,14 +762,33 @@
           toTable();
           return;
         }
-        start(v, el.getAttribute('data-t'));
+        start(v, el.getAttribute('data-t'), el.getAttribute('data-w'));
       },
       audStop: function () {
         playing = null;
         drawDock();
         toTable();
       },
-      // next song: jump to the end of this one and the playlist goes on (needs Spotify's remote control)
+      audToggle: function () {
+        if (ctl)
+          try {
+            ctl.togglePlay();
+          } catch (e) {
+            /* not ready */
+          }
+        return false;
+      },
+      // previous: back to the start of the song (Spotify's player doesn't let an app go to the song before)
+      audPrev: function () {
+        if (ctl)
+          try {
+            ctl.seek(0);
+          } catch (e) {
+            /* not ready */
+          }
+        return false;
+      },
+      // next song: jump to the end of this one and the playlist goes on
       audSkip: function () {
         if (ctl && pos.len) {
           try {
@@ -758,30 +810,30 @@
     function toTable() {
       var T = root.Table,
         h = T && T.hostInfo && T.hostInfo();
-      if (h) T.dm(h.code, h.key, { music: playing }).catch(function () {});
+      if (h)
+        T.dm(h.code, h.key, {
+          music: playing ? { u: playing.u, t: (playing.what ? playing.what + ' · ' : '') + playing.t } : null
+        }).catch(function () {});
     }
     // what the DM is playing, on a player's phone
     function play(m) {
       var u = m && cleanUrl(m.u);
-      playing = u ? { u: u, t: String(m.t || '').slice(0, 80) } : null;
+      playing = u ? { u: u, t: String(m.t || '').slice(0, 80), what: '' } : null;
       drawDock();
     }
     function onInput(t) {
       var k = t.getAttribute('data-aud');
       if (k == null) return null;
-      if (k === 'every') S.every = t.checked;
-      else S[k] = t.value;
-      return 'none';
+      S[k] = t.value;
+      return k === 'q' ? 'render' : 'none';
     }
     return { html: html, actions: actions, onInput: onInput, after: place, play: play };
   };
   root.AudioUI.spotifyEmbed = spotifyEmbed;
   root.AudioUI.cleanUrl = cleanUrl;
-  root.AudioUI.CATS = CATS;
-  root.AudioUI.CATS_MM = CATS_MM;
-  root.AudioUI.MOODS = scenes(CATS);
-  root.AudioUI.MOODS_MM = scenes(CATS_MM);
-  root.AudioUI.PICKS = PICKS;
+  root.AudioUI.TABS = TABS;
+  root.AudioUI.ITEMS = ITEMS;
+  root.AudioUI.ITEMS_MM = ITEMS_MM;
+  root.AudioUI.P = P;
   root.AudioUI.FIGHT = FIGHT;
-  root.AudioUI.FIGHT_BY = FIGHT_BY;
 })(typeof window !== 'undefined' ? window : globalThis);
