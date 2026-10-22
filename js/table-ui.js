@@ -395,7 +395,14 @@
     }
     function musicHtml(S) {
       if (!S.music || !api.playMusic) return '';
+      var SR = root.SpotifyRemote,
+        offer = S.spid && SR && !SR.connected(); // the GM shared their Spotify app: whole songs are one tap away
       return (
+        (offer
+          ? '<div class="compact-row small">🎧 Whole songs on your Spotify (Premium): ' +
+            btn('section', 'Connect Spotify', { v: 'audio' }, 'btn small') +
+            '</div>'
+          : '') +
         '<div class="compact-row tbl-music">🎵 <span>The ' +
         GM() +
         ' is playing <b>' +

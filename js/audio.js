@@ -941,6 +941,11 @@
         }
       );
     }
+    // the Client ID the DM's table shared, if this phone joined one
+    function tableId() {
+      var st = root.Table && root.Table.lastState && root.Table.lastState();
+      return (st && st.spid) || '';
+    }
     // the panel to connect your Spotify (Premium): the steps, the Client ID, the device to play on
     function spotifyPanel() {
       if (!R) return '';
@@ -984,9 +989,9 @@
           esc(R.redirect()) +
           '</code> (exactly this, then tap Add). Tick <b>Web API</b>, accept the terms, <b>Save</b>.</li>' +
           '<li>Open the app’s <b>Settings</b>, copy the <b>Client ID</b> and paste it below, then <b>Connect</b> and say yes on Spotify’s page.</li>' +
-          '<li>For your players: in the app’s <b>User Management</b>, add each player’s name and Spotify email (up to 25), then they connect the same way with your Client ID.</li></ol>' +
+          '<li>For your players: in the app’s <b>User Management</b>, add each player’s name and Spotify email (Spotify allows 5 people per personal app, you included). When they join your table, their Audio page gets your Client ID by itself: they just tap Connect.</li></ol>' +
           '<div class="toolbar"><input type="text" id="aud-spid" data-aud="spid" value="' +
-          esc(S.spid || R.clientId()) +
+          esc(S.spid || R.clientId() || tableId()) +
           '" placeholder="Client ID" autocomplete="off" style="flex:1;min-width:12rem">' +
           btn('audSpConnect', 'Connect', {}, 'btn primary') +
           '</div><p class="small muted">The Client ID and your login stay in this browser; the app only talks to Spotify.</p>';

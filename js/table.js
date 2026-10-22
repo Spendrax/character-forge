@@ -59,6 +59,7 @@
       ti: s.ti || 0,
       lore: s.lore || [],
       music: s.music || null,
+      spid: s.spid || '',
       players: s.players.map(function (p) {
         return {
           id: p.id,
@@ -717,6 +718,8 @@
               pic: /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(l.pic || '') && l.pic.length < 40000 ? l.pic : ''
             };
           });
+        // the DM's Spotify Client ID (not a secret), so players can connect their Spotify with one tap
+        if ('spid' in what) s.spid = /^[0-9a-f]{32}$/i.test(what.spid || '') ? what.spid : '';
         if ('music' in what)
           s.music = what.music && what.music.u ? { u: str(what.music.u, 300), t: str(what.music.t, 80) } : null;
         if (what.event) event(s, what.event);
@@ -872,6 +875,10 @@
           cb(null, new Error('No table'));
         }
       );
+    },
+    // the table as this phone last saw it (when it joined as a player)
+    lastState: function () {
+      return (guest && guest.state) || null;
     },
     stop: function () {
       if (guest) {

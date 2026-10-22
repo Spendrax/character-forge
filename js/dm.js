@@ -945,6 +945,12 @@
         on = tbl() && st,
         tab = M.tab || 'table';
       if (on) pushLore(st);
+      // share the DM's Spotify Client ID with the table: players then connect their Spotify with one tap
+      var spid = root.SpotifyRemote && root.SpotifyRemote.connected() ? root.SpotifyRemote.clientId() : '';
+      if (on && spid && st.spid !== spid && M.spidSent !== spid) {
+        M.spidSent = spid;
+        dm({ spid: spid });
+      }
       var body = '';
       if (on && st.players.length) {
         if (tab === 'table') body = fxHtml(st) + asksHtml(st);
