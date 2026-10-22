@@ -105,6 +105,8 @@ Laid out like DnDify. Tabs: **All**, **Ambient** (Blacksmith, Campfire, Cavern, 
 
 The round **⚔** button is always there: **Tough**, **Standard** or **Boss** fight music at once (tap the same one again for another playlist; at sea it starts with pirate combat, among the undead with undead combat). The Spotify player sits at the bottom and keeps playing while you use the app: **⏮** back to the start of the song, **⏯** play/pause, **⏭** next song, **≡** the song list (tap one to play it), **✕** close. M&M has its own modern scenes.
 
+**Whole songs with Spotify Premium:** the player inside the page only plays 30-second previews on phones. In Audio, open **🎧 Whole songs** and follow the steps once: create a free app on [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard) with the Redirect URI the page shows (for the online version: `https://spendrax.github.io/character-forge/`), tick Web API, paste its Client ID and tap **Connect**. Then every tap plays on your own Spotify app (phone or computer), whole songs, and ⏮ ⏯ ⏭ control it. Players can use your Client ID once you add them (name and Spotify email, up to 25) in the app's User Management. The Client ID and login stay in that browser; the app only talks to Spotify.
+
 ### Books
 
 The free official rules, the System Reference Document 5.1, are built in: races, classes, backgrounds, equipment, feats, playing the game (ability checks, adventuring, combat), spellcasting and every SRD spell, conditions and other game-master rules, and magic items. Read them by chapter, or search the whole book; results jump to the right section with the words highlighted.

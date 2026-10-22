@@ -4725,3 +4725,16 @@ html.dice3d-lock body {
 .pf-sneak {
   margin-top: 0.3rem;
 }
+
+/* playing through your own Spotify app: the bar only, no player inside the page */
+.audio-dock.app .audio-frame,
+.audio-dock.app [data-act='audBig'] {
+  display: none;
+}
+.audio-sp summary {
+  cursor: pointer;
+}
+.audio-uri {
+  word-break: break-all;
+  user-select: all;
+}

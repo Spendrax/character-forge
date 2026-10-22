@@ -109,7 +109,16 @@ Object.keys(PFV.actions).forEach(function (k) {
 Object.keys(MME.actions).forEach(function (k) {
   actions[k] = MME.actions[k];
 });
-var AUD = window.AudioUI({ esc: esc, btn: btn, ui: ui, store: store, game: gameOf });
+var AUD = window.AudioUI({
+  esc: esc,
+  btn: btn,
+  ui: ui,
+  store: store,
+  game: gameOf,
+  render: function () {
+    render();
+  }
+});
 Object.keys(AUD.actions).forEach(function (k) {
   actions[k] = AUD.actions[k];
 });

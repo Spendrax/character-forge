@@ -1,7 +1,8 @@
 // Audio: music for the table, laid out like DnDify. Tabs (All, Ambient, Atmosphere, Combat, Creatures, Monsters,
 // Mood, Situation), one tap on a name plays it, and a fight button that is always there: Tough, Standard or Boss.
 // Music comes from public Spotify playlists (or your own links) and plays in a player docked at the bottom that
-// keeps going while you use the rest of the app, with previous / play-pause / next.
+// keeps going while you use the rest of the app, with previous / play-pause / next. With Spotify Premium, the app
+// can instead tell your own Spotify app what to play (js/spotify.js): whole songs, real previous and next.
 (function (root) {
   'use strict';
   // [tab id, tab name]
@@ -474,7 +475,34 @@
         esc(src) +
         '?utm_source=generator&theme=0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>';
     }
+    // ---------- or your own Spotify, through your account (whole songs) ----------
+    var R = root.SpotifyRemote,
+      poll = 0;
+    function remote() {
+      return !!(R && R.connected());
+    }
+    function rErr(e) {
+      S.rmsg = e.message;
+      S.now = '';
+      api.render && api.render();
+    }
+    // the song playing now, shown in the bar (checked every 15 seconds while the music plays)
+    function refreshNow(later) {
+      clearTimeout(poll);
+      poll = setTimeout(function () {
+        if (!playing || !remote()) return;
+        if (document.hidden) return refreshNow(15000);
+        R.now().then(function (n) {
+          S.now = n ? n.song + (n.artist ? ' — ' + n.artist : '') : '';
+          S.paused = n ? !n.playing : true;
+          drawDock();
+          refreshNow(15000);
+        }, rErr);
+      }, later || 800);
+    }
     function drawDock() {
+      if (remote() && playing) return drawRemote();
+      dock().classList.remove('app');
       var el = dock(),
         src = playing ? spotifyEmbed(playing.u) : '';
       document.body.classList.toggle('has-dock', !!src);
@@ -531,9 +559,37 @@
         h = m && root.getComputedStyle(m).display !== 'none' ? m.offsetHeight : 0;
       dock().style.bottom = h + 'px';
     }
+    // the bar when your Spotify app plays: what's on, and the buttons; no player inside the page
+    function drawRemote() {
+      var el = dock();
+      if (ctl)
+        try {
+          ctl.pause();
+        } catch (e) {
+          /* not ready */
+        }
+      el.removeAttribute('data-src');
+      el.querySelector('.audio-frame').innerHTML = '';
+      el.classList.add('on', 'app', 'remote');
+      el.classList.remove('big');
+      document.body.classList.add('has-dock');
+      document.body.classList.remove('dock-big');
+      el.querySelector('.audio-now b').textContent =
+        (playing.what ? playing.what + ' · ' : '') + (S.now || playing.t || '') + (S.rmsg ? ' — ' + S.rmsg : '');
+      place();
+    }
     function start(u, t, what) {
       playing = { u: u, t: t || '', what: what || '' };
-      drawDock();
+      S.rmsg = '';
+      S.now = '';
+      if (remote() && spotifyEmbed(u)) {
+        drawDock();
+        R.play(u).then(function (d) {
+          S.dev = d.name;
+          S.paused = false;
+          refreshNow();
+        }, rErr);
+      } else drawDock();
       toTable();
     }
     function playItem(x) {
@@ -651,6 +707,7 @@
         '<main class="mon-main audio-main"><div class="toolbar" style="margin:0"><h2 style="margin:0">Audio</h2><span class="spacer"></span><input type="search" id="aud-q" data-aud="q" value="' +
         esc(S.q || '') +
         '" placeholder="Find…" aria-label="Find music" style="max-width:10rem"></div>' +
+        spotifyPanel() +
         '<nav class="mm-tabs audio-tabs">' +
         [['all', 'All']]
           .concat(tabs())
@@ -683,7 +740,11 @@
           })
           .join('') +
         (list.length ? '' : '<p class="muted">Nothing found.</p>') +
-        '</div><p class="small muted">Tap a name to play it, tap it again to stop. ⋯ shows its playlists and lets you add your own. The ⚔ button starts fight music anytime: Tough, Standard or Boss (tap the same one again for another playlist). Spotify plays full songs when you are logged in to Spotify in this browser, otherwise 30-second previews.</p>' +
+        '</div><p class="small muted">Tap a name to play it, tap it again to stop. ⋯ shows its playlists and lets you add your own. The ⚔ button starts fight music anytime: Tough, Standard or Boss (tap the same one again for another playlist). ' +
+        (remote()
+          ? 'Plays on your Spotify app, whole songs.'
+          : 'The player in the page plays 30-second previews on phones (full songs on a computer logged in to Spotify): connect your Spotify Premium above for whole songs everywhere.') +
+        '</p>' +
         fightFab() +
         '</main>'
       );
@@ -765,11 +826,19 @@
         start(v, el.getAttribute('data-t'), el.getAttribute('data-w'));
       },
       audStop: function () {
+        if (remote() && playing) R.pause().catch(function () {});
         playing = null;
         drawDock();
         toTable();
       },
       audToggle: function () {
+        if (remote() && playing) {
+          (S.paused ? R.resume() : R.pause()).then(function () {
+            S.paused = !S.paused;
+            refreshNow();
+          }, rErr);
+          return false;
+        }
         if (ctl)
           try {
             ctl.togglePlay();
@@ -780,6 +849,12 @@
       },
       // previous: back to the start of the song (Spotify's player doesn't let an app go to the song before)
       audPrev: function () {
+        if (remote() && playing) {
+          R.previous().then(function () {
+            refreshNow();
+          }, rErr);
+          return false;
+        }
         if (ctl)
           try {
             ctl.seek(0);
@@ -790,6 +865,12 @@
       },
       // next song: jump to the end of this one and the playlist goes on
       audSkip: function () {
+        if (remote() && playing) {
+          R.next().then(function () {
+            refreshNow();
+          }, rErr);
+          return false;
+        }
         if (ctl && pos.len) {
           try {
             ctl.seek(Math.max(0, pos.len / 1000 - 0.5));
@@ -800,6 +881,30 @@
         }
         S.big = true; // no remote control: show the songs to tap the next one
         drawDock();
+      },
+      audSpOpen: function () {
+        S.spOpen = !S.spOpen;
+        if (S.spOpen && remote()) loadDevices();
+      },
+      audSpConnect: function () {
+        var el = document.getElementById('aud-spid');
+        R.connect(el ? el.value : S.spid).catch(function (e) {
+          S.spMsg = e.message;
+          api.render && api.render();
+        });
+        return false;
+      },
+      audSpOff: function () {
+        if (playing) {
+          playing = null;
+          drawDock();
+        }
+        R.disconnect();
+        S.spMsg = 'Disconnected: “Play” uses the player in the page again.';
+      },
+      audSpDevices: function () {
+        loadDevices();
+        return false;
       },
       audBig: function () {
         S.big = !S.big;
@@ -821,9 +926,91 @@
       playing = u ? { u: u, t: String(m.t || '').slice(0, 80), what: '' } : null;
       drawDock();
     }
+    function loadDevices() {
+      R.devices().then(
+        function (list) {
+          S.devices = list;
+          S.spMsg = list.length
+            ? ''
+            : 'No Spotify open right now: open the Spotify app on your phone or computer, then tap Refresh.';
+          api.render && api.render();
+        },
+        function (e) {
+          S.spMsg = e.message;
+          api.render && api.render();
+        }
+      );
+    }
+    // the panel to connect your Spotify (Premium): the steps, the Client ID, the device to play on
+    function spotifyPanel() {
+      if (!R) return '';
+      var on = remote(),
+        open = S.spOpen || (!!S.spMsg && !on);
+      var h =
+        '<details class="panel audio-sp"' +
+        (open ? ' open' : '') +
+        '><summary data-act="audSpOpen"><b>🎧 Whole songs: ' +
+        (on ? 'connected to Spotify ✓' : 'connect your Spotify Premium') +
+        '</b></summary>';
+      if (on) {
+        var devs = S.devices || [],
+          cur = R.device();
+        h +=
+          '<p class="small">Tapping a name, the ⚔ button, ⏮ ⏯ ⏭ now plays on your own Spotify, whole songs. Keep the Spotify app open (it can stay in the background).</p>' +
+          '<div class="toolbar"><label class="small">Play on <select data-aud="dev">' +
+          '<option value="">the Spotify that is open</option>' +
+          devs
+            .map(function (d) {
+              return (
+                '<option value="' +
+                esc(d.id) +
+                '"' +
+                (d.id === cur ? ' selected' : '') +
+                '>' +
+                esc(d.name + ' (' + d.type + ')') +
+                '</option>'
+              );
+            })
+            .join('') +
+          '</select></label>' +
+          btn('audSpDevices', 'Refresh', {}, 'btn small') +
+          btn('audSpOff', 'Disconnect', {}, 'btn small') +
+          '</div>';
+      } else
+        h +=
+          '<p class="small">On phones, the player inside the page only plays 30-second previews. With <b>Spotify Premium</b>, the app can tell your own Spotify app what to play instead: whole songs, real previous and next. One-time setup, about 5 minutes:</p><ol class="small">' +
+          '<li>Go to <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">developer.spotify.com/dashboard</a> and log in with your Spotify account.</li>' +
+          '<li>Tap <b>Create app</b>. Name: <i>Character Forge</i>. Description: anything. <b>Redirect URI</b>: <code class="audio-uri">' +
+          esc(R.redirect()) +
+          '</code> (exactly this, then tap Add). Tick <b>Web API</b>, accept the terms, <b>Save</b>.</li>' +
+          '<li>Open the app’s <b>Settings</b>, copy the <b>Client ID</b> and paste it below, then <b>Connect</b> and say yes on Spotify’s page.</li>' +
+          '<li>For your players: in the app’s <b>User Management</b>, add each player’s name and Spotify email (up to 25), then they connect the same way with your Client ID.</li></ol>' +
+          '<div class="toolbar"><input type="text" id="aud-spid" data-aud="spid" value="' +
+          esc(S.spid || R.clientId()) +
+          '" placeholder="Client ID" autocomplete="off" style="flex:1;min-width:12rem">' +
+          btn('audSpConnect', 'Connect', {}, 'btn primary') +
+          '</div><p class="small muted">The Client ID and your login stay in this browser; the app only talks to Spotify.</p>';
+      return h + (S.spMsg ? '<p class="small rest-msg">' + esc(S.spMsg) + '</p>' : '') + '</details>';
+    }
+    // back from Spotify's login page
+    if (R)
+      R.finishLogin().then(function (r) {
+        if (!r) return;
+        ui.section = 'audio';
+        S.spOpen = true;
+        S.spMsg = r.ok
+          ? 'Connected! Open the Spotify app on your phone or computer, then tap a name to play it.'
+          : r.error;
+        if (r.ok) loadDevices();
+        api.render && api.render();
+      });
     function onInput(t) {
       var k = t.getAttribute('data-aud');
       if (k == null) return null;
+      if (k === 'dev') {
+        R.setDevice(t.value);
+        return 'none';
+      }
       S[k] = t.value;
       return k === 'q' ? 'render' : 'none';
     }
