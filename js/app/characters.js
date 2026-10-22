@@ -472,6 +472,10 @@ function handleImportBuffer(buf) {
     } else {
       if (!got) throw new Error('not json');
       var o = got.json;
+      if (BKP.isBackup(o)) {
+        BKP.offer(o, 'Backup file');
+        return;
+      }
       if (o && o.cf === 1) {
         ui.xferIn = { b: o };
         return;

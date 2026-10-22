@@ -120,6 +120,23 @@ function saveNow() {
   } catch (e) {
     /* storage unavailable */
   }
+  if (typeof BKP !== 'undefined') BKP.changed(); // Google Drive backup, a little later (js/backup-ui.js)
+}
+// Replace everything with a backup (js/backup-ui.js): the same store object, so every part of the app sees it
+function applyBackup(s) {
+  var game = store.game;
+  Object.keys(store).forEach(function (k) {
+    delete store[k];
+  });
+  Object.assign(store, JSON.parse(JSON.stringify(s)));
+  store.filters = store.filters || {};
+  store.game = store.game || game;
+  store.chars = (Array.isArray(store.chars) ? store.chars : []).map(normalize);
+  if (!store.chars.length) store.chars.push(R.newChar());
+  if (!byId(store.current)) store.current = store.chars[0].id;
+  ch = byId(store.current);
+  ui.mode = '';
+  saveNow();
 }
 function syncUndoButtons() {
   var u = document.querySelector('[data-act="undo"]'),

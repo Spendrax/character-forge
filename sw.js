@@ -1,7 +1,7 @@
 // Service worker: keeps a copy of the app so it opens offline, and always tries the network first
 // so a new version on the site is picked up as soon as you are online.
 // Bump VERSION when files are added or removed.
-var VERSION = 'cf-117';
+var VERSION = 'cf-118';
 var FILES = [
   './',
   'index.html',
@@ -63,6 +63,8 @@ var FILES = [
   'js/pf2-enc.js',
   'js/pf2-ui.js',
   'js/spotify.js',
+  'js/gdrive.js',
+  'js/backup-ui.js',
   'js/audio.js',
   'data/sounds.js',
   'js/sounds.js',

@@ -4794,3 +4794,15 @@ html.dice3d-lock body {
 .party-hints .pill {
   text-align: left;
 }
+
+/* backup line under the home wheel, and the Backup page */
+.home-backup {
+  text-align: center;
+  margin: 0.4rem 0 0;
+}
+.backup .panel {
+  text-align: left;
+}
+.bk-confirm {
+  border-color: var(--accent, #8b2c22);
+}

@@ -63,6 +63,12 @@ passive Perception, spell save DC and attack) and extra proficiencies (skills wi
 
 **Undo** and **Redo** in the top bar (or Ctrl+Z and Ctrl+Y / Ctrl+Shift+Z outside text boxes) step back and forward through the last 40 changes, including imports and deleting a character. The history lasts until the page is closed.
 
+### Backup (Google Drive)
+
+**☁ Backup** (under the wheel on each home page) saves everything in the app (D&D, Pathfinder and M&M characters, house rules, encounters, notes) as one file in a **Character Forge** folder of your Google Drive: `Character Forge backup.json`, plus a dated copy each day (the last 14 are kept). After the first backup it backs up by itself about 20 seconds after each change, while Google keeps you signed in (one hour); after that the home page shows *Changes not backed up yet*, and one tap signs in again. On a new device (or a new version of the app), connect and tap **Restore from Drive…**; a restore can be undone right after. A device that has never backed up or restored doesn't back up by itself, so a fresh, empty app can't overwrite your backup.
+The app asks only for Google's `drive.file` permission: it sees the files it made itself, never the rest of your Drive. Setup is once per copy of the app: a free Google Cloud project with the Drive API, a *Web application* OAuth client whose JavaScript origin is the site (`https://spendrax.github.io`) and redirect URI the app's address (`https://spendrax.github.io/character-forge/`); the Backup page walks through it. The Client ID is pasted on the Backup page, or written into `CLIENT_ID` in `js/gdrive.js` so nobody else has to (a Client ID is the app's public name at Google, not a secret key).
+The backup is plain JSON with a short note on where everything is, so any app can read it. **Download backup file** gives the same file without Google; **Import** (or *Restore from a file*) brings it back. Imported books, monsters and item texts are not included.
+
 ### Install as an app
 
 On the GitHub Pages site, use **Install app** in the top bar (Chrome, Edge, Android), or the browser's own install / *Add to Home Screen* (Safari on iPhone and iPad: Share → Add to Home Screen).
@@ -352,6 +358,6 @@ Everywhere a roll is made for you (concentration saves, hit dice, initiative), y
 
 ## Security
 
-- No accounts and no tracking: characters, books, imported texts and AI keys stay in your browser (localStorage / IndexedDB). Keys are never in this repository; a server key lives only in the server's environment variables.
+- No accounts and no tracking: characters (and, if you turn it on, their backup in your own Google Drive, reached only with the `drive.file` permission), books, imported texts and AI keys stay in your browser (localStorage / IndexedDB). Keys are never in this repository; a server key lives only in the server's environment variables.
 - The page has a Content Security Policy: scripts run only from the app itself (and Spotify's player), so text inside an imported file can't run code. Imported pictures must be real image data.
 - `server.js` serves only the app's own files (no hidden files like `.git`, not the server, tests or tools), sends safe headers (no framing, no MIME sniffing, no referrer), checks the AI access code in constant time, and limits the AI and D&D Beyond routes to a few requests a minute per address.

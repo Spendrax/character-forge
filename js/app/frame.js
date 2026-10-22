@@ -524,6 +524,7 @@ function homeHtml() {
   return (
     '<main class="home"><h1>Dungeons &amp; Dragons 5e</h1><p class="muted">Your table companion (2014 rules). Tap the d20 to roll.</p>' +
     hub +
+    BKP.homeLine() +
     '</main>'
   );
 }
@@ -704,7 +705,9 @@ function renderSection(fid, pos) {
                                     ? AUD.html()
                                     : ui.section === 'rules'
                                       ? rulesHtml()
-                                      : homeHtml();
+                                      : ui.section === 'backup'
+                                        ? BKP.html()
+                                        : homeHtml();
   setApp(
     top +
       installHelpHtml() +
@@ -788,6 +791,8 @@ function renderSection(fid, pos) {
                                       ? 'Audio'
                                       : ui.section === 'rules'
                                         ? 'House rules'
-                                        : 'Home') + ' — Character Forge';
+                                        : ui.section === 'backup'
+                                          ? 'Backup'
+                                          : 'Home') + ' — Character Forge';
   saveNow();
 }

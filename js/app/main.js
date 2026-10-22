@@ -186,10 +186,33 @@ Object.keys(SavedEnc.actions).forEach(function (k) {
   actions[k] = SavedEnc.actions[k];
 });
 load();
+// the Backup page: Google Drive and backup files (js/gdrive.js, js/backup-ui.js)
+var BKP = window.BackupUI({
+  esc: esc,
+  btn: btn,
+  ui: ui,
+  store: store,
+  render: function () {
+    render();
+  },
+  apply: applyBackup,
+  // a character with something in it (not the empty one a new device starts with)
+  hasContent: function (c) {
+    return !!(c.name || c.lineage || c.classes.length);
+  }
+});
+window.BKP = BKP;
+Object.keys(BKP.actions).forEach(function (k) {
+  actions[k] = BKP.actions[k];
+});
 if (store.game === 'mm' && ui.section === 'home') ui.section = 'mm-home';
 if (store.game === 'pf2' && ui.section === 'home') ui.section = 'pf2-home';
 applyTheme(themeNow()); // reopen in the game you were using
 render();
+// this page is the small Google sign-in window coming back: the page that opened it carries on
+if (BKP.popupDone)
+  document.getElementById('app').innerHTML =
+    '<main class="home"><h2>✓ Signed in to Google</h2><p>You can close this window and go back to Character Forge.</p></main>';
 takeSharedFile();
 checkXferLink();
 checkTableLink();

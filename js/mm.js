@@ -598,6 +598,7 @@
           ['audio', 'lute', 'Audio'],
           ['rules', 'scroll', 'House rules']
         ]) +
+        (root.BKP ? root.BKP.homeLine() : '') +
         '</main>'
       );
     }

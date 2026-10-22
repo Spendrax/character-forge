@@ -178,6 +178,7 @@ document.addEventListener('input', function (e) {
   if (TP.onInput(t)) return;
   if (PT.onInput(t)) return;
   if (t.getAttribute('data-lvl')) return lvlInput(t, false);
+  if (BKP.onInput(t)) return;
   if (SavedEnc.onInput(t)) return save();
   if (ui.section === 'books' || ui.section === 'mm-rules') {
     var bk = BOOKS.onInput(t);
@@ -322,6 +323,8 @@ document.addEventListener('change', function (e) {
     };
   if (t.id === 'bookFile') return BOOKS.importFile(t);
   if (t.getAttribute && t.getAttribute('data-lvl')) return lvlInput(t, true);
+  if (t.id === 'bkFile') return BKP.readFile(t);
+  if (BKP.onInput(t)) return render();
   if (t.getAttribute && t.getAttribute('data-tp')) return;
   if (TS.onChange(t)) {
     render();
