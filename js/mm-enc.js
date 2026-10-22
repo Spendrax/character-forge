@@ -688,13 +688,11 @@
       }
       var d = MR.derive(h),
         open = U.open[h.id];
-      var att = d.attacks
-        .filter(function (x) {
-          return x.n !== 'Unarmed' || h.attackName || h.ab.STR >= Math.round(h.pl / 2);
-        })
-        .map(function (x) {
-          return x.n === 'Unarmed' && h.attackName ? Object.assign({}, x, { n: h.attackName }) : x;
-        });
+      var att = d.attacks.reduce(function (out, x) {
+        if (x.n !== 'Unarmed' || h.attackName || h.ab.STR >= Math.round(h.pl / 2))
+          out.push(x.n === 'Unarmed' && h.attackName ? Object.assign({}, x, { n: h.attackName }) : x);
+        return out;
+      }, []);
       var head =
         '<button type="button" class="mm-phead" data-act="mmeOpen" data-v="' +
         h.id +
@@ -743,47 +741,41 @@
           })
           .join(' · ');
       var powers = (h.powers || [])
-        .filter(function (p) {
-          return p.effect !== 'Feature';
-        })
-        .map(function (p) {
-          return (
-            '<li><b>' +
-            esc(p.name) +
-            ':</b> ' +
-            esc(p.effect) +
-            ' ' +
-            p.rank +
-            ((p.mods || []).length
-              ? ', ' +
-                esc(
-                  p.mods
-                    .map(function (m) {
-                      return m.n + (m.r > 1 ? ' ' + m.r : '') + (m.note ? ' (' + m.note + ')' : '');
-                    })
-                    .join(', ')
-                )
-              : '') +
-            (p.desc ? ' — <span class="muted">' + esc(p.desc) + '</span>' : '') +
-            '</li>'
-          );
-        })
+        .reduce(function (out, p) {
+          if (p.effect !== 'Feature')
+            out.push(
+              '<li><b>' +
+                esc(p.name) +
+                ':</b> ' +
+                esc(p.effect) +
+                ' ' +
+                p.rank +
+                ((p.mods || []).length
+                  ? ', ' +
+                    esc(
+                      p.mods
+                        .map(function (m) {
+                          return m.n + (m.r > 1 ? ' ' + m.r : '') + (m.note ? ' (' + m.note + ')' : '');
+                        })
+                        .join(', ')
+                    )
+                  : '') +
+                (p.desc ? ' — <span class="muted">' + esc(p.desc) + '</span>' : '') +
+                '</li>'
+            );
+          return out;
+        }, [])
         .join('');
       var skills = Object.keys(d.skills)
-        .filter(function (k) {
-          return d.skills[k].r;
-        })
-        .map(function (k) {
-          return k + ' ' + fmt(d.skills[k].total);
-        })
+        .reduce(function (out, k) {
+          if (d.skills[k].r) out.push(k + ' ' + fmt(d.skills[k].total));
+          return out;
+        }, [])
         .concat(
-          (h.spec || [])
-            .filter(function (x) {
-              return x.s === 'Expertise';
-            })
-            .map(function (x) {
-              return 'Expertise: ' + x.n + ' ' + fmt(x._total);
-            })
+          (h.spec || []).reduce(function (out, x) {
+            if (x.s === 'Expertise') out.push('Expertise: ' + x.n + ' ' + fmt(x._total));
+            return out;
+          }, [])
         );
       var warn = d.warnings.filter(function (w) {
         return !/power points|complications/.test(w);

@@ -381,18 +381,16 @@
         ' · <b>' +
         r.xp +
         ' XP</b></p></div>';
-      var warn = mons
-        .filter(function (x) {
-          return x.lv - lvl > 4 || (x.lv - lvl > 2 && mons.length === 1 && false);
-        })
-        .map(function (x) {
-          return (
+      var warn = mons.reduce(function (out, x) {
+        if (x.lv - lvl > 4 || (x.lv - lvl > 2 && mons.length === 1 && false))
+          out.push(
             x.m.n +
-            ' is level ' +
-            x.lv +
-            ': more than 4 levels above the party, it can kill a character in one or two turns.'
+              ' is level ' +
+              x.lv +
+              ': more than 4 levels above the party, it can kill a character in one or two turns.'
           );
-        });
+        return out;
+      }, []);
       var rows = mons
         .map(function (x, i) {
           var k = 'e:' + x.x.id + i,

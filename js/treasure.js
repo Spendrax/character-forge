@@ -368,15 +368,13 @@
     ];
     function resultHtml(t) {
       if (!t) return '';
-      var coins = COINS.filter(function (c) {
-        return t.coins[c[0]];
-      })
-        .map(function (c) {
-          return (
+      var coins = COINS.reduce(function (out, c) {
+        if (t.coins[c[0]])
+          out.push(
             '<span class="coin coin-' + c[0] + '"><b>' + t.coins[c[0]].toLocaleString('en') + '</b> ' + c[0] + '</span>'
           );
-        })
-        .join('');
+        return out;
+      }, []).join('');
       var vals = t.valuables
         .map(function (v) {
           var counts = {};
@@ -825,13 +823,10 @@
         });
         var fmt = function (o) {
           return (
-            COINK.filter(function (k) {
-              return o[k];
-            })
-              .map(function (k) {
-                return o[k].toLocaleString('en') + ' ' + k;
-              })
-              .join(', ') || 'nothing'
+            COINK.reduce(function (out, k) {
+              if (o[k]) out.push(o[k].toLocaleString('en') + ' ' + k);
+              return out;
+            }, []).join(', ') || 'nothing'
           );
         };
         sp.msg =

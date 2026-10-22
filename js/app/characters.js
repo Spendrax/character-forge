@@ -50,10 +50,8 @@ function pictureHtml(cls) {
 // All characters to choose from, each with its picture (or its drawn figure).
 function rosterHtml() {
   var cards = store.chars
-    .filter(function (c) {
-      return c.id === store.current || c.name || c.lineage || (c.classes || []).length || c.picture;
-    })
-    .map(function (c) {
+    .reduce(function (out, c) {
+      if (!(c.id === store.current || c.name || c.lineage || (c.classes || []).length || c.picture)) return out;
       var dd = R.derive(c, store.filters);
       var pic = c.picture
         ? '<div class="pic-box roster-pic"><img class="char-pic' +
@@ -66,31 +64,32 @@ function rosterHtml() {
         : '<div class="roster-pic roster-fig"><canvas class="avatar figure" data-roster="' +
           c.id +
           '" width="48" height="58" aria-hidden="true"></canvas></div>';
-      return (
+      out.push(
         '<button type="button" class="roster-card' +
-        (c.id === store.current ? ' cur' : '') +
-        '" data-act="openChar" data-v="' +
-        c.id +
-        '">' +
-        pic +
-        '<span class="roster-txt"><b>' +
-        esc(title(c)) +
-        '</b><span class="small muted">' +
-        esc(summaryLine(c, dd)) +
-        '</span>' +
-        ((c.classes || []).length
-          ? '<span class="roster-stats small"><span>Lv ' +
-            dd.level +
-            '</span><span>AC ' +
-            dd.ac +
-            '</span><span>HP ' +
-            (c.track && c.track.hp != null ? c.track.hp + '/' : '') +
-            dd.hp +
-            '</span></span>'
-          : '') +
-        '</span></button>'
+          (c.id === store.current ? ' cur' : '') +
+          '" data-act="openChar" data-v="' +
+          c.id +
+          '">' +
+          pic +
+          '<span class="roster-txt"><b>' +
+          esc(title(c)) +
+          '</b><span class="small muted">' +
+          esc(summaryLine(c, dd)) +
+          '</span>' +
+          ((c.classes || []).length
+            ? '<span class="roster-stats small"><span>Lv ' +
+              dd.level +
+              '</span><span>AC ' +
+              dd.ac +
+              '</span><span>HP ' +
+              (c.track && c.track.hp != null ? c.track.hp + '/' : '') +
+              dd.hp +
+              '</span></span>'
+            : '') +
+          '</span></button>'
       );
-    })
+      return out;
+    }, [])
     .join('');
   return (
     '<main class="home roster"><div class="toolbar"><h2 style="margin:0">Characters</h2><span class="spacer"></span>' +
@@ -126,11 +125,10 @@ function xferBundle(withPics) {
     };
   var b = { cf: 1 };
   if (X.dnd !== false)
-    b.chars = store.chars
-      .filter(function (c) {
-        return c.name || (c.classes || []).length;
-      })
-      .map(strip);
+    b.chars = store.chars.reduce(function (out, c) {
+      if (c.name || (c.classes || []).length) out.push(strip(c));
+      return out;
+    }, []);
   if (X.pf2 !== false && store.pf2 && (store.pf2.chars || []).length) b.pf2 = store.pf2.chars.map(strip);
   if (X.mm !== false && store.mm && (store.mm.heroes || []).length) b.mm = store.mm.heroes.map(strip);
   return b;
@@ -456,13 +454,10 @@ function startImport(entries) {
     entries: entries,
     target: target,
     parts: parts,
-    pick: entries
-      .filter(function (e) {
-        return !anyMatch || target[e.id] !== 'new';
-      })
-      .map(function (e) {
-        return e.id;
-      })
+    pick: entries.reduce(function (out, e) {
+      if (!anyMatch || target[e.id] !== 'new') out.push(e.id);
+      return out;
+    }, [])
   };
   ui.import5eDone = null;
 }
@@ -636,30 +631,29 @@ function partsPicker(I, e, tg) {
     STEPS.map(function (s) {
       return s[0];
     })
-      .filter(function (k) {
-        return PARTS[k];
-      })
-      .map(function (k) {
+      .reduce(function (out, k) {
+        if (!PARTS[k]) return out;
         var on = chosen.indexOf(k) >= 0,
           can = ok(k);
-        return (
+        out.push(
           '<label class="pill imp-part' +
-          (on ? ' on' : '') +
-          (can ? '' : ' off') +
-          '"' +
-          (can ? '' : ' title="Not in a 5th Spellbook backup"') +
-          '><input type="checkbox" data-imp5part="' +
-          e.id +
-          '" value="' +
-          k +
-          '"' +
-          (on ? ' checked' : '') +
-          (can ? '' : ' disabled') +
-          '> ' +
-          esc(PARTS[k].short) +
-          '</label>'
+            (on ? ' on' : '') +
+            (can ? '' : ' off') +
+            '"' +
+            (can ? '' : ' title="Not in a 5th Spellbook backup"') +
+            '><input type="checkbox" data-imp5part="' +
+            e.id +
+            '" value="' +
+            k +
+            '"' +
+            (on ? ' checked' : '') +
+            (can ? '' : ' disabled') +
+            '> ' +
+            esc(PARTS[k].short) +
+            '</label>'
         );
-      })
+        return out;
+      }, [])
       .join('') +
     btn('import5eParts', all ? 'None' : 'All', { e: e.id, all: all ? '' : '1' }, 'btn tiny') +
     '</div>' +

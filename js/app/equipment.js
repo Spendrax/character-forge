@@ -113,24 +113,23 @@ function stepEquipment() {
           (profArmor(kind) ? '' : ' (not proficient)') +
           '">' +
           D.armor
-            .filter(function (a) {
-              return a[1] === kind;
-            })
-            .map(function (a) {
-              return (
-                '<option value="' +
-                esc(a[0]) +
-                '"' +
-                (ch.armor === a[0] ? ' selected' : '') +
-                '>' +
-                esc(a[0]) +
-                ', AC ' +
-                a[3] +
-                (a[1] === 'Light' ? ' + Dex' : a[1] === 'Medium' ? ' + Dex (max 2)' : '') +
-                (a[5] ? ', Str ' + a[5] : '') +
-                '</option>'
-              );
-            })
+            .reduce(function (out, a) {
+              if (a[1] === kind)
+                out.push(
+                  '<option value="' +
+                    esc(a[0]) +
+                    '"' +
+                    (ch.armor === a[0] ? ' selected' : '') +
+                    '>' +
+                    esc(a[0]) +
+                    ', AC ' +
+                    a[3] +
+                    (a[1] === 'Light' ? ' + Dex' : a[1] === 'Medium' ? ' + Dex (max 2)' : '') +
+                    (a[5] ? ', Str ' + a[5] : '') +
+                    '</option>'
+                );
+              return out;
+            }, [])
             .join('') +
           '</optgroup>'
         );
@@ -278,21 +277,20 @@ function stepEquipment() {
           cat +
           '">' +
           D.weapons
-            .filter(function (w) {
-              return w[1] === cat;
-            })
-            .map(function (w) {
-              return (
-                '<option value="' +
-                esc(w[0]) +
-                '">' +
-                (profWeapon(w) ? '✓ ' : '✗ ') +
-                esc(w[0]) +
-                ' — ' +
-                esc(w[3]) +
-                '</option>'
-              );
-            })
+            .reduce(function (out, w) {
+              if (w[1] === cat)
+                out.push(
+                  '<option value="' +
+                    esc(w[0]) +
+                    '">' +
+                    (profWeapon(w) ? '✓ ' : '✗ ') +
+                    esc(w[0]) +
+                    ' — ' +
+                    esc(w[3]) +
+                    '</option>'
+                );
+              return out;
+            }, [])
             .join('') +
           '</optgroup>'
         );
@@ -306,48 +304,46 @@ function stepEquipment() {
       return ui.editWeapon === w.id;
     }).length
       ? '<h4 style="margin-top:1rem">Your own weapon</h4>' +
-        CW.filter(function (w) {
-          return ui.editWeapon === w.id;
-        })
-          .map(function (w) {
-            var f = function (k, label, type, extra) {
-              return (
-                '<label class="field"><span>' +
-                label +
-                '</span><input type="' +
-                type +
-                '" id="cw-' +
-                w.id +
-                '-' +
-                k +
-                '" data-cweapon="' +
-                w.id +
-                '" data-f="' +
-                k +
-                '" value="' +
-                esc(w[k] != null ? w[k] : '') +
-                '"' +
-                (extra || '') +
-                '></label>'
-              );
-            };
-            var types = [
-              'Bludgeoning',
-              'Piercing',
-              'Slashing',
-              'Acid',
-              'Cold',
-              'Fire',
-              'Force',
-              'Lightning',
-              'Necrotic',
-              'Poison',
-              'Psychic',
-              'Radiant',
-              'Thunder'
-            ];
+        CW.reduce(function (out, w) {
+          if (!(ui.editWeapon === w.id)) return out;
+          var f = function (k, label, type, extra) {
             return (
-              '<div class="custom-card"><div class="row">' +
+              '<label class="field"><span>' +
+              label +
+              '</span><input type="' +
+              type +
+              '" id="cw-' +
+              w.id +
+              '-' +
+              k +
+              '" data-cweapon="' +
+              w.id +
+              '" data-f="' +
+              k +
+              '" value="' +
+              esc(w[k] != null ? w[k] : '') +
+              '"' +
+              (extra || '') +
+              '></label>'
+            );
+          };
+          var types = [
+            'Bludgeoning',
+            'Piercing',
+            'Slashing',
+            'Acid',
+            'Cold',
+            'Fire',
+            'Force',
+            'Lightning',
+            'Necrotic',
+            'Poison',
+            'Psychic',
+            'Radiant',
+            'Thunder'
+          ];
+          out.push(
+            '<div class="custom-card"><div class="row">' +
               f('n', 'Name', 'text') +
               f('dmg', 'Damage dice', 'text', ' placeholder="1d8"') +
               '<label class="field"><span>Damage type</span><select data-cweapon="' +
@@ -389,9 +385,9 @@ function stepEquipment() {
               btn('saveCustom', 'Save', {}, 'btn primary') +
               btn('rmCWeapon', 'Remove', { v: w.id }, 'btn tiny danger') +
               '</div></div>'
-            );
-          })
-          .join('')
+          );
+          return out;
+        }, []).join('')
       : '') +
     '</div>';
   h +=

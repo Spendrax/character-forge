@@ -408,19 +408,18 @@
         cat + ' advantages',
         'Each advantage costs 1 point (per rank, if ranked).\n\n' +
           M.advantages
-            .filter(function (a) {
-              return a[1] === cat;
-            })
-            .map(function (a) {
-              return (
-                '## ' +
-                a[0] +
-                '\n\n*' +
-                (a[2] ? (a[2] > 0 ? 'Ranked, up to ' + a[2] : 'Ranked') : 'Not ranked') +
-                '*\n\n' +
-                a[3]
-              );
-            })
+            .reduce(function (out, a) {
+              if (a[1] === cat)
+                out.push(
+                  '## ' +
+                    a[0] +
+                    '\n\n*' +
+                    (a[2] ? (a[2] > 0 ? 'Ranked, up to ' + a[2] : 'Ranked') : 'Not ranked') +
+                    '*\n\n' +
+                    a[3]
+                );
+              return out;
+            }, [])
             .join('\n\n')
       );
     });
@@ -428,25 +427,24 @@
       return P(
         ty + ' effects',
         M.effects
-          .filter(function (e) {
-            return e[1] === ty;
-          })
-          .map(function (e) {
-            return (
-              '## ' +
-              e[0] +
-              '\n\n**Action** ' +
-              e[2] +
-              ' · **Range** ' +
-              e[3] +
-              ' · **Duration** ' +
-              e[4] +
-              ' · **Cost** ' +
-              costTxt(e[5]) +
-              '\n\n' +
-              e[6]
-            );
-          })
+          .reduce(function (out, e) {
+            if (e[1] === ty)
+              out.push(
+                '## ' +
+                  e[0] +
+                  '\n\n**Action** ' +
+                  e[2] +
+                  ' · **Range** ' +
+                  e[3] +
+                  ' · **Duration** ' +
+                  e[4] +
+                  ' · **Cost** ' +
+                  costTxt(e[5]) +
+                  '\n\n' +
+                  e[6]
+              );
+            return out;
+          }, [])
           .join('\n\n')
       );
     });
@@ -824,25 +822,24 @@
         (d.pl + 10) +
         '), even with no ranks: a skill used untrained counts its ability alone, so this also limits your abilities.</p><div class="mm-rows">' +
         M.skills
-          .filter(function (s) {
-            return !s[3];
-          })
-          .map(function (s) {
+          .reduce(function (out, s) {
+            if (!!s[3]) return out;
             var x = d.skills[s[0]];
-            return (
+            out.push(
               '<div class="mm-row"><span class="nm"><b>' +
-              s[0] +
-              '</b> <small class="muted">' +
-              s[1] +
-              '</small></span>' +
-              step('skills.' + s[0], x.r, 0, 30, s[0] + ' ranks') +
-              '<span class="mm-tot' +
-              (x.total > d.pl + 10 ? ' bad' : '') +
-              '">' +
-              fmt(x.total) +
-              '</span></div>'
+                s[0] +
+                '</b> <small class="muted">' +
+                s[1] +
+                '</small></span>' +
+                step('skills.' + s[0], x.r, 0, 30, s[0] + ' ranks') +
+                '<span class="mm-tot' +
+                (x.total > d.pl + 10 ? ' bad' : '') +
+                '">' +
+                fmt(x.total) +
+                '</span></div>'
             );
-          })
+            return out;
+          }, [])
           .join('') +
         '</div><h3>Close Combat, Ranged Combat and Expertise</h3><p class="small muted">Each one is for a named attack or field. Name a combat skill after a power (like “Blast”) and it adds to that power’s attack.</p><div class="mm-rows">' +
         specs +
@@ -1016,38 +1013,36 @@
             '</optgroup>' +
             '<optgroup label="Skills (½ per rank)">' +
             M.skills
-              .filter(function (s) {
-                return !s[3];
-              })
-              .map(function (s) {
-                return (
-                  '<option value="skill:' +
-                  s[0] +
-                  '"' +
-                  (p.target === 'skill:' + s[0] ? ' selected' : '') +
-                  '>' +
-                  s[0] +
-                  '</option>'
-                );
-              })
+              .reduce(function (out, s) {
+                if (!s[3])
+                  out.push(
+                    '<option value="skill:' +
+                      s[0] +
+                      '"' +
+                      (p.target === 'skill:' + s[0] ? ' selected' : '') +
+                      '>' +
+                      s[0] +
+                      '</option>'
+                  );
+                return out;
+              }, [])
               .join('') +
             '</optgroup>' +
             '<optgroup label="Advantages (1 per rank)">' +
             M.advantages
-              .filter(function (a) {
-                return a[2];
-              })
-              .map(function (a) {
-                return (
-                  '<option value="adv:' +
-                  a[0] +
-                  '"' +
-                  (p.target === 'adv:' + a[0] ? ' selected' : '') +
-                  '>' +
-                  a[0] +
-                  '</option>'
-                );
-              })
+              .reduce(function (out, a) {
+                if (a[2])
+                  out.push(
+                    '<option value="adv:' +
+                      a[0] +
+                      '"' +
+                      (p.target === 'adv:' + a[0] ? ' selected' : '') +
+                      '>' +
+                      a[0] +
+                      '</option>'
+                  );
+                return out;
+              }, [])
               .join('') +
             '</optgroup></select></label>'
           : '';
@@ -1288,20 +1283,15 @@
     }
     function sheet(h, d) {
       var sk = Object.keys(d.skills)
-        .filter(function (s) {
-          return d.skills[s].r;
-        })
-        .map(function (s) {
-          return s + ' ' + d.skills[s].r + ' (' + fmt(d.skills[s].total) + ')';
-        })
+        .reduce(function (out, s) {
+          if (d.skills[s].r) out.push(s + ' ' + d.skills[s].r + ' (' + fmt(d.skills[s].total) + ')');
+          return out;
+        }, [])
         .concat(
-          (h.spec || [])
-            .filter(function (x) {
-              return +x.r;
-            })
-            .map(function (x) {
-              return x.s + ': ' + (x.n || '?') + ' ' + x.r + ' (' + fmt(x._total) + ')';
-            })
+          (h.spec || []).reduce(function (out, x) {
+            if (+x.r) out.push(x.s + ': ' + (x.n || '?') + ' ' + x.r + ' (' + fmt(x._total) + ')');
+            return out;
+          }, [])
         );
       return (
         '<div class="toolbar noprint">' +
@@ -1393,12 +1383,10 @@
         '</p>' +
         '<h3>Complications</h3>' +
         ((h.comp || [])
-          .filter(function (c) {
-            return c.t;
-          })
-          .map(function (c) {
-            return '<p><b>' + esc(c.k) + ':</b> ' + esc(c.t) + '</p>';
-          })
+          .reduce(function (out, c) {
+            if (c.t) out.push('<p><b>' + esc(c.k) + ':</b> ' + esc(c.t) + '</p>');
+            return out;
+          }, [])
           .join('') || '<p>—</p>') +
         (d.warnings.length
           ? '<h3>To check</h3><ul>' +
@@ -1436,14 +1424,11 @@
                 : 0;
         },
         take: function (g) {
-          var n = (g.items || [])
-            .slice(0, 20)
-            .filter(function (i) {
-              return i && i.n;
-            })
-            .map(function (i) {
-              return '- ' + String(i.n).slice(0, 80) + (i.note ? ': ' + String(i.note).slice(0, 200) : '');
-            });
+          var n = (g.items || []).slice(0, 20).reduce(function (out, i) {
+            if (i && i.n)
+              out.push('- ' + String(i.n).slice(0, 80) + (i.note ? ': ' + String(i.note).slice(0, 200) : ''));
+            return out;
+          }, []);
           if (n.length) h.notes = (h.notes ? h.notes + '\n\n' : '') + 'From the GM:\n' + n.join('\n');
         },
         status: function () {
@@ -1555,12 +1540,10 @@
         (Object.keys(on).length
           ? '<ul class="cond-list">' +
             M.conditions
-              .filter(function (c) {
-                return on[c[0]];
-              })
-              .map(function (c) {
-                return '<li><b>' + esc(c[0]) + ':</b> ' + esc(c[2]) + '</li>';
-              })
+              .reduce(function (out, c) {
+                if (on[c[0]]) out.push('<li><b>' + esc(c[0]) + ':</b> ' + esc(c[2]) + '</li>');
+                return out;
+              }, [])
               .join('') +
             '</ul>'
           : '<p class="small muted">Tap a condition when it happens to the hero to see what it does.</p>') +
@@ -1913,31 +1896,24 @@
           '.',
         'Skills with ranks: ' +
           (Object.keys(d.skills)
-            .filter(function (k) {
-              return d.skills[k].r;
-            })
-            .map(function (k) {
-              return k + ' ' + d.skills[k].r + ' (+' + d.skills[k].total + ')';
-            })
+            .reduce(function (out, k) {
+              if (d.skills[k].r) out.push(k + ' ' + d.skills[k].r + ' (+' + d.skills[k].total + ')');
+              return out;
+            }, [])
             .concat(
-              (h.spec || [])
-                .filter(function (x) {
-                  return +x.r;
-                })
-                .map(function (x) {
-                  return x.s + ' (' + x.n + ') ' + x.r;
-                })
+              (h.spec || []).reduce(function (out, x) {
+                if (+x.r) out.push(x.s + ' (' + x.n + ') ' + x.r);
+                return out;
+              }, [])
             )
             .join(', ') || 'none') +
           '.',
         'Complications: ' +
           ((h.comp || [])
-            .filter(function (c) {
-              return c.t;
-            })
-            .map(function (c) {
-              return c.k + ': ' + c.t;
-            })
+            .reduce(function (out, c) {
+              if (c.t) out.push(c.k + ': ' + c.t);
+              return out;
+            }, [])
             .join('; ') || 'none yet') +
           '.',
         d.warnings.length ? 'Problems the app flags: ' + d.warnings.join(' | ') : 'The app flags no problems.',
@@ -2036,14 +2012,15 @@
           .map(function (x) {
             return x.trim();
           })
-          .filter(Boolean)
-          .map(function (x) {
+          .reduce(function (out, x) {
+            if (!x) return out;
             var k = Object.keys(MODS).filter(function (n) {
               return n.toLowerCase() === x.replace(/\s*[x×]?\s*\d+$/, '').toLowerCase();
             })[0];
             if (!k) throw new Error('No extra or flaw “' + x + '”');
-            return { n: k, v: MODS[k][2][0], r: +(/(\d+)$/.exec(x) || [0, 1])[1] || 1, note: '' };
-          });
+            out.push({ n: k, v: MODS[k][2][0], r: +(/(\d+)$/.exec(x) || [0, 1])[1] || 1, note: '' });
+            return out;
+          }, []);
         var p = {
           id: uid(),
           name: String(a[0] || '').trim(),

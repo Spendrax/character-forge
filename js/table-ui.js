@@ -339,12 +339,10 @@
       return (p.gifts || [])
         .map(function (g) {
           var what = Object.keys(g.coins || {})
-            .filter(function (k) {
-              return +g.coins[k] > 0;
-            })
-            .map(function (k) {
-              return (+g.coins[k]).toLocaleString('en') + ' ' + k;
-            })
+            .reduce(function (out, k) {
+              if (+g.coins[k] > 0) out.push((+g.coins[k]).toLocaleString('en') + ' ' + k);
+              return out;
+            }, [])
             .concat(
               (g.items || []).map(function (i) {
                 return String(i.n || 'an item');

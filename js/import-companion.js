@@ -52,7 +52,8 @@
   // ---------- read: one entry per character, in the same shape as the 5th Spellbook importer ----------
   function read(o) {
     var list = Array.isArray(o) ? o : [o];
-    return list.filter(isCompanion).map(function (c, i) {
+    return list.reduce(function (out, c) {
+      if (!isCompanion(c)) return out;
       var rr = parse(c.requiredRace) || {},
         rb = parse(c.requiredBackground) || {};
       var jobs = (parse(c.allRequiredClasses) || {}).jobs || [];
@@ -97,8 +98,8 @@
         .filter(function (s) {
           return s.name;
         });
-      return {
-        id: i + 1,
+      out.push({
+        id: out.length + 1,
         source: 'companion',
         name: c.name || 'Imported character',
         race: plain(rr.name) || title(String((c.race || {}).raceId || '').replace(/_?\[[^\]]*\]/g, '')),
@@ -107,8 +108,9 @@
         loose: spells,
         raw: c,
         bgName: plain(rb.name) || title(String((c.background || {}).backgroundId || '').replace(/_?\[[^\]]*\]/g, ''))
-      };
-    });
+      });
+      return out;
+    }, []);
   }
 
   function summary(e) {
@@ -522,13 +524,10 @@
     ch.notes.bonds = c.bonds || '';
     ch.notes.flaws = c.flaws || '';
     ch.notes.backstory = c.about || '';
-    var kept = (c.notes || [])
-      .filter(function (n) {
-        return !n.archivedString && n.text;
-      })
-      .map(function (n) {
-        return n.text;
-      });
+    var kept = (c.notes || []).reduce(function (out, n) {
+      if (!n.archivedString && n.text) out.push(n.text);
+      return out;
+    }, []);
 
     // spells: one list in the app, placed on whichever class has each spell
     var placed = I5.placeSpells(entry, ch, R, D);

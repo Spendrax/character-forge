@@ -444,11 +444,10 @@
         G.filter(function (x) {
           return /arrow|bolt|quiver|case|needle|bullet/i.test(x[0]);
         }).concat(
-          W.filter(function (w) {
-            return /bow|crossbow|sling/i.test(w[0]);
-          }).map(function (w) {
-            return [w[0], w[1], w[2]];
-          })
+          W.reduce(function (out, w) {
+            if (/bow|crossbow|sling/i.test(w[0])) out.push([w[0], w[1], w[2]]);
+            return out;
+          }, [])
         ),
         6,
         function (x) {

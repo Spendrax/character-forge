@@ -241,13 +241,10 @@ function hitDieSizes() {
 // ---------- concentration ----------
 function concHtml() {
   var T = ch.track || {},
-    list = mySpellRows()
-      .filter(function (r) {
-        return r.s && r.s.conc && r.ready;
-      })
-      .map(function (r) {
-        return r.name;
-      });
+    list = mySpellRows().reduce(function (out, r) {
+      if (r.s && r.s.conc && r.ready) out.push(r.name);
+      return out;
+    }, []);
   var war = JSON.stringify(ch.picks || {}).indexOf('War Caster') >= 0;
   if (!list.length && !T.conc) return '';
   if (!T.conc)
@@ -783,10 +780,10 @@ function stepPlay() {
       esc(g) +
       '</h3>' +
       d.trackers
-        .filter(function (x) {
-          return x.group === g;
-        })
-        .map(trackRow)
+        .reduce(function (out, x) {
+          if (x.group === g) out.push(trackRow(x));
+          return out;
+        }, [])
         .join('') +
       '</div>';
   });

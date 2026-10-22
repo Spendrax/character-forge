@@ -177,13 +177,10 @@
     };
     var placed = {};
     var wanted = (b.specials || []).concat(
-      children
-        .filter(function (c) {
-          return c.e && !c.parent;
-        })
-        .map(function (c) {
-          return c.e.n;
-        })
+      children.reduce(function (out, c) {
+        if (c.e && !c.parent) out.push(c.e.n);
+        return out;
+      }, [])
     );
     for (var round = 0; round < 6; round++) {
       var d = PF2.derive(ch),

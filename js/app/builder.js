@@ -154,10 +154,10 @@ function stepLineage() {
       : '<p class="muted">No special traits.</p>') +
     '</div>';
   h += d.featSlots
-    .filter(function (s) {
-      return s.step === 'lineage';
-    })
-    .map(featSlotHtml)
+    .reduce(function (out, s) {
+      if (s.step === 'lineage') out.push(featSlotHtml(s));
+      return out;
+    }, [])
     .join('');
   return h;
 }
@@ -175,26 +175,25 @@ function stepClass() {
     h +=
       '<div class="grid">' +
       D.classes
-        .filter(function (c) {
-          return ok(c.tag) || used.indexOf(c.id) >= 0;
-        })
-        .map(function (c) {
-          return (
-            '<button type="button" class="card' +
-            (used[0] === c.id ? ' on' : '') +
-            '" data-act="cls" data-v="' +
-            c.id +
-            '"><b>' +
-            esc(c.name) +
-            '</b><small>d' +
-            c.hitDie +
-            ' · ' +
-            c.saves.join(' & ') +
-            ' saves' +
-            tag(c.tag) +
-            '</small></button>'
-          );
-        })
+        .reduce(function (out, c) {
+          if (ok(c.tag) || used.indexOf(c.id) >= 0)
+            out.push(
+              '<button type="button" class="card' +
+                (used[0] === c.id ? ' on' : '') +
+                '" data-act="cls" data-v="' +
+                c.id +
+                '"><b>' +
+                esc(c.name) +
+                '</b><small>d' +
+                c.hitDie +
+                ' · ' +
+                c.saves.join(' & ') +
+                ' saves' +
+                tag(c.tag) +
+                '</small></button>'
+            );
+          return out;
+        }, [])
         .join('') +
       '</div>';
   if (!E.length) return h + '<p class="notice">Pick a class to continue.</p>';
@@ -354,10 +353,10 @@ function stepClass() {
     esc(c.name) +
     ' features</h3>' +
     d.features
-      .filter(function (f) {
-        return f.kind === 'class' && f.clsId === c.id;
-      })
-      .map(featureHtml)
+      .reduce(function (out, f) {
+        if (f.kind === 'class' && f.clsId === c.id) out.push(featureHtml(f));
+        return out;
+      }, [])
       .join('');
   if (e.sc) {
     h += '<h3>' + esc(e.sc.name) + ' features</h3>';
@@ -367,10 +366,10 @@ function stepClass() {
     else if (e.sc.spells)
       h += '<p class="small muted">Always-prepared spells are added automatically as you reach each level.</p>';
     h += d.features
-      .filter(function (f) {
-        return f.kind === 'subclass' && f.clsId === c.id;
-      })
-      .map(featureHtml)
+      .reduce(function (out, f) {
+        if (f.kind === 'subclass' && f.clsId === c.id) out.push(featureHtml(f));
+        return out;
+      }, [])
       .join('');
   }
   return h + '</div>';
@@ -590,10 +589,10 @@ function stepBackground() {
   return (
     h +
     d.featSlots
-      .filter(function (s) {
-        return s.step === 'background';
-      })
-      .map(featSlotHtml)
+      .reduce(function (out, s) {
+        if (s.step === 'background') out.push(featSlotHtml(s));
+        return out;
+      }, [])
       .join('')
   );
 }

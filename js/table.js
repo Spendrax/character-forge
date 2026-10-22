@@ -80,24 +80,25 @@
       msgs: (s.msgs || []).filter(function (m) {
         return dm || m.from === pid || mine(m.to);
       }),
-      asks: (s.asks || [])
-        .filter(function (a) {
-          return mine(a.to);
-        })
-        .map(function (a) {
-          if (dm) return a;
-          var o = {};
-          Object.keys(a).forEach(function (k) {
-            o[k] = a[k];
-          });
-          o.ans = {};
-          if (a.ans[pid]) o.ans[pid] = a.ans[pid];
-          if (a.secret) {
-            o.dc = 0;
-            if (o.ans[pid]) o.ans[pid] = { total: o.ans[pid].total, roll: o.ans[pid].roll, ok: null };
-          }
-          return o;
-        }),
+      asks: (s.asks || []).reduce(function (out, a) {
+        if (!mine(a.to)) return out;
+        if (dm) {
+          out.push(a);
+          return out;
+        }
+        var o = {};
+        Object.keys(a).forEach(function (k) {
+          o[k] = a[k];
+        });
+        o.ans = {};
+        if (a.ans[pid]) o.ans[pid] = a.ans[pid];
+        if (a.secret) {
+          o.dc = 0;
+          if (o.ans[pid]) o.ans[pid] = { total: o.ans[pid].total, roll: o.ans[pid].roll, ok: null };
+        }
+        out.push(o);
+        return out;
+      }, []),
       handouts: (s.handouts || []).filter(function (h) {
         return mine(h.to);
       })
@@ -599,12 +600,10 @@
           })[0];
           if (gto) {
             var gw = Object.keys(what.gift.coins || {})
-              .filter(function (k) {
-                return +what.gift.coins[k] > 0;
-              })
-              .map(function (k) {
-                return what.gift.coins[k] + ' ' + k;
-              })
+              .reduce(function (out, k) {
+                if (+what.gift.coins[k] > 0) out.push(what.gift.coins[k] + ' ' + k);
+                return out;
+              }, [])
               .concat(
                 (what.gift.items || []).map(function (i) {
                   return i && i.n;
@@ -817,13 +816,10 @@
       var h = root.Table.hostInfo();
       if (!h) return;
       var foes = run
-        ? run.list
-            .filter(function (x) {
-              return !x.pc;
-            })
-            .map(function (x) {
-              return x.n;
-            })
+        ? run.list.reduce(function (out, x) {
+            if (!x.pc) out.push(x.n);
+            return out;
+          }, [])
         : [];
       root.Table.dm(
         h.code,

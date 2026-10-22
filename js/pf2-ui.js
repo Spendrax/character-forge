@@ -602,23 +602,18 @@
         ': <b>' +
         d.skillPicks +
         '</b> skills. Already trained: ' +
-        (PF2.SKILLS.filter(function (k) {
-          return base[k];
-        })
-          .map(function (k) {
-            return PF2.SK[k][0];
-          })
-          .join(', ') || 'none') +
+        (PF2.SKILLS.reduce(function (out, k) {
+          if (base[k]) out.push(PF2.SK[k][0]);
+          return out;
+        }, []).join(', ') || 'none') +
         '.</p>' +
         '<div class="pills">' +
-        PF2.SKILLS.filter(function (k) {
-          return !base[k];
-        })
-          .map(function (k) {
-            var on = L1.indexOf(k) >= 0;
-            return btn('pfL1', PF2.SK[k][0], { v: k }, 'pill' + (on ? ' on' : ''));
-          })
-          .join('') +
+        PF2.SKILLS.reduce(function (out, k) {
+          if (!!base[k]) return out;
+          var on = L1.indexOf(k) >= 0;
+          out.push(btn('pfL1', PF2.SK[k][0], { v: k }, 'pill' + (on ? ' on' : '')));
+          return out;
+        }, []).join('') +
         '</div>';
       var bgL = d.lores.filter(function (l) {
         return l.pick;
@@ -637,44 +632,43 @@
       var extra = sk.extra || [];
       h +=
         '<h4>Trained by a feat or feature</h4><p class="small muted">For feats like Natural Skill or Skill Training whose skills aren’t chosen elsewhere.</p><div class="pills">' +
-        PF2.SKILLS.filter(function (k) {
-          return (!base[k] && L1.indexOf(k) < 0) || extra.indexOf(k) >= 0;
-        })
-          .map(function (k) {
-            return btn('pfExtra', PF2.SK[k][0], { v: k }, 'pill small' + (extra.indexOf(k) >= 0 ? ' on' : ''));
-          })
-          .join('') +
+        PF2.SKILLS.reduce(function (out, k) {
+          if ((!base[k] && L1.indexOf(k) < 0) || extra.indexOf(k) >= 0)
+            out.push(btn('pfExtra', PF2.SK[k][0], { v: k }, 'pill small' + (extra.indexOf(k) >= 0 ? ' on' : '')));
+          return out;
+        }, []).join('') +
         '</div>';
       return h + '</details>';
     }
     // A "choose one" inside a feature or feat (racket, muse, bloodline, Versatile Heritage's feat…): opens the picker, where each option can be read first.
     function choicesFor(d, filter) {
       return d.open
-        .filter(filter)
-        .map(function (o) {
+        .reduce(function (out, o) {
+          if (!filter(o)) return out;
           var sel = o.options.filter(function (op) {
             return String(op.value) === String(o.value);
           })[0];
-          return (
+          out.push(
             '<div class="pf-choice"><button type="button" class="pf-pickcard' +
-            (sel && sel.e ? rar(sel.e) : '') +
-            '" data-act="pfPick" data-k="choice" data-key="' +
-            esc(o.key) +
-            '"><small>' +
-            esc(o.label) +
-            '</small><b>' +
-            (sel ? esc(sel.label) : 'Choose…') +
-            '</b></button>' +
-            (sel && sel.e && sel.e.d
-              ? '<details class="small pf-desc"><summary>About ' +
-                esc(sel.label) +
-                '</summary>' +
-                md(sel.e.d) +
-                '</details>'
-              : '') +
-            '</div>'
+              (sel && sel.e ? rar(sel.e) : '') +
+              '" data-act="pfPick" data-k="choice" data-key="' +
+              esc(o.key) +
+              '"><small>' +
+              esc(o.label) +
+              '</small><b>' +
+              (sel ? esc(sel.label) : 'Choose…') +
+              '</b></button>' +
+              (sel && sel.e && sel.e.d
+                ? '<details class="small pf-desc"><summary>About ' +
+                  esc(sel.label) +
+                  '</summary>' +
+                  md(sel.e.d) +
+                  '</details>'
+                : '') +
+              '</div>'
           );
-        })
+          return out;
+        }, [])
         .join('');
     }
     function choiceEntries(o) {
@@ -1666,12 +1660,10 @@
           .join('') +
         '<select data-pfcondadd="1" aria-label="Add a condition"><option value="">+ Condition…</option>' +
         conds
-          .filter(function (c) {
-            return have.indexOf(c.n) < 0;
-          })
-          .map(function (c) {
-            return '<option>' + esc(c.n) + '</option>';
-          })
+          .reduce(function (out, c) {
+            if (have.indexOf(c.n) < 0) out.push('<option>' + esc(c.n) + '</option>');
+            return out;
+          }, [])
           .join('') +
         '</select></div>' +
         have
@@ -2224,12 +2216,10 @@
               '</b> <small class="muted">' +
               x.ab.toUpperCase() +
               x.parts
-                .filter(function (p) {
-                  return p.v;
-                })
-                .map(function (p) {
-                  return ' · ' + esc(p.label) + ' ' + fmt(p.v);
-                })
+                .reduce(function (out, p) {
+                  if (p.v) out.push(' · ' + esc(p.label) + ' ' + fmt(p.v));
+                  return out;
+                }, [])
                 .join('') +
               '</small></span>' +
               teml(x.rank) +
@@ -2613,13 +2603,10 @@
       var X = PF2.index(),
         f = U.actF || 'mine',
         q = (U.actQ || '').toLowerCase();
-      var mine = d.items
-        .filter(function (it) {
-          return it.e.a;
-        })
-        .map(function (it) {
-          return it.e;
-        });
+      var mine = d.items.reduce(function (out, it) {
+        if (it.e.a) out.push(it.e);
+        return out;
+      }, []);
       var all =
         f === 'mine'
           ? mine
@@ -3703,13 +3690,10 @@
           fmt(d.perception.v) +
           '.',
         'Skills: ' +
-          PF2.SKILLS.filter(function (k) {
-            return d.rank[k];
-          })
-            .map(function (k) {
-              return PF2.SK[k][0] + ' ' + PF2.RANK[d.rank[k]].toLowerCase();
-            })
-            .join(', ') +
+          PF2.SKILLS.reduce(function (out, k) {
+            if (d.rank[k]) out.push(PF2.SK[k][0] + ' ' + PF2.RANK[d.rank[k]].toLowerCase());
+            return out;
+          }, []).join(', ') +
           '.',
         'Feats: ' +
           Object.keys(ch.feats || {})
@@ -3721,12 +3705,10 @@
           '.',
         'Empty feat slots: ' +
           ((d.slots || [])
-            .filter(function (s) {
-              return !ch.feats[s.key];
-            })
-            .map(function (s) {
-              return '[' + s.key + '] ' + slotLabel(s, d);
-            })
+            .reduce(function (out, s) {
+              if (!ch.feats[s.key]) out.push('[' + s.key + '] ' + slotLabel(s, d));
+              return out;
+            }, [])
             .join(', ') || 'none') +
           '.',
         d.open.filter(function (o) {
@@ -3734,27 +3716,26 @@
         }).length
           ? 'Choices still open: ' +
             d.open
-              .filter(function (o) {
-                return o.value === '';
-              })
-              .map(function (o) {
-                return (
-                  '[' +
-                  o.key +
-                  '] ' +
-                  o.label +
-                  ' (' +
-                  o.item +
-                  '; options: ' +
-                  o.options
-                    .slice(0, 25)
-                    .map(function (x) {
-                      return x.label;
-                    })
-                    .join(', ') +
-                  ')'
-                );
-              })
+              .reduce(function (out, o) {
+                if (o.value === '')
+                  out.push(
+                    '[' +
+                      o.key +
+                      '] ' +
+                      o.label +
+                      ' (' +
+                      o.item +
+                      '; options: ' +
+                      o.options
+                        .slice(0, 25)
+                        .map(function (x) {
+                          return x.label;
+                        })
+                        .join(', ') +
+                      ')'
+                  );
+                return out;
+              }, [])
               .join(' | ')
           : '',
         d.warnings.length ? 'To finish: ' + d.warnings.slice(0, 15).join(' | ') : '',

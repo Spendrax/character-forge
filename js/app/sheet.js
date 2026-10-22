@@ -820,13 +820,10 @@ function stepSheet() {
           .join('') +
         '</ul>'
       : '<p class="muted">None listed.</p>');
-  var coins = ['pp', 'gp', 'ep', 'sp', 'cp']
-    .filter(function (k) {
-      return +ch.money[k] > 0;
-    })
-    .map(function (k) {
-      return (+ch.money[k]).toLocaleString('en') + ' ' + k;
-    });
+  var coins = ['pp', 'gp', 'ep', 'sp', 'cp'].reduce(function (out, k) {
+    if (+ch.money[k] > 0) out.push((+ch.money[k]).toLocaleString('en') + ' ' + k);
+    return out;
+  }, []);
   if (ch.items.length || coins.length) {
     h +=
       '<h3>Items</h3>' +

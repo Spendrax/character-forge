@@ -174,13 +174,10 @@
               })
               .join(', ')
           );
-          left = rolls
-            .filter(function (r) {
-              return r[1] === top;
-            })
-            .map(function (r) {
-              return r[0];
-            });
+          left = rolls.reduce(function (out, r) {
+            if (r[1] === top) out.push(r[0]);
+            return out;
+          }, []);
         }
         var text = (lines.length ? lines.join(' · then ') + ': ' : '') + name(left[0]) + ' gets ' + x.n + '.';
         S.roll[v] = { result: text };

@@ -1180,13 +1180,11 @@
                 [11, 3],
                 [17, 4]
               ]),
-              D.disciplines
-                .filter(function (d) {
-                  return d[0] !== 'Elemental Attunement';
-                })
-                .map(function (d) {
-                  return { v: d[0], label: d[0], pre: d[1] ? 'Level ' + d[1] : '', t: d[2], disabled: d[1] > clv };
-                }),
+              D.disciplines.reduce(function (out, d) {
+                if (d[0] !== 'Elemental Attunement')
+                  out.push({ v: d[0], label: d[0], pre: d[1] ? 'Level ' + d[1] : '', t: d[2], disabled: d[1] > clv });
+                return out;
+              }, []),
               G('Elemental Discipline')
             );
           if (sc.id === 'fighter:arcane-archer')
@@ -1421,22 +1419,20 @@
             step,
             'Fighting Initiate: Fighting Style',
             1,
-            R.cls('fighter')
-              .fightingStyles.filter(function (n) {
-                return tagOk(/\(UA\)/.test(n) ? 'ua' : 'official', filters);
-              })
-              .map(function (n) {
-                var taken = styleKeys.some(function (k) {
-                  return k !== S + '.fs' && own(k).indexOf(n) >= 0;
-                });
-                return {
-                  v: n,
-                  label: n,
-                  t: D.fightingStyles[n] || '',
-                  disabled: taken,
-                  why: taken ? 'you already have it' : ''
-                };
-              }),
+            R.cls('fighter').fightingStyles.reduce(function (out, n) {
+              if (!tagOk(/\(UA\)/.test(n) ? 'ua' : 'official', filters)) return out;
+              var taken = styleKeys.some(function (k) {
+                return k !== S + '.fs' && own(k).indexOf(n) >= 0;
+              });
+              out.push({
+                v: n,
+                label: n,
+                t: D.fightingStyles[n] || '',
+                disabled: taken,
+                why: taken ? 'you already have it' : ''
+              });
+              return out;
+            }, []),
             Object.assign({ group: 'Fighting Style' }, X)
           );
           break;
@@ -2064,9 +2060,8 @@
           return 'c:' + w.id;
         })
       );
-    out.gearBoosts = BOOSTS.filter(function (b) {
-      return picked[b[0]];
-    }).map(function (b) {
+    out.gearBoosts = BOOSTS.reduce(function (out, b) {
+      if (!picked[b[0]]) return out;
       var cands =
         b[1] === 'weapon'
           ? weaponKeys
@@ -2079,8 +2074,9 @@
               : ['focus'];
       var t = boostOn[b[0]];
       if (cands.indexOf(t) < 0) t = cands.length === 1 ? cands[0] : ''; // only one place it can go: it goes there by itself
-      return { n: b[0], kind: b[1], bonus: b[2], what: b[3], target: t, cands: cands };
-    });
+      out.push({ n: b[0], kind: b[1], bonus: b[2], what: b[3], target: t, cands: cands });
+      return out;
+    }, []);
     // magic bonuses don't add up on one item: the best one counts
     function gearBonus(key) {
       var v = +magic[key] || 0,
@@ -2480,22 +2476,19 @@
         });
     });
     var seenInnate = {};
-    out.innate = innate
-      .filter(function (x) {
-        var k = x.kind + '|' + x.name;
-        if (seenInnate[k]) return false;
-        seenInnate[k] = 1;
-        return true;
-      })
-      .map(function (x) {
-        var ab = ABNAME[x.ability] || (/chosen with your lineage/.test(x.ability) ? out.linSpellAbility : '') || '';
-        var r = Object.assign({}, x, { ab: ab, ready: level >= x.minLevel, spell: D.findSpell(x.name) });
-        if (ab) {
-          r.dc = 8 + pb + M(ab) + xn('spellDC');
-          r.atk = pb + M(ab) + xn('spellAtk');
-        }
-        return r;
-      });
+    out.innate = innate.reduce(function (list, x) {
+      var k = x.kind + '|' + x.name;
+      if (seenInnate[k]) return list;
+      seenInnate[k] = 1;
+      var ab = ABNAME[x.ability] || (/chosen with your lineage/.test(x.ability) ? out.linSpellAbility : '') || '';
+      var r = Object.assign({}, x, { ab: ab, ready: level >= x.minLevel, spell: D.findSpell(x.name) });
+      if (ab) {
+        r.dc = 8 + pb + M(ab) + xn('spellDC');
+        r.atk = pb + M(ab) + xn('spellAtk');
+      }
+      list.push(r);
+      return list;
+    }, []);
 
     // ----- chosen options become features -----
     out.choices.forEach(function (c) {
@@ -2809,12 +2802,10 @@
   // "(a) X or (b) Y" -> ["X", "Y"]
   R.parseEquip = function (line) {
     if (!/^\(a\)/.test(line)) return [line];
-    return line
-      .split(/\s*(?:,?\s*or\s+)?\([a-d]\)\s*/)
-      .filter(Boolean)
-      .map(function (s) {
-        return s.charAt(0).toUpperCase() + s.slice(1);
-      });
+    return line.split(/\s*(?:,?\s*or\s+)?\([a-d]\)\s*/).reduce(function (out, s) {
+      if (s) out.push(s.charAt(0).toUpperCase() + s.slice(1));
+      return out;
+    }, []);
   };
 
   root.Rules = R;

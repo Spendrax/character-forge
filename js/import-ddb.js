@@ -131,11 +131,11 @@
       if (m.type === 'proficiency' && SKILLS.indexOf(m.subType) >= 0) prof[m.subType] = 1;
       if (m.type === 'expertise' && SKILLS.indexOf(m.subType) >= 0) exp[m.subType] = 1;
     });
-    c.skills = SKILLS.filter(function (s) {
-      return prof[s] || exp[s];
-    }).map(function (s) {
-      return { typeName: s.replace(/-/g, ' '), proficiencyName: exp[s] ? 'EXPERTISE' : 'PROFICIENT' };
-    });
+    c.skills = SKILLS.reduce(function (out, s) {
+      if (prof[s] || exp[s])
+        out.push({ typeName: s.replace(/-/g, ' '), proficiencyName: exp[s] ? 'EXPERTISE' : 'PROFICIENT' });
+      return out;
+    }, []);
     c.proficiencies = [];
     M.forEach(function (m) {
       if (m.type === 'language')
@@ -220,13 +220,10 @@
       ['Enemies', N.enemies],
       ['Personal possessions', N.personalPossessions],
       ['Other holdings', N.otherHoldings]
-    ]
-      .filter(function (x) {
-        return x[1];
-      })
-      .map(function (x) {
-        return { text: x[0] + ': ' + x[1] };
-      });
+    ].reduce(function (out, x) {
+      if (x[1]) out.push({ text: x[0] + ': ' + x[1] });
+      return out;
+    }, []);
     if (T.appearance) c.notes.push({ text: 'Appearance: ' + T.appearance });
     c.baseHp = d.overrideHitPoints || d.baseHitPoints || 0;
     return c;

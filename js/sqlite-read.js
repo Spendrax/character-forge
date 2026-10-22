@@ -149,13 +149,10 @@
     });
   };
   P.tables = function () {
-    return this.schema
-      .filter(function (s) {
-        return s.type === 'table';
-      })
-      .map(function (s) {
-        return s.name;
-      });
+    return this.schema.reduce(function (out, s) {
+      if (s.type === 'table') out.push(s.name);
+      return out;
+    }, []);
   };
   // Column names come from the CREATE TABLE statement. An "INTEGER PRIMARY KEY" column is the rowid.
   P.columns = function (name) {

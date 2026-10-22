@@ -71,30 +71,30 @@ function choiceHtml(c) {
       return !lf || (lf === 'now' ? lvOf(o) <= (c.clv || 20) && !o.disabled : lvOf(o) === +lf);
     };
     var rows = c.options
-      .filter(function (o) {
-        return c.picked.indexOf(o.v) >= 0 || (match(q, o.label + ' ' + o.t + ' ' + (o.pre || '')) && lvOk(o));
-      })
-      .map(function (o) {
+      .reduce(function (out, o) {
+        if (!(c.picked.indexOf(o.v) >= 0 || (match(q, o.label + ' ' + o.t + ' ' + (o.pre || '')) && lvOk(o))))
+          return out;
         var on = c.picked.indexOf(o.v) >= 0;
-        return (
+        out.push(
           '<button type="button" class="opt' +
-          (on ? ' on' : '') +
-          '" data-act="pick" data-key="' +
-          esc(c.key) +
-          '" data-v="' +
-          esc(o.v) +
-          '"' +
-          (o.disabled && !on ? ' disabled' : '') +
-          '><b>' +
-          esc(o.label) +
-          '</b>' +
-          (o.disabled && !on && o.why ? ' <small class="muted">— ' + esc(o.why) + '</small>' : '') +
-          (o.pre ? ' <small class="muted">— requires ' + esc(o.pre) + '</small>' : '') +
-          '<span>' +
-          esc(o.t) +
-          '</span></button>'
+            (on ? ' on' : '') +
+            '" data-act="pick" data-key="' +
+            esc(c.key) +
+            '" data-v="' +
+            esc(o.v) +
+            '"' +
+            (o.disabled && !on ? ' disabled' : '') +
+            '><b>' +
+            esc(o.label) +
+            '</b>' +
+            (o.disabled && !on && o.why ? ' <small class="muted">— ' + esc(o.why) + '</small>' : '') +
+            (o.pre ? ' <small class="muted">— requires ' + esc(o.pre) + '</small>' : '') +
+            '<span>' +
+            esc(o.t) +
+            '</span></button>'
         );
-      })
+        return out;
+      }, [])
       .join('');
     var lvPill = function (v, t) {
       return btn('optLv', t, { key: c.key, v: v }, 'pill small' + (lf === v ? ' on' : ''));
@@ -160,10 +160,10 @@ function choiceHtml(c) {
 }
 function choicesFor(step, filter) {
   return d.choices
-    .filter(function (c) {
-      return c.step === step && (!filter || filter(c));
-    })
-    .map(choiceHtml)
+    .reduce(function (out, c) {
+      if (c.step === step && (!filter || filter(c))) out.push(choiceHtml(c));
+      return out;
+    }, [])
     .join('');
 }
 function featureHtml(f) {
@@ -192,10 +192,10 @@ function featSlotHtml(slot) {
       '</div>';
   if (slot.fixed && slot.feat) h += '<p><b>' + esc(slot.feat.n) + '</b> — ' + esc(slot.feat.t) + '</p>';
   h += d.choices
-    .filter(function (c) {
-      return c.asiSlot === slot.slot || c.key.indexOf(slot.slot + '.') === 0;
-    })
-    .map(choiceHtml)
+    .reduce(function (out, c) {
+      if (c.asiSlot === slot.slot || c.key.indexOf(slot.slot + '.') === 0) out.push(choiceHtml(c));
+      return out;
+    }, [])
     .join('');
   if (slot.feat && slot.feat.pre)
     h += '<p class="small muted">Prerequisite: ' + esc(slot.feat.pre) + ' (not checked automatically).</p>';

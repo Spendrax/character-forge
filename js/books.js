@@ -380,31 +380,29 @@
       ['Blood curses', D.bloodCurses],
       ['Arcane shots', D.arcaneShots],
       ['Runes', D.runes]
-    ]
-      .filter(function (o) {
-        return o[1];
-      })
-      .map(function (o) {
-        var rows = Array.isArray(o[1])
-          ? o[1]
-          : Object.keys(o[1]).map(function (k) {
-              return [k, o[1][k]];
-            });
-        return {
-          t: o[0],
-          md:
-            '# ' +
-            o[0] +
-            '\n\n' +
-            rows
-              .map(function (r) {
-                var mid =
-                  r.length > 2 && r[1] !== '' ? ' *(' + (typeof r[1] === 'number' ? r[1] + ' ki' : r[1]) + ')*' : '';
-                return '**' + r[0] + '.**' + mid + ' ' + r[r.length - 1];
-              })
-              .join('\n\n')
-        };
+    ].reduce(function (out, o) {
+      if (!o[1]) return out;
+      var rows = Array.isArray(o[1])
+        ? o[1]
+        : Object.keys(o[1]).map(function (k) {
+            return [k, o[1][k]];
+          });
+      out.push({
+        t: o[0],
+        md:
+          '# ' +
+          o[0] +
+          '\n\n' +
+          rows
+            .map(function (r) {
+              var mid =
+                r.length > 2 && r[1] !== '' ? ' *(' + (typeof r[1] === 'number' ? r[1] + ' ki' : r[1]) + ')*' : '';
+              return '**' + r[0] + '.**' + mid + ' ' + r[r.length - 1];
+            })
+            .join('\n\n')
       });
+      return out;
+    }, []);
     var traits = function (v) {
       var bits = [],
         sp = v.sp
@@ -447,12 +445,10 @@
                 traits(v) +
                 (v.pick ? '\n\n**' + v.pick.label + ':** ' + v.pick.from.join(', ') : '') +
                 (v.subs || [])
-                  .filter(function (s) {
-                    return s.tr || s.a;
-                  })
-                  .map(function (s) {
-                    return '\n\n### ' + s.n + '\n\n' + src(s.s, s.tag) + '\n\n' + traits(s);
-                  })
+                  .reduce(function (out, s) {
+                    if (s.tr || s.a) out.push('\n\n### ' + s.n + '\n\n' + src(s.s, s.tag) + '\n\n' + traits(s));
+                    return out;
+                  }, [])
                   .join('')
               );
             })

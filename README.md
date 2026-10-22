@@ -285,6 +285,13 @@ How a tap works: a button has `data-act="name"`, the click goes to `actions.name
 
 Code style: [Prettier](https://prettier.io) with `.prettierrc.json` (run `npx prettier --write .`).
 
+- Instead of chaining `.filter(…).map(…)`, use one `.reduce(…)` that pushes what it keeps:
+
+      var names = list.reduce(function (out, x) {
+        if (x.ready) out.push(x.name);
+        return out;
+      }, []);
+
 To add content, append an entry to the matching file in `data/` following its neighbours.
 
 ## Attribution

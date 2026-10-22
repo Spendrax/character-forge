@@ -834,13 +834,10 @@
       return (L[api.game()] = L[api.game()] || []);
     }
     function revealed() {
-      return lore()
-        .filter(function (l) {
-          return l.shown;
-        })
-        .map(function (l) {
-          return { lid: l.lid, kind: l.kind, name: l.name, text: l.text, done: l.done, pic: l.pic };
-        });
+      return lore().reduce(function (out, l) {
+        if (l.shown) out.push({ lid: l.lid, kind: l.kind, name: l.name, text: l.text, done: l.done, pic: l.pic });
+        return out;
+      }, []);
     }
     function pushLore(st) {
       var want = JSON.stringify(revealed());
@@ -1167,15 +1164,13 @@
           k = M.sec,
           passive = /^Passive/.test(k);
         M.secLabel = k + ', rolled ' + clock(Date.now());
-        M.secRes = targets(st, M.secTo || {})
-          .filter(function (p) {
-            return p.status && p.status.bon && p.status.bon[k] != null;
-          })
-          .map(function (p) {
-            var b = p.status.bon[k],
-              r = 1 + Math.floor(Math.random() * 20);
-            return { n: p.name, b: b, roll: r, total: passive ? b : r + b, passive: passive };
-          });
+        M.secRes = targets(st, M.secTo || {}).reduce(function (out, p) {
+          if (!(p.status && p.status.bon && p.status.bon[k] != null)) return out;
+          var b = p.status.bon[k],
+            r = 1 + Math.floor(Math.random() * 20);
+          out.push({ n: p.name, b: b, roll: r, total: passive ? b : r + b, passive: passive });
+          return out;
+        }, []);
       },
       dmLogClear: function () {
         dm({ clearLog: true });
@@ -1241,12 +1236,10 @@
       dmRecapFill: function () {
         var ev = (St() || {}).events || [];
         M.recap = ev
-          .filter(function (e) {
-            return !/joined the table|table opened|new session/i.test(e.text);
-          })
-          .map(function (e) {
-            return '- ' + e.text;
-          })
+          .reduce(function (out, e) {
+            if (!/joined the table|table opened|new session/i.test(e.text)) out.push('- ' + e.text);
+            return out;
+          }, [])
           .join('\n');
       },
       dmRecap: function () {

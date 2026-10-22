@@ -895,11 +895,12 @@
         .map(function (l) {
           return l.trim();
         })
-        .filter(Boolean)
-        .map(function (l) {
+        .reduce(function (out, l) {
+          if (!l) return out;
           var i = l.indexOf('. ');
-          return i > 0 && i < 60 ? [l.slice(0, i), l.slice(i + 2)] : ['', l];
-        });
+          out.push(i > 0 && i < 60 ? [l.slice(0, i), l.slice(i + 2)] : ['', l]);
+          return out;
+        }, []);
     }
     function mineById(id) {
       return (store.myMonsters || []).filter(function (m) {

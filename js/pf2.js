@@ -407,13 +407,11 @@
       c = r.choices,
       out = [];
     if (Array.isArray(c))
-      return c
-        .filter(function (o) {
-          return o && (!o.predicate || /"skill:/.test(JSON.stringify(o.predicate)) || test(o.predicate, ctx.facts));
-        })
-        .map(function (o) {
-          return { value: o.value, label: o.label || String(o.value) };
-        });
+      return c.reduce(function (out, o) {
+        if (o && (!o.predicate || /"skill:/.test(JSON.stringify(o.predicate)) || test(o.predicate, ctx.facts)))
+          out.push({ value: o.value, label: o.label || String(o.value) });
+        return out;
+      }, []);
     if (typeof c === 'string') {
       if (/skills/i.test(c))
         return SKILLS.map(function (k) {

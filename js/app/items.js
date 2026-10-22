@@ -118,16 +118,14 @@ function BOOKS_MD(t) {
 // the app's magic items plus the ones only in your imported texts
 function allMagic() {
   var extra = window.ItemTexts
-    ? ItemTexts.list()
-        .filter(function (x) {
-          var k = inorm(x.n);
-          return !D.magicItems.some(function (m) {
-            return inorm(m[0]) === k;
-          });
-        })
-        .map(function (x) {
-          return [x.n, [x.r || 'Unknown'], x.type || 'Imported item', x.att ? 1 : 0, ''];
-        })
+    ? ItemTexts.list().reduce(function (out, x) {
+        var k = inorm(x.n);
+        var known = D.magicItems.some(function (m) {
+          return inorm(m[0]) === k;
+        });
+        if (!known) out.push([x.n, [x.r || 'Unknown'], x.type || 'Imported item', x.att ? 1 : 0, '']);
+        return out;
+      }, [])
     : [];
   return extra.length
     ? D.magicItems.concat(extra).sort(function (a, b) {
