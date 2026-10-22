@@ -2425,10 +2425,32 @@ html {
   height: 80px;
   display: block;
 }
+/* ≡ opens the player tall, with the song list: tap a song to play it */
+.audio-dock.big iframe {
+  height: 352px;
+  max-height: 60vh;
+}
+.audio-dock-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.audio-cats {
+  margin: 0.6rem 0;
+}
+.audio-fights {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.3rem 0 0.6rem;
+}
 body.has-dock::after {
   content: '';
   display: block;
   height: 90px;
+}
+body.has-dock.dock-big::after {
+  height: 360px;
 }
 .audio-main a.btn,
 .audio-item a.btn {

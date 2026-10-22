@@ -99,6 +99,12 @@ Quick random loot. **Pocket money** is what each creature carries: a few coins f
 
 When you press **End fight** in Encounters, the app asks whether to roll treasure. Say yes and it opens Treasures with loot that fits the fight: a hoard if one monster was as strong as the party (its challenge rating at least the party's average level), pocket money otherwise. You can switch between the two before rolling again.
 
+### Audio
+
+Music sorted like DnDify: **categories** (Towns, Wilderness, Underground, Magic and darkness, Moods), each with its **scenes** (Tavern, Village, City, Castle and court, Temple, Travel, Forest, Snow and ice, Desert, Jungle, Sea and pirates, Camp and night, Caves, Dungeon, Tombs and undead, Feywild, Mystery, Horror, Villain's lair, Calm, Tension, Sad, Victory, Funny). Every scene has its **ambience** and three fights: **Standard**, **Tough** and **Boss**; one tap on a fight starts its music (fight music that suits the scene comes first, like pirate combat at sea or undead combat in the tombs). Add your own Spotify or Qobuz links to any scene's ambience or fight, or to one fight for every scene.
+
+The Spotify player sits at the bottom and keeps playing while you use the app: **⏭** skips to the next song, **≡** opens the song list (tap one to play it), **✕** closes it. M&M has its own modern scenes.
+
 ### Books
 
 The free official rules, the System Reference Document 5.1, are built in: races, classes, backgrounds, equipment, feats, playing the game (ability checks, adventuring, combat), spellcasting and every SRD spell, conditions and other game-master rules, and magic items. Read them by chapter, or search the whole book; results jump to the right section with the words highlighted.
