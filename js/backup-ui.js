@@ -215,7 +215,7 @@
             : '<p class="small muted">No backups in your Drive yet.</p>';
       } else
         h +=
-          '<p class="small">Sign in with Google once on this device. The app only sees the files it makes itself, never the rest of your Drive.</p><div class="toolbar">' +
+          '<p class="small">Sign in with Google once on this device. The app only sees the files it makes itself, never the rest of your Drive. <a href="privacy.html" target="_blank" rel="noopener">Privacy</a></p><div class="toolbar">' +
           btn('bkConnect', 'Connect Google Drive', {}, 'btn primary') +
           '</div>';
       h += '</div>';

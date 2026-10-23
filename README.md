@@ -358,6 +358,8 @@ Everywhere a roll is made for you (concentration saves, hit dice, initiative), y
 
 ## Security
 
+- [privacy.html](privacy.html) is the privacy page (Google asks for one to publish the sign-in for the Drive backup).
+
 - No accounts and no tracking: characters (and, if you turn it on, their backup in your own Google Drive, reached only with the `drive.file` permission), books, imported texts and AI keys stay in your browser (localStorage / IndexedDB). Keys are never in this repository; a server key lives only in the server's environment variables.
 - The page has a Content Security Policy: scripts run only from the app itself (and Spotify's player), so text inside an imported file can't run code. Imported pictures must be real image data.
 - `server.js` serves only the app's own files (no hidden files like `.git`, not the server, tests or tools), sends safe headers (no framing, no MIME sniffing, no referrer), checks the AI access code in constant time, and limits the AI and D&D Beyond routes to a few requests a minute per address.

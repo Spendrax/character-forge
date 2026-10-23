@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>Privacy — Character Forge</title>
+<style>
+  :root { color-scheme: light dark; --bg: #fbf8f1; --ink: #2b2420; --accent: #8b2e23; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #1d1a17; --ink: #ece4d8; --accent: #e07a6c; } }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 system-ui, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 42rem; margin: 0 auto; padding: 2rem 16px 3rem; }
+  h1 { font-family: Georgia, serif; color: var(--accent); margin-bottom: 0.2rem; }
+  h2 { font-size: 1.1rem; margin-top: 1.8rem; }
+  a { color: var(--accent); }
+  .muted { opacity: 0.7; }
+</style>
+</head>
+<body>
+<main>
+<h1>Character Forge: privacy</h1>
+<p class="muted">Last updated October 22, 2026</p>
+<p>Character Forge is a free, personal app for building tabletop role-playing characters (D&amp;D 5e, Pathfinder 2e, Mutants &amp; Masterminds 3e) and playing at the table. It has no accounts, no ads and no tracking.</p>
+
+<h2>What stays on your device</h2>
+<p>Your characters, notes, house rules, encounters, imported books and settings are saved in your own browser on your own device. They are not sent to us; we have no server that stores them.</p>
+
+<h2>Google Drive backup (optional)</h2>
+<p>If you choose <b>Connect Google Drive</b> on the Backup page, the app asks Google for the <code>drive.file</code> permission. With it, the app can only create and update its own files: a <b>Character Forge</b> folder in your Drive with your backup files. It cannot see, read or change any other file in your Drive.</p>
+<ul>
+  <li>The backup goes straight from your browser to your own Google Drive. Nobody else, including the app’s author, receives a copy.</li>
+  <li>Google’s sign-in stays in your browser for about an hour. No password is ever seen by the app.</li>
+  <li>The data is used only to back up and restore your own characters. It is not shared, sold or used for anything else.</li>
+  <li>You can disconnect at any time on the Backup page, or remove the app’s access in your Google Account (Security, Third-party connections). Your backup files stay in your Drive until you delete them.</li>
+</ul>
+<p>Character Forge’s use of information received from Google APIs follows the <a href="https://developers.google.com/terms/api-services-user-data-policy" rel="noopener">Google API Services User Data Policy</a>, including the Limited Use requirements.</p>
+
+<h2>Other optional features</h2>
+<ul>
+  <li><b>Playing at a table:</b> when you join a game, your character sheet and what you share (rolls, notes, messages) go directly to the other players’ devices, not through our servers.</li>
+  <li><b>Spotify:</b> if you connect Spotify, your login stays in your browser and the app only talks to Spotify to play music.</li>
+  <li><b>AI helper:</b> if you add your own AI key, it stays in your browser and your questions go only to the AI service you chose.</li>
+</ul>
+
+<h2>Contact</h2>
+<p>Questions: <a href="https://github.com/Spendrax/character-forge/issues" rel="noopener">open an issue on GitHub</a>.</p>
+<p><a href="./">← Back to Character Forge</a></p>
+</main>
+</body>
+</html>
