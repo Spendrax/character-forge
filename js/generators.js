@@ -342,6 +342,208 @@
     'Feather'
   ];
 
+  // ---------- physical description: age, build, height, skin, hair, eyes and clothes, fitting the lineage ----------
+  var AGE = [
+    'young',
+    'young',
+    'in their prime',
+    'in their prime',
+    'middle-aged',
+    'middle-aged',
+    'getting on in years',
+    'old'
+  ];
+  var BUILD = [
+    'lean and wiry',
+    'broad-shouldered',
+    'stocky',
+    'heavyset',
+    'slender',
+    'muscular',
+    'soft and round',
+    'bony and gaunt',
+    'compact and strong',
+    'tall and lanky'
+  ];
+  var HEIGHT = ['short', 'a little short', 'average height', 'average height', 'tall', 'very tall'];
+  // per lineage: [skin, hair, eyes, extra features]; old age changes the hair
+  var BODY = {
+    Human: [
+      ['pale', 'fair, freckled', 'olive', 'tan', 'weathered brown', 'deep brown', 'dark ebony', 'ruddy', 'sun-browned'],
+      ['black', 'brown', 'chestnut', 'auburn', 'blond', 'red', 'sandy', 'dark curly', 'straight black'],
+      ['brown', 'dark brown', 'hazel', 'green', 'blue', 'grey', 'amber'],
+      [
+        'a short beard',
+        'a neat moustache',
+        'long braided hair',
+        'a shaved head',
+        'hair tied in a tail',
+        'a weathered face',
+        'calloused hands',
+        ''
+      ]
+    ],
+    Elf: [
+      ['porcelain', 'pale gold', 'bronze', 'copper', 'moonlit grey', 'dusky blue'],
+      ['silver', 'platinum', 'honey blond', 'copper', 'raven black', 'deep green', 'pale blue'],
+      ['violet', 'emerald', 'gold', 'silver', 'sea blue', 'amber'],
+      [
+        'long pointed ears',
+        'ears adorned with rings',
+        'an ageless, fine-boned face',
+        'hair woven with leaves',
+        'a feather braided in the hair',
+        'a perfectly still posture'
+      ]
+    ],
+    Dwarf: [
+      ['ruddy', 'tan', 'deep brown', 'earthy grey', 'weathered bronze'],
+      ['black', 'brown', 'red', 'ginger', 'iron grey', 'white'],
+      ['dark brown', 'grey', 'hazel', 'steel blue', 'deep green'],
+      [
+        'a braided beard down to the belt',
+        'a forked beard with iron rings',
+        'a beard tucked into the belt',
+        'thick sideburns',
+        'a heavy brow',
+        'arms like tree trunks'
+      ]
+    ],
+    Halfling: [
+      ['rosy', 'tan', 'olive', 'brown', 'freckled'],
+      ['curly brown', 'curly sandy', 'black', 'chestnut', 'auburn'],
+      ['brown', 'hazel', 'bright blue', 'green'],
+      ['bare, hairy feet', 'round, rosy cheeks', 'an easy smile', 'nimble little hands', 'a pipe always at hand']
+    ],
+    Gnome: [
+      ['tan', 'ruddy', 'woody brown', 'pale', 'grey-brown'],
+      ['wild white', 'spiky orange', 'tufted brown', 'sky blue', 'moss green', 'pink'],
+      ['bright blue', 'twinkling brown', 'emerald', 'amber'],
+      [
+        'a huge nose',
+        'spectacles perched on the nose',
+        'a tidy pointed beard',
+        'tools sticking out of every pocket',
+        'ears that twitch when curious'
+      ]
+    ],
+    'Half-Orc': [
+      ['grey-green', 'olive', 'ashen grey', 'pale green', 'dark grey'],
+      ['coarse black', 'dark brown', 'shaved', 'iron grey'],
+      ['dark brown', 'black', 'amber', 'red-brown'],
+      ['small tusks', 'a jutting jaw', 'a broken tusk', 'tribal scars', 'heavy, scarred knuckles', 'a sloped brow']
+    ],
+    Tiefling: [
+      ['crimson', 'deep red', 'violet', 'dusky purple', 'ash grey', 'pale lavender', 'human-toned'],
+      ['black', 'dark blue', 'deep purple', 'red', 'white'],
+      ['solid gold', 'solid black', 'glowing red', 'silver', 'white without pupils'],
+      [
+        'curling ram horns',
+        'swept-back horns',
+        'small horns capped with silver',
+        'a long tail that swishes',
+        'a tail tipped with a spade',
+        'sharp canine teeth'
+      ]
+    ],
+    Dragonborn: [
+      [
+        'red scales',
+        'brass scales',
+        'bronze scales',
+        'blue scales',
+        'black scales',
+        'green scales',
+        'white scales',
+        'gold scales',
+        'silver scales',
+        'copper scales'
+      ],
+      ['no', 'no', 'frilled', 'spiny'],
+      ['yellow', 'amber', 'red', 'gold', 'silver'],
+      [
+        'a crest of horns',
+        'a long snout',
+        'fleshy whiskers',
+        'a chipped horn',
+        'scales that shimmer in the light',
+        'a tail thick as an arm'
+      ]
+    ]
+  };
+  // clothes by job, else by how well off they look
+  var CLOTHES = {
+    blacksmith: 'a scorched leather apron over bare, sooty arms',
+    baker: 'a flour-dusted apron and rolled sleeves',
+    'city guard': 'a dented breastplate over the city’s colours, with a spear',
+    dockworker: 'a sweat-stained vest and tarred trousers',
+    fishmonger: 'oilskins that smell of the sea',
+    herbalist: 'a green cloak with pouches of dried herbs',
+    innkeeper: 'a clean apron and a ring of keys',
+    merchant: 'a fine coat with brass buttons and a heavy purse',
+    priest: 'simple robes and a holy symbol on a cord',
+    scribe: 'ink-stained cuffs and a satchel of scrolls',
+    farmer: 'a straw hat, muddy boots and a homespun shirt',
+    hunter: 'worn leathers, a fur-lined cloak and a bow',
+    sailor: 'a striped shirt, a knitted cap and bare feet',
+    'street urchin': 'patched rags and no shoes',
+    noble: 'silk and velvet in the latest fashion, with rings on every finger',
+    'retired adventurer': 'an old, well-kept coat and a sword that hasn’t been drawn in years',
+    'tax collector': 'a sober black coat and a ledger under the arm',
+    bard: 'bright, mismatched colours and a lute on the back',
+    thief: 'dark, close-fitting clothes and soft boots',
+    stablehand: 'straw in the hair and boots caked with mud',
+    cartographer: 'a travelling coat with map cases and a compass',
+    apothecary: 'a stained smock and a belt of small vials',
+    gravedigger: 'a muddy coat, a lantern and a shovel',
+    tailor: 'an immaculate, self-made suit with pins on the lapel',
+    carpenter: 'a tool belt and sawdust on the sleeves',
+    ferryman: 'a hooded cloak and a long pole',
+    mercenary: 'mismatched armour and a well-used blade',
+    beggar: 'a threadbare blanket worn as a cloak',
+    'wizard’s apprentice': 'robes a size too big, singed at the hem',
+    courier: 'a short cloak, riding boots and a sealed satchel'
+  };
+  function cap(t) {
+    return t.charAt(0).toUpperCase() + t.slice(1);
+  }
+  function body(lin, job, r) {
+    var B = BODY[lin] || BODY.Human,
+      age = pick(AGE, r),
+      hair = pick(B[1], r),
+      feat = pick(B[3], r),
+      ht = pick(HEIGHT, r),
+      old = /old|getting on/.test(age) && hair !== 'no' && hair !== 'shaved';
+    if (old && lin !== 'Dragonborn') hair = pick(['grey', 'white', 'thinning grey', 'silver-streaked ' + hair], r);
+    var h =
+      lin === 'Dragonborn'
+        ? hair === 'no'
+          ? ''
+          : 'a ' + hair + ' head'
+        : hair === 'shaved'
+          ? 'a shaved head'
+          : hair + ' hair';
+    return {
+      age: age,
+      build:
+        cap(age) +
+        ', ' +
+        ht +
+        (lin !== 'Human' && ht !== 'average height' ? ' for a ' + lin.toLowerCase() : '') +
+        ', ' +
+        pick(BUILD, r),
+      face:
+        cap(pick(B[0], r)) +
+        (lin === 'Dragonborn' ? '' : ' skin') +
+        (h ? ', ' + h : '') +
+        ' and ' +
+        pick(B[2], r) +
+        ' eyes' +
+        (feat ? '; ' + feat : ''),
+      clothes: cap(CLOTHES[job] || 'plain, practical travelling clothes')
+    };
+  }
+
   function name(lineage, r) {
     var N = NAMES[lineage] || NAMES.Human,
       first = pick(r && r() < 0.5 ? N[0] : N[1], r),
@@ -353,11 +555,19 @@
     var lin =
       lineage ||
       pick(['Human', 'Human', 'Human', 'Elf', 'Dwarf', 'Halfling', 'Gnome', 'Half-Orc', 'Tiefling', 'Dragonborn'], r);
+    var job = pick(JOBS, r);
     return {
       name: name(lin, r),
       lineage: lin,
-      job: pick(JOBS, r),
-      look: pick(LOOKS, r),
+      job: job,
+      body: body(lin, job, r),
+      look: pick(
+        LOOKS.reduce(function (a, l) {
+          if (!/hair|tall|short|dressed|grey/.test(l)) a.push(l);
+          return a;
+        }, []),
+        r
+      ),
       manner: pick(MANNER, r),
       trait: pick(TRAITS, r),
       want: pick(WANTS, r),
@@ -517,7 +727,18 @@
         ' <small class="muted">' +
         esc(n.lineage + ' ' + n.job) +
         '</small></h4><ul class="gen-list">' +
-        '<li><b>Looks:</b> ' +
+        (n.body
+          ? '<li><b>Body:</b> ' +
+            esc(n.body.build) +
+            '.</li><li><b>Face:</b> ' +
+            esc(n.body.face) +
+            '.</li><li><b>Wears:</b> ' +
+            esc(n.body.clothes) +
+            '.</li>'
+          : '') +
+        '<li><b>' +
+        (n.body ? 'Stands out:' : 'Looks:') +
+        '</b> ' +
         esc(n.look) +
         '</li><li><b>Manner:</b> ' +
         esc(n.manner) +
