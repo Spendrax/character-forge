@@ -4806,3 +4806,25 @@ html.dice3d-lock body {
 .bk-confirm {
   border-color: var(--accent, #8b2c22);
 }
+
+/* a new version is out: offer to reload (js/boot.js) */
+.update-bar {
+  position: fixed;
+  top: 0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  padding: 0.5rem 0.8rem;
+  border-radius: 0.8rem;
+  background: var(--panel, #fff);
+  color: inherit;
+  border: 2px solid var(--accent);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
