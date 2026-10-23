@@ -59,7 +59,9 @@
 
   // ---------- signing in ----------
   var waiting = []; // what to do once the sign-in window comes back
-  function connect(id, then) {
+  // silent: the quick reconnect when the hour is over (js/backup-ui.js): Google's window shows nothing and closes at
+  // once if you are still signed in to Google, else it closes with an error (then the Back up now button is there)
+  function connect(id, then, silent) {
     id = String(id || clientId()).trim();
     if (!/^[\w-]+\.apps\.googleusercontent\.com$/.test(id))
       return Promise.reject(
@@ -79,7 +81,8 @@
         ['scope', SCOPE],
         ['include_granted_scopes', 'true'],
         ['state', s.state],
-        ['prompt', s.known ? '' : 'select_account']
+        ['prompt', silent ? 'none' : s.known ? '' : 'select_account'],
+        ['login_hint', s.known && s.email ? s.email : '']
       ]
         .reduce(function (a, p) {
           if (p[1]) a.push(p[0] + '=' + encodeURIComponent(p[1]));
@@ -94,6 +97,14 @@
       } catch (e) {
         w = null;
       }
+      if (!w && silent) {
+        cancel();
+        return;
+      }
+      if (silent)
+        setTimeout(function () {
+          if (waiting.length) cancel(); // the window was closed by hand
+        }, 30000);
       if (!w) {
         // no small window allowed: go there with the whole page, and come back here
         set('back', then || 'backup');
@@ -105,6 +116,7 @@
   function landed() {
     var s = get(),
       list = waiting;
+    if (s.access && !s.email) whoami();
     waiting = [];
     list.forEach(function (w) {
       if (s.access && Date.now() < s.until) w[0]();
@@ -195,6 +207,15 @@
         return j;
       });
     });
+  }
+  // the Google account's address, so the next sign-in doesn't ask which account
+  function whoami() {
+    return call('GET', 'https://www.googleapis.com/drive/v3/about?fields=user(emailAddress)').then(
+      function (j) {
+        if (j && j.user && j.user.emailAddress) set('email', j.user.emailAddress);
+      },
+      function () {}
+    );
   }
   function q(s) {
     return encodeURIComponent(s);

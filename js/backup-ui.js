@@ -189,7 +189,7 @@
           (s.auto === false ? '' : ' checked') +
           '> Back up automatically after changes</label><p class="small muted">Saved in the <b>Character Forge</b> folder of your Drive: <i>' +
           esc(G.MAIN) +
-          '</i>, plus a dated copy each day (the last 14). Google keeps you signed in for an hour; after that, a tap on <b>Back up now</b> signs in again.</p><div class="toolbar">' +
+          '</i>, plus a dated copy each day (the last 14). Google’s sign-in lasts an hour; after that, your first tap in the app signs in again by itself (Google’s window opens and closes at once). If that doesn’t work (signed out of Google), tap <b>Back up now</b>.</p><div class="toolbar">' +
           btn('bkNow', '☁ Back up now', {}, 'btn primary') +
           btn('bkList', '⟲ Restore from Drive…', {}, 'btn') +
           btn('bkOff', 'Disconnect', {}, 'btn') +
@@ -367,6 +367,31 @@
       };
       r.readAsText(f);
     }
+    // The hour of Google sign-in is over: the first tap after opening the app (or after a change) signs in again by
+    // itself, in Google's small window that closes at once, then backs up what is waiting. Browsers only allow that
+    // window on a tap, so it waits for one. If it fails (signed out of Google), it waits 30 minutes before trying again,
+    // and Back up now is there.
+    var triedOpen = false;
+    function autoSignIn(e) {
+      var s = G.state(),
+        t = e.target;
+      if (!s.known || s.auto === false || !(s.last || s.restored) || G.signedIn() || G.waiting() || B.busy) return;
+      if (Date.now() < (s.nextTry || 0) || (triedOpen && !s.pending)) return;
+      if (t && t.closest && t.closest('[data-act^="bk"], input, textarea, select')) return;
+      triedOpen = true;
+      G.connect(G.clientId(), null, true).then(
+        function () {
+          G.set('nextTry', 0);
+          if (G.state().pending) backupNow(true);
+          else api.render();
+        },
+        function () {
+          G.set('nextTry', Date.now() + 30 * 60000);
+          api.render();
+        }
+      );
+    }
+    if (typeof document !== 'undefined') document.addEventListener('click', autoSignIn, true);
     // back from Google's page with the whole page (when the small window was blocked)
     var back = G.returned();
     if (back && !back.popup) {
