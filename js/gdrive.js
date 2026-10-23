@@ -6,8 +6,8 @@
 (function (root) {
   'use strict';
   // The Google Client ID of this app, from console.cloud.google.com (a public name for the app, not a secret).
-  // Empty: each person pastes their own on the Backup page.
-  var CLIENT_ID = '';
+  // Empty: each person pastes their own on the Backup page (for a copy of the app on another address).
+  var CLIENT_ID = '374349247902-sd4inouqpatud060ov82su97gdf44b8e.apps.googleusercontent.com';
   var KEY = 'cf-gdrive', // { id, access, until, state, folder, file, day, last, pending, back }
     AUTH = 'https://accounts.google.com/o/oauth2/v2/auth',
     API = 'https://www.googleapis.com/drive/v3/files',
