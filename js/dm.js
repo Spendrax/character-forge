@@ -705,6 +705,38 @@
         '<p class="small muted">Real time: it burns while you play and shows on every player’s phone. Pause it for a break.</p></div>'
       );
     }
+    // crawling rounds: a counter, with a reminder to check for a random encounter every few rounds (your choice)
+    function crawl() {
+      return (store.sdCrawl = store.sdCrawl || { n: 0, every: 3, die: 6, last: '' });
+    }
+    function crawlHtml() {
+      var C = crawl(),
+        due = C.n > 0 && C.every > 0 && C.n % C.every === 0;
+      return (
+        '<div class="panel sd-crawl"><h3>Crawling rounds</h3><div class="toolbar"><b class="mm-hpts">' +
+        C.n +
+        '</b>' +
+        btn('dmCrawl', '+1 round', { v: 'next' }, 'btn primary') +
+        btn('dmCrawl', '−1', { v: 'back' }, 'btn small') +
+        btn('dmCrawl', 'Reset', { v: 'reset' }, 'btn small') +
+        '</div>' +
+        (due
+          ? '<p class="notice">Round ' +
+            C.n +
+            ': time to check for a random encounter. ' +
+            btn('dmCrawl', '🎲 d' + C.die, { v: 'roll' }, 'btn small primary') +
+            '</p>'
+          : '<p class="small muted">Next encounter check at round ' +
+            (C.every > 0 ? (Math.floor(C.n / C.every) + 1) * C.every : '—') +
+            '.</p>') +
+        (C.last ? '<p class="small rest-msg">' + esc(C.last) + '</p>' : '') +
+        '<div class="toolbar small"><label>Check every <input type="number" min="1" max="20" id="dm-crawl-every" data-dm="crawlEvery" value="' +
+        C.every +
+        '" style="width:4rem"> rounds</label><label>with a d<input type="number" min="2" max="100" id="dm-crawl-die" data-dm="crawlDie" value="' +
+        C.die +
+        '" style="width:4rem"></label></div><p class="small muted">How often and with which die: as your book or your table plays it.</p></div>'
+      );
+    }
     // ---------- acting on the players' characters: damage, healing, conditions, inspiration, rests, XP ----------
     function fxHtml(st) {
       var g = api.game(),
@@ -1020,6 +1052,7 @@
         '</h2>' +
         tilesHtml() +
         tableHtml() +
+        (api.game() === 'sd' ? crawlHtml() : '') +
         '<nav class="mm-tabs dm-tabs">' +
         TABS.map(function (t) {
           return btn('dmTab', t[1], { v: t[0] }, 'mm-tab' + (tab === t[0] ? ' on' : ''));
@@ -1134,6 +1167,23 @@
       dmMsgClear: function () {
         dm({ clearMsgs: true });
         return false;
+      },
+      dmCrawl: function (v) {
+        var C = crawl();
+        if (v === 'next') C.n++;
+        else if (v === 'back') C.n = Math.max(0, C.n - 1);
+        else if (v === 'reset') {
+          C.n = 0;
+          C.last = '';
+        } else if (v === 'roll') {
+          var a = new Uint32Array(1);
+          crypto.getRandomValues(a);
+          var r = 1 + (a[0] % (C.die || 6));
+          C.last = 'Round ' + C.n + ': encounter check d' + C.die + ' → ' + r;
+        }
+        if (v === 'next' && St()) dm({ event: 'Crawling round ' + C.n + '.' });
+        api.save();
+        return v === 'next' && St() ? false : undefined;
       },
       dmTorch: function (v) {
         var st = St();
@@ -1342,6 +1392,12 @@
         return 'keep';
       }
       if (!k || k === 'kind' || k === 'secret' || k === 'cond' || k === 'sec') return null;
+      if (k === 'crawlEvery' || k === 'crawlDie') {
+        crawl()[k === 'crawlEvery' ? 'every' : 'die'] =
+          Math.max(k === 'crawlDie' ? 2 : 1, Math.min(100, Math.round(+t.value) || 0)) || (k === 'crawlDie' ? 6 : 3);
+        api.save();
+        return 'keep';
+      }
       M[k] = t.value;
       return 'keep';
     }

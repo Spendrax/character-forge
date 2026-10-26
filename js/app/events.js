@@ -383,7 +383,7 @@ document.addEventListener('change', function (e) {
   }
   if (ui.section === 'sd-chars') {
     var sc = SDV.onChange(t);
-    if (sc === 'render') render();
+    if (sc === 'render') requestRender(); // after the tap that moved away from the field, so it isn't lost
     if (sc) return;
   }
   if (ui.section === 'mm-heroes') {

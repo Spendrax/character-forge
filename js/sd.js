@@ -340,6 +340,15 @@
           : btn('sdDelAsk', 'Delete', {}, 'btn small')) +
         '<input type="file" id="sdImportFile" accept=".json,application/json" hidden></div>' +
         (U.msg ? '<p class="panel small rest-msg">' + esc(U.msg) + '</p>' : '') +
+        (U.reimport
+          ? '<div class="panel bk-confirm"><p><b>' +
+            esc(c.name) +
+            '</b> is already here. Update it from Shadowdarklings (level, stats, talents, spells, gear), keeping your hit points, luck, notes and the damage you typed? Or add it as a new character?</p><div class="toolbar">' +
+            btn('sdReUpdate', 'Update ' + esc(c.name), {}, 'btn primary') +
+            btn('sdReNew', 'Add as new', {}, 'btn') +
+            btn('sdReNo', 'Cancel', {}, 'btn') +
+            '</div></div>'
+          : '') +
         (c.fromTable
           ? '<p class="panel small rest-msg">📱 ' +
             esc((c.fromTable.player || 'A player') + '’s sheet, sent from their phone') +
@@ -645,7 +654,7 @@
         effect: function (f) {
           if (f.k === 'dmg' || f.k === 'heal') {
             var v = Math.abs(+f.n || 0);
-            T.hp = Math.max(0, Math.min(+c.hpMax || 0, d.hp + (f.k === 'dmg' ? -v : v)));
+            setHp(c, d.hp + (f.k === 'dmg' ? -v : v), f.k === 'dmg');
             return {
               msg:
                 (f.k === 'dmg' ? 'You take ' + v + ' damage.' : 'You heal ' + v + ' hit points.') +
@@ -692,8 +701,37 @@
         }
       };
     }
+    // hit points change: at 0 the dying countdown starts, above 0 it ends; a hit while focusing asks for a check
+    function setHp(c, hp, hurt) {
+      var T = c.track,
+        was = derive(c).hp;
+      T.hp = Math.max(0, Math.min(+c.hpMax || 0, hp));
+      T.conds = T.conds || {};
+      if (T.hp === 0 && was > 0) {
+        T.conds.Dying = 1;
+        T.dying = { left: '', turns: 0 };
+      } else if (T.hp > 0 && T.dying) {
+        delete T.conds.Dying;
+        T.dying = null;
+      }
+      if (hurt && T.focus && T.hp > 0) T.focusHit = true;
+      if (T.hp === 0 && T.focus) T.focus = null;
+    }
+    // a torch in the gear: one fewer (its slots shrink with it)
+    function useTorch(c) {
+      var g = (c.gear || []).filter(function (x) {
+        return /torch/i.test(x.n || '') && +x.qty > 0;
+      })[0];
+      if (!g) return 'No torch in your gear: lit anyway.';
+      var q = +g.qty;
+      if (+g.slots > 0) g.slots = Math.round(((+g.slots * (q - 1)) / q) * 2) / 2;
+      g.qty = q - 1;
+      return g.qty ? 'One torch used: ' + g.qty + ' left.' : 'That was your last torch!';
+    }
     function rest(c) {
       c.track.hp = null;
+      c.track.dying = null;
+      if (c.track.conds) delete c.track.conds.Dying;
       (c.spells || []).forEach(function (s) {
         s.lost = false;
       });
@@ -738,8 +776,49 @@
         btn('sdRest', '☾ Rest', {}, 'btn small') +
         (U.lvl ? '' : btn('sdLvl', '⬆ Level up', {}, 'btn small primary')) +
         '</div>' +
-        (d.hp === 0 ? '<p class="notice">At 0 HP: you are dying. Check your book.</p>' : '') +
         '</div>';
+      if (T.dying) {
+        var Dy = T.dying;
+        h +=
+          '<div class="panel sd-dying"><h3>💀 Dying</h3>' +
+          (Dy.stable
+            ? '<p>Stabilized: you stay at 0 HP but no longer count down.</p>'
+            : '<p class="small">How many rounds you have is in your book (it uses your Constitution). Type it, then tap <b>Next turn</b> each time your turn comes.</p><div class="toolbar"><label class="small">Rounds left <input type="number" min="0" id="sd-die-left" data-sdn="track.dying.left" value="' +
+              esc(Dy.left) +
+              '" style="width:4.5rem"></label>' +
+              btn('sdDieTurn', 'Next turn', {}, 'btn small primary') +
+              btn('sdRoll', '🎲 d20', { v: 0, l: 'Dying roll' }, 'btn small') +
+              '</div>' +
+              (Dy.left !== '' && +Dy.left === 0
+                ? '<p class="notice">No rounds left: see your book.</p>'
+                : '<p class="small muted">Turns so far: ' + (+Dy.turns || 0) + '</p>')) +
+          '<div class="toolbar">' +
+          (Dy.stable ? '' : btn('sdDieStable', 'Stabilized', {}, 'btn small')) +
+          btn('sdDieUp', 'Back up (1 HP)', {}, 'btn small') +
+          '</div></div>';
+      }
+      if (T.focus) {
+        var fdc = 10 + (+T.focus.tier || 1);
+        h +=
+          '<div class="panel sd-focus"><h3>🎯 Focusing on ' +
+          esc(T.focus.n || 'a spell') +
+          '</h3>' +
+          (T.focusHit
+            ? '<p class="notice">You were hurt while focusing: does your focus hold? Check your book.</p>'
+            : '<p class="small">Each of your turns, roll to keep it going (DC ' + fdc + ').</p>') +
+          '<div class="toolbar">' +
+          (d.spell != null
+            ? btn(
+                'sdRoll',
+                '🎲 Focus check ' + fmt(d.spell),
+                { v: d.spell, l: 'Focus: ' + T.focus.n + ' (DC ' + fdc + ')' },
+                'btn small primary'
+              )
+            : '') +
+          (T.focusHit ? btn('sdFocusKeep', 'It holds', {}, 'btn small') : '') +
+          btn('sdFocusDrop', 'Drop it', {}, 'btn small') +
+          '</div></div>';
+      }
       h +=
         '<div class="panel"><h3>🍀 Luck tokens</h3><div class="toolbar">' +
         btn('sdLuck', '−', { v: -1 }, 'btn') +
@@ -751,7 +830,29 @@
       h +=
         '<div class="panel"><h3>Your light</h3>' +
         (root.Torch ? root.Torch.html(T.torch, 'sdTorch', esc, btn, T.torch ? T.torch.n : 'Torch') : '') +
-        '<p class="small muted">Your own torch or lantern. When your GM runs the party’s light at the table, it shows in the table box above.</p></div>';
+        (U.torchMsg ? '<p class="small rest-msg">' + esc(U.torchMsg) + '</p>' : '') +
+        (function () {
+          var t = (c.gear || []).reduce(function (n, g) {
+            return /torch/i.test(g.n || '') ? n + (+g.qty || 0) : n;
+          }, 0);
+          return (
+            '<p class="small">Torches in your gear: <b' +
+            (t <= 1 ? ' class="bad"' : '') +
+            '>' +
+            t +
+            '</b>' +
+            (t === 1 ? ' (your last one!)' : '') +
+            '</p>'
+          );
+        })() +
+        (!T.torch || !root.Torch.left(T.torch)
+          ? '<div class="toolbar"><input type="text" id="sd-light-n" data-sdui="lightName" value="' +
+            esc(U.lightName || '') +
+            '" placeholder="Lantern, light spell…" style="flex:1;min-width:9rem">' +
+            btn('sdTorch', 'Light it (1 hour)', { v: 'other' }, 'btn small') +
+            '</div>'
+          : '') +
+        '<p class="small muted">Lighting a torch takes one from your gear. A lantern or a spell doesn’t. When your GM runs the party’s light at the table, it shows in the table box above.</p></div>';
       h +=
         '<div class="panel"><h3>Checks</h3><div class="toolbar">' +
         AB.map(function (a) {
@@ -792,6 +893,14 @@
                 '</span> ' +
                 (d.spell != null && !s.lost
                   ? btn('sdRoll', '🎲 Cast ' + fmt(d.spell), { v: d.spell, l: s.n + ' (DC ' + dc + ')' }, 'btn small')
+                  : '') +
+                (!s.lost
+                  ? btn(
+                      'sdFocus',
+                      T.focus && T.focus.id === s.id ? '🎯 Focusing' : 'Focus',
+                      { v: i },
+                      'btn small' + (T.focus && T.focus.id === s.id ? ' primary' : '')
+                    )
                   : '') +
                 btn(
                   'sdLost',
@@ -845,9 +954,65 @@
       };
       r.readAsText(f);
     }
+    // the same character again (by name): update it, keeping what happens in play
+    var KEEP = ['id', 'track', 'luck', 'notes', 'noteStyle', 'fromTable'];
+    function updateFrom(old, c) {
+      KEEP.forEach(function (k) {
+        if (old[k] !== undefined) c[k] = old[k];
+      });
+      // spells keep being lost or not, attacks keep the damage you typed
+      c.spells.forEach(function (s) {
+        var o = (old.spells || []).filter(function (x) {
+          return (x.n || '').toLowerCase() === (s.n || '').toLowerCase();
+        })[0];
+        if (o) {
+          s.lost = o.lost;
+          s.note = o.note || s.note;
+          s.tier = o.tier || s.tier;
+        }
+      });
+      c.attacks.forEach(function (a) {
+        var o = (old.attacks || []).filter(function (x) {
+          return (x.n || '').toLowerCase() === (a.n || '').toLowerCase();
+        })[0];
+        if (o) {
+          a.dmg = o.dmg;
+          a.extra = o.extra;
+          a.stat = o.stat;
+          a.note = o.note;
+        }
+      });
+      // attacks and talents typed by hand stay
+      (old.attacks || []).forEach(function (a) {
+        if (
+          !c.attacks.some(function (x) {
+            return (x.n || '').toLowerCase() === (a.n || '').toLowerCase();
+          })
+        )
+          c.attacks.push(a);
+      });
+      if (old.spellStat) c.spellStat = old.spellStat;
+      if (+old.spellBonus > +c.spellBonus) c.spellBonus = old.spellBonus;
+      if (c.track && c.track.hp != null && c.track.hp > c.hpMax) c.track.hp = c.hpMax;
+      return c;
+    }
     function addImported(o) {
       var c = fromShadowdarklings(o),
         s = S(),
+        same = s.chars.filter(function (x) {
+          return !x.fromTable && x.name && c.name && x.name.toLowerCase() === c.name.toLowerCase();
+        })[0];
+      if (same) {
+        U.reimport = { o: o, id: same.id };
+        s.cur = same.id;
+        U.msg = '';
+        ui.section = 'sd-chars';
+        return;
+      }
+      addNew(c);
+    }
+    function addNew(c) {
+      var s = S(),
         blank = s.chars.length === 1 && !s.chars[0].name && !s.chars[0].cls;
       if (blank) s.chars = [];
       s.chars.push(c);
@@ -889,6 +1054,30 @@
         delete c.fromTable;
         S().chars.push(c);
         S().cur = c.id;
+      },
+      sdReUpdate: function () {
+        var R = U.reimport,
+          s = S();
+        U.reimport = null;
+        if (!R) return;
+        var i = s.chars
+          .map(function (x) {
+            return x.id;
+          })
+          .indexOf(R.id);
+        if (i < 0) return;
+        var c = updateFrom(s.chars[i], fromShadowdarklings(R.o));
+        s.chars[i] = c;
+        s.cur = c.id;
+        U.msg = (c.name || 'The character') + ' is updated (level ' + c.level + ').';
+      },
+      sdReNew: function () {
+        var R = U.reimport;
+        U.reimport = null;
+        if (R) addNew(fromShadowdarklings(R.o));
+      },
+      sdReNo: function () {
+        U.reimport = null;
       },
       sdDelAsk: function () {
         U.confirmDel = true;
@@ -964,9 +1153,39 @@
         c.noteStyle[el.getAttribute('data-k')] = v;
       },
       sdHp: function (v) {
-        var c = cur(),
-          d = derive(c);
-        c.track.hp = Math.max(0, Math.min(+c.hpMax || 0, d.hp + +v));
+        var c = cur();
+        setHp(c, derive(c).hp + +v, +v < 0);
+      },
+      // dying: the rounds left (from the player's book), one less each turn
+      sdDieTurn: function () {
+        var D = cur().track.dying;
+        if (!D) return;
+        D.turns = (+D.turns || 0) + 1;
+        if (+D.left > 0) D.left = +D.left - 1;
+      },
+      sdDieUp: function () {
+        var c = cur();
+        setHp(c, 1);
+        U.roll = 'Back on your feet with 1 hit point.';
+      },
+      sdDieStable: function () {
+        var T = cur().track;
+        if (T.dying) T.dying.stable = true;
+      },
+      // a focus spell: one at a time
+      sdFocus: function (v) {
+        var T = cur().track,
+          s = cur().spells[+v];
+        T.focus = s && (!T.focus || T.focus.id !== s.id) ? { id: s.id, n: s.n, tier: +s.tier || 1 } : null;
+        T.focusHit = false;
+      },
+      sdFocusDrop: function () {
+        var T = cur().track;
+        T.focus = null;
+        T.focusHit = false;
+      },
+      sdFocusKeep: function () {
+        cur().track.focusHit = false;
       },
       sdRest: function () {
         rest(cur());
@@ -987,7 +1206,14 @@
         else T.conds[v] = 1;
       },
       sdTorch: function (v) {
-        var T = cur().track;
+        var c = cur(),
+          T = c.track;
+        if (v === 'start') U.torchMsg = useTorch(c);
+        else if (v !== 'plus' && v !== 'minus') U.torchMsg = '';
+        if (v === 'other') {
+          T.torch = root.Torch.change(null, 'start', String(U.lightName || '').trim() || 'Lantern');
+          return;
+        }
         T.torch = root.Torch.change(T.torch, v, 'Torch');
       },
       sdRoll: function (v, el) {
@@ -1026,6 +1252,11 @@
       }
     };
     function onInput(t) {
+      var su = t.getAttribute('data-sdui');
+      if (su) {
+        U[su] = t.value;
+        return 'none';
+      }
       var lv = t.getAttribute('data-sdlvl');
       if (lv != null) {
         U.lvl = U.lvl || {};
