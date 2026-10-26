@@ -244,6 +244,18 @@ The switch at the top (D&D 5e | M&M 3e) moves between the two games; each has it
 Names, costs and stats come from the game's Open Game Content as published at [d20herosrd.com](https://www.d20herosrd.com); the descriptions are short summaries in our own words (`data/mm.js`).
 Mutants & Masterminds is a trademark of Green Ronin Publishing. This is an unofficial fan tool, not affiliated with or endorsed by Green Ronin.
 
+## Shadowdark
+
+Pick **Shadowdark** at the top. The app has **no Shadowdark rules text**: the Shadowdark RPG Third-Party License doesn't let apps reprint classes, talents, tables or the like, so they come from your own book or from Shadowdarklings.
+
+- **Make characters on [Shadowdarklings.net](https://shadowdarklings.net)** (free account), export them as JSON, then **Characters → ⇩ Import from Shadowdarklings** (or Import on the D&D Characters page, which sends it here). Stats, ancestry, class, title, level, XP, alignment, background, deity, languages, hit points, AC, the talents with what each does, spells, gear with slots, treasure and coins come across; weapons become attacks (add their damage from your book).
+- **Or fill in the sheet yourself**: a 🎲 button rolls 3d6 for each stat in order; modifiers, gear slots used (and the total: STR or 10, the higher, unless you set it), attack and spellcasting bonuses are worked out for you.
+- **Session**: hit points, luck tokens, your own **light timer** (a real hour, pause, ±10 min, it buzzes when it goes out), stat checks and attacks with the dice, spells with their DC (10 + tier), *lost it* and back on a rest, conditions, and level up (type the hit points you rolled and the new talent).
+- **At the GM's table**: everything the table does for the other games (damage, healing, conditions, a **luck token**, rest, XP and level up, roll requests for stat checks, messages, whispers, notes, the player's sheet for the GM), plus **the party's light**: the GM lights it on the Table tab and it counts down on every phone.
+- **Rules**: add the free [Shadowdark Quickstart](https://www.thearcanelibrary.com/pages/shadowdark) or your rulebook PDF in **Books**; it stays on your device and can be searched while you play.
+
+Character Forge is an independent product published under the Shadowdark RPG Third-Party License and is not affiliated with The Arcane Library, LLC. Shadowdark RPG © 2023 The Arcane Library, LLC.
+
 ## Limits
 
 - Feat and multiclass prerequisites are shown but not enforced.
@@ -282,6 +294,7 @@ How a tap works: a button has `data-act="name"`, the click goes to `actions.name
     monsters.js, encounter.js, treasure.js, generators.js, books.js, audio.js, dm.js (DM/GM page)
     pf2.js, pf2-ui.js, pf2-enc.js, pf2-import.js        Pathfinder 2e: rules, pages, encounters/treasure, import
     mm.js, mm-enc.js, mm-foes.js                        Mutants & Masterminds 3e
+    sd.js, torch.js                                     Shadowdark (sheet, Shadowdarklings import) and the light timer
     table.js          the table between the DM's device and the players' phones (PeerJS)
     table-ui.js       a Pathfinder or M&M character at the table; table-share.js sends treasure to phones
     transfer.js, import-5e.js, import-companion.js, import-ddb.js, item-import.js, sqlite-read.js   moving and importing
@@ -309,6 +322,8 @@ Code style: [Prettier](https://prettier.io) with `.prettierrc.json` (run `npx pr
 To add content, append an entry to the matching file in `data/` following its neighbours.
 
 ## Attribution
+
+- Shadowdark: Character Forge is an independent product published under the Shadowdark RPG Third-Party License and is not affiliated with The Arcane Library, LLC. Shadowdark RPG © 2023 The Arcane Library, LLC. No Shadowdark rules text is included.
 
 - The Books section includes material taken from the System Reference Document 5.1 ("SRD 5.1") by Wizards of the Coast LLC, available at https://dnd.wizards.com/resources/systems-reference-document, licensed under the Creative Commons Attribution 4.0 International License (https://creativecommons.org/licenses/by/4.0/legalcode). Markdown text from OldManUmby's SRD v5.1 reForged (https://github.com/OldManUmby/DND.SRD.Wiki).
 - PDF viewing uses Mozilla's pdf.js (Apache License 2.0), in `js/vendor/pdfjs/` with its license.

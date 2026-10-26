@@ -131,6 +131,7 @@ function xferBundle(withPics) {
     }, []);
   if (X.pf2 !== false && store.pf2 && (store.pf2.chars || []).length) b.pf2 = store.pf2.chars.map(strip);
   if (X.mm !== false && store.mm && (store.mm.heroes || []).length) b.mm = store.mm.heroes.map(strip);
+  if (X.sd !== false && store.sd && (store.sd.chars || []).length) b.sd = store.sd.chars.map(strip);
   return b;
 }
 function xferHtml() {
@@ -141,7 +142,8 @@ function xferHtml() {
       return c.name || (c.classes || []).length;
     }).length,
     pf2: ((store.pf2 || {}).chars || []).length,
-    mm: ((store.mm || {}).heroes || []).length
+    mm: ((store.mm || {}).heroes || []).length,
+    sd: ((store.sd || {}).chars || []).length
   };
   var chk = function (k, label) {
     return n[k]
@@ -164,6 +166,7 @@ function xferHtml() {
     chk('dnd', 'D&D') +
     chk('pf2', 'PF2') +
     chk('mm', 'M&M') +
+    chk('sd', 'Shadowdark') +
     '</div>' +
     '<div class="toolbar">' +
     btn('xferMake', 'Make the link', {}, 'btn primary') +
@@ -210,6 +213,7 @@ function xferInHtml() {
     (b.chars && b.chars.length ? '<li><b>D&amp;D:</b> ' + esc(names(b.chars)) + '</li>' : '') +
     (b.pf2 && b.pf2.length ? '<li><b>PF2:</b> ' + esc(names(b.pf2)) + '</li>' : '') +
     (b.mm && b.mm.length ? '<li><b>M&amp;M:</b> ' + esc(names(b.mm)) + '</li>' : '') +
+    (b.sd && b.sd.length ? '<li><b>Shadowdark:</b> ' + esc(names(b.sd)) + '</li>' : '') +
     '</ul><p class="small muted">Characters you sent before are updated (their pictures here are kept); new ones are added. Nothing else on this device changes.</p><div class="toolbar">' +
     btn('xferInGo', 'Add them', {}, 'btn primary') +
     btn('xferInNo', 'Not now', {}, 'btn') +
@@ -253,6 +257,11 @@ function xferTake(b) {
     store.mm = store.mm || { heroes: [] };
     store.mm.heroes = store.mm.heroes || [];
     merge(store.mm.heroes, b.mm);
+  }
+  if (b.sd) {
+    store.sd = store.sd || { chars: [] };
+    store.sd.chars = store.sd.chars || [];
+    merge(store.sd.chars, b.sd);
   }
   return done;
 }
@@ -472,6 +481,12 @@ function handleImportBuffer(buf) {
     } else {
       if (!got) throw new Error('not json');
       var o = got.json;
+      // a Shadowdarklings.net character: to the Shadowdark section
+      if (window.SDRules && SDRules.isShadowdarklings(o)) {
+        store.game = 'sd';
+        SDV.addImported(o);
+        return;
+      }
       if (BKP.isBackup(o)) {
         BKP.offer(o, 'Backup file');
         return;

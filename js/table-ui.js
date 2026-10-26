@@ -238,7 +238,8 @@
         claimsHtml(S, j) +
         giftsHtml(p) +
         handoutsHtml(S) +
-        musicHtml(S);
+        musicHtml(S) +
+        (S.torch && root.Torch ? root.Torch.html(S.torch, null, esc, btn, 'The party’s light') : '');
       h += msgsHtml(S, j) + notesHtml(S, j) + rollsHtml(S, j) + loreHtml(S);
       // the character's status, sent when it changes
       var st = who.status();

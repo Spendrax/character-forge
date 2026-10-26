@@ -442,7 +442,7 @@ function themeBtn() {
   );
 }
 function gameOf() {
-  return store.game === 'mm' ? 'mm' : store.game === 'pf2' ? 'pf2' : 'dnd';
+  return store.game === 'mm' || store.game === 'pf2' || store.game === 'sd' ? store.game : 'dnd';
 }
 function gameSwitch() {
   return (
@@ -450,7 +450,8 @@ function gameSwitch() {
     [
       ['dnd', 'D&amp;D 5e'],
       ['pf2', 'PF2'],
-      ['mm', 'M&amp;M 3e']
+      ['mm', 'M&amp;M 3e'],
+      ['sd', 'Shadowdark']
     ]
       .map(function (g) {
         return (
@@ -481,24 +482,33 @@ function sectionNav() {
           ['audio', 'Audio'],
           ['rules', 'House rules']
         ]
-      : gameOf() === 'mm'
+      : gameOf() === 'sd'
         ? [
-            ['mm-home', '⌂ Home'],
-            ['mm-heroes', 'Heroes'],
+            ['sd-home', '⌂ Home'],
+            ['sd-chars', 'Characters'],
             ['dm', 'GM'],
-            ['mm-rules', 'Rules'],
-            ['audio', 'Audio'],
-            ['rules', 'House rules']
-          ]
-        : [
-            ['home', '⌂ Home'],
-            ['roster', 'Characters'],
-            ['dm', 'DM'],
-            ['items', 'Magic items'],
             ['books', 'Books'],
             ['audio', 'Audio'],
             ['rules', 'House rules']
-          ];
+          ]
+        : gameOf() === 'mm'
+          ? [
+              ['mm-home', '⌂ Home'],
+              ['mm-heroes', 'Heroes'],
+              ['dm', 'GM'],
+              ['mm-rules', 'Rules'],
+              ['audio', 'Audio'],
+              ['rules', 'House rules']
+            ]
+          : [
+              ['home', '⌂ Home'],
+              ['roster', 'Characters'],
+              ['dm', 'DM'],
+              ['items', 'Magic items'],
+              ['books', 'Books'],
+              ['audio', 'Audio'],
+              ['rules', 'House rules']
+            ];
   return (
     '<nav class="sections" aria-label="Sections">' +
     list
@@ -544,7 +554,7 @@ function homeHtml() {
 }
 // House rules: short titled notes for the table, searchable; saved with the characters.
 function houseRules() {
-  var k = gameOf() === 'mm' ? 'mmRules' : gameOf() === 'pf2' ? 'pf2Rules' : 'rules';
+  var k = { mm: 'mmRules', pf2: 'pf2Rules', sd: 'sdRules' }[gameOf()] || 'rules';
   return (store[k] = store[k] || []);
 }
 function rulesHtml() {
@@ -671,7 +681,7 @@ function renderSection(fid, pos) {
     btn(
       'section',
       'Character Forge',
-      { v: gameOf() === 'mm' ? 'mm-home' : gameOf() === 'pf2' ? 'pf2-home' : 'home' },
+      { v: { mm: 'mm-home', pf2: 'pf2-home', sd: 'sd-home' }[gameOf()] || 'home' },
       'brand linkish'
     ) +
     gameSwitch() +
@@ -683,45 +693,47 @@ function renderSection(fid, pos) {
     '>↶ Undo</button>' +
     (isInstalledApp() ? '' : btn('install', 'Install app', {}, installPrompt ? 'btn primary' : 'btn')) +
     '</header>';
-  var body = /^pf2-/.test(ui.section)
-    ? PFV.html(ui.section)
-    : /^mm-(home|heroes)$/.test(ui.section)
-      ? MMV.html(ui.section)
-      : ui.section === 'mm-enc'
-        ? MME.html()
-        : ui.section === 'mm-party'
-          ? MME.partyPage()
-          : ui.section === 'mm-foes'
-            ? MME.foesPage()
-            : ui.section === 'mm-loot'
-              ? MME.lootPage()
-              : ui.section === 'mm-rules'
-                ? BOOKS.html()
-                : ui.section === 'monsters'
-                  ? '<main class="mon-main">' + MON.html() + '</main>'
-                  : ui.section === 'encounters'
-                    ? ENC.html()
-                    : ui.section === 'party'
-                      ? ENC.partyPage()
-                      : ui.section === 'roster'
-                        ? rosterHtml()
-                        : ui.section === 'treasure'
-                          ? TRE.html()
-                          : ui.section === 'items'
-                            ? itemsPage()
-                            : ui.section === 'gen'
-                              ? GEN.html()
-                              : ui.section === 'dm'
-                                ? DMV.html()
-                                : ui.section === 'books'
-                                  ? BOOKS.html()
-                                  : ui.section === 'audio'
-                                    ? AUD.html()
-                                    : ui.section === 'rules'
-                                      ? rulesHtml()
-                                      : ui.section === 'backup'
-                                        ? BKP.html()
-                                        : homeHtml();
+  var body = /^sd-/.test(ui.section)
+    ? SDV.html(ui.section)
+    : /^pf2-/.test(ui.section)
+      ? PFV.html(ui.section)
+      : /^mm-(home|heroes)$/.test(ui.section)
+        ? MMV.html(ui.section)
+        : ui.section === 'mm-enc'
+          ? MME.html()
+          : ui.section === 'mm-party'
+            ? MME.partyPage()
+            : ui.section === 'mm-foes'
+              ? MME.foesPage()
+              : ui.section === 'mm-loot'
+                ? MME.lootPage()
+                : ui.section === 'mm-rules'
+                  ? BOOKS.html()
+                  : ui.section === 'monsters'
+                    ? '<main class="mon-main">' + MON.html() + '</main>'
+                    : ui.section === 'encounters'
+                      ? ENC.html()
+                      : ui.section === 'party'
+                        ? ENC.partyPage()
+                        : ui.section === 'roster'
+                          ? rosterHtml()
+                          : ui.section === 'treasure'
+                            ? TRE.html()
+                            : ui.section === 'items'
+                              ? itemsPage()
+                              : ui.section === 'gen'
+                                ? GEN.html()
+                                : ui.section === 'dm'
+                                  ? DMV.html()
+                                  : ui.section === 'books'
+                                    ? BOOKS.html()
+                                    : ui.section === 'audio'
+                                      ? AUD.html()
+                                      : ui.section === 'rules'
+                                        ? rulesHtml()
+                                        : ui.section === 'backup'
+                                          ? BKP.html()
+                                          : homeHtml();
   setApp(
     top +
       installHelpHtml() +
@@ -767,46 +779,48 @@ function renderSection(fid, pos) {
     }
   }
   document.title =
-    (/^pf2-/.test(ui.section)
-      ? PFV.title(ui.section)
-      : /^mm-(home|heroes)$/.test(ui.section)
-        ? MMV.title(ui.section)
-        : ui.section === 'mm-enc'
-          ? 'M&M encounters'
-          : ui.section === 'mm-party'
-            ? 'M&M party'
-            : ui.section === 'mm-foes'
-              ? 'M&M villains'
-              : ui.section === 'mm-loot'
-                ? 'M&M rewards'
-                : ui.section === 'mm-rules'
-                  ? 'M&M rules'
-                  : ui.section === 'monsters'
-                    ? 'Monsters'
-                    : ui.section === 'encounters'
-                      ? 'Encounters'
-                      : ui.section === 'party'
-                        ? 'Party'
-                        : ui.section === 'roster'
-                          ? 'Characters'
-                          : ui.section === 'treasure'
-                            ? 'Treasures'
-                            : ui.section === 'items'
-                              ? 'Magic items'
-                              : ui.section === 'gen'
-                                ? 'Generators'
-                                : ui.section === 'dm'
-                                  ? gameOf() === 'dnd'
-                                    ? 'DM'
-                                    : 'GM'
-                                  : ui.section === 'books'
-                                    ? 'Books'
-                                    : ui.section === 'audio'
-                                      ? 'Audio'
-                                      : ui.section === 'rules'
-                                        ? 'House rules'
-                                        : ui.section === 'backup'
-                                          ? 'Backup'
-                                          : 'Home') + ' — Character Forge';
+    (/^sd-/.test(ui.section)
+      ? SDV.title(ui.section)
+      : /^pf2-/.test(ui.section)
+        ? PFV.title(ui.section)
+        : /^mm-(home|heroes)$/.test(ui.section)
+          ? MMV.title(ui.section)
+          : ui.section === 'mm-enc'
+            ? 'M&M encounters'
+            : ui.section === 'mm-party'
+              ? 'M&M party'
+              : ui.section === 'mm-foes'
+                ? 'M&M villains'
+                : ui.section === 'mm-loot'
+                  ? 'M&M rewards'
+                  : ui.section === 'mm-rules'
+                    ? 'M&M rules'
+                    : ui.section === 'monsters'
+                      ? 'Monsters'
+                      : ui.section === 'encounters'
+                        ? 'Encounters'
+                        : ui.section === 'party'
+                          ? 'Party'
+                          : ui.section === 'roster'
+                            ? 'Characters'
+                            : ui.section === 'treasure'
+                              ? 'Treasures'
+                              : ui.section === 'items'
+                                ? 'Magic items'
+                                : ui.section === 'gen'
+                                  ? 'Generators'
+                                  : ui.section === 'dm'
+                                    ? gameOf() === 'dnd'
+                                      ? 'DM'
+                                      : 'GM'
+                                    : ui.section === 'books'
+                                      ? 'Books'
+                                      : ui.section === 'audio'
+                                        ? 'Audio'
+                                        : ui.section === 'rules'
+                                          ? 'House rules'
+                                          : ui.section === 'backup'
+                                            ? 'Backup'
+                                            : 'Home') + ' — Character Forge';
   saveNow();
 }

@@ -15,14 +15,16 @@
       return {
         dnd: (s.chars || []).length,
         pf2: ((s.pf2 || {}).chars || []).length,
-        mm: ((s.mm || {}).heroes || []).length
+        mm: ((s.mm || {}).heroes || []).length,
+        sd: ((s.sd || {}).chars || []).length
       };
     }
     function countText(c) {
       return [
         [c.dnd, 'D&D character'],
         [c.pf2, 'Pathfinder character'],
-        [c.mm, 'M&M hero']
+        [c.mm, 'M&M hero'],
+        [c.sd, 'Shadowdark character']
       ]
         .reduce(function (a, x) {
           if (x[0]) a.push(x[0] + ' ' + x[1] + (x[0] > 1 ? 's' : ''));
@@ -41,7 +43,8 @@
         saved: new Date().toISOString(),
         readme:
           'Everything saved in Character Forge. D&D 5e characters: store.chars. Pathfinder 2e: store.pf2.chars. ' +
-          'Mutants & Masterminds heroes: store.mm.heroes. House rules: store.rules, store.pf2Rules, store.mmRules. ' +
+          'Mutants & Masterminds heroes: store.mm.heroes. Shadowdark: store.sd.chars. ' +
+          'House rules: store.rules, store.pf2Rules, store.mmRules, store.sdRules. ' +
           'To bring it all back, open Character Forge and use Import (or Backup, Restore).',
         counts: counts(s),
         store: s
@@ -134,8 +137,8 @@
         esc(countText(c) || 'no characters') +
         '.</p><p class="notice">Everything in the app on this device is replaced by the backup (characters, house rules, encounters…). ' +
         'You can undo it right after.</p><div class="toolbar">' +
-        btn('bkRestoreOk', 'Yes, bring it back', {}, 'btn primary') +
-        btn('bkRestoreNo', 'Cancel', {}, 'btn') +
+        btn('buRestoreOk', 'Yes, bring it back', {}, 'btn primary') +
+        btn('buRestoreNo', 'Cancel', {}, 'btn') +
         '</div></div>'
       );
     }
@@ -152,7 +155,7 @@
         '</code>. Authorized redirect URI: <code>' +
         esc(G.redirect()) +
         '</code>. Create, then copy the <b>Client ID</b> and paste it here.</li></ol>' +
-        '<div class="toolbar"><input type="text" id="bk-id" data-bk="id" value="' +
+        '<div class="toolbar"><input type="text" id="bu-id" data-bu="id" value="' +
         esc(B.id || G.clientId()) +
         '" placeholder="…apps.googleusercontent.com" autocomplete="off" style="flex:1;min-width:12rem"></div>' +
         '<p class="small muted">The Client ID is the app’s public name at Google, not a password. It and your sign-in stay in this browser.</p></details>'
@@ -171,12 +174,12 @@
         h +=
           '<p class="panel small rest-msg">' +
           esc(B.msg) +
-          (G.waiting() ? ' ' + btn('bkCancel', 'Cancel', {}, 'btn tiny') : '') +
+          (G.waiting() ? ' ' + btn('buCancel', 'Cancel', {}, 'btn tiny') : '') +
           '</p>';
       if (B.prev)
         h +=
           '<p class="panel small">Backup brought back. ' +
-          btn('bkUndo', '↶ Undo: put back what was here', {}, 'btn small') +
+          btn('buUndo', '↶ Undo: put back what was here', {}, 'btn small') +
           '</p>';
       h += '<div class="panel"><h3>Google Drive</h3>';
       if (linked) {
@@ -185,14 +188,14 @@
           esc(ago(s.last)) +
           '</b>' +
           (s.pending ? ' <span class="small muted">(changes since)</span>' : '') +
-          '</p><label class="check"><input type="checkbox" data-bk="auto"' +
+          '</p><label class="check"><input type="checkbox" data-bu="auto"' +
           (s.auto === false ? '' : ' checked') +
           '> Back up automatically after changes</label><p class="small muted">Saved in the <b>Character Forge</b> folder of your Drive: <i>' +
           esc(G.MAIN) +
           '</i>, plus a dated copy each day (the last 14). Google’s sign-in lasts an hour; after that, your first tap in the app signs in again by itself (Google’s window opens and closes at once). If that doesn’t work (signed out of Google), tap <b>Back up now</b>.</p><div class="toolbar">' +
-          btn('bkNow', '☁ Back up now', {}, 'btn primary') +
-          btn('bkList', '⟲ Restore from Drive…', {}, 'btn') +
-          btn('bkOff', 'Disconnect', {}, 'btn') +
+          btn('buNow', '☁ Back up now', {}, 'btn primary') +
+          btn('buList', '⟲ Restore from Drive…', {}, 'btn') +
+          btn('buOff', 'Disconnect', {}, 'btn') +
           '</div>';
         if (B.files)
           h += B.files.length
@@ -206,7 +209,7 @@
                     esc(when(f.modifiedTime)) +
                     (f.size ? ', ' + Math.max(1, Math.round(f.size / 1024)) + ' KB' : '') +
                     '</span></div><div class="se-btns">' +
-                    btn('bkPick', 'Restore', { v: f.id }, 'btn small') +
+                    btn('buPick', 'Restore', { v: f.id }, 'btn small') +
                     '</div></li>'
                   );
                 })
@@ -216,15 +219,15 @@
       } else
         h +=
           '<p class="small">Sign in with Google once on this device. The app only sees the files it makes itself, never the rest of your Drive. <a href="privacy.html" target="_blank" rel="noopener">Privacy</a></p><div class="toolbar">' +
-          btn('bkConnect', 'Connect Google Drive', {}, 'btn primary') +
+          btn('buConnect', 'Connect Google Drive', {}, 'btn primary') +
           '</div>';
       h += '</div>';
       if (!G.builtIn) h += setupHtml();
       h +=
         '<div class="panel"><h3>Without Google</h3><p class="small">Download the same backup file, to keep anywhere (email, USB key, another cloud). <b>Import</b> on the Characters page brings it back.</p><div class="toolbar">' +
-        btn('bkFile', '⇩ Download backup file', {}, 'btn') +
-        btn('bkOpen', '⇧ Restore from a file', {}, 'btn') +
-        '</div><input type="file" id="bkFile" accept=".json,application/json" hidden></div>' +
+        btn('buFile', '⇩ Download backup file', {}, 'btn') +
+        btn('buOpen', '⇧ Restore from a file', {}, 'btn') +
+        '</div><input type="file" id="buFile" accept=".json,application/json" hidden></div>' +
         '<p class="small muted">Imported books, monsters and item texts are not in the backup (they are big): import them again if needed.</p></main>';
       return h;
     }
@@ -248,7 +251,7 @@
       );
     }
     var actions = {
-      bkConnect: function () {
+      buConnect: function () {
         withGoogle(function () {
           G.set('auto', G.state().auto !== false);
           B.msg = 'Connected to Google Drive.';
@@ -257,18 +260,18 @@
           else backupNow(false);
         });
       },
-      bkCancel: function () {
+      buCancel: function () {
         G.cancel();
       },
-      bkNow: function () {
+      buNow: function () {
         withGoogle(function () {
           backupNow(false);
         });
       },
-      bkList: function () {
+      buList: function () {
         withGoogle(loadList);
       },
-      bkPick: function (v) {
+      buPick: function (v) {
         B.busy = true;
         B.msg = 'Getting the backup…';
         G.download(v).then(function (o) {
@@ -288,7 +291,7 @@
           api.render();
         }, fail);
       },
-      bkRestoreOk: function () {
+      buRestoreOk: function () {
         if (!B.pick) return;
         B.prev = JSON.stringify(api.store);
         api.apply(B.pick.data.store);
@@ -298,19 +301,19 @@
         B.msg = '';
         window.scrollTo(0, 0);
       },
-      bkRestoreNo: function () {
+      buRestoreNo: function () {
         B.pick = null;
       },
-      bkUndo: function () {
+      buUndo: function () {
         if (B.prev) api.apply(JSON.parse(B.prev));
         B.prev = null;
       },
-      bkOff: function () {
+      buOff: function () {
         G.disconnect();
         B.files = null;
         B.msg = 'Disconnected. Your backups stay in your Drive.';
       },
-      bkFile: function () {
+      buFile: function () {
         var blob = new Blob([file()], { type: 'application/json' }),
           a = document.createElement('a'),
           d = new Date();
@@ -331,13 +334,13 @@
         }, 1000);
         return false;
       },
-      bkOpen: function () {
-        document.getElementById('bkFile').click();
+      buOpen: function () {
+        document.getElementById('buFile').click();
         return false;
       }
     };
     function onInput(t) {
-      var k = t.getAttribute && t.getAttribute('data-bk');
+      var k = t.getAttribute && t.getAttribute('data-bu');
       if (k === 'id') {
         B.id = t.value.trim();
         return true;
@@ -377,7 +380,7 @@
         t = e.target;
       if (!s.known || s.auto === false || !(s.last || s.restored) || G.signedIn() || G.waiting() || B.busy) return;
       if (Date.now() < (s.nextTry || 0) || (triedOpen && !s.pending)) return;
-      if (t && t.closest && t.closest('[data-act^="bk"], input, textarea, select')) return;
+      if (t && t.closest && t.closest('[data-act^="bu"], input, textarea, select')) return;
       triedOpen = true;
       G.connect(G.clientId(), null, true).then(
         function () {

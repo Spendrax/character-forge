@@ -10,8 +10,8 @@ var actions = {
   },
   game: function (v) {
     if (gameOf() === v) return;
-    store.game = v === 'mm' || v === 'pf2' ? v : 'dnd';
-    ui.section = v === 'mm' ? 'mm-home' : v === 'pf2' ? 'pf2-home' : 'home';
+    store.game = v === 'mm' || v === 'pf2' || v === 'sd' ? v : 'dnd';
+    ui.section = { mm: 'mm-home', pf2: 'pf2-home', sd: 'sd-home' }[store.game] || 'home';
     ui.q.rules = '';
     window.scrollTo(0, 0);
   },

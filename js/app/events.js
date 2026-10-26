@@ -208,6 +208,12 @@ document.addEventListener('input', function (e) {
     else if (me) save();
     if (me) return;
   }
+  if (ui.section === 'sd-chars') {
+    var si = SDV.onInput(t);
+    if (si === 'render') render();
+    else if (si === 'save') save();
+    if (si) return;
+  }
   if (ui.section === 'mm-heroes') {
     var mi = MMV.onInput(t);
     if (mi === 'render') render();
@@ -334,7 +340,7 @@ document.addEventListener('change', function (e) {
     };
   if (t.id === 'bookFile') return BOOKS.importFile(t);
   if (t.getAttribute && t.getAttribute('data-lvl')) return lvlInput(t, true);
-  if (t.id === 'bkFile') return BKP.readFile(t);
+  if (t.id === 'buFile') return BKP.readFile(t);
   if (BKP.onInput(t)) return render();
   if (t.getAttribute && t.getAttribute('data-tp')) return;
   if (TS.onChange(t)) {
@@ -374,6 +380,11 @@ document.addEventListener('change', function (e) {
       requestRender();
       return;
     }
+  }
+  if (ui.section === 'sd-chars') {
+    var sc = SDV.onChange(t);
+    if (sc === 'render') render();
+    if (sc) return;
   }
   if (ui.section === 'mm-heroes') {
     var mc = MMV.onChange(t);

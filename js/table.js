@@ -6,7 +6,8 @@
 // What the DM's device keeps (state): players (name, initiative, status, gifts, fx = effects to apply: damage,
 // conditions, inspiration, rests, XP, level-ups), msgs, asks (roll requests), handouts, claims (roll-offs),
 // order (initiative order shown on the phones), log (rolls players share), notes (notes shared between people
-// at the table), lore (NPCs and quests the DM has revealed), music (what the DM is playing), events (the session log).
+// at the table), lore (NPCs and quests the DM has revealed), music (what the DM is playing), torch (the light timer),
+// events (the session log).
 (function (root) {
   'use strict';
   var PREFIX = 'charforge-table-',
@@ -59,6 +60,7 @@
       ti: s.ti || 0,
       lore: s.lore || [],
       music: s.music || null,
+      torch: s.torch || null,
       spid: s.spid || '',
       players: s.players.map(function (p) {
         return {
@@ -739,6 +741,18 @@
           });
         // the DM's Spotify Client ID (not a secret), so players can connect their Spotify with one tap
         if ('spid' in what) s.spid = /^[0-9a-f]{32}$/i.test(what.spid || '') ? what.spid : '';
+        // the light timer (Shadowdark): { run, until (when it goes out, while running), left (ms, while paused) }
+        if ('torch' in what) {
+          var tr = what.torch;
+          s.torch = tr
+            ? {
+                run: !!tr.run,
+                until: num(tr.until, 0, 9e15),
+                left: num(tr.left, 0, 864e5),
+                n: str(tr.n, 40)
+              }
+            : null;
+        }
         if ('music' in what)
           s.music = what.music && what.music.u ? { u: str(what.music.u, 300), t: str(what.music.t, 80) } : null;
         if (what.event) event(s, what.event);

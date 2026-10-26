@@ -6,6 +6,7 @@
 // A proposed change runs only when the user taps Apply; it goes through the same picks as tapping the option, so Undo works.
 function aiApply(verb, a) {
   var r;
+  if (gameOf() === 'sd') throw new Error('The helper can’t change Shadowdark characters.');
   if (gameOf() === 'mm') r = MMV.context(ui.section).apply ? MMV.context(ui.section).apply(verb, a) : null;
   else if (gameOf() === 'pf2') r = PFV.context(ui.section).apply ? PFV.context(ui.section).apply(verb, a) : null;
   else if (ch && verb !== 'choose') r = aiSet(verb, a);
@@ -121,6 +122,33 @@ function aiSet(verb, a) {
   throw new Error('Unknown change “' + verb + '”');
 }
 function aiContext() {
+  if (gameOf() === 'sd') {
+    var sc = (store.sd || {}).chars || [],
+      c = sc.filter(function (x) {
+        return x.id === (store.sd || {}).cur;
+      })[0];
+    return {
+      where: 'Shadowdark',
+      subject: 'Shadowdark RPG',
+      text:
+        'Game: Shadowdark RPG (the app has no rules text: the player uses their own book). ' +
+        (ui.section === 'sd-chars' && c
+          ? 'Character: ' +
+            JSON.stringify({
+              name: c.name,
+              ancestry: c.ancestry,
+              cls: c.cls,
+              level: c.level,
+              stats: c.stats,
+              hpMax: c.hpMax,
+              ac: c.ac,
+              talents: c.talents,
+              spells: c.spells,
+              gear: c.gear
+            })
+          : 'Page: the Shadowdark home page.')
+    };
+  }
   if (gameOf() === 'mm') {
     var mx = MMV.context(ui.section);
     if (mx.apply) mx.apply = aiApply;

@@ -23,6 +23,10 @@
       ['mm-enc', 'swords', 'Encounters'],
       ['mm-foes', 'mask', 'Villains'],
       ['mm-loot', 'coins', 'Rewards']
+    ],
+    sd: [
+      ['sd-chars', 'sword', 'Characters'],
+      ['gen', 'sparkle', 'Generators']
     ]
   };
   var PF_SK = [
@@ -95,6 +99,22 @@
       'Unconscious',
       'Wounded'
     ],
+    // Shadowdark: plain words only (the rules are in the GM's book)
+    sd: [
+      'Blinded',
+      'Charmed',
+      'Deafened',
+      'Frightened',
+      'Grabbed',
+      'Invisible',
+      'Paralyzed',
+      'Poisoned',
+      'Prone',
+      'Asleep',
+      'Stunned',
+      'Unconscious',
+      'Dying'
+    ],
     mm: [
       'Asleep',
       'Blind',
@@ -160,6 +180,15 @@
         ],
         ['Flat check', [['flat:', 'Flat check (no bonus)']]]
       ];
+    if (game === 'sd')
+      return [
+        [
+          'Checks',
+          AB.map(function (a) {
+            return ['check:' + a, a + ' check'];
+          })
+        ]
+      ];
     if (game === 'mm')
       return [
         [
@@ -206,7 +235,7 @@
       ]
     ];
   }
-  var REFS = {};
+  var REFS = { sd: [] }; // Shadowdark: no rules text here (see your book)
   REFS.pf2 = [
     ['Simple DCs', 'Untrained 10 · Trained 15 · Expert 20 · Master 30 · Legendary 40'],
     [
@@ -655,6 +684,7 @@
       return h + '</div>';
     }
     function refHtml() {
+      if (REFS[api.game()] && !REFS[api.game()].length) return '';
       return (
         '<details class="panel dm-ref"><summary><b>Quick reference</b></summary><dl>' +
         (REFS[api.game()] || REF)
@@ -666,6 +696,15 @@
       );
     }
 
+    // ---------- the party's light (Shadowdark): one timer on every phone ----------
+    function torchHtml(st) {
+      if (api.game() !== 'sd' || !root.Torch) return '';
+      return (
+        '<div class="panel"><h3>The party’s light</h3>' +
+        root.Torch.html(st.torch, 'dmTorch', esc, btn, st.torch ? st.torch.n : 'Torch') +
+        '<p class="small muted">Real time: it burns while you play and shows on every player’s phone. Pause it for a break.</p></div>'
+      );
+    }
     // ---------- acting on the players' characters: damage, healing, conditions, inspiration, rests, XP ----------
     function fxHtml(st) {
       var g = api.game(),
@@ -692,12 +731,17 @@
         btn('dmFx', 'Add', { v: 'condOn' }, 'btn small') +
         btn('dmFx', 'Remove', { v: 'condOff' }, 'btn small') +
         '</div><div class="toolbar">' +
-        btn('dmFx', g === 'dnd' ? '✨ Inspiration' : '✨ Hero point', { v: 'insp' }, 'btn small') +
+        btn(
+          'dmFx',
+          g === 'dnd' ? '✨ Inspiration' : g === 'sd' ? '🍀 Luck token' : '✨ Hero point',
+          { v: 'insp' },
+          'btn small'
+        ) +
         (g === 'dnd'
           ? btn('dmFx', '☾ Short rest', { v: 'rest:short' }, 'btn small') +
             btn('dmFx', '☀ Long rest', { v: 'rest:long' }, 'btn small')
-          : g === 'pf2'
-            ? btn('dmFx', '☾ Rest for the night', { v: 'rest:long' }, 'btn small')
+          : g === 'pf2' || g === 'sd'
+            ? btn('dmFx', g === 'sd' ? '☾ Rest' : '☾ Rest for the night', { v: 'rest:long' }, 'btn small')
             : '') +
         '</div><div class="toolbar"><input type="number" min="0" id="dm-xp" data-dm="xp" value="' +
         esc(M.xp || '') +
@@ -891,12 +935,7 @@
             (l.text ? '<div class="small">' + esc(l.text) + '</div>' : '') +
             (l.secret ? '<div class="small muted">🔒 ' + esc(l.secret) + '</div>' : '') +
             '</div><div class="se-btns">' +
-            btn(
-              'dmLoreShow',
-              l.shown ? '👁 Shown' : 'Hidden',
-              { v: l.lid },
-              'btn small' + (l.shown ? ' primary' : '')
-            ) +
+            btn('dmLoreShow', l.shown ? '👁 Shown' : 'Hidden', { v: l.lid }, 'btn small' + (l.shown ? ' primary' : '')) +
             (l.kind === 'quest' ? btn('dmLoreDoneQ', l.done ? 'Not done' : 'Done ✓', { v: l.lid }, 'btn small') : '') +
             btn('dmLoreEdit', 'Edit', { v: l.lid }, 'btn small') +
             '</div></div>'
@@ -967,7 +1006,7 @@
       }
       var body = '';
       if (on && st.players.length) {
-        if (tab === 'table') body = (api.pt ? api.pt.whisperHtml() : '') + fxHtml(st) + asksHtml(st);
+        if (tab === 'table') body = (api.pt ? api.pt.whisperHtml() : '') + torchHtml(st) + fxHtml(st) + asksHtml(st);
         else if (tab === 'talk') body = msgsHtml(st) + notesHtml(st) + handoutsHtml(st);
         else if (tab === 'rolls') body = rollsHtml(st);
       } else if (tab !== 'story')
@@ -1096,6 +1135,16 @@
         dm({ clearMsgs: true });
         return false;
       },
+      dmTorch: function (v) {
+        var st = St();
+        if (!st) return false;
+        var t = root.Torch.change(st.torch, v, 'Torch');
+        dm({
+          torch: t,
+          event: v === 'start' ? 'A torch is lit.' : v === 'out' ? 'The light goes out.' : ''
+        });
+        return false;
+      },
       dmInit: function () {
         dm({ open: true, reset: true });
         return false;
@@ -1158,7 +1207,7 @@
           ev = names + (v === 'condOn' ? ' became ' : ' is no longer ') + c.toLowerCase();
         } else if (v === 'insp') {
           fx = { k: 'insp' };
-          ev = names + (g === 'dnd' ? ' got inspiration' : ' got a hero point');
+          ev = names + (g === 'dnd' ? ' got inspiration' : g === 'sd' ? ' got a luck token' : ' got a hero point');
         } else if (/^rest:/.test(v)) {
           fx = { k: 'rest', c: v.slice(5) };
           ev = 'The ' + (v === 'rest:short' ? 'party took a short rest' : 'party rested');

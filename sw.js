@@ -1,7 +1,7 @@
 // Service worker: keeps a copy of the app so it opens offline, and always tries the network first
 // so a new version on the site is picked up as soon as you are online.
 // Bump VERSION when files are added or removed.
-var VERSION = 'cf-125';
+var VERSION = 'cf-126';
 var FILES = [
   './',
   'index.html',
@@ -42,6 +42,7 @@ var FILES = [
   'js/transfer.js',
   'js/table.js',
   'js/note-style.js',
+  'js/torch.js',
   'js/table-ui.js',
   'js/party-table.js',
   'js/table-share.js',
@@ -56,6 +57,7 @@ var FILES = [
   'js/dm.js',
   'data/mm.js',
   'js/mm.js',
+  'js/sd.js',
   'js/mm-foes.js',
   'js/mm-enc.js',
   'js/pf2.js',

@@ -19,6 +19,9 @@ var PT = window.PartyTable({
     } else if (game === 'mm') {
       actions.mmOpen(id);
       actions.mmTab('sheet');
+    } else if (game === 'sd') {
+      ui.section = 'sd-chars';
+      SDV.open(id);
     } else {
       actions.openChar(id);
       ui.mode = 'play';
@@ -113,6 +116,23 @@ Object.keys(TS.actions).forEach(function (k) {
   actions[k] = TS.actions[k];
 });
 var MMV = window.MMUI({ esc: esc, btn: btn, ui: ui, store: store, tp: TP });
+// Shadowdark: the sheet you fill in, Shadowdarklings imports, the light timer (js/sd.js, js/torch.js)
+var SDV = window.SDUI({
+  esc: esc,
+  btn: btn,
+  ui: ui,
+  store: store,
+  tp: TP,
+  render: function () {
+    render();
+  },
+  save: function () {
+    save();
+  }
+});
+Object.keys(SDV.actions).forEach(function (k) {
+  actions[k] = SDV.actions[k];
+});
 AIHelper.setContext(aiContext);
 Object.keys(MMV.actions).forEach(function (k) {
   actions[k] = MMV.actions[k];
@@ -206,6 +226,7 @@ Object.keys(BKP.actions).forEach(function (k) {
   actions[k] = BKP.actions[k];
 });
 if (store.game === 'mm' && ui.section === 'home') ui.section = 'mm-home';
+if (store.game === 'sd' && ui.section === 'home') ui.section = 'sd-home';
 if (store.game === 'pf2' && ui.section === 'home') ui.section = 'pf2-home';
 applyTheme(themeNow()); // reopen in the game you were using
 render();

@@ -643,7 +643,7 @@
       return root.DND && root.DND.book;
     }
     function ensure() {
-      if (store.game !== 'mm' && store.game !== 'pf2' && !srdReady() && !B.loading) {
+      if (store.game !== 'mm' && store.game !== 'pf2' && store.game !== 'sd' && !srdReady() && !B.loading) {
         B.loading = true;
         loadScript('data/srd-book.js').then(
           function () {
@@ -673,6 +673,7 @@
     var rules = null,
       mmBook = null;
     function built() {
+      if (store.game === 'sd') return []; // Shadowdark: no rules built in (license), only the books you add
       return store.game === 'mm'
         ? [{ id: 'mm', kind: 'mmrules', name: 'M&M 3e rules' }]
         : store.game === 'pf2'
@@ -1050,7 +1051,14 @@
           return b.id === B.open;
         })[0];
       if (!meta) {
-        meta = built()[0];
+        meta = built()[0] || (mine || [])[0];
+        if (!meta)
+          return (
+            '<main class="mon-main bk-main"><h2>Books</h2>' +
+            shelfHtml() +
+            (B.msg ? '<p class="small rest-msg">' + esc(B.msg) + '</p>' : '') +
+            '<div class="panel"><p>Shadowdark’s rules aren’t built into the app (its license doesn’t allow it). Add your own copy: the free <a href="https://www.thearcanelibrary.com/pages/shadowdark" target="_blank" rel="noopener">Shadowdark Quickstart</a> from The Arcane Library, or your rulebook PDF, with <b>+ Add a book</b>. It stays on this device, and you can search it during play.</p></div></main>'
+          );
         B.open = meta.id;
         B.part = null;
       }
