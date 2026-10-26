@@ -292,7 +292,7 @@
       ['play', 'Session']
     ];
     var LINKS =
-      '<p class="small">Make characters on <a href="https://shadowdarklings.net" target="_blank" rel="noopener">Shadowdarklings.net</a> (free account), export them as JSON and import them here. The free <a href="https://www.thearcanelibrary.com/pages/shadowdark" target="_blank" rel="noopener">Shadowdark Quickstart</a> has the rules; add it, or your own rulebook PDF, in <b>Books</b> to look things up during play (it stays on this device).</p>';
+      '<p class="small">Make characters on <a href="https://shadowdarklings.net" target="_blank" rel="noopener">Shadowdarklings.net</a> (free account), export them as JSON and import them here. The free <a href="https://www.thearcanelibrary.com/products/shadowdark-rpg-quickstart-set-pdf" target="_blank" rel="noopener">Shadowdark Quickstart</a> has the rules; add it, or your own rulebook PDF, in <b>Books</b> to look things up during play (it stays on this device).</p>';
 
     function home() {
       return (

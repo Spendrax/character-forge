@@ -257,7 +257,7 @@ Pick **Shadowdark** at the top. The app has **no Shadowdark rules text**: the Sh
 - **Re-import**: importing a character with the same name again offers to **update** it (level, stats, talents, spells, gear) while keeping your hit points, luck, notes, lost spells and the damage you typed.
 - **Crawling rounds (GM page)**: a round counter with a reminder to check for a random encounter every few rounds, with the die you choose (both as your book or table plays it).
 - **At the GM's table**: everything the table does for the other games (damage, healing, conditions, a **luck token**, rest, XP and level up, roll requests for stat checks, messages, whispers, notes, the player's sheet for the GM), plus **the party's light**: the GM lights it on the Table tab and it counts down on every phone.
-- **Rules**: add the free [Shadowdark Quickstart](https://www.thearcanelibrary.com/pages/shadowdark) or your rulebook PDF in **Books**; it stays on your device and can be searched while you play.
+- **Rules**: add the free [Shadowdark Quickstart](https://www.thearcanelibrary.com/products/shadowdark-rpg-quickstart-set-pdf) or your rulebook PDF in **Books**; it stays on your device and can be searched while you play.
 
 Character Forge is an independent product published under the Shadowdark RPG Third-Party License and is not affiliated with The Arcane Library, LLC. Shadowdark RPG © 2023 The Arcane Library, LLC.
 

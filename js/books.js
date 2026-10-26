@@ -1057,7 +1057,7 @@
             '<main class="mon-main bk-main"><h2>Books</h2>' +
             shelfHtml() +
             (B.msg ? '<p class="small rest-msg">' + esc(B.msg) + '</p>' : '') +
-            '<div class="panel"><p>Shadowdark’s rules aren’t built into the app (its license doesn’t allow it). Add your own copy: the free <a href="https://www.thearcanelibrary.com/pages/shadowdark" target="_blank" rel="noopener">Shadowdark Quickstart</a> from The Arcane Library, or your rulebook PDF, with <b>+ Add a book</b>. It stays on this device, and you can search it during play.</p></div></main>'
+            '<div class="panel"><p>Shadowdark’s rules aren’t built into the app (its license doesn’t allow it). Add your own copy: the free <a href="https://www.thearcanelibrary.com/products/shadowdark-rpg-quickstart-set-pdf" target="_blank" rel="noopener">Shadowdark Quickstart</a> from The Arcane Library, or your rulebook PDF, with <b>+ Add a book</b>. It stays on this device, and you can search it during play.</p></div></main>'
           );
         B.open = meta.id;
         B.part = null;
