@@ -61,7 +61,7 @@ passive Perception, spell save DC and attack) and extra proficiencies (skills wi
 
 ### Undo
 
-**Undo** and **Redo** in the top bar (or Ctrl+Z and Ctrl+Y / Ctrl+Shift+Z outside text boxes) step back and forward through the last 40 changes, including imports and deleting a character. The history lasts until the page is closed.
+**Undo** (↶ next to the character) and **Redo** (in the ⋯ menu, with New, Duplicate, Import, Export, Delete, the theme and the Sources filters) (or Ctrl+Z and Ctrl+Y / Ctrl+Shift+Z outside text boxes) step back and forward through the last 40 changes, including imports and deleting a character. The history lasts until the page is closed.
 
 ### Backup (Google Drive)
 

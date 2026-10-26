@@ -4828,3 +4828,34 @@ html.dice3d-lock body {
   border: 2px solid var(--accent);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
 }
+
+/* character bar: the character, undo and ⋯; the rest folds into .char-menu */
+.icon-btn {
+  min-width: 2.6rem;
+  padding-left: 0.6rem;
+  padding-right: 0.6rem;
+  font-size: 1.1rem;
+}
+.top select[data-ui='current'] {
+  flex: 1 1 10rem;
+  min-width: 0;
+}
+.char-menu {
+  flex-basis: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.6rem;
+  border: 1px solid var(--line, rgba(127, 127, 127, 0.3));
+  border-radius: 0.6rem;
+  background: var(--panel);
+}
+.char-menu .toolbar {
+  margin: 0;
+}
+.char-menu .filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.9rem;
+  align-items: center;
+}

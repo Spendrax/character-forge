@@ -176,19 +176,13 @@ function render() {
       })
       .join('') +
     '</select>' +
-    themeBtn() +
-    '<button type="button" class="btn" data-act="undo" title="Undo (Ctrl+Z)"' +
+    '<button type="button" class="btn icon-btn" data-act="undo" title="Undo (Ctrl+Z)" aria-label="Undo"' +
     (undoStack.length ? '' : ' disabled') +
-    '>↶ Undo</button><button type="button" class="btn" data-act="redo" title="Redo (Ctrl+Y)"' +
-    (redoStack.length ? '' : ' disabled') +
-    '>↷ Redo</button>' +
-    btn('new', 'New') +
-    btn('dup', 'Duplicate') +
-    btn('import', 'Import') +
-    btn('export', 'Export') +
-    (ui.confirmDelete
-      ? btn('delete', 'Really delete?', {}, 'btn primary') + btn('cancelDelete', 'Cancel')
-      : btn('askDelete', 'Delete', {}, 'btn danger')) +
+    '>↶</button>' +
+    btn('charMenu', ui.charMenu ? '✕' : '⋯', {}, 'btn icon-btn' + (ui.charMenu ? ' on' : '')).replace(
+      '<button',
+      '<button aria-expanded="' + !!ui.charMenu + '" aria-label="More: new, import, sources…"'
+    ) +
     (ui.importError
       ? '<span class="count" style="color:var(--warn)">' +
         esc(
@@ -198,22 +192,38 @@ function render() {
         ) +
         '</span>'
       : '') +
-    (isInstalledApp() ? '' : btn('install', 'Install app', {}, installPrompt ? 'btn primary' : 'btn')) +
-    '<span class="spacer"></span><span class="filters"><b>Sources:</b>' +
-    TAGS.map(function (t) {
-      return (
-        '<label><input type="checkbox" data-filter="' +
-        t[0] +
-        '"' +
-        (store.filters[t[0]] !== false ? ' checked' : '') +
-        '> ' +
-        t[1] +
-        '</label>'
-      );
-    }).join('') +
-    '<label title="Longer feature text and spell descriptions"><input type="checkbox" data-setting="detail"' +
-    (store.detail !== false ? ' checked' : '') +
-    '> Detailed text</label></span><input type="file" id="importFile" hidden><input type="file" id="partImportFile" hidden></header>';
+    // the rest, folded away until ⋯ is tapped: not needed all the time
+    (ui.charMenu
+      ? '<div class="char-menu"><div class="toolbar">' +
+        '<button type="button" class="btn" data-act="redo" title="Redo (Ctrl+Y)"' +
+        (redoStack.length ? '' : ' disabled') +
+        '>↷ Redo</button>' +
+        btn('new', 'New') +
+        btn('dup', 'Duplicate') +
+        btn('import', 'Import') +
+        btn('export', 'Export') +
+        (ui.confirmDelete
+          ? btn('delete', 'Really delete?', {}, 'btn primary') + btn('cancelDelete', 'Cancel')
+          : btn('askDelete', 'Delete', {}, 'btn danger')) +
+        themeBtn() +
+        (isInstalledApp() ? '' : btn('install', 'Install app', {}, installPrompt ? 'btn primary' : 'btn')) +
+        '</div><div class="filters"><b>Sources:</b>' +
+        TAGS.map(function (t) {
+          return (
+            '<label><input type="checkbox" data-filter="' +
+            t[0] +
+            '"' +
+            (store.filters[t[0]] !== false ? ' checked' : '') +
+            '> ' +
+            t[1] +
+            '</label>'
+          );
+        }).join('') +
+        '<label title="Longer feature text and spell descriptions"><input type="checkbox" data-setting="detail"' +
+        (store.detail !== false ? ' checked' : '') +
+        '> Detailed text</label></div></div>'
+      : '') +
+    '<input type="file" id="importFile" hidden><input type="file" id="partImportFile" hidden></header>';
   var SHOWN = visibleSteps();
   var modeBar =
     ui.mode === 'play'

@@ -37,6 +37,11 @@ var actions = {
     ui.step = 'play';
     ui.scrollToStep = true;
   },
+  // the folded part of the character bar: redo, new, import, export, delete, theme, sources
+  charMenu: function () {
+    ui.charMenu = !ui.charMenu;
+    ui.confirmDelete = false;
+  },
   // levelUp and the level-up screen: levelup.js
   step: function (v) {
     ui.lvl = null;
