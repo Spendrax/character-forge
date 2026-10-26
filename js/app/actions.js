@@ -746,6 +746,22 @@ var actions = {
     ch.companions = (ch.companions || []).concat([{ id: R.uid(), mon: v, n: m.n, hp: +m.hp || 1, max: +m.hp || 1 }]);
     ui.q.comp = '';
   },
+  // a shortcut on the sheet: scroll to that part
+  jump: function (v) {
+    var el = document.getElementById(v);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return false;
+  },
+  compCustom: function () {
+    var N = ui.compNew || {},
+      n = String(N.n || '').trim(),
+      hp = Math.max(0, Math.round(+N.hp) || 0);
+    if (!n) return false;
+    ch.companions = (ch.companions || []).concat([
+      { id: R.uid(), n: n, kind: String(N.k || '').trim(), hp: hp, max: hp }
+    ]);
+    ui.compNew = { n: '', k: '', hp: '' };
+  },
   compRm: function (v) {
     ch.companions = (ch.companions || []).filter(function (c) {
       return c.id !== v;

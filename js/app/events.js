@@ -178,6 +178,17 @@ document.addEventListener('input', function (e) {
   if (TP.onInput(t)) return;
   if (PT.onInput(t)) return;
   if (t.getAttribute('data-lvl')) return lvlInput(t, false);
+  if (t.getAttribute('data-compnew')) {
+    ui.compNew = ui.compNew || {};
+    ui.compNew[t.getAttribute('data-compnew')] = t.value;
+    return;
+  }
+  if (t.getAttribute('data-compnote')) {
+    (ch.companions || []).forEach(function (c) {
+      if (c.id === t.getAttribute('data-compnote')) c.note = t.value;
+    });
+    return save();
+  }
   if (BKP.onInput(t)) return;
   if (SavedEnc.onInput(t)) return save();
   if (ui.section === 'books' || ui.section === 'mm-rules') {

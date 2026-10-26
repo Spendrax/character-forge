@@ -547,6 +547,37 @@ function stepNotes() {
 function noteCss() {
   return window.NoteStyle ? NoteStyle.css(ch.noteStyle) : '';
 }
+// A row of shortcuts at the top of the sheet: tap "Fighter" or "Skills" and the page goes there.
+var STORY = ['Personality traits', 'Ideals', 'Bonds', 'Flaws', 'Appearance', 'Backstory', 'Notes'];
+function sheetJump(html) {
+  var toc = [['sh-abil', 'Abilities']],
+    story = false;
+  html = html.replace('<div class="abil">', '<div class="abil" id="sh-abil">');
+  html = html.replace(/<h3>([\s\S]*?)<\/h3>/g, function (m, inner) {
+    var label = inner
+        .replace(/<button[\s\S]*?<\/button>/g, '')
+        .replace(/<[^>]*>/g, '')
+        .replace(/&amp;/g, '&')
+        .trim(),
+      id = 'sh-' + toc.length;
+    if (STORY.indexOf(label) >= 0) {
+      if (story) return m;
+      story = true;
+      label = 'Story';
+    }
+    toc.push([id, label.replace(/ features$/, '')]);
+    return '<h3 id="' + id + '">' + inner + '</h3>';
+  });
+  var nav =
+    '<nav class="sheet-jump noprint" aria-label="Go to">' +
+    toc
+      .map(function (t) {
+        return btn('jump', esc(t[1]), { v: t[0] }, 'pill small');
+      })
+      .join('') +
+    '</nav>';
+  return html.replace('<div class="sheet">', nav + '<div class="sheet">');
+}
 function stepSheet() {
   // skills sit right under the proficiencies, before the spells
   var skillsH =
@@ -894,9 +925,9 @@ function stepSheet() {
   ].forEach(function (n) {
     if (ch.notes[n[0]]) h += '<h3>' + n[1] + '</h3><p style="white-space:pre-wrap">' + esc(ch.notes[n[0]]) + '</p>';
   });
-  return (
+  return sheetJump(
     h +
-    '</div></div><p class="small muted" style="margin-top:1rem">Rules summaries paraphrased from <a href="https://dnd5e.wikidot.com/" target="_blank" rel="noopener">dnd5e.wikidot.com</a> (CC BY-SA 3.0). Check the wiki or your books for full wording.</p></div>'
+      '</div></div><p class="small muted" style="margin-top:1rem">Rules summaries paraphrased from <a href="https://dnd5e.wikidot.com/" target="_blank" rel="noopener">dnd5e.wikidot.com</a> (CC BY-SA 3.0). Check the wiki or your books for full wording.</p></div>'
   );
 }
 function totalTodo() {

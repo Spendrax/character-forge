@@ -49,7 +49,7 @@ function restoreScroll(st) {
   if (window.pageYOffset !== st.y || window.pageXOffset !== st.x) window.scrollTo(st.x, st.y);
 }
 // A finished character opens on Play with only the play pages; the building steps come back with Edit or Level up.
-var PLAY_STEPS = ['play', 'myspells', 'equipment', 'items', 'sheet', 'notes'];
+var PLAY_STEPS = ['play', 'myspells', 'equipment', 'items', 'companions', 'sheet', 'notes'];
 function complete(c, dd) {
   return (
     !!(c.lineage && c.classes.length && c.background) &&
@@ -147,6 +147,7 @@ function render() {
     myspells: stepMySpells,
     equipment: stepEquipment,
     items: stepItems,
+    companions: stepCompanions,
     appearance: stepAppearance,
     details: stepDetails,
     sheet: stepSheet,
@@ -243,7 +244,10 @@ function render() {
     '<nav class="steps" aria-label="Steps">' +
     SHOWN.map(function (s) {
       var n = d.todo[s[0]],
-        show = ['sheet', 'notes', 'details', 'equipment', 'items', 'appearance', 'myspells', 'play'].indexOf(s[0]) < 0;
+        show =
+          ['sheet', 'notes', 'details', 'equipment', 'items', 'companions', 'appearance', 'myspells', 'play'].indexOf(
+            s[0]
+          ) < 0;
       return (
         '<button type="button" class="step' +
         (ui.step === s[0] ? ' on' : '') +

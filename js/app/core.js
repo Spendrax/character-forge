@@ -15,6 +15,7 @@ var STEPS = [
   ['myspells', 'My spells'],
   ['equipment', 'Equipment'],
   ['items', 'Items'],
+  ['companions', 'Pets'],
   ['appearance', 'Appearance'],
   ['details', 'Details'],
   ['sheet', 'Sheet'],

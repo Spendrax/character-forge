@@ -4859,3 +4859,31 @@ html.dice3d-lock body {
   gap: 0.3rem 0.9rem;
   align-items: center;
 }
+
+/* shortcuts at the top of the sheet (js/app/sheet.js) */
+.sheet-jump {
+  display: flex;
+  gap: 0.35rem;
+  overflow-x: auto;
+  padding: 0.4rem 0;
+  margin-bottom: 0.4rem;
+  scrollbar-width: thin;
+}
+.sheet-jump .pill {
+  white-space: nowrap;
+  flex: none;
+}
+.sheet [id^='sh-'] {
+  scroll-margin-top: 10rem;
+}
+@media (max-width: 760px) {
+  .sheet-jump {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    background: var(--bg);
+  }
+  .sheet [id^='sh-'] {
+    scroll-margin-top: 3.5rem;
+  }
+}

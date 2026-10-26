@@ -325,7 +325,9 @@ Dungeons & Dragons is a trademark of Wizards of the Coast. This is an unofficial
 
 ## At the table (new)
 
-- **Session page (D&D):** concentration (pick the spell; damage fills in the Constitution save DC and the app rolls it, War Caster included), conditions with what they do and exhaustion levels (speed updates), spend hit dice on a short rest with one tap, Wild Shape (the beasts a druid can turn into at its level, Circle of the Moon included, with the form's hit points and stat block; damage past 0 carries over), familiars and companions (any creature, Find Familiar shortcuts, hit points and stat block).
+- **Session page (D&D):** concentration (pick the spell; damage fills in the Constitution save DC and the app rolls it, War Caster included), conditions with what they do and exhaustion levels (speed updates), spend hit dice on a short rest with one tap, Wild Shape (the beasts a druid can turn into at its level, Circle of the Moon included, with the form's hit points and stat block; damage past 0 carries over).
+- **Pets page (D&D):** its own tab for familiars, a ranger’s beast, mounts and summons (any creature, Find Familiar shortcuts, hit points and stat block) and pets of your own (name, what it is, hit points if any), each with notes.
+- **Sheet shortcuts:** a row at the top of the Sheet (Abilities, Skills, Spellcasting, each class’s features, Feats, Equipment, Story…): tap one and the page goes there. On a phone the row stays at the top while you scroll.
 - **Sheet:** Print spell cards (playing-card size, 9 per page).
 - **Treasures:** share it out: coins split evenly between the ticked characters (the rest stays in the pot), items handed to whoever you pick.
 - **Generators:** NPCs (name, job, a physical description fitting the lineage: age, height, build, skin or scales, hair, eyes, a lineage feature like horns or tusks, clothes fitting the job, and one detail that stands out; manner, wants, secret), taverns (menu, prices, rumors, owner) and shops (stock with prices, owner, quirk); keep the ones you like. Random encounters are on the Encounters page.

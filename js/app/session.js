@@ -1,4 +1,5 @@
-// The Session page: uses and rests, the DM’s table from a phone, concentration, conditions, Wild Shape, companions.
+// The Session page: uses and rests, the DM’s table from a phone, concentration, conditions, Wild Shape; and the Pets
+// and familiars page.
 // Part of the app: these files share one scope (see “How the code is organized” in README.md), loaded in order by index.html.
 'use strict';
 
@@ -527,27 +528,56 @@ function wildShapeHtml() {
     '</div>';
   return h + '</div>';
 }
-function companionsHtml() {
+// The Pets and familiars page: familiars, a ranger's beast, mounts, summons (with their stat blocks) and pets of
+// your own (a name, what it is, notes), each with hit points to track.
+function stepCompanions() {
   var L = ch.companions || [],
-    h = '<div class="panel"><h3>Familiars and companions</h3>';
-  if (!MON.ensure(render)) return h + '<p class="small muted">Loading the creatures…</p></div>';
-  h += L.map(function (c) {
-    var m = MON.find(c.mon),
-      open = (ui.compOpen || {})[c.id];
-    return (
-      '<div class="comp"><div class="toolbar" style="margin:0"><b>' +
-      esc(c.n) +
-      '</b><span class="small muted">' +
-      (m ? esc(m.n) + ' · AC ' + (m.acv || m.ac) + ' · ' + esc(m.sp || m.mv || '') : '') +
-      '</span><span class="spacer"></span>' +
-      btn('compOpen', open ? 'Hide stats' : 'Stats', { v: c.id }, 'btn small') +
-      btn('compRm', '✕', { v: c.id }, 'btn small') +
-      '</div>' +
-      creatureHp('c:' + c.id, c.hp, c.max) +
-      (open && m ? MON.block(m) : '') +
-      '</div>'
-    );
-  }).join('');
+    N = (ui.compNew = ui.compNew || { n: '', k: '', hp: '' });
+  var h =
+    '<h2>Pets and familiars</h2><p class="muted">Familiars, a ranger’s beast companion, mounts, summoned creatures and pets: their hit points, stats and notes.</p>';
+  if (!MON.ensure(render)) return h + '<p class="small muted">Loading the creatures…</p>';
+  h += L.length
+    ? L.map(function (c) {
+        var m = c.mon && MON.find(c.mon),
+          open = (ui.compOpen || {})[c.id];
+        return (
+          '<div class="panel comp"><div class="toolbar" style="margin:0"><b>' +
+          esc(c.n) +
+          '</b><span class="small muted">' +
+          (m ? esc(m.n) + ' · AC ' + (m.acv || m.ac) + ' · ' + esc(m.sp || m.mv || '') : esc(c.kind || 'Pet')) +
+          '</span><span class="spacer"></span>' +
+          (m ? btn('compOpen', open ? 'Hide stats' : 'Stats', { v: c.id }, 'btn small') : '') +
+          btn('compRm', '✕', { v: c.id }, 'btn small') +
+          '</div>' +
+          (c.max > 0 ? creatureHp('c:' + c.id, c.hp, c.max) : '') +
+          (open && m ? MON.block(m) : '') +
+          '<label class="field"><span>Notes</span><textarea id="comp-note-' +
+          c.id +
+          '" data-compnote="' +
+          c.id +
+          '" rows="2" placeholder="Name, tricks, what it carries, how you met…">' +
+          esc(c.note || '') +
+          '</textarea></label></div>'
+        );
+      }).join('')
+    : '<p class="small muted">No companions yet. Add one below.</p>';
+  h +=
+    '<div class="panel"><h3>A pet of your own</h3><p class="small muted">Any animal or creature, with or without stats: a cat, a pony, a pet rock.</p><div class="toolbar">' +
+    '<input id="comp-new-n" data-compnew="n" placeholder="Name" value="' +
+    esc(N.n) +
+    '" style="flex:1;min-width:8rem">' +
+    '<input id="comp-new-k" data-compnew="k" placeholder="What it is (cat, hawk…)" value="' +
+    esc(N.k) +
+    '" style="flex:1;min-width:8rem">' +
+    '<input id="comp-new-hp" data-compnew="hp" type="number" min="0" placeholder="HP" value="' +
+    esc(N.hp) +
+    '" style="width:5rem">' +
+    btn('compCustom', '+ Add pet', {}, 'btn primary') +
+    '</div></div>';
+  return h + companionsHtml();
+}
+function companionsHtml() {
+  var h = '<div class="panel"><h3>A creature with stats</h3>';
   var q = ui.q.comp || '',
     fam = FAMILIARS.map(function (n) {
       return MON.all().filter(function (m) {
@@ -737,7 +767,7 @@ function stepPlay() {
     }).join('') +
     '</div></div>';
   if (d.attacks.length) h += '<div class="panel"><h3>Weapons</h3>' + attacksHtml(false) + '</div>';
-  h += wildShapeHtml() + companionsHtml();
+  h += wildShapeHtml();
   var quick = ch.items.filter(function (i) {
     return i.quick;
   });
