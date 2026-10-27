@@ -275,6 +275,8 @@ Character Forge is an independent product published under the Shadowdark RPG Thi
 
 Plain JavaScript files loaded by `index.html` in order, no build step. Each file starts with a comment saying what it does.
 
+Pathfinder, M&M and Shadowdark (and the long D&D feature and spell texts) are not in `index.html`: `js/app/main.js` loads them the first time you switch to that game (`LAZY`, `needGame`), so a D&D player's phone reads about 0.5 MB less code. They are still in the offline copy (`sw.js`).
+
 **The D&D app** (`js/app/`, loaded in this order). These files share one scope: what one declares at the top (`store`, `ui`, `ch` the open character, `d` its computed sheet, `render`, `esc`, `btn`…) the others can use.
 
     core.js           shared state, saving, undo, small helpers

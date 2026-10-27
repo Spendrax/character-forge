@@ -475,9 +475,11 @@ function handleImportBuffer(buf) {
       if (!got) throw new Error('not json');
       var o = got.json;
       // a Shadowdarklings.net character: to the Shadowdark section
-      if (window.SDRules && SDRules.isShadowdarklings(o)) {
+      if (o && typeof o === 'object' && o.rolledStats && o.stats && 'gearSlotsTotal' in o) {
         store.game = 'sd';
-        SDV.addImported(o);
+        needGame('sd', function () {
+          SDV.addImported(o);
+        });
         return;
       }
       if (BKP.isBackup(o)) {

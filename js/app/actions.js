@@ -8,6 +8,9 @@ var actions = {
     ui.section = v;
     window.scrollTo(0, 0);
   },
+  lazyRetry: function (v) {
+    delete lazy[v];
+  },
   game: function (v) {
     if (gameOf() === v) return;
     store.game = v === 'mm' || v === 'pf2' || v === 'sd' ? v : 'dnd';

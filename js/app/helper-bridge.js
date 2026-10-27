@@ -6,6 +6,7 @@
 // A proposed change runs only when the user taps Apply; it goes through the same picks as tapping the option, so Undo works.
 function aiApply(verb, a) {
   var r;
+  if (!gameReady(gameOf())) throw new Error('Wait a moment: the game is still loading.');
   if (gameOf() === 'sd') throw new Error('The helper can’t change Shadowdark characters.');
   if (gameOf() === 'mm') r = MMV.context(ui.section).apply ? MMV.context(ui.section).apply(verb, a) : null;
   else if (gameOf() === 'pf2') r = PFV.context(ui.section).apply ? PFV.context(ui.section).apply(verb, a) : null;
@@ -122,6 +123,7 @@ function aiSet(verb, a) {
   throw new Error('Unknown change “' + verb + '”');
 }
 function aiContext() {
+  if (!gameReady(gameOf())) return { where: 'Character Forge', subject: 'the app', text: 'The game is still loading.' };
   if (gameOf() === 'sd') {
     var sc = (store.sd || {}).chars || [],
       c = sc.filter(function (x) {

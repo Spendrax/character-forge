@@ -197,25 +197,25 @@ document.addEventListener('input', function (e) {
     if (bk) return;
   }
   if (/^pf2-/.test(ui.section)) {
-    var pi = PFV.onInput(t);
+    var pi = PFV ? PFV.onInput(t) : null;
     if (pi === 'render') render();
     else if (pi) save();
     if (pi) return;
   }
   if (/^mm-(enc|party|foes|loot)$/.test(ui.section)) {
-    var me = MME.onInput(t);
+    var me = MME ? MME.onInput(t) : null;
     if (me === 'render') render();
     else if (me) save();
     if (me) return;
   }
   if (ui.section === 'sd-chars') {
-    var si = SDV.onInput(t);
+    var si = SDV ? SDV.onInput(t) : null;
     if (si === 'render') render();
     else if (si === 'save') save();
     if (si) return;
   }
   if (ui.section === 'mm-heroes') {
-    var mi = MMV.onInput(t);
+    var mi = MMV ? MMV.onInput(t) : null;
     if (mi === 'render') render();
     else if (mi) save();
     if (mi) return;
@@ -368,26 +368,26 @@ document.addEventListener('change', function (e) {
     }
   }
   if (/^pf2-/.test(ui.section)) {
-    var pc = PFV.onChange(t);
+    var pc = PFV ? PFV.onChange(t) : null;
     if (pc) {
       requestRender();
       return;
     }
   }
   if (/^mm-(enc|party|foes|loot)$/.test(ui.section)) {
-    var mec = MME.onChange(t);
+    var mec = MME ? MME.onChange(t) : null;
     if (mec) {
       requestRender();
       return;
     }
   }
   if (ui.section === 'sd-chars') {
-    var sc = SDV.onChange(t);
+    var sc = SDV ? SDV.onChange(t) : null;
     if (sc === 'render') requestRender(); // after the tap that moved away from the field, so it isn't lost
     if (sc) return;
   }
   if (ui.section === 'mm-heroes') {
-    var mc = MMV.onChange(t);
+    var mc = MMV ? MMV.onChange(t) : null;
     if (mc) {
       requestRender();
       return;

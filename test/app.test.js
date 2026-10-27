@@ -150,6 +150,33 @@ function fakeGoogle(ctx, drive) {
       await p.ctx.close();
     });
 
+    await test('other games load only when chosen, and their pages work', async function () {
+      var p = await page();
+      var before = await p.evaluate(function () {
+        return [typeof PF2UI, typeof MMUI, typeof SDUI];
+      });
+      assert.deepEqual(before, ['undefined', 'undefined', 'undefined'], 'not read at start');
+      await p.click('[data-act=game][data-v=pf2]');
+      await p.waitForSelector('.hub-item[data-v=pf2-chars]');
+      await p.click('.hub-item[data-v=pf2-chars]');
+      await wait(1500);
+      assert.ok((await p.locator('main').innerText()).length > 50, 'PF2 characters page');
+      await p.click('[data-act=game][data-v=mm]');
+      await p.waitForSelector('.hub-item[data-v=mm-heroes]');
+      await p.click('.hub-item[data-v=mm-heroes]');
+      await p.waitForSelector('.mm-tabs');
+      await p.click('[data-act=section][data-v=dm]');
+      await p.waitForSelector('.dm-page');
+      var after = await p.evaluate(function () {
+        return [typeof PF2UI, typeof MMUI, typeof SDUI, !!(DND.spellText && DND.featureText)];
+      });
+      assert.deepEqual(after, ['function', 'function', 'undefined', true]);
+      await p.reload();
+      await p.waitForSelector('.mm-tabs, .hub, .dm-page');
+      assert.ok(/M&M/.test(await p.title()), 'reopens in M&M: ' + (await p.title()));
+      await p.ctx.close();
+    });
+
     await test('D&D: level-up screen adds a level and average hit points', async function () {
       var p = await page();
       await p.click('.hub-item[data-v=roster]');

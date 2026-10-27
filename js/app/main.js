@@ -12,21 +12,9 @@ var PT = window.PartyTable({
   // a player's sheet, opened on its Sheet page in its own game
   open: function (game, id) {
     store.game = game;
-    if (game === 'pf2') {
-      ui.section = 'pf2-chars';
-      actions.pfOpen(id);
-      actions.pfTab('sheet');
-    } else if (game === 'mm') {
-      actions.mmOpen(id);
-      actions.mmTab('sheet');
-    } else if (game === 'sd') {
-      ui.section = 'sd-chars';
-      SDV.open(id);
-    } else {
-      actions.openChar(id);
-      ui.mode = 'play';
-      ui.step = 'sheet';
-    }
+    needGame(game, function () {
+      openSheet(game, id);
+    });
   },
   save: function () {
     save();
@@ -35,6 +23,23 @@ var PT = window.PartyTable({
     render();
   }
 });
+function openSheet(game, id) {
+  if (game === 'pf2') {
+    ui.section = 'pf2-chars';
+    actions.pfOpen(id);
+    actions.pfTab('sheet');
+  } else if (game === 'mm') {
+    actions.mmOpen(id);
+    actions.mmTab('sheet');
+  } else if (game === 'sd') {
+    ui.section = 'sd-chars';
+    SDV.open(id);
+  } else {
+    actions.openChar(id);
+    ui.mode = 'play';
+    ui.step = 'sheet';
+  }
+}
 Object.keys(PT.actions).forEach(function (k) {
   actions[k] = PT.actions[k];
 });
@@ -115,57 +120,126 @@ var TS = window.TableShare({
 Object.keys(TS.actions).forEach(function (k) {
   actions[k] = TS.actions[k];
 });
-var MMV = window.MMUI({ esc: esc, btn: btn, ui: ui, store: store, tp: TP });
-// Shadowdark: the sheet you fill in, Shadowdarklings imports, the light timer (js/sd.js, js/torch.js)
-var SDV = window.SDUI({
-  esc: esc,
-  btn: btn,
-  ui: ui,
-  store: store,
-  tp: TP,
-  render: function () {
-    render();
-  },
-  save: function () {
-    save();
-  }
-});
-Object.keys(SDV.actions).forEach(function (k) {
-  actions[k] = SDV.actions[k];
-});
 AIHelper.setContext(aiContext);
-Object.keys(MMV.actions).forEach(function (k) {
-  actions[k] = MMV.actions[k];
-});
-var MME = window.MMEnc({
-  pt: PT,
-  esc: esc,
-  btn: btn,
-  ui: ui,
-  store: store,
-  ts: TS,
-  render: function () {
-    render();
+// ---------- the other games, loaded when you switch to them (most players use one game) ----------
+// Their files are still in the offline copy (sw.js); they just aren't read until needed, so the app starts faster.
+var PFV = null,
+  MMV = null,
+  MME = null,
+  SDV = null;
+var LAZY = {
+  // longer feature and spell texts (Detailed text): read just after the page first shows
+  text: ['data/text-spells.js', 'data/text-features.js'],
+  pf2: ['js/pf2.js', 'js/pf2-import.js', 'js/pf2-enc.js', 'js/pf2-ui.js'],
+  mm: ['data/mm.js', 'js/mm.js', 'js/mm-foes.js', 'js/mm-enc.js'],
+  sd: ['js/sd.js']
+};
+function merge(o) {
+  Object.keys(o.actions).forEach(function (k) {
+    actions[k] = o.actions[k];
+  });
+}
+var START = {
+  text: function () {},
+  pf2: function () {
+    PFV = window.PF2UI({
+      pt: PT,
+      esc: esc,
+      btn: btn,
+      ui: ui,
+      store: store,
+      tp: TP,
+      ts: TS,
+      render: function () {
+        render();
+      }
+    });
+    merge(PFV);
+  },
+  mm: function () {
+    MMV = window.MMUI({ esc: esc, btn: btn, ui: ui, store: store, tp: TP });
+    merge(MMV);
+    MME = window.MMEnc({
+      pt: PT,
+      esc: esc,
+      btn: btn,
+      ui: ui,
+      store: store,
+      ts: TS,
+      render: function () {
+        render();
+      }
+    });
+    merge(MME);
+  },
+  // Shadowdark: the sheet you fill in, Shadowdarklings imports, the light timer (js/sd.js, js/torch.js)
+  sd: function () {
+    SDV = window.SDUI({
+      esc: esc,
+      btn: btn,
+      ui: ui,
+      store: store,
+      tp: TP,
+      render: function () {
+        render();
+      },
+      save: function () {
+        save();
+      }
+    });
+    merge(SDV);
   }
-});
-var PFV = window.PF2UI({
-  pt: PT,
-  esc: esc,
-  btn: btn,
-  ui: ui,
-  store: store,
-  tp: TP,
-  ts: TS,
-  render: function () {
-    render();
+};
+var lazy = {}; // part → 'loading', 'ready' or 'error'
+var lazyThen = {};
+function loadScriptOnce(src) {
+  return new Promise(function (ok, no) {
+    var s = document.createElement('script');
+    s.src = src;
+    s.onload = ok;
+    s.onerror = function () {
+      no(new Error('Couldn’t load ' + src));
+    };
+    document.head.appendChild(s);
+  });
+}
+function gameReady(g) {
+  return g === 'dnd' || lazy[g] === 'ready';
+}
+// load a game (or the texts), then do `then`; true when it was already there
+function needGame(g, then) {
+  if (gameReady(g)) {
+    if (then) then();
+    return true;
   }
-});
-Object.keys(PFV.actions).forEach(function (k) {
-  actions[k] = PFV.actions[k];
-});
-Object.keys(MME.actions).forEach(function (k) {
-  actions[k] = MME.actions[k];
-});
+  (lazyThen[g] = lazyThen[g] || []).push(then);
+  if (lazy[g] === 'loading') return false;
+  lazy[g] = 'loading';
+  LAZY[g]
+    .reduce(function (p, src) {
+      return p.then(function () {
+        return loadScriptOnce(src);
+      });
+    }, Promise.resolve())
+    .then(
+      function () {
+        START[g]();
+        lazy[g] = 'ready';
+        var list = lazyThen[g];
+        lazyThen[g] = [];
+        list.forEach(function (f) {
+          if (f) f();
+        });
+        render();
+      },
+      function () {
+        lazy[g] = 'error';
+        lazyThen[g] = [];
+        render();
+      }
+    );
+  return false;
+}
 var AUD = window.AudioUI({
   esc: esc,
   btn: btn,
@@ -230,6 +304,7 @@ if (store.game === 'sd' && ui.section === 'home') ui.section = 'sd-home';
 if (store.game === 'pf2' && ui.section === 'home') ui.section = 'pf2-home';
 applyTheme(themeNow()); // reopen in the game you were using
 render();
+needGame('text'); // the longer texts, now that the page shows
 // the larger saved copy (IndexedDB), when it is newer than the quick one
 loadDb(function (changed) {
   if (!changed) return;

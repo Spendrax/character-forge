@@ -2,6 +2,8 @@
 global.window = global; const fs = require('fs'), path = require('path'), assert = require('assert');
 const html = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
 [...html.matchAll(/src="(data\/[^"]+)"/g)].forEach(m => (0, eval)(fs.readFileSync(path.join(__dirname, '..', m[1]), 'utf8')));
+// the longer texts are loaded on demand in the app (js/app/main.js, LAZY)
+['data/text-spells.js', 'data/text-features.js'].forEach(f => (0, eval)(fs.readFileSync(path.join(__dirname, '..', f), 'utf8')));
 const R = require('../js/rules.js'), D = global.DND;
 const mk = o => Object.assign(R.newChar(), o);
 const C = (cls, level, subclass) => ({ cls, level, subclass: subclass || '' });
@@ -209,6 +211,18 @@ ma.spells = {}; assert(R.derive(ma, {}).warnings.some(w => /Mage Armor is on/.te
 // offline copy: every file the page loads must be in the service worker's list
 const sw = fs.readFileSync(path.join(__dirname, '../sw.js'), 'utf8');
 [...html.matchAll(/(?:src|href)="((?:data|js|css|icons)\/[^"]+)"/g)].forEach(m => assert(sw.includes("'" + m[1] + "'"), 'sw.js is missing ' + m[1]));
+// the games loaded on demand (js/app/main.js, LAZY) must be in the offline copy too, and exist
+{
+  const mainJs = fs.readFileSync(path.join(__dirname, '../js/app/main.js'), 'utf8');
+  const lazyBlock = mainJs.slice(mainJs.indexOf('var LAZY = {'), mainJs.indexOf('};', mainJs.indexOf('var LAZY = {')));
+  const lazyFiles = [...lazyBlock.matchAll(/'((?:data|js)\/[^']+)'/g)].map(m => m[1]);
+  assert(lazyFiles.length >= 10, 'LAZY list found');
+  lazyFiles.forEach(f => {
+    assert(sw.includes("'" + f + "'"), 'sw.js is missing ' + f);
+    assert(fs.existsSync(path.join(__dirname, '..', f)), f + ' exists');
+    assert(!html.includes('"' + f + '"'), f + ' is loaded on demand, not in index.html');
+  });
+}
 // Spells from the lineage and feats, and spells the player adds: they show on My spells with the right level and DC
 {
   const sp = R.spellsInText('Know Thaumaturgy. Cast Hellish Rebuke (3rd level, as a 2nd-level spell) and Darkness (5th level) once each per long rest, using Charisma.');

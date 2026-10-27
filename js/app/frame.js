@@ -117,6 +117,24 @@ window.addEventListener('popstate', function (e) {
   if (ui.section !== 'chars') window.scrollTo(0, 0);
 });
 function render() {
+  // a game whose files aren't read yet (js/app/main.js, needGame): a moment of "Loading…"
+  if (!gameReady(gameOf())) {
+    var g = gameOf();
+    needGame(g);
+    document.getElementById('app').innerHTML =
+      '<main class="home"><h1>' +
+      { pf2: 'Pathfinder 2e', mm: 'Mutants &amp; Masterminds 3e', sd: 'Shadowdark' }[g] +
+      '</h1>' +
+      (lazy[g] === 'error'
+        ? '<p>Couldn’t load this game. Check your connection, then ' +
+          btn('lazyRetry', 'try again', { v: g }, 'btn small primary') +
+          ' or ' +
+          btn('game', 'go back to D&amp;D', { v: 'dnd' }, 'btn small') +
+          '</p>'
+        : '<p class="muted">Loading…</p>') +
+      '</main>';
+    return;
+  }
   if (!byId(store.current) && store.chars.length) store.current = store.chars[0].id;
   remember(); // record the change about to be drawn, so Undo is ready at once
   ch = byId(store.current);
