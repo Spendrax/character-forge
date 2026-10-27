@@ -130,7 +130,17 @@ var PFV = null,
 var LAZY = {
   // longer feature and spell texts (Detailed text): read just after the page first shows
   text: ['data/text-spells.js', 'data/text-features.js'],
-  pf2: ['js/pf2.js', 'js/pf2-import.js', 'js/pf2-enc.js', 'js/pf2-ui.js'],
+  pf2: [
+    'js/pf2.js',
+    'js/pf2-import.js',
+    'js/pf2-enc.js',
+    'js/pf2-ui-build.js',
+    'js/pf2-ui-sheet.js',
+    'js/pf2-ui-gear.js',
+    'js/pf2-ui-rules.js',
+    'js/pf2-ui-actions.js',
+    'js/pf2-ui.js'
+  ],
   mm: ['data/mm.js', 'js/mm.js', 'js/mm-foes.js', 'js/mm-enc.js'],
   sd: ['js/sd.js']
 };

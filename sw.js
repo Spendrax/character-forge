@@ -3,7 +3,7 @@
 // page then offers "Update now" (js/boot.js), which switches to it and reloads. Until then the old copy keeps
 // serving, so the page never mixes files from two versions.
 // Bump VERSION whenever any file changes, or the change never reaches installed apps.
-var VERSION = 'cf-134';
+var VERSION = 'cf-135';
 var FILES = [
   './',
   'index.html',
@@ -65,6 +65,11 @@ var FILES = [
   'js/pf2.js',
   'js/pf2-import.js',
   'js/pf2-enc.js',
+  'js/pf2-ui-build.js',
+  'js/pf2-ui-sheet.js',
+  'js/pf2-ui-gear.js',
+  'js/pf2-ui-rules.js',
+  'js/pf2-ui-actions.js',
   'js/pf2-ui.js',
   'js/spotify.js',
   'js/gdrive.js',

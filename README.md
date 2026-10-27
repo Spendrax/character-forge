@@ -275,6 +275,8 @@ Character Forge is an independent product published under the Shadowdark RPG Thi
 
 Plain JavaScript files loaded by `index.html` in order, no build step. Each file starts with a comment saying what it does.
 
+**Big pages in parts.** A game's screens are one function (`root.PF2UI = function (api) {…}`) whose helpers share names. When that grew past a few thousand lines it was cut into part files: each part registers `root.PF2UIParts.build = function (K) {…}`, starts by reading the shared names it uses (`var esc = K.esc, cur = K.cur…`), and puts its own functions on `K` at the end; the main file builds `K` and runs the parts in order. Inside a part, a function from another part is written `K.name(…)`.
+
 Pathfinder, M&M and Shadowdark (and the long D&D feature and spell texts) are not in `index.html`: `js/app/main.js` loads them the first time you switch to that game (`LAZY`, `needGame`), so a D&D player's phone reads about 0.5 MB less code. They are still in the offline copy (`sw.js`).
 
 **The D&D app** (`js/app/`, loaded in this order). These files share one scope: what one declares at the top (`store`, `ui`, `ch` the open character, `d` its computed sheet, `render`, `esc`, `btn`…) the others can use.
@@ -301,6 +303,7 @@ How a tap works: a button has `data-act="name"`, the click goes to `actions.name
     rules.js          D&D rules engine: turns picks into a sheet (no page code; also runs in Node for tests)
     monsters.js, encounter.js, treasure.js, generators.js, books.js, audio.js, dm.js (DM/GM page)
     pf2.js, pf2-ui.js, pf2-enc.js, pf2-import.js        Pathfinder 2e: rules, pages, encounters/treasure, import
+    pf2-ui-build.js, -sheet.js, -gear.js, -rules.js, -actions.js   the parts of pf2-ui.js (see below)
     mm.js, mm-enc.js, mm-foes.js                        Mutants & Masterminds 3e
     sd.js, torch.js                                     Shadowdark (sheet, Shadowdarklings import) and the light timer
     table.js          the table between the DM's device and the players' phones (PeerJS)
