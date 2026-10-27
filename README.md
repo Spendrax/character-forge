@@ -304,7 +304,10 @@ How a tap works: a button has `data-act="name"`, the click goes to `actions.name
     monsters.js, encounter.js, treasure.js, generators.js, books.js, audio.js, dm.js (DM/GM page)
     pf2.js, pf2-ui.js, pf2-enc.js, pf2-import.js        Pathfinder 2e: rules, pages, encounters/treasure, import
     pf2-ui-build.js, -sheet.js, -gear.js, -rules.js, -actions.js   the parts of pf2-ui.js (see below)
+    pf2-enc-party.js, -run.js, -monsters.js, -loot.js, -actions.js   the parts of pf2-enc.js (DM tools)
     mm.js, mm-enc.js, mm-foes.js                        Mutants & Masterminds 3e
+    mm-ui-build.js, -sheet.js, -actions.js, -helper.js   the parts of mm.js's hero pages
+    mm-enc-build.js, -party.js, -run.js, -pages.js, -actions.js   the parts of mm-enc.js (GM tools)
     sd.js, torch.js                                     Shadowdark (sheet, Shadowdarklings import) and the light timer
     table.js          the table between the DM's device and the players' phones (PeerJS)
     table-ui.js       a Pathfinder or M&M character at the table; table-share.js sends treasure to phones

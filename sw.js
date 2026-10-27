@@ -3,7 +3,7 @@
 // page then offers "Update now" (js/boot.js), which switches to it and reloads. Until then the old copy keeps
 // serving, so the page never mixes files from two versions.
 // Bump VERSION whenever any file changes, or the change never reaches installed apps.
-var VERSION = 'cf-135';
+var VERSION = 'cf-136';
 var FILES = [
   './',
   'index.html',
@@ -58,12 +58,26 @@ var FILES = [
   'js/generators.js',
   'js/dm.js',
   'data/mm.js',
+  'js/mm-ui-build.js',
+  'js/mm-ui-sheet.js',
+  'js/mm-ui-actions.js',
+  'js/mm-ui-helper.js',
   'js/mm.js',
   'js/sd.js',
   'js/mm-foes.js',
+  'js/mm-enc-build.js',
+  'js/mm-enc-party.js',
+  'js/mm-enc-run.js',
+  'js/mm-enc-pages.js',
+  'js/mm-enc-actions.js',
   'js/mm-enc.js',
   'js/pf2.js',
   'js/pf2-import.js',
+  'js/pf2-enc-party.js',
+  'js/pf2-enc-run.js',
+  'js/pf2-enc-monsters.js',
+  'js/pf2-enc-loot.js',
+  'js/pf2-enc-actions.js',
   'js/pf2-enc.js',
   'js/pf2-ui-build.js',
   'js/pf2-ui-sheet.js',
