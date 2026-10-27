@@ -230,6 +230,14 @@ if (store.game === 'sd' && ui.section === 'home') ui.section = 'sd-home';
 if (store.game === 'pf2' && ui.section === 'home') ui.section = 'pf2-home';
 applyTheme(themeNow()); // reopen in the game you were using
 render();
+// the larger saved copy (IndexedDB), when it is newer than the quick one
+loadDb(function (changed) {
+  if (!changed) return;
+  if (store.game === 'mm' && ui.section === 'home') ui.section = 'mm-home';
+  if (store.game === 'sd' && ui.section === 'home') ui.section = 'sd-home';
+  if (store.game === 'pf2' && ui.section === 'home') ui.section = 'pf2-home';
+  render();
+});
 // this page is the small Google sign-in window coming back: the page that opened it carries on
 if (BKP.popupDone)
   document.getElementById('app').innerHTML =

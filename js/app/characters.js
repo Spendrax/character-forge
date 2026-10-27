@@ -346,15 +346,8 @@ function loadPicture(input) {
         render();
         return;
       }
-      var before = ch.picture;
       ch.picture = data;
-      try {
-        window.localStorage.setItem(KEY, JSON.stringify(store));
-      } catch (e) {
-        ch.picture = before;
-        ui.pictureError =
-          'There is not enough room left in this browser to save that picture. Try a smaller one, or remove pictures from other characters.';
-      }
+      saveNow(); // too big for localStorage goes to IndexedDB (js/app/core.js)
       render();
     });
   };

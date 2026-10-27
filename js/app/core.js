@@ -50,8 +50,122 @@ var ui = {
 };
 var ch, d; // current character and its derived sheet
 // ---------- storage ----------
+// Everything is saved twice: in localStorage (quick to read at start, but small: about 5 MB) and in IndexedDB (the
+// browser's larger storage). At start the app opens from localStorage, then takes the IndexedDB copy if it is newer
+// (localStorage was full). Saving waits until that check is done, so an old copy never overwrites a newer one.
+// If neither can be written, a bar says so and points to the Backup page.
+var AT_KEY = 'character-forge.at',
+  WHERE_KEY = 'character-forge.where',
+  lsAt = 0,
+  dbReady = false,
+  dbPending = false;
+function kv() {
+  if (!window.indexedDB) return Promise.reject(new Error('no IndexedDB'));
+  kv.db =
+    kv.db ||
+    new Promise(function (ok, no) {
+      var r = window.indexedDB.open('character-forge', 1);
+      r.onupgradeneeded = function () {
+        r.result.createObjectStore('kv');
+      };
+      r.onsuccess = function () {
+        ok(r.result);
+      };
+      r.onerror = function () {
+        no(r.error);
+      };
+    });
+  return kv.db;
+}
+function kvGet(k) {
+  return kv().then(function (db) {
+    return new Promise(function (ok, no) {
+      var q = db.transaction('kv').objectStore('kv').get(k);
+      q.onsuccess = function () {
+        ok(q.result);
+      };
+      q.onerror = function () {
+        no(q.error);
+      };
+    });
+  });
+}
+function kvPut(k, v) {
+  return kv().then(function (db) {
+    return new Promise(function (ok, no) {
+      var t = db.transaction('kv', 'readwrite');
+      t.objectStore('kv').put(v, k);
+      t.oncomplete = function () {
+        ok();
+      };
+      t.onerror = t.onabort = function () {
+        no(t.error);
+      };
+    });
+  });
+}
+// after the first drawing: the IndexedDB copy, if newer; done(true) when it replaced what is on screen
+function loadDb(done) {
+  var finish = function (changed) {
+    dbReady = true;
+    if (dbPending) saveNow();
+    done(changed);
+  };
+  kvGet('store').then(
+    function (v) {
+      if (v && v.json && v.at > lsAt) {
+        try {
+          useStore(JSON.parse(v.json));
+          lsAt = v.at;
+          return finish(true);
+        } catch (e) {
+          /* damaged: keep what we have */
+        }
+      }
+      finish(false);
+    },
+    function () {
+      finish(false);
+    }
+  );
+}
+// put a saved copy in place: the same store object, so every part of the app sees it
+function useStore(s) {
+  var game = store.game;
+  Object.keys(store).forEach(function (k) {
+    delete store[k];
+  });
+  Object.assign(store, JSON.parse(JSON.stringify(s)));
+  store.filters = store.filters || {};
+  store.game = store.game || game;
+  store.chars = (Array.isArray(store.chars) ? store.chars : []).map(normalize);
+  if (!store.chars.length) store.chars.push(R.newChar());
+  if (!byId(store.current)) store.current = store.chars[0].id;
+  ch = byId(store.current);
+}
+var failShown = 0;
+function saveFailed() {
+  if (Date.now() - failShown < 60000 || !document.body) return;
+  failShown = Date.now();
+  var old = document.querySelector('.save-bar');
+  if (old) old.remove();
+  var bar = document.createElement('div');
+  bar.className = 'update-bar save-bar noprint';
+  bar.setAttribute('role', 'alert');
+  bar.innerHTML =
+    '<span>⚠ This device couldn’t save your last changes: its storage is full or blocked. Download a backup file now.</span>' +
+    '<button type="button" class="btn primary small" data-act="section" data-v="backup">Backup</button>' +
+    '<button type="button" class="btn small" data-close="1">OK</button>';
+  bar.addEventListener('click', function (e) {
+    bar.remove();
+    if (e.target.getAttribute && e.target.getAttribute('data-close')) e.stopPropagation();
+  });
+  document.body.appendChild(bar);
+}
 function load() {
   try {
+    if (window.localStorage.getItem(WHERE_KEY) === 'idb') throw new Error('in IndexedDB');
+    lsAt = +window.localStorage.getItem(AT_KEY) || 0;
     var raw = window.localStorage.getItem(KEY);
     if (raw) {
       var s = JSON.parse(raw);
@@ -116,26 +230,37 @@ function saveNow() {
   saveTimer = null;
   remember();
   syncUndoButtons();
-  try {
-    window.localStorage.setItem(KEY, JSON.stringify(store));
-  } catch (e) {
-    /* storage unavailable */
+  if (!dbReady) {
+    dbPending = true; // after the start-up check (loadDb)
+    return;
   }
+  dbPending = false;
+  var json = JSON.stringify(store),
+    at = Date.now(),
+    lsOk = true;
+  lsAt = at;
+  try {
+    window.localStorage.setItem(KEY, json);
+    window.localStorage.setItem(AT_KEY, String(at));
+    window.localStorage.removeItem(WHERE_KEY);
+  } catch (e) {
+    lsOk = false;
+    try {
+      // too big for localStorage: the IndexedDB copy is the one to read
+      window.localStorage.removeItem(KEY);
+      window.localStorage.setItem(WHERE_KEY, 'idb');
+    } catch (e2) {
+      /* storage blocked */
+    }
+  }
+  kvPut('store', { at: at, json: json }).catch(function () {
+    if (!lsOk) saveFailed();
+  });
   if (typeof BKP !== 'undefined') BKP.changed(); // Google Drive backup, a little later (js/backup-ui.js)
 }
 // Replace everything with a backup (js/backup-ui.js): the same store object, so every part of the app sees it
 function applyBackup(s) {
-  var game = store.game;
-  Object.keys(store).forEach(function (k) {
-    delete store[k];
-  });
-  Object.assign(store, JSON.parse(JSON.stringify(s)));
-  store.filters = store.filters || {};
-  store.game = store.game || game;
-  store.chars = (Array.isArray(store.chars) ? store.chars : []).map(normalize);
-  if (!store.chars.length) store.chars.push(R.newChar());
-  if (!byId(store.current)) store.current = store.chars[0].id;
-  ch = byId(store.current);
+  useStore(s);
   ui.mode = '';
   saveNow();
 }

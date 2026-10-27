@@ -194,6 +194,49 @@ function fakeGoogle(ctx, drive) {
       await p.ctx.close();
     });
 
+    await test('saving: a full localStorage falls back to IndexedDB; nothing saved shows a warning', async function () {
+      var ctx = await browser.newContext({ viewport: { width: 390, height: 900 } });
+      // this device's localStorage is "full" for the characters
+      await ctx.addInitScript(function () {
+        var set = Storage.prototype.setItem;
+        Storage.prototype.setItem = function (k, v) {
+          if (k === 'character-forge.v1') throw new DOMException('full', 'QuotaExceededError');
+          return set.call(this, k, v);
+        };
+      });
+      var p = await ctx.newPage();
+      p.on('pageerror', function (e) {
+        errors.push(String(e));
+      });
+      await p.goto(BASE);
+      await p.waitForSelector('.hub');
+      await p.evaluate(function () {
+        Forge.store.chars[0].name = 'Saved in IndexedDB';
+      });
+      await p.evaluate(function () {
+        window.dispatchEvent(new Event('pagehide'));
+      });
+      await wait(500);
+      await p.reload();
+      await p.waitForSelector('.hub');
+      await wait(500);
+      var name = await p.evaluate(function () {
+        return Forge.store.chars[0].name;
+      });
+      assert.equal(name, 'Saved in IndexedDB');
+      // and now IndexedDB fails too
+      await p.evaluate(function () {
+        IDBObjectStore.prototype.put = function () {
+          throw new Error('blocked');
+        };
+        Forge.store.chars[0].name = 'Lost';
+        window.dispatchEvent(new Event('pagehide'));
+      });
+      await wait(500);
+      assert.equal(await p.locator('.save-bar').count(), 1, 'warning shown');
+      await ctx.close();
+    });
+
     await test('Books shelf opens a book (not the backup file picker)', async function () {
       var p = await page();
       await p.click('.hub-item[data-v=books]');
