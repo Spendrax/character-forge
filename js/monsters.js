@@ -773,9 +773,20 @@
           ? ' · ' + btn('monClear', 'clear filters', {}, 'linkbtn')
           : '') +
         '</div>';
+      // only the first rows are drawn (4,000 at once made every tap slow): more come as you scroll near the end
+      var limit = M.shown || 100,
+        openAt = M.open
+          ? list
+              .map(function (m) {
+                return m.id;
+              })
+              .indexOf(M.open)
+          : -1;
+      if (openAt >= limit) limit = openAt + 25;
       h +=
         '<div class="mon-list" role="list">' +
         list
+          .slice(0, limit)
           .map(function (m) {
             return (
               '<button type="button" role="listitem" class="mon-row' +
@@ -794,6 +805,9 @@
             );
           })
           .join('') +
+        (list.length > limit
+          ? btn('monMore', 'Show more (' + (list.length - limit) + ' left)', { v: limit }, 'btn small mon-more')
+          : '') +
         (list.length ? '' : '<p class="muted" style="padding:.8rem">No monster matches.</p>') +
         '</div>';
       return h;
@@ -1136,6 +1150,9 @@
         if (f) f.click();
         return false;
       },
+      monMore: function (v) {
+        M.shown = (+v || 100) + 200;
+      },
       monClear: function () {
         M.q = '';
         M.type = '';
@@ -1239,10 +1256,30 @@
       }
     };
     // typing and choosing in the filters and the editor
+    // scrolling near the end of the list (the page on a phone, the list's own box on a computer) draws the next rows
+    var moreBusy = false;
+    if (typeof document !== 'undefined')
+      document.addEventListener(
+        'scroll',
+        function () {
+          var more = document.querySelector('.mon-more');
+          if (!more || moreBusy) return;
+          var r = more.getBoundingClientRect(),
+            box = more.closest('.mon-list').getBoundingClientRect();
+          if (r.top > Math.min(window.innerHeight, box.bottom) + 400) return;
+          moreBusy = true;
+          setTimeout(function () {
+            moreBusy = false;
+            more.click();
+          }, 0);
+        },
+        true
+      );
     function onInput(t) {
       var k = t.getAttribute('data-mon');
       if (k) {
         M[k] = t.value;
+        M.shown = 0; // a new search starts with the first rows again
         return 'render';
       }
       var f = t.getAttribute('data-mymon');

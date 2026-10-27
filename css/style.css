@@ -4985,3 +4985,8 @@ html.dice3d-lock body {
 .sd-links li {
   margin: 0.25rem 0;
 }
+
+.mon-more {
+  display: block;
+  margin: 0.5rem auto;
+}

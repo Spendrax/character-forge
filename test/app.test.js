@@ -285,6 +285,27 @@ function fakeGoogle(ctx, drive) {
       await p.ctx.close();
     });
 
+    await test('Monsters: the list draws in parts, more on scroll, search starts over', async function () {
+      var p = await page();
+      await p.evaluate(function () {
+        Forge.ui.section = 'monsters';
+        Forge.render();
+      });
+      await p.waitForSelector('.mon-row');
+      await wait(1500);
+      assert.equal(await p.locator('.mon-row').count(), 100, 'first 100 rows');
+      for (var i = 0; i < 3; i++) {
+        await p.mouse.wheel(0, 8000);
+        await wait(300);
+      }
+      assert.ok((await p.locator('.mon-row').count()) > 100, 'more rows after scrolling');
+      await p.fill('#mon-q', 'goblin');
+      await wait(400);
+      var n = await p.locator('.mon-row').count();
+      assert.ok(n > 0 && n < 100, 'search: ' + n);
+      await p.ctx.close();
+    });
+
     await test('Shadowdark: import, torches from the gear, dying, re-import updates', async function () {
       var p = await page();
       await p.click('[data-act=game][data-v=sd]');

@@ -3,7 +3,7 @@
 // page then offers "Update now" (js/boot.js), which switches to it and reloads. Until then the old copy keeps
 // serving, so the page never mixes files from two versions.
 // Bump VERSION whenever any file changes, or the change never reaches installed apps.
-var VERSION = 'cf-133';
+var VERSION = 'cf-134';
 var FILES = [
   './',
   'index.html',
