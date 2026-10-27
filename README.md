@@ -314,7 +314,9 @@ How a tap works: a button has `data-act="name"`, the click goes to `actions.name
     js/vendor/        third-party libraries (PeerJS, QR codes)
     manifest.webmanifest, sw.js, icons/   installable app and offline copy (bump VERSION in sw.js when files change)
     server.js         optional local server (`node server.js`)
-    test/             `node test/rules.test.js`
+    test/             `npm test` (rules, no browser) and `npm run test:app` (the app in a real browser: every game,
+                      level up, Books, Backup with Google faked, Shadowdark, the GM's table with a phone; run
+                      `npm install` once for Playwright and a local PeerJS server)
 
 Code style: [Prettier](https://prettier.io) with `.prettierrc.json` (run `npx prettier --write .`).
 
