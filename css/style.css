@@ -4977,3 +4977,11 @@ html.dice3d-lock body {
   flex-wrap: wrap;
   gap: 0.3rem;
 }
+
+.sd-links {
+  padding-left: 1.1rem;
+  margin: 0.3rem 0 0.6rem;
+}
+.sd-links li {
+  margin: 0.25rem 0;
+}

@@ -33,6 +33,53 @@
     ],
     NOTICE =
       'Character Forge is an independent product published under the Shadowdark RPG Third-Party License and is not affiliated with The Arcane Library, LLC. Shadowdark RPG © 2023 The Arcane Library, LLC.';
+  // other Shadowdark tools, opened in a new tab (links only: nothing is copied from them)
+  var LINKS = [
+    ['https://shadowdarklings.net', 'Shadowdarklings', 'make characters, then import them here', 'both'],
+    [
+      'https://www.thearcanelibrary.com/products/shadowdark-rpg-quickstart-set-pdf',
+      'Shadowdark Quickstart (free)',
+      'the core rules, from The Arcane Library: add the PDF in Books',
+      'both'
+    ],
+    [
+      'https://www.thearcanelibrary.com/collections/shadowdark-rpg/products/solodark-solo-rules-for-shadowdark-rpg-pdf',
+      'SoloDark (free)',
+      'rules for playing alone, without a GM: add the PDF in Books',
+      'both'
+    ],
+    [
+      'https://www.shadowdarktools.com/reference/monster',
+      'Shadowdark Tools: monsters',
+      'look up a monster’s stats',
+      'gm'
+    ],
+    [
+      'https://www.shadowdarktools.com/',
+      'Shadowdark Tools: generators',
+      'NPCs and names, rival crawlers, known spells, shops, taverns, magic items',
+      'both'
+    ]
+  ];
+  function linksHtml(who) {
+    return (
+      '<ul class="sd-links">' +
+      LINKS.reduce(function (a, l) {
+        if (l[3] === 'both' || l[3] === who)
+          a.push(
+            '<li><a href="' +
+              l[0] +
+              '" target="_blank" rel="noopener">' +
+              l[1] +
+              ' ↗</a> <span class="small muted">' +
+              l[2] +
+              '</span></li>'
+          );
+        return a;
+      }, []).join('') +
+      '</ul>'
+    );
+  }
   function uid() {
     return 'sd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   }
@@ -291,7 +338,7 @@
       ['notes', 'Notes'],
       ['play', 'Session']
     ];
-    var LINKS =
+    var LINKS_P =
       '<p class="small">Make characters on <a href="https://shadowdarklings.net" target="_blank" rel="noopener">Shadowdarklings.net</a> (free account), export them as JSON and import them here. The free <a href="https://www.thearcanelibrary.com/products/shadowdark-rpg-quickstart-set-pdf" target="_blank" rel="noopener">Shadowdark Quickstart</a> has the rules; add it, or your own rulebook PDF, in <b>Books</b> to look things up during play (it stays on this device).</p>';
 
     function home() {
@@ -305,8 +352,9 @@
           ['rules', 'scroll', 'House rules']
         ]) +
         (root.BKP ? root.BKP.homeLine() : '') +
-        '<div class="panel sd-about">' +
-        LINKS +
+        '<div class="panel sd-about"><h3>Useful tools</h3>' +
+        linksHtml('player') +
+        LINKS_P +
         '<p class="small muted">' +
         esc(NOTICE) +
         '</p></div></main>'
@@ -1311,7 +1359,8 @@
     derive: derive,
     isShadowdarklings: isShadowdarklings,
     fromShadowdarklings: fromShadowdarklings,
-    NOTICE: NOTICE
+    NOTICE: NOTICE,
+    links: linksHtml
   };
   if (typeof module !== 'undefined') module.exports = root.SDRules;
 })(typeof window !== 'undefined' ? window : globalThis);

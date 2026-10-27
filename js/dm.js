@@ -1053,6 +1053,11 @@
         tilesHtml() +
         tableHtml() +
         (api.game() === 'sd' ? crawlHtml() : '') +
+        (api.game() === 'sd' && root.SDRules
+          ? '<details class="panel"><summary><b>Monsters, generators and rules</b></summary>' +
+            root.SDRules.links('gm') +
+            '</details>'
+          : '') +
         '<nav class="mm-tabs dm-tabs">' +
         TABS.map(function (t) {
           return btn('dmTab', t[1], { v: t[0] }, 'mm-tab' + (tab === t[0] ? ' on' : ''));
