@@ -5,15 +5,15 @@ try {
 } catch (e) {
   /* storage blocked */
 }
-// Offline support and updates (only when served over http/https, e.g. GitHub Pages). While the app is open, it
-// looks for a new version every 15 minutes and each time you come back to it; when one is out, a bar offers
-// "Update now" (your work is saved first, then the page reloads on the new version).
+// Offline support and updates (only when served over http/https, e.g. GitHub Pages). The app opens from its saved
+// copy (sw.js). While it is open, it looks for a new version every 15 minutes and each time you come back to it;
+// when one has been downloaded, a bar offers "Update now" (your work is saved first, then the page reloads on it).
 if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
   window.addEventListener('load', function () {
-    var had = !!navigator.serviceWorker.controller, // a first visit isn't an update
-      shown = false;
-    function offer() {
-      if (shown || !had) return;
+    var shown = false,
+      asked = false;
+    function offer(w) {
+      if (shown || !navigator.serviceWorker.controller) return; // a first visit isn't an update
       shown = true;
       var bar = document.createElement('div');
       bar.className = 'update-bar noprint';
@@ -25,16 +25,24 @@ if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
       bar.addEventListener('click', function (e) {
         var k = e.target.getAttribute && e.target.getAttribute('data-up');
         if (k === 'now') {
+          asked = true;
           window.dispatchEvent(new Event('pagehide')); // saves what you were doing
-          location.reload();
+          w.postMessage('skip');
+          setTimeout(function () {
+            location.reload(); // in case the switch is already done
+          }, 3000);
         } else if (k === 'later') bar.remove();
       });
       document.body.appendChild(bar);
     }
-    navigator.serviceWorker.addEventListener('controllerchange', offer);
+    // the new version took over (after Update now): reload on it
+    navigator.serviceWorker.addEventListener('controllerchange', function () {
+      if (asked) location.reload();
+    });
     navigator.serviceWorker
       .register('sw.js')
       .then(function (reg) {
+        if (reg.waiting) offer(reg.waiting);
         function check() {
           reg.update().catch(function () {
             /* offline */
@@ -48,7 +56,7 @@ if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
           var w = reg.installing;
           if (w)
             w.addEventListener('statechange', function () {
-              if (w.state === 'activated') offer();
+              if (w.state === 'installed') offer(w);
             });
         });
       })

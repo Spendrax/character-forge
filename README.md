@@ -72,7 +72,7 @@ The backup is plain JSON with a short note on where everything is, so any app ca
 ### Install as an app
 
 On the GitHub Pages site, use **Install app** in the top bar (Chrome, Edge, Android), or the browser's own install / *Add to Home Screen* (Safari on iPhone and iPad: Share → Add to Home Screen).
-The installed app opens in its own window, works offline, and picks up new versions automatically the next time it opens while online. While it is open, it looks for a new version every 15 minutes and whenever you come back to it; when one is out, a bar at the top offers **Update now** (your work is saved, then the page reloads on the new version) or **Later**.
+The installed app opens in its own window, works offline, and picks up new versions as described below. It opens from its saved copy, so it starts at once even on weak Wi-Fi or offline. While it is open, it looks for a new version every 15 minutes and whenever you come back to it, and downloads it in the background; then a bar at the top offers **Update now** (your work is saved, then the page reloads on the new version) or **Later** (the new version starts the next time the app is closed and opened).
 If you changed which files the page loads, add them to the list in `sw.js` and bump `VERSION` there (the test checks the list).
 
 ## Sections

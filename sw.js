@@ -1,7 +1,9 @@
-// Service worker: keeps a copy of the app so it opens offline, and always tries the network first
-// so a new version on the site is picked up as soon as you are online.
-// Bump VERSION when files are added or removed.
-var VERSION = 'cf-130';
+// Service worker: keeps a copy of the app so it opens at once, even offline or on a weak connection: the app's
+// files come from the copy, not the network. A new version (a new VERSION here) is fetched in the background; the
+// page then offers "Update now" (js/boot.js), which switches to it and reloads. Until then the old copy keeps
+// serving, so the page never mixes files from two versions.
+// Bump VERSION whenever any file changes, or the change never reaches installed apps.
+var VERSION = 'cf-131';
 var FILES = [
   './',
   'index.html',
@@ -208,15 +210,19 @@ var FILES = [
 
 self.addEventListener('install', function (e) {
   e.waitUntil(
-    caches
-      .open(VERSION)
-      .then(function (c) {
-        return c.addAll(FILES);
-      })
-      .then(function () {
-        return self.skipWaiting();
-      })
+    caches.open(VERSION).then(function (c) {
+      // fresh from the site, not from the browser's own short-term cache
+      return c.addAll(
+        FILES.map(function (f) {
+          return new Request(f, { cache: 'reload' });
+        })
+      );
+    })
   );
+});
+// "Update now" on the page: this new version takes over (the page then reloads)
+self.addEventListener('message', function (e) {
+  if (e.data === 'skip') self.skipWaiting();
 });
 self.addEventListener('activate', function (e) {
   e.waitUntil(
@@ -274,21 +280,22 @@ self.addEventListener('fetch', function (e) {
     return;
   }
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
+  // the copy first (the page itself for any address of the app); what isn't there yet is fetched and kept
+  var key = req.mode === 'navigate' ? 'index.html' : req;
   e.respondWith(
-    fetch(req)
-      .then(function (res) {
-        if (res && res.ok) {
-          var copy = res.clone();
-          caches.open(VERSION).then(function (c) {
-            c.put(req, copy);
-          });
-        }
-        return res;
-      })
-      .catch(function () {
-        return caches.match(req, { ignoreSearch: true }).then(function (hit) {
-          return hit || (req.mode === 'navigate' ? caches.match('index.html') : undefined);
-        });
-      })
+    caches.open(VERSION).then(function (c) {
+      return c.match(key, { ignoreSearch: true }).then(function (hit) {
+        if (hit) return hit;
+        return fetch(req).then(
+          function (res) {
+            if (res && res.ok && res.type === 'basic') c.put(req, res.clone());
+            return res;
+          },
+          function () {
+            return caches.match(key, { ignoreSearch: true });
+          }
+        );
+      });
+    })
   );
 });
