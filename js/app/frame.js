@@ -82,7 +82,7 @@ function navState() {
     m: ui.mode || '',
     c: store.current,
     mo: (ui.mon && ui.mon.open) || '',
-    pf: /^pf2-/.test(ui.section) && PFV ? PFV.navPart() : null
+    pf: paizoV() ? paizoV().navPart() : null
   };
 }
 function syncHistory() {
@@ -111,7 +111,7 @@ window.addEventListener('popstate', function (e) {
     ui.mon.open = st.mo;
     ui.mon.edit = '';
   }
-  if (st.pf && PFV) PFV.restoreNav(st.pf);
+  if (st.pf && paizoV()) paizoV().restoreNav(st.pf);
   ui.scrollToStep = true;
   render();
   if (ui.section !== 'chars') window.scrollTo(0, 0);
@@ -123,7 +123,7 @@ function render() {
     needGame(g);
     document.getElementById('app').innerHTML =
       '<main class="home"><h1>' +
-      { pf2: 'Pathfinder 2e', mm: 'Mutants &amp; Masterminds 3e', sd: 'Shadowdark' }[g] +
+      { pf2: 'Pathfinder 2e', sf2: 'Starfinder 2e', mm: 'Mutants &amp; Masterminds 3e', sd: 'Shadowdark' }[g] +
       '</h1>' +
       (lazy[g] === 'error'
         ? '<p>Couldn’t load this game. Check your connection, then ' +
@@ -459,8 +459,12 @@ function themeBtn() {
     '</button>'
   );
 }
+// the Pathfinder or Starfinder pages showing now (js/pf2-ui.js), if any
+function paizoV() {
+  return /^sf2-/.test(ui.section) ? SFV : /^pf2-/.test(ui.section) ? PFV : null;
+}
 function gameOf() {
-  return store.game === 'mm' || store.game === 'pf2' || store.game === 'sd' ? store.game : 'dnd';
+  return /^(mm|pf2|sf2|sd)$/.test(store.game || '') ? store.game : 'dnd';
 }
 function gameSwitch() {
   return (
@@ -468,6 +472,7 @@ function gameSwitch() {
     [
       ['dnd', 'D&amp;D 5e'],
       ['pf2', 'PF2'],
+      ['sf2', 'SF2'],
       ['mm', 'M&amp;M 3e'],
       ['sd', 'Shadowdark']
     ]
@@ -489,14 +494,15 @@ function gameSwitch() {
   );
 }
 function sectionNav() {
+  var g = gameOf();
   var list =
-    gameOf() === 'pf2'
+    g === 'pf2' || g === 'sf2'
       ? [
-          ['pf2-home', '⌂ Home'],
-          ['pf2-chars', 'Characters'],
+          [g + '-home', '⌂ Home'],
+          [g + '-chars', 'Characters'],
           ['dm', 'GM'],
           ['books', 'Books'],
-          ['pf2-rules', 'Rules'],
+          [g + '-rules', 'Rules'],
           ['audio', 'Audio'],
           ['rules', 'House rules']
         ]
@@ -535,7 +541,7 @@ function sectionNav() {
           ui.section === x[0] ||
           (x[0] === 'roster' && ui.section === 'chars') ||
           (x[0] === 'dm' &&
-            /^(party|encounters|monsters|treasure|gen|pf2-(party|enc|mon|loot)|mm-(party|enc|foes|loot))$/.test(
+            /^(party|encounters|monsters|treasure|gen|[ps]f2-(party|enc|mon|loot)|mm-(party|enc|foes|loot))$/.test(
               ui.section
             ));
         return (
@@ -572,7 +578,7 @@ function homeHtml() {
 }
 // House rules: short titled notes for the table, searchable; saved with the characters.
 function houseRules() {
-  var k = { mm: 'mmRules', pf2: 'pf2Rules', sd: 'sdRules' }[gameOf()] || 'rules';
+  var k = { mm: 'mmRules', pf2: 'pf2Rules', sf2: 'sf2Rules', sd: 'sdRules' }[gameOf()] || 'rules';
   return (store[k] = store[k] || []);
 }
 function rulesHtml() {
@@ -699,7 +705,7 @@ function renderSection(fid, pos) {
     btn(
       'section',
       'Character Forge',
-      { v: { mm: 'mm-home', pf2: 'pf2-home', sd: 'sd-home' }[gameOf()] || 'home' },
+      { v: { mm: 'mm-home', pf2: 'pf2-home', sf2: 'sf2-home', sd: 'sd-home' }[gameOf()] || 'home' },
       'brand linkish'
     ) +
     gameSwitch() +
@@ -713,8 +719,8 @@ function renderSection(fid, pos) {
     '</header>';
   var body = /^sd-/.test(ui.section)
     ? SDV.html(ui.section)
-    : /^pf2-/.test(ui.section)
-      ? PFV.html(ui.section)
+    : paizoV()
+      ? paizoV().html(ui.section)
       : /^mm-(home|heroes)$/.test(ui.section)
         ? MMV.html(ui.section)
         : ui.section === 'mm-enc'
@@ -776,7 +782,7 @@ function renderSection(fid, pos) {
   var mt = document.querySelector('.mm-tabs .on');
   if (mt) mt.parentNode.scrollLeft = Math.max(0, mt.offsetLeft - mt.parentNode.offsetLeft - 24); // keep the open tab in view
   if (ui.section === 'roster') drawRoster();
-  if (/^pf2-/.test(ui.section) && PFV.after) PFV.after();
+  if (paizoV() && paizoV().after) paizoV().after();
   AUD.after();
   Dice3D.place();
   AIHelper.place();
@@ -799,8 +805,8 @@ function renderSection(fid, pos) {
   document.title =
     (/^sd-/.test(ui.section)
       ? SDV.title(ui.section)
-      : /^pf2-/.test(ui.section)
-        ? PFV.title(ui.section)
+      : paizoV()
+        ? paizoV().title(ui.section)
         : /^mm-(home|heroes)$/.test(ui.section)
           ? MMV.title(ui.section)
           : ui.section === 'mm-enc'

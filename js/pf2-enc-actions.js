@@ -3,7 +3,8 @@
 (function (root) {
   'use strict';
   (root.PF2EncParts = root.PF2EncParts || {}).actions = function (K) {
-    var E = K.E,
+    var G = K.G,
+      E = K.E,
       curParty = K.curParty,
       enc = K.enc,
       mon = K.mon,
@@ -63,7 +64,7 @@
         var p = curParty(),
           e = enc();
         e.party = p.id;
-        ui.section = 'pf2-enc';
+        ui.section = G.sec + 'enc';
         root.scrollTo(0, 0);
       },
       pfeDelAsk: function () {
@@ -74,7 +75,7 @@
       },
       pfeDel: function () {
         var id = curParty().id;
-        store.pf2Parties = parties().filter(function (x) {
+        store[G.key + 'Parties'] = parties().filter(function (x) {
           return x.id !== id;
         });
         E.team = '';
@@ -176,7 +177,7 @@
         L.kind = 'fight';
         K.M.lopen = '';
         K.rollLoot();
-        ui.section = 'pf2-loot';
+        ui.section = G.sec + 'loot';
         root.scrollTo(0, 0);
       },
       pfeHpRun: function (v, el) {
@@ -252,11 +253,11 @@
         return 'render';
       }
       if (a('data-pfemine') && t.value) {
-        var ch = ((store.pf2 || {}).chars || []).filter(function (c) {
+        var ch = ((store[G.key] || {}).chars || []).filter(function (c) {
           return c.id === t.value;
         })[0];
-        if (ch && root.PF2) {
-          var d = root.PF2.derive(ch);
+        if (ch && G.engine()) {
+          var d = G.engine().derive(ch);
           curParty().m.push({
             id: uid(),
             n: ch.name,

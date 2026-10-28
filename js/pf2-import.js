@@ -20,7 +20,9 @@
     society: 'soc',
     stealth: 'ste',
     survival: 'sur',
-    thievery: 'thi'
+    thievery: 'thi',
+    computers: 'com',
+    piloting: 'pil'
   };
   var STR = { '': '', striking: 'striking', greaterStriking: 'greaterStriking', majorStriking: 'majorStriking' };
   var low = function (s) {
@@ -360,7 +362,8 @@
   }
 
   // Spread the wanted skill ranks over the 1st-level picks and the skill increases, keeping each increase within its level's limit.
-  function assignSkills(ch, want) {
+  function assignSkills(ch, want, E) {
+    var PF2 = E || root.PF2; // the engine: Pathfinder by default, or Starfinder's (root.SF2)
     ch.skills.L1 = [];
     ch.skills.inc = {};
     ch.skills.extra = [];
@@ -411,5 +414,5 @@
     });
   }
 
-  root.PF2Import = { fromPathbuilder: fromPathbuilder, assignSkills: assignSkills };
+  root.PF2Import = { fromPathbuilder: fromPathbuilder, assignSkills: assignSkills, SKN: SKN };
 })(typeof window !== 'undefined' ? window : globalThis);

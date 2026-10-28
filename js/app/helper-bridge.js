@@ -9,8 +9,10 @@ function aiApply(verb, a) {
   if (!gameReady(gameOf())) throw new Error('Wait a moment: the game is still loading.');
   if (gameOf() === 'sd') throw new Error('The helper can’t change Shadowdark characters.');
   if (gameOf() === 'mm') r = MMV.context(ui.section).apply ? MMV.context(ui.section).apply(verb, a) : null;
-  else if (gameOf() === 'pf2') r = PFV.context(ui.section).apply ? PFV.context(ui.section).apply(verb, a) : null;
-  else if (ch && verb !== 'choose') r = aiSet(verb, a);
+  else if (gameOf() === 'pf2' || gameOf() === 'sf2') {
+    var pv = gameOf() === 'sf2' ? SFV : PFV;
+    r = pv.context(ui.section).apply ? pv.context(ui.section).apply(verb, a) : null;
+  } else if (ch && verb !== 'choose') r = aiSet(verb, a);
   else if (verb === 'choose' && ch) {
     var k = String(a[0] || '')
         .trim()
@@ -156,8 +158,8 @@ function aiContext() {
     if (mx.apply) mx.apply = aiApply;
     return mx;
   }
-  if (gameOf() === 'pf2') {
-    var px = PFV.context(ui.section);
+  if (gameOf() === 'pf2' || gameOf() === 'sf2') {
+    var px = (gameOf() === 'sf2' ? SFV : PFV).context(ui.section);
     if (px.apply) px.apply = aiApply;
     return px;
   }

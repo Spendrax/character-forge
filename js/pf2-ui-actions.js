@@ -3,7 +3,8 @@
 (function (root) {
   'use strict';
   (root.PF2UIParts = root.PF2UIParts || {}).actions = function (K) {
-    var ENC = K.ENC,
+    var G = K.G,
+      ENC = K.ENC,
       PF2 = K.PF2,
       S = K.S,
       U = K.U,
@@ -489,11 +490,11 @@
         if (!ch) return false;
         var a = document.createElement('a');
         a.href = URL.createObjectURL(
-          new Blob([JSON.stringify({ app: 'character-forge', game: 'pf2', char: ch }, null, 1)], {
+          new Blob([JSON.stringify({ app: 'character-forge', game: G.key, char: ch }, null, 1)], {
             type: 'application/json'
           })
         );
-        a.download = (ch.name || 'character').replace(/[^\w-]+/g, '_') + '.pf2.json';
+        a.download = (ch.name || 'character').replace(/[^\w-]+/g, '_') + '.' + G.key + '.json';
         a.click();
         return false;
       },
@@ -614,7 +615,9 @@
       if (a('data-pfrune') != null) {
         var g = ch.gear[+a('data-pfrune')];
         g.runes = g.runes || {};
-        g.runes[a('data-f')] = a('data-f') === 'pot' ? +t.value : t.value;
+        if (a('data-f') === 'grade')
+          g.grade = t.value; // Starfinder
+        else g.runes[a('data-f')] = a('data-f') === 'pot' ? +t.value : t.value;
         return 'render';
       }
       if (a('data-pfcondadd') && t.value) {

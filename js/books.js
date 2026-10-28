@@ -643,7 +643,7 @@
       return root.DND && root.DND.book;
     }
     function ensure() {
-      if (store.game !== 'mm' && store.game !== 'pf2' && store.game !== 'sd' && !srdReady() && !B.loading) {
+      if (/^(dnd)?$/.test(store.game || '') && !srdReady() && !B.loading) {
         B.loading = true;
         loadScript('data/srd-book.js').then(
           function () {
@@ -678,7 +678,9 @@
         ? [{ id: 'mm', kind: 'mmrules', name: 'M&M 3e rules' }]
         : store.game === 'pf2'
           ? [{ id: 'pf2', kind: 'pf2rules', name: 'Pathfinder 2e rules' }]
-          : [{ id: 'rules', kind: 'rules', name: 'Rules' }];
+          : store.game === 'sf2'
+            ? [{ id: 'sf2', kind: 'sf2rules', name: 'Starfinder 2e rules' }]
+            : [{ id: 'rules', kind: 'rules', name: 'Rules' }];
     } // each game shows its own rules; your own books show in both
     function bookObj(id) {
       return id === 'rules'
@@ -687,7 +689,9 @@
           ? (mmBook = mmBook || root.MMRules.book())
           : id === 'pf2'
             ? api.pf2Book()
-            : texts[id];
+            : id === 'sf2'
+              ? api.sf2Book()
+              : texts[id];
     }
     function pos() {
       return (store.bookPos = store.bookPos || {});
@@ -1102,6 +1106,8 @@
       } else {
         if (meta.kind === 'pf2rules' && !bookObj('pf2'))
           return h + '<p class="muted">Loading the Pathfinder rules…</p></main>';
+        if (meta.kind === 'sf2rules' && !bookObj('sf2'))
+          return h + '<p class="muted">Loading the Starfinder rules…</p></main>';
         if (meta.kind === 'rules' && !srdReady())
           return h + '<p class="muted">' + esc(B.err || 'Loading the free rules…') + '</p></main>';
         if (own && !texts[meta.id]) {
@@ -1145,6 +1151,9 @@
       else if (meta.kind === 'pf2rules')
         h +=
           '<p class="small muted">Pre-Remaster Pathfinder 2e rules from the Foundry VTT system, Open Game Content under the OGL 1.0a (Rage of Elements under the ORC License), used under Paizo’s Community Use Policy; see the last chapter. Feats, spells and equipment are in Rules, with search.</p>';
+      else if (meta.kind === 'sf2rules')
+        h +=
+          '<p class="small muted">Starfinder Second Edition rules from the Foundry VTT sf2e system, licensed under the ORC License, used under Paizo’s Community Use Policy; see the last chapter. Feats, spells and equipment are in Rules, with search.</p>';
       else if (meta.kind === 'mmrules')
         h +=
           '<p class="small muted">Short summaries in our own words of the Mutants &amp; Masterminds 3rd edition rules, with names, costs and stats from its Open Game Content. For the full rules text see <a href="https://www.d20herosrd.com" target="_blank" rel="noopener">d20herosrd.com</a>, or add your own copy of the Hero’s Handbook (PDF) with + Add a book. Mutants &amp; Masterminds is a trademark of Green Ronin Publishing; this is an unofficial fan tool.</p>';

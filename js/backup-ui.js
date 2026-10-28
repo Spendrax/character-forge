@@ -15,6 +15,7 @@
       return {
         dnd: (s.chars || []).length,
         pf2: ((s.pf2 || {}).chars || []).length,
+        sf2: ((s.sf2 || {}).chars || []).length,
         mm: ((s.mm || {}).heroes || []).length,
         sd: ((s.sd || {}).chars || []).length
       };
@@ -23,6 +24,7 @@
       return [
         [c.dnd, 'D&D character'],
         [c.pf2, 'Pathfinder character'],
+        [c.sf2, 'Starfinder character'],
         [c.mm, 'M&M hero'],
         [c.sd, 'Shadowdark character']
       ]
@@ -43,8 +45,8 @@
         saved: new Date().toISOString(),
         readme:
           'Everything saved in Character Forge. D&D 5e characters: store.chars. Pathfinder 2e: store.pf2.chars. ' +
-          'Mutants & Masterminds heroes: store.mm.heroes. Shadowdark: store.sd.chars. ' +
-          'House rules: store.rules, store.pf2Rules, store.mmRules, store.sdRules. ' +
+          'Starfinder 2e: store.sf2.chars. Mutants & Masterminds heroes: store.mm.heroes. Shadowdark: store.sd.chars. ' +
+          'House rules: store.rules, store.pf2Rules, store.sf2Rules, store.mmRules, store.sdRules. ' +
           'To bring it all back, open Character Forge and use Import (or Backup, Restore).',
         counts: counts(s),
         store: s

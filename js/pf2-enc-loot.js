@@ -3,7 +3,8 @@
 (function (root) {
   'use strict';
   (root.PF2EncParts = root.PF2EncParts || {}).loot = function (K) {
-    var api = K.api,
+    var G = K.G,
+      api = K.api,
       btn = K.btn,
       curParty = K.curParty,
       esc = K.esc,
@@ -295,10 +296,10 @@
     var MAGICT =
       /^(magical|alchemical|arcane|divine|occult|primal|abjuration|conjuration|divination|enchantment|evocation|illusion|necromancy|transmutation|invested|gadget|tech)$/;
     function loot() {
-      return (store.pf2Loot = store.pf2Loot || { lvl: 1, n: 4, kind: 'level', unc: false, last: null });
+      return (store[G.key + 'Loot'] = store[G.key + 'Loot'] || { lvl: 1, n: 4, kind: 'level', unc: false, last: null });
     }
     function itemPool(lv, cons, unc) {
-      return ((root.PF2DATA || {}).items || []).filter(function (it) {
+      return ((root[G.data] || {}).items || []).filter(function (it) {
         return (
           (it.lv || 0) === lv &&
           it.cp > 0 &&
@@ -310,7 +311,12 @@
         );
       });
     }
+    // an amount of gold, or of credits in Starfinder (1 gp = 10 credits, as the data keeps it)
+    function money(g) {
+      return G.credits ? (g * 10).toLocaleString('en') + ' credits' : g.toLocaleString('en') + ' gp';
+    }
     function gp(cp) {
+      if (G.credits) return (cp / 10).toLocaleString('en') + ' cr';
       return cp >= 100
         ? (Math.round(cp / 10) / 10).toLocaleString('en') + ' gp'
         : cp >= 10
@@ -341,7 +347,7 @@
         cur = Math.round(cur / 4);
       }
       // part of the money as gems and art objects
-      var gems = ((root.PF2DATA || {}).items || []).filter(function (it) {
+      var gems = ((root[G.data] || {}).items || []).filter(function (it) {
           return it.k === 'treasure' && it.cp >= cur * 100 * 0.08 && it.cp <= cur * 100 * 0.4;
         }),
         left = cur * 100;
@@ -358,7 +364,7 @@
       L.last = out;
     }
     function itemById(id) {
-      var I = (root.PF2DATA || {}).items || [];
+      var I = (root[G.data] || {}).items || [];
       if (!I._by) {
         I._by = {};
         I.forEach(function (x) {
@@ -414,7 +420,9 @@
         );
       };
       var h =
-        '<main class="mon-main tre-main"><h2>Treasures</h2><div class="panel"><p class="small muted">Pathfinder gives each level a treasure budget. Roll the whole level’s worth at once, or one fight’s share (about a quarter) after an encounter.</p>' +
+        '<main class="mon-main tre-main"><h2>Treasures</h2><div class="panel"><p class="small muted">' +
+        (G.credits ? 'Each level has a treasure budget.' : 'Pathfinder gives each level a treasure budget.') +
+        ' Roll the whole level’s worth at once, or one fight’s share (about a quarter) after an encounter.</p>' +
         '<div class="pills">' +
         [
           ['level', 'Whole level'],
@@ -446,8 +454,8 @@
         '<p class="small muted">Level ' +
         L.lvl +
         ' budget for 4 characters: ' +
-        row[0].toLocaleString('en') +
-        ' gp in all: permanent items ' +
+        money(row[0]) +
+        ' in all: permanent items ' +
         row[1]
           .map(function (x) {
             return x[1] + ' of level ' + x[0];
@@ -460,10 +468,10 @@
           })
           .join(', ') +
         '; ' +
-        row[3].toLocaleString('en') +
-        ' gp in money (+' +
-        row[4].toLocaleString('en') +
-        ' gp per extra character).</p>' +
+        money(row[3]) +
+        ' in money (+' +
+        money(row[4]) +
+        ' per extra character).</p>' +
         '<div class="toolbar">' +
         btn('pflRoll', (root.Icon ? root.Icon('d20') : '') + ' Random treasure', {}, 'btn primary') +
         '</div></div>';
@@ -475,8 +483,10 @@
           t.n +
           ' characters</small></h3>' +
           '<div class="coins"><span class="coin coin-gp"><b>' +
-          t.coins.toLocaleString('en') +
-          '</b> gp</span></div>' +
+          (G.credits ? (t.coins * 10).toLocaleString('en') : t.coins.toLocaleString('en')) +
+          '</b> ' +
+          (G.credits ? 'credits' : 'gp') +
+          '</span></div>' +
           (t.vals.length
             ? '<h4>Gems and art</h4>' +
               t.vals
@@ -513,13 +523,18 @@
             if (it) things.push({ key: g[0] + i, n: it.n, id: id });
           });
         });
-        if (api.ts) h += api.ts.html(things, t.coins, 'treasure');
+        if (api.ts) h += api.ts.html(things, t.coins, 'treasure', G.credits);
       }
       return (
         h +
-        '<p class="small muted">Amounts from the Core Rulebook’s Party Treasure by Level table. Items are picked at random from the common' +
+        '<p class="small muted">' +
+        (G.credits
+          ? 'Amounts follow Pathfinder’s Party Treasure by Level table, in credits (1 gp = 10 credits): check them against your Starfinder GM Core. Items are picked at random from the common'
+          : 'Amounts from the Core Rulebook’s Party Treasure by Level table. Items are picked at random from the common') +
         (L.unc ? ' and uncommon' : '') +
-        ' magic and alchemical items of each level. Fundamental runes and gear the players want are good swaps for random items.</p></main>'
+        (G.credits
+          ? ' items of each level. Weapon and armor grades and gear the players want are good swaps for random items.</p></main>'
+          : ' magic and alchemical items of each level. Fundamental runes and gear the players want are good swaps for random items.</p></main>')
       );
     }
     K.loot = loot;

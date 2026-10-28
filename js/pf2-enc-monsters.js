@@ -3,14 +3,24 @@
 (function (root) {
   'use strict';
   (root.PF2EncParts = root.PF2EncParts || {}).monsters = function (K) {
-    var api = K.api,
+    var G = K.G,
+      api = K.api,
       btn = K.btn,
       enc = K.enc,
       esc = K.esc,
       ui = K.ui;
 
     // ---------- monsters: the whole bestiary to browse ----------
-    var M = (ui.pf2m = ui.pf2m || { q: '', lo: '', hi: '', trait: '', size: '', src: '', open: '', added: '' });
+    var M = (ui[G.key + 'm'] = ui[G.key + 'm'] || {
+      q: '',
+      lo: '',
+      hi: '',
+      trait: '',
+      size: '',
+      src: '',
+      open: '',
+      added: ''
+    });
     var SRC = {
       B1: 'Bestiary',
       B2: 'Bestiary 2',
@@ -60,7 +70,7 @@
     }
     function monstersHtml() {
       if (!api.need(['core', 'bestiary'])) return api.waitHtml('Monsters');
-      var B = root.PF2DATA.bestiary,
+      var B = root[G.data].bestiary,
         q = (M.q || '').toLowerCase(),
         lo = M.lo === '' ? -99 : +M.lo,
         hi = M.hi === '' ? 99 : +M.hi;
@@ -116,7 +126,9 @@
         return a + x.count;
       }, 0);
       var h =
-        '<main class="mon-main"><h2>Monsters</h2><div class="panel"><div class="mon-tools"><input type="search" id="pfm-q" data-pfmf="q" placeholder="Search ' +
+        '<main class="mon-main"><h2>' +
+        (G.credits ? 'Aliens' : 'Monsters') +
+        '</h2><div class="panel"><div class="mon-tools"><input type="search" id="pfm-q" data-pfmf="q" placeholder="Search ' +
         B.length +
         ' creatures…" value="' +
         esc(M.q) +
@@ -169,7 +181,9 @@
             n +
             ' creature' +
             (n === 1 ? '' : 's') +
-            '). <button type="button" class="linkbtn" data-act="section" data-v="pf2-enc">Go to Encounters</button></p>'
+            '). <button type="button" class="linkbtn" data-act="section" data-v="' +
+            G.sec +
+            'enc">Go to Encounters</button></p>'
           : '') +
         '</div>';
       h += list

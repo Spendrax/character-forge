@@ -232,6 +232,17 @@ It needs an AI to talk to. Pick one in its Settings:
 
 Only your question and a summary of the page you are on are sent to the AI you pick.
 
+## Starfinder 2e
+
+Tap **SF2** at the top. Starfinder Second Edition (2025) is built on the Pathfinder 2e Remaster rules, so it uses the same pages as Pathfinder with Starfinder's own engine and data: attribute modifiers instead of scores, no alignment, the Computers and Piloting skills, credits, weapon and armor **grades** and **upgrades** instead of runes, and its classes (envoy, mechanic, mystic, operative, solarian, soldier, technomancer, witchwarper).
+
+- **Characters**: built level by level like Pathfinder (60 ancestries, 340+ heritages, 160+ backgrounds, 2,400+ feats, the choices inside class features), with the sheet, Session page, spells, gear and the GM's table.
+- **GM**: Party, Encounters (XP budget, creatures with full stat blocks), **Aliens** (264 creatures from Alien Core and Absalom Station) and **Treasures** in credits (Pathfinder's treasure-by-level budget converted at 1 gp = 10 credits: check it against your GM Core).
+- **Books and Rules**: a readable Starfinder rules book and everything searchable.
+- **Checked**: the tests rebuild the 35 iconic and pregenerated characters of the Foundry sf2e system and check their hit points and every skill rank (`test/sf2.test.js`).
+
+Data: `python3 tools/sf2-build.py <foundry pf2e repository at a sf2e-* tag>` builds `data/sf2/` from the Foundry VTT Starfinder Second Edition system. The rules text is licensed under the ORC License (the full attribution is in Rules → License). This app uses trademarks and/or copyrights owned by Paizo Inc., used under Paizo's Community Use Policy (paizo.com/licenses/communityuse); it is not published, endorsed, or specifically approved by Paizo, and is free to use.
+
 ## Mutants & Masterminds 3e
 
 The switch at the top (D&D 5e | M&M 3e) moves between the two games; each has its own home page, characters and house rules (dice and your own books are shared; Audio has modern moods for M&M: headquarters, city at night, chase, villain, hacking, noir…).
@@ -302,7 +313,7 @@ How a tap works: a button has `data-act="name"`, the click goes to `actions.name
 
     rules.js          D&D rules engine: turns picks into a sheet (no page code; also runs in Node for tests)
     monsters.js, encounter.js, treasure.js, generators.js, books.js, audio.js, dm.js (DM/GM page)
-    pf2.js, pf2-ui.js, pf2-enc.js, pf2-import.js        Pathfinder 2e: rules, pages, encounters/treasure, import
+    pf2.js, pf2-ui.js, pf2-enc.js, pf2-import.js        Pathfinder 2e and Starfinder 2e (PF2UI.PF2 / PF2UI.SF2): rules, pages, encounters/treasure, import
     pf2-ui-build.js, -sheet.js, -gear.js, -rules.js, -actions.js   the parts of pf2-ui.js (see below)
     pf2-enc-party.js, -run.js, -monsters.js, -loot.js, -actions.js   the parts of pf2-enc.js (DM tools)
     mm.js, mm-enc.js, mm-foes.js                        Mutants & Masterminds 3e

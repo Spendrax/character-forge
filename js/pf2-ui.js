@@ -1,5 +1,6 @@
-// Pathfinder 2e (pre-Remaster) screens: characters, the level-by-level builder, the sheet tabs, the rules browser.
-// The rules engine is js/pf2.js; the data (data/pf2/*.js) loads the first time a PF2 page opens.
+// Pathfinder 2e (pre-Remaster) and Starfinder 2e screens: characters, the level-by-level builder, the sheet tabs, the
+// rules browser. Both games run on the same pages: `api.game` (G) says which (its engine from js/pf2.js, its data
+// folder, its store, its section names and texts); without it, Pathfinder. The data loads the first time a page opens.
 (function (root) {
   'use strict';
   var PF2 = root.PF2;
@@ -33,6 +34,8 @@
   };
 
   root.PF2UI = function (api) {
+    var G = api.game || root.PF2UI.PF2,
+      PF2 = G.engine(); // this game's rules engine (root.PF2 or root.SF2)
     var esc = api.esc,
       btn = api.btn,
       ui = api.ui,
@@ -40,7 +43,7 @@
       render = function () {
         api.render();
       };
-    var U = (ui.pf2 = ui.pf2 || {
+    var U = (ui[G.key] = ui[G.key] || {
       view: 'list',
       tab: 'build',
       pick: null,
@@ -50,7 +53,7 @@
       rules: { cat: 'feats', q: '', f: {}, open: '' }
     });
     function S() {
-      return (store.pf2 = store.pf2 || { chars: [], cur: '' });
+      return (store[G.key] = store[G.key] || { chars: [], cur: '' });
     }
     function cur() {
       var s = S();
@@ -174,7 +177,7 @@
       });
     }
     function need(parts) {
-      var P = root.PF2DATA || {},
+      var P = root[G.data] || {},
         miss = parts.filter(function (p) {
           return !P[p];
         });
@@ -182,14 +185,14 @@
       miss.forEach(function (p) {
         if (loading[p]) return;
         loading[p] = 1;
-        loadScript('data/pf2/' + p + '.js').then(
+        loadScript(G.dir + p + '.js').then(
           function () {
             loading[p] = 0;
             render();
           },
           function () {
             loading[p] = 0;
-            failed = 'Couldn’t load the Pathfinder rules. Check your connection and try again.';
+            failed = 'Couldn’t load the ' + G.name + ' rules. Check your connection and try again.';
             render();
           }
         );
@@ -201,24 +204,29 @@
         '<main class="home"><h2>' +
         esc(what) +
         '</h2><p class="muted">' +
-        (failed ? esc(failed) : 'Loading the Pathfinder rules (the first time only, then they work offline)…') +
+        (failed ? esc(failed) : 'Loading the ' + G.name + ' rules (the first time only, then they work offline)…') +
         '</p><div class="pf-load"><span></span></div></main>'
       );
     }
     var CHAR_DATA = ['core', 'feats', 'spells', 'items'];
 
+    // the page part of a section name: 'pf2-chars' or 'sf2-chars' → 'chars'
+    function part(section) {
+      return String(section || '').indexOf(G.sec) === 0 ? section.slice(G.sec.length) : '';
+    }
     function html(section) {
-      if (section === 'pf2-home') return K.homeHtml();
-      if (section === 'pf2-rules') return need(CHAR_DATA) ? K.rulesHtml() : waitHtml('Rules');
-      if (section === 'pf2-chars') {
+      section = part(section);
+      if (section === 'home') return K.homeHtml();
+      if (section === 'rules') return need(CHAR_DATA) ? K.rulesHtml() : waitHtml('Rules');
+      if (section === 'chars') {
         if (!need(CHAR_DATA)) return waitHtml('Characters');
         var ch = U.view === 'char' && cur();
         return ch ? K.charHtml(ch) : K.listHtml();
       }
-      if (section === 'pf2-mon') return root.PF2Enc ? ENC.monstersHtml() : '';
-      if (section === 'pf2-loot') return root.PF2Enc ? ENC.lootHtml() : '';
-      if (section === 'pf2-party' || section === 'pf2-enc')
-        return root.PF2Enc ? (section === 'pf2-party' ? ENC.partyHtml() : ENC.html()) : '';
+      if (section === 'mon') return root.PF2Enc ? ENC.monstersHtml() : '';
+      if (section === 'loot') return root.PF2Enc ? ENC.lootHtml() : '';
+      if (section === 'party' || section === 'enc')
+        return root.PF2Enc ? (section === 'party' ? ENC.partyHtml() : ENC.html()) : '';
       return K.homeHtml();
     }
     var ENC = root.PF2Enc
@@ -230,6 +238,7 @@
           render: render,
           ts: api.ts,
           pt: api.pt,
+          game: G,
           need: need,
           waitHtml: waitHtml,
           md: md,
@@ -240,27 +249,28 @@
       : { actions: {}, onInput: function () {}, onChange: function () {} };
     function title(section) {
       var ch = cur();
-      return section === 'pf2-chars' && U.view === 'char' && ch
-        ? (ch.name || 'Character') + ' — PF2'
+      var p = part(section);
+      return p === 'chars' && U.view === 'char' && ch
+        ? (ch.name || 'Character') + ' — ' + G.short
         : {
-            'pf2-home': 'Pathfinder 2e',
-            'pf2-chars': 'PF2 characters',
-            'pf2-rules': 'PF2 rules',
-            'pf2-party': 'PF2 party',
-            'pf2-mon': 'PF2 monsters',
-            'pf2-loot': 'PF2 treasures',
-            'pf2-enc': 'PF2 encounters'
-          }[section] || 'Pathfinder 2e';
+            home: G.name,
+            chars: G.short + ' characters',
+            rules: G.short + ' rules',
+            party: G.short + ' party',
+            mon: G.short + ' monsters',
+            loot: G.short + ' treasures',
+            enc: G.short + ' encounters'
+          }[p] || G.name;
     }
 
     // What the helper sees, and the changes it may propose
     function context(section) {
       var ch = cur();
-      if (section !== 'pf2-chars' || U.view !== 'char' || !ch || !PF2.index())
+      if (part(section) !== 'chars' || U.view !== 'char' || !ch || !PF2.index())
         return {
-          where: 'Pathfinder 2e',
-          subject: 'Pathfinder 2e',
-          text: 'Game: Pathfinder 2nd edition, pre-Remaster rules. Page: ' + title(section) + '.',
+          where: G.name,
+          subject: G.name,
+          text: 'Game: ' + G.about + '. Page: ' + title(section) + '.',
           chips: [
             'Explain the three-action economy',
             'Help me come up with a character idea',
@@ -269,9 +279,7 @@
         };
       var d = PF2.derive(ch);
       var L = [
-        'Game: Pathfinder 2nd edition (pre-Remaster rules: alignment, ability scores, Core Rulebook spell names). Page: character, “' +
-          U.tab +
-          '” tab.',
+        'Game: ' + G.about + '. Page: character, “' + U.tab + '” tab.',
         'Character: ' +
           (ch.name || 'unnamed') +
           ', level ' +
@@ -281,9 +289,9 @@
             .filter(Boolean)
             .join(' ') +
           '.',
-        'Ability scores: ' +
+        (G.remaster ? 'Attribute modifiers: ' : 'Ability scores: ') +
           PF2.AB.map(function (a) {
-            return a.toUpperCase() + ' ' + d.scores[a];
+            return a.toUpperCase() + ' ' + (G.remaster ? fmt(d.mods[a]) : d.scores[a]);
           }).join(', ') +
           '. HP ' +
           d.hp.max +
@@ -473,6 +481,7 @@
       U: U,
       api: api,
       btn: btn,
+      G: G,
       cur: cur,
       esc: esc,
       fmt: fmt,
@@ -501,5 +510,35 @@
       restoreNav: restoreNav,
       after: after
     };
+  };
+  // the two games these pages serve
+  root.PF2UI.PF2 = {
+    key: 'pf2',
+    sec: 'pf2-',
+    engine: function () {
+      return root.PF2;
+    },
+    data: 'PF2DATA',
+    dir: 'data/pf2/',
+    name: 'Pathfinder 2e',
+    short: 'PF2',
+    about: 'Pathfinder 2nd edition (pre-Remaster rules: alignment, ability scores, Core Rulebook spell names)',
+    remaster: false,
+    credits: false
+  };
+  root.PF2UI.SF2 = {
+    key: 'sf2',
+    sec: 'sf2-',
+    engine: function () {
+      return root.SF2;
+    },
+    data: 'SF2DATA',
+    dir: 'data/sf2/',
+    name: 'Starfinder 2e',
+    short: 'SF2',
+    about:
+      'Starfinder 2nd edition (built on the Pathfinder 2e Remaster rules: no alignment, attribute modifiers, credits, the Computers and Piloting skills)',
+    remaster: true,
+    credits: true
   };
 })(typeof window !== 'undefined' ? window : globalThis);

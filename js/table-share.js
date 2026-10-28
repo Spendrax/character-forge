@@ -39,7 +39,11 @@
     function item(x) {
       return { n: String(x.n).slice(0, 80), id: x.id || '', note: String(x.note || '').slice(0, 200) };
     }
-    function html(things, gp, from) {
+    // credits: Starfinder shows the money in credits (1 gp = 10 credits); what is sent stays in gp
+    function html(things, gp, from, credits) {
+      var cash = function (n) {
+        return credits ? (n * 10).toLocaleString('en') + ' credits' : n.toLocaleString('en') + ' gp';
+      };
       var t = tb();
       if (!t)
         return (
@@ -67,12 +71,12 @@
         var each = Math.floor(gp / P.length);
         h +=
           '<div class="toolbar"><span><b>' +
-          gp.toLocaleString('en') +
-          ' gp</b> ÷ ' +
+          cash(gp) +
+          '</b> ÷ ' +
           P.length +
           ' = ' +
-          each.toLocaleString('en') +
-          ' gp each</span>' +
+          cash(each) +
+          ' each</span>' +
           btn('tsCoins', 'Send everyone their share', {}, 'btn small primary') +
           '</div>';
       }

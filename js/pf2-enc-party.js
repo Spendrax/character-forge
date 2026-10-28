@@ -3,7 +3,8 @@
 (function (root) {
   'use strict';
   (root.PF2EncParts = root.PF2EncParts || {}).party = function (K) {
-    var E = K.E,
+    var G = K.G,
+      E = K.E,
       api = K.api,
       btn = K.btn,
       curParty = K.curParty,
@@ -23,11 +24,11 @@
       if (!p)
         return (
           '<main class="mon-main"><h2>Party</h2><p class="muted">Keep your players’ characters here (class, level, AC, HP, Perception). Encounters uses them for the XP budget and their hit points carry over between fights.</p>' +
-          (api.pt ? api.pt.html('pf2') : '') +
+          (api.pt ? api.pt.html(G.key) : '') +
           btn('pfeNew', '+ New party', {}, 'btn primary') +
           '</main>'
         );
-      var mine = ((store.pf2 || {}).chars || []).filter(function (c) {
+      var mine = ((store[G.key] || {}).chars || []).filter(function (c) {
         return c.name && c.cls;
       });
       var f = function (m, k, label, wide) {
@@ -88,7 +89,7 @@
         .join('');
       return (
         '<main class="mon-main"><h2>Party</h2>' +
-        (api.pt ? api.pt.html('pf2') : '') +
+        (api.pt ? api.pt.html(G.key) : '') +
         '<div class="toolbar">' +
         (list.length > 1
           ? '<select data-pfepick="1" aria-label="Choose a party">' +

@@ -1,0 +1,5512 @@
+[
+{
+"name": "Chk Chk (Level 1)",
+"src": "chk-chk-level-1.json",
+"level": 1,
+"ancestry": "Shirren",
+"heritage": "Defiant Shirren",
+"background": "Disciple",
+"class": "Mystic",
+"ancBoosts": [
+"str"
+],
+"bgBoosts": [
+"wis",
+"dex"
+],
+"lvBoosts": {
+"1": [
+"dex",
+"wis",
+"con",
+"int"
+]
+},
+"feats": [
+[
+"Unconventional Weaponry (Painglaive)",
+"ancestry-1"
+]
+],
+"names": [
+"Shirren",
+"Limited Telepathy",
+"Defiant Shirren",
+"Rebellious Defiance",
+"Disciple",
+"Religious Talisman",
+"Mystic",
+"Vitality Network",
+"Connection",
+"Transfer Vitality",
+"Shadow",
+"Initial Epiphany",
+"Mystic Spellcasting",
+"Mystic Bond",
+"Spell Repertoire",
+"Zon-Shelyn",
+"Arc Pistol",
+"Microcord Armor",
+"Painglaive",
+"Battery (Commercial)",
+"Comm Unit",
+"Repair Toolkit (Commercial)",
+"Credstick",
+"Divine Spontaneous Spells",
+"Detect Magic",
+"Eldritch Lance",
+"Guidance",
+"Void Warp",
+"Figment",
+"Grim Tendrils",
+"Heal",
+"Motivating Ringtone",
+"Divine Focus Spells",
+"Shadow Snap",
+"Unconventional Weaponry (Painglaive)",
+"Zon-Shelyn Lore"
+],
+"skills": {
+"crafting": 1,
+"deception": 1,
+"medicine": 1,
+"nature": 1,
+"religion": 1
+},
+"lores": [
+[
+"Zon-Shelyn",
+1
+]
+],
+"gear": [
+[
+"weapon",
+"Arc Pistol",
+"commercial",
+1,
+null
+],
+[
+"armor",
+"Microcord Armor",
+"commercial",
+1,
+true
+],
+[
+"weapon",
+"Painglaive",
+"commercial",
+1,
+null
+],
+[
+"equipment",
+"Comm Unit",
+null,
+1,
+null
+],
+[
+"equipment",
+"Repair Toolkit (Commercial)",
+null,
+1,
+null
+]
+],
+"hp": 18
+},
+{
+"name": "Chk Chk (Level 3)",
+"src": "chk-chk-level-3.json",
+"level": 3,
+"ancestry": "Shirren",
+"heritage": "Defiant Shirren",
+"background": "Disciple",
+"class": "Mystic",
+"ancBoosts": [
+"str"
+],
+"bgBoosts": [
+"wis",
+"dex"
+],
+"lvBoosts": {
+"1": [
+"dex",
+"wis",
+"con",
+"int"
+]
+},
+"feats": [
+[
+"Unconventional Weaponry (Painglaive)",
+"ancestry-1"
+],
+[
+"Spot Healing",
+"class-2"
+],
+[
+"Toughness",
+"general-3"
+],
+[
+"Battle Medicine",
+"skill-2"
+]
+],
+"names": [
+"Shirren",
+"Limited Telepathy",
+"Defiant Shirren",
+"Rebellious Defiance",
+"Disciple",
+"Religious Talisman",
+"Mystic",
+"Vitality Network",
+"Connection",
+"Transfer Vitality",
+"Shadow",
+"Initial Epiphany",
+"Mystic Spellcasting",
+"Mystic Bond",
+"Spell Repertoire",
+"Zon-Shelyn",
+"Arc Pistol",
+"Microcord Armor",
+"Painglaive",
+"Battery (Commercial)",
+"Comm Unit",
+"Repair Toolkit (Commercial)",
+"Credstick",
+"Divine Spontaneous Spells",
+"Detect Magic",
+"Eldritch Lance",
+"Guidance",
+"Void Warp",
+"Figment",
+"Grim Tendrils",
+"Heal",
+"Motivating Ringtone",
+"Divine Focus Spells",
+"Shadow Snap",
+"Unconventional Weaponry (Painglaive)",
+"Zon-Shelyn Lore",
+"Group Chat",
+"Network Spell",
+"Signature Spells",
+"Reflex Expertise",
+"Fear",
+"Heal",
+"Invisibility",
+"Soul Surge",
+"Medkit (Commercial)",
+"Spot Healing",
+"Toughness",
+"Battle Medicine"
+],
+"skills": {
+"crafting": 1,
+"deception": 2,
+"medicine": 1,
+"nature": 1,
+"religion": 1
+},
+"lores": [
+[
+"Zon-Shelyn",
+1
+]
+],
+"gear": [
+[
+"weapon",
+"Arc Pistol",
+"commercial",
+1,
+null
+],
+[
+"armor",
+"Microcord Armor",
+"commercial",
+1,
+true
+],
+[
+"weapon",
+"Painglaive",
+"tactical",
+1,
+null
+],
+[
+"equipment",
+"Comm Unit",
+null,
+1,
+null
+],
+[
+"equipment",
+"Repair Toolkit (Commercial)",
+null,
+1,
+null
+],
+[
+"equipment",
+"Medkit (Commercial)",
+null,
+1,
+null
+]
+],
+"hp": 37
+},
+{
+"name": "Chk Chk (Level 5)",
+"src": "chk-chk-level-5.json",
+"level": 5,
+"ancestry": "Shirren",
+"heritage": "Defiant Shirren",
+"background": "Disciple",
+"class": "Mystic",
+"ancBoosts": [
+"str"
+],
+"bgBoosts": [
+"wis",
+"dex"
+],
+"lvBoosts": {
+"1": [
+"dex",
+"wis",
+"con",
+"int"
+],
+"5": [
+"str",
+"dex",
+"con",
+"wis"
+]
+},
+"feats": [
+[
+"Unconventional Weaponry (Painglaive)",
+"ancestry-1"
+],
+[
+"Spot Healing",
+"class-2"
+],
+[
+"Toughness",
+"general-3"
+],
+[
+"Battle Medicine",
+"skill-2"
+],
+[
+"Communalism",
+"ancestry-5"
+],
+[
+"Waste Not",
+"class-4"
+],
+[
+"Feign Death",
+"skill-4"
+]
+],
+"names": [
+"Shirren",
+"Limited Telepathy",
+"Defiant Shirren",
+"Rebellious Defiance",
+"Disciple",
+"Religious Talisman",
+"Mystic",
+"Vitality Network",
+"Connection",
+"Transfer Vitality",
+"Shadow",
+"Initial Epiphany",
+"Mystic Spellcasting",
+"Mystic Bond",
+"Spell Repertoire",
+"Zon-Shelyn",
+"Arc Pistol",
+"Microcord Armor",
+"Painglaive",
+"Battery (Commercial)",
+"Comm Unit",
+"Repair Toolkit (Commercial)",
+"Credstick",
+"Divine Spontaneous Spells",
+"Detect Magic",
+"Eldritch Lance",
+"Guidance",
+"Void Warp",
+"Figment",
+"Grim Tendrils",
+"Heal",
+"Motivating Ringtone",
+"Divine Focus Spells",
+"Shadow Snap",
+"Unconventional Weaponry (Painglaive)",
+"Zon-Shelyn Lore",
+"Group Chat",
+"Network Spell",
+"Signature Spells",
+"Reflex Expertise",
+"Fear",
+"Heal",
+"Invisibility",
+"Soul Surge",
+"Medkit (Commercial)",
+"Spot Healing",
+"Toughness",
+"Battle Medicine",
+"Fortitude Expertise",
+"Communalism",
+"Waste Not",
+"Feign Death",
+"Heal",
+"Share Pain",
+"Slow",
+"Ultralight Wings (Commercial)"
+],
+"skills": {
+"crafting": 1,
+"deception": 2,
+"medicine": 2,
+"nature": 1,
+"religion": 1
+},
+"lores": [
+[
+"Zon-Shelyn",
+1
+]
+],
+"gear": [
+[
+"weapon",
+"Arc Pistol",
+"tactical",
+1,
+null
+],
+[
+"armor",
+"Microcord Armor",
+"commercial",
+1,
+true
+],
+[
+"weapon",
+"Painglaive",
+"advanced",
+1,
+null
+],
+[
+"equipment",
+"Comm Unit",
+null,
+1,
+null
+],
+[
+"equipment",
+"Repair Toolkit (Commercial)",
+null,
+1,
+null
+],
+[
+"equipment",
+"Medkit (Commercial)",
+null,
+1,
+null
+],
+[
+"equipment",
+"Ultralight Wings (Commercial)",
+null,
+1,
+null
+]
+],
+"hp": 60
+},
+{
+"name": "Chk Chk (Level 7)",
+"src": "chk-chk-level-7.json",
+"level": 7,
+"ancestry": "Shirren",
+"heritage": "Defiant Shirren",
+"background": "Disciple",
+"class": "Mystic",
+"ancBoosts": [
+"str"
+],
+"bgBoosts": [
+"wis",
+"dex"
+],
+"lvBoosts": {
+"1": [
+"dex",
+"wis",
+"con",
+"int"
+],
+"5": [
+"str",
+"dex",
+"con",
+"wis"
+]
+},
+"feats": [
+[
+"Unconventional Weaponry (Painglaive)",
+"ancestry-1"
+],
+[
+"Spot Healing",
+"class-2"
+],
+[
+"Toughness",
+"general-3"
+],
+[
+"Battle Medicine",
+"skill-2"
+],
+[
+"Communalism",
+"ancestry-5"
+],
+[
+"Waste Not",
+"class-4"
+],
+[
+"Feign Death",
+"skill-4"
+],
+[
+"Radiant Bond",
+"class-6"
+],
+[
+"Continual Recovery",
+"skill-6"
+]
+],
+"names": [
+"Shirren",
+"Limited Telepathy",
+"Defiant Shirren",
+"Rebellious Defiance",
+"Disciple",
+"Religious Talisman",
+"Mystic",
+"Vitality Network",
+"Connection",
+"Transfer Vitality",
+"Shadow",
+"Initial Epiphany",
+"Mystic Spellcasting",
+"Mystic Bond",
+"Spell Repertoire",
+"Zon-Shelyn",
+"Arc Pistol",
+"Microcord Armor",
+"Painglaive",
+"Battery (Commercial)",
+"Comm Unit",
+"Repair Toolkit (Commercial)",
+"Credstick",
+"Divine Spontaneous Spells",
+"Detect Magic",
+"Eldritch Lance",
+"Guidance",
+"Void Warp",
+"Figment",
+"Grim Tendrils",
+"Heal",
+"Motivating Ringtone",
+"Divine Focus Spells",
+"Shadow Snap",
+"Unconventional Weaponry (Painglaive)",
+"Zon-Shelyn Lore",
+"Group Chat",
+"Network Spell",
+"Signature Spells",
+"Reflex Expertise",
+"Fear",
+"Heal",
+"Invisibility",
+"Soul Surge",
+"Spot Healing",
+"Toughness",
+"Battle Medicine",
+"Fortitude Expertise",
+"Communalism",
+"Waste Not",
+"Feign Death",
+"Heal",
+"Share Pain",
+"Slow",
+"Ultralight Wings (Commercial)",
+"Expert Spellcaster",
+"Medkit (Tactical)",
+"Pain Journal (Commercial) (Diplomacy)",
+"Flicker",
+"Genetic Regeneration",
+"Heal",
+"Radiant Bond",
+"Continual Recovery"
+],
+"skills": {
+"crafting": 1,
+"deception": 2,
+"medicine": 2,
+"nature": 1,
+"religion": 1
+},
+"lores": [
+[
+"Zon-Shelyn",
+1
+]
+],
+"gear": [
+[
+"weapon",
+"Arc Pistol",
+"tactical",
+1,
+null
+],
+[
+"armor",
+"Microcord Armor",
+"commercial",
+1,
+true
+],
+[
+"weapon",
+"Painglaive",
+"advanced",
+1,
+null
+],
+[
+"equipment",
+"Comm Unit",
+null,
+1,
+null
+],
+[
+"equipment",
+"Repair Toolkit (Commercial)",
+null,
+1,
+null
+],
+[
+"equipment",
+"Ultralight Wings (Commercial)",
+null,
+1,
+null
+],
+[
+"equipment",
+"Medkit (Tactical)",
+null,
+1,
+null
+],
+[
+"equipment",
+"Pain Journal (Commercial) (Diplomacy)",
+null,
+1,
+null
+]
+],
+"hp": 80
+},
+{
+"name": "Dae (Level 1)",
+"src": "dae-level-1.json",
+"level": 1,
+"ancestry": "Pahtra",
+"heritage": "Meyel's Chosen Pahtra",
+"background": "Icon",
+"class": "Solarian",
+"ancBoosts": [
+"str"
+],
+"bgBoosts": [
+"con",
+"str"
+],
+"lvBoosts": {
+"1": [
+"str",
+"con",
+"cha",
+"dex"
+]
+},
+"feats": [
+[
+"Stellar Rush",
+"class-1"
+],
+[
+"Competitive Spirit",
+"ancestry-1"
+]
+],
+"names": [
+"Pahtra",
+"Meyel's Chosen Pahtra",
+"Icon",
+"Impressive Performance",
+"Solarian",
+"Solar Manifestations",
+"Stellar Attunement",
+"Nimbus Surge",
+"Re-Forge Solar Weapon",
+"Attune",
+"Semi-Auto Pistol",
+"Projectile Ammo",
+"Comm Unit",
+"Hardlight Series",
+"Medpatch (Commercial)",
+"Credstick",
+"Stellar Rush",
+"Competitive Spirit",
+"Media Lore"
+],
+"skills": {
+"acrobatics": 1,
+"diplomacy": 1,
+"society": 1,
+"stealth": 1
+},
+"lores": [
+[
+"Media",
+1
+]
+],
+"gear": [
+[
+"weapon",
+"Semi-Auto Pistol",
+"commercial",
+1,
+null
+],
+[
+"equipment",
+"Comm Unit",
+null,
+1,
+null
+],
+[
+"armor",
+"Hardlight Series",
+"commercial",
+1,
+true
+],
+[
+"consumable",
+"Medpatch (Commercial)",
+null,
+1,
+null
+]
+],
+"hp": 19
+},
+{
+"name": "Dae (Level 3)",
+"src": "dae-level-3.json",
+"level": 3,
+"ancestry": "Pahtra",
+"heritage": "Meyel's Chosen Pahtra",
+"background": "Icon",
+"class": "Solarian",
+"ancBoosts": [
+"str"
+],
+"bgBoosts": [
+"con",
+"str"
+],
+"lvBoosts": {
+"1": [
+"str",
+"con",
+"cha",
+"dex"
+]
+},
+"feats": [
+[
+"Stellar Rush",
+"class-1"
+],
+[
+"Competitive Spirit",
+"ancestry-1"
+],
+[
+"Shattering Impact",
+"class-2"
+],
+[
+"Fleet",
+"general-3"
+],
+[
+"Cat Fall",
+"skill-2"
+]
+],
+"names": [
+"Pahtra",
+"Meyel's Chosen Pahtra",
+"Icon",
+"Impressive Performance",
+"Solarian",
+"Solar Manifestations",
+"Stellar Attunement",
+"Nimbus Surge",
+"Re-Forge Solar Weapon",
+"Attune",
+"Semi-Auto Pistol",
+"Projectile Ammo",
+"Comm Unit",
+"Hardlight Series",
+"Medpatch (Commercial)",
+"Credstick",
+"Stellar Rush",
+"Competitive Spirit",
+"Stellar Resilience",
+"Datapad",
+"Shattering Impact",
+"Fleet",
+"Cat Fall",
+"Media Lore"
+],
+"skills": {
+"acrobatics": 1,
+"diplomacy": 1,
+"performance": 2,
+"society": 1,
+"stealth": 1
+},
+"lores": [
+[
+"Media",
+1
+]
+],
+"gear": [
+[
+"weapon",
+"Semi-Auto Pistol",
+"commercial",
+1,
+null
+],
+[
+"equipment",
+"Comm Unit",
+null,
+1,
+null
+],
+[
+"armor",
+"Hardlight Series",
+"commercial",
+1,
+true
+],
+[
+"consumable",
+"Medpatch (Commercial)",
+null,
+4,
+null
+],
+[
+"equipment",
+"Datapad",
+null,
+1,
+null
+]
+],
+"hp": 41
+},
+{
+"name": "Dae (Level 5)",
+"src": "dae-level-5.json",
+"level": 5,
+"ancestry": "Pahtra",
+"heritage": "Meyel's Chosen Pahtra",
+"background": "Icon",
+"class": "Solarian",
+"ancBoosts": [
+"str"
+],
+"bgBoosts": [
+"con",
+"str"
+],
+"lvBoosts": {
+"1": [
+"str",
+"con",
+"cha",
+"dex"
+],
+"5": [
+"dex",
+"cha",
+"str",
+"con"
+]
+},
+"feats": [
+[
+"Stellar Rush",
+"class-1"
+],
+[
+"Competitive Spirit",
+"ancestry-1"
+],
+[
+"Shattering Impact",
+"class-2"
+],
+[
+"Fleet",
+"general-3"
+],
+[
+"Cat Fall",
+"skill-2"
+],
+[
+"Nimbus Ward",
+"class-4"
+],
+[
+"Battleblessed",
+"ancestry-5"
+],
+[
+"Combat Climber",
+"skill-4"
+]
+],
+"names": [
+"Pahtra",
+"Meyel's Chosen Pahtra",
+"Icon",
+"Impressive Performance",
+"Solarian",
+"Solar Manifestations",
+"Stellar Attunement",
+"Nimbus Surge",
+"Re-Forge Solar Weapon",
+"Attune",
+"Semi-Auto Pistol",
+"Projectile Ammo",
+"Comm Unit",
+"Hardlight Series",
+"Medpatch (Commercial)",
+"Credstick",
+"Stellar Rush",
+"Competitive Spirit",
+"Stellar Resilience",
+"Datapad",
+"Shattering Impact",
+"Fleet",
+"Cat Fall",
+"Magboots",
+"Portable Amp",
+"Sunshades (Commercial)",
+"+1 Weapon Potency Crystal (Solar Flare)",
+"+1 Weapon Potency Crystal (Solar Weapon)",
+"Solar Weapon Expertise",
+"Nimbus Ward",
+"Battleblessed",
+"Combat Climber",
+"Media Lore"
+],
+"skills": {
+"acrobatics": 2,
+"diplomacy": 1,
+"performance": 2,
+"society": 1,
+"stealth": 1
+},
+"lores": [
+[
+"Media",
+1
+]
+],
+"gear": [
+[
+"weapon",
+"Semi-Auto Pistol",
+"commercial",
+1,
+null
+],
+[
+"equipment",
+"Comm Unit",
+null,
+1,
+null
+],
+[
+"armor",
+"Hardlight Series",
+"commercial",
+1,
+true
+],
+[
+"consumable",
+"Medpatch (Commercial)",
+null,
+4,
+null
+],
+[
+"equipment",
+"Datapad",
+null,
+1,
+null
+],
+[
+"equipment",
+"Magboots",
+null,
+1,
+true
+],
+[
+"equipment",
+"Portable Amp",
+null,
+1,
+null
+],
+[
+"equipment",
+"Sunshades (Commercial)",
+null,
+1,
+null
+],
+[
+"equipment",
+"+1 Weapon Potency Crystal (Solar Flare)",
+null,
+1,
+null
+],
+[
+"equipment",
+"+1 Weapon Potency Crystal (Solar Weapon)",
+null,
+1,
+null
+]
+],
+"hp": 68
+},
+{
+"name": "Dae (Level 7)",
+"src": "dae-level-7.json",
+"level": 7,
+"ancestry": "Pahtra",
+"heritage": "Meyel's Chosen Pahtra",
+"background": "Icon",
+"class": "Solarian",
+"ancBoosts": [
+"str"
+],
+"bgBoosts": [
+"con",
+"str"
+],
+"lvBoosts": {
+"1": [
+"str",
+"con",
+"cha",
+"dex"
+],
+"5": [
+"dex",
+"cha",
+"str",
+"con"
+]
+},
+"feats": [
+[
+"Stellar Rush",
+"class-1"
+],
+[
+"Competitive Spirit",
+"ancestry-1"
+],
+[
+"Shattering Impact",
+"class-2"
+],
+[
+"Fleet",
+"general-3"
+],
+[
+"Cat Fall",
+"skill-2"
+],
+[
+"Nimbus Ward",
+"class-4"
+],
+[
+"Battleblessed",
+"ancestry-5"
+],
+[
+"Combat Climber",
+"skill-4"
+],
+[
+"Solar Barrage",
+"class-6"
+],
+[
+"Quick Jump",
+"skill-6"
+],
+[
+"Kip Up",
+"general-7"
+]
+],
+"names": [
+"Pahtra",
+"Meyel's Chosen Pahtra",
+"Icon",
+"Impressive Performance",
+"Solarian",
+"Solar Manifestations",
+"Stellar Attunement",
+"Nimbus Surge",
+"Re-Forge Solar Weapon",
+"Attune",
+"Semi-Auto Pistol",
+"Projectile Ammo",
+"Comm Unit",
+"Hardlight Series",
+"Medpatch (Commercial)",
+"Credstick",
+"Stellar Rush",
+"Competitive Spirit",
+"Stellar Resilience",
+"Datapad",
+"Shattering Impact",
+"Fleet",
+"Cat Fall",
+"Magboots",
+"Portable Amp",
+"Sunshades (Commercial)",
+"+1 Weapon Potency Crystal (Solar Flare)",
+"+1 Weapon Potency Crystal (Solar Weapon)",
+"Solar Weapon Expertise",
+"Nimbus Ward",
+"Battleblessed",
+"Combat Climber",
+"Media Lore",
+"Stellar Senses",
+"Weapon Specialization",
+"Striking Crystal (Commercial) (Solar Flare)",
+"Striking Crystal (Commercial) (Solar Weapon)",
+"Solar Barrage",
+"Quick Jump",
+"Kip Up"
+],
+"skills": {
+"acrobatics": 2,
+"diplomacy": 1,
+"performance": 2,
+"society": 1,
+"stealth": 1
+},
+"lores": [
+[
+"Media",
+1
+]
+],
+"gear": [
+[
+"weapon",
+"Semi-Auto Pistol",
+"commercial",
+1,
+null
+],
+[
+"equipment",
+"Comm Unit",
+null,
+1,
+null
+],
+[
+"armor",
+"Hardlight Series",
+"tactical",
+1,
+true
+],
+[
+"consumable",
+"Medpatch (Commercial)",
+null,
+4,
+null
+],
+[
+"equipment",
+"Datapad",
+null,
+1,
+null
+],
+[
+"equipment",
+"Magboots",
+null,
+1,
+true
+],
+[
+"equipment",
+"Portable Amp",
+null,
+1,
+null
+],
+[
+"equipment",
+"Sunshades (Commercial)",
+null,
+1,
+null
+],
+[
+"equipment",
+"+1 Weapon Potency Crystal (Solar Flare)",
+null,
+1,
+null
+],
+[
+"equipment",
+"+1 Weapon Potency Crystal (Solar Weapon)",
+null,
+1,
+null
+],
+[
+"equipment",
+"Striking Crystal (Commercial) (Solar Flare)",
+null,
+1,
+null
+],
+[
+"equipment",
+"Striking Crystal (Commercial) (Solar Weapon)",
+null,
+1,
+null
+]
+],
+"hp": 92
+},
+{
+"name": "Iseph (Level 1)",
+"src": "iseph-level-1.json",
+"level": 1,
+"ancestry": "Android",
+"heritage": "Mod Fanatic Android",
+"background": "Hacker",
+"class": "Operative",
+"ancBoosts": [
+"wis"
+],
+"bgBoosts": [
+"dex",
+"con"
+],
+"lvBoosts": {
+"1": [
+"dex",
+"con",
+"wis",
+"str"
+]
+},
+"feats": [
+[
+"Quickened Processor",
+"ancestry-1"
+],
+[
+"Mobile Aim",
+"class-1"
+]
+],
+"names": [
+"Android",
+"Constructed",
+"Mod Fanatic Android",
+"Hacker",
+"Phreaker",
+"Operative",
+"Sharpshooter",
+"Operative's Specialization",
+"Aim",
+"Skirmisher",
+"Steady Balance",
+"Quickened Processor",
+"Mobile Aim",
+"Infosphere Lore",
+"Comm Unit",
+"Force Field (Commercial)",
+"Incendiary Grenade (Commercial)",
+"Medpatch (Commercial)",
+"Second Skin",
+"Semi-Auto Pistol",
+"Projectile Ammo",
+"Zero Knife",
+"Infiltrator's Toolkit (Commercial)",
+"Credstick"
+],
+"skills": {
+"athletics": 1,
+"piloting": 1,
+"stealth": 1,
+"thievery": 1
+},
+"lores": [
+[
+"Infosphere",
+1
+]
+],
+"gear": [
+[
+"equipment",
+"Comm Unit",
+null,
+1,
+null
+],
+[
+"equipment",
+"Force Field (Commercial)",
+null,
+1,
+null
+],
+[
+"weapon",
+"Incendiary Grenade (Commercial)",
+"commercial",
+1,
+null
+],
+[
+"consumable",
+"Medpatch (Commercial)",
+null,
+1,
+null
+],
+[
+"armor",
+"Second Skin",
+"commercial",
+1,
+true
+],
+[
+"weapon",
+"Semi-Auto Pistol",
+"commercial",
+1,
+null
+],
+[
+"weapon",
+"Zero Knife",
+"commercial",
+1,
+null
+],
+[
+"equipment",
+"Infiltrator's Toolkit (Commercial)",
+null,
+1,
+null
+]
+],
+"hp": 18
+},
+{
+"name": "Iseph (Level 3)",
+"src": "iseph-level-3.json",
+"level": 3,
+"ancestry": "Android",
+"heritage": "Mod Fanatic Android",
+"background": "Hacker",
+"class": "Operative",
+"ancBoosts": [
+"wis"
+],
+"bgBoosts": [
+"dex",
+"con"
+],
+"lvBoosts": {
+"1": [
+"dex",
+"con",
+"wis",
+"str"
+]
+},
+"feats": [
+[
+"Quickened Processor",
+"ancestry-1"
+],
+[
+"Mobile Aim",
+"class-1"
+],
+[
+"Kill Steal",
+"class-2"
+],
+[
+"Ancestral Paragon",
+"general-3"
+],
+[
+"Cat Fall",
+"skill-2"
+],
+[
+"Hologram Skeptic",
+"skill-3"
+]
+],
+"names": [
+"Android",
+"Constructed",
+"Mod Fanatic Android",
+"Hacker",
+"Phreaker",
+"Operative",
+"Sharpshooter",
+"Operative's Specialization",
+"Aim",
+"Skirmisher",
+"Steady Balance",
+"Quickened Processor",
+"Mobile Aim",
+"Infosphere Lore",
+"Comm Unit",
+"Force Field (Commercial)",
+"Incendiary Grenade (Commercial)",
+"Medpatch (Commercial)",
+"Second Skin",
+"Semi-Auto Pistol",
+"Projectile Ammo",
+"Zero Knife",
+"Infiltrator's Toolkit (Commercial)",
+"Credstick",
+"Focused",
+"Specialized Skill Set",
+"Kill Steal",
+"Ancestral Paragon",
+"Nightvision Adaptation",
+"Cat Fall",
+"Hologram Skeptic"
+],
+"skills": {
+"athletics": 1,
+"piloting": 1,
+"stealth": 1,
+"thievery": 1
+},
+"lores": [
+[
+"Infosphere",
+1
+]
+],
+"gear": [
+[
+"equipment",
+"Comm Unit",
+null,
+1,
+null
+],
+[
+"equipment",
+"Force Field (Commercial)",
+null,
+1,
+null
+],
+[
+"weapon",
+"Incendiary Grenade (Commercial)",
+"commercial",
+1,
+null
+],
+[
+"consumable",
+"Medpatch (Commercial)",
+null,
+1,
+null
+],
+[
+"armor",
+"Second Skin",
+"commercial",
+1,
+true
+],
+[
+"weapon",
+"Semi-Auto Pistol",
+"commercial",
+1,
+null
+],
+[
+"weapon",
+"Zero Knife",
+"commercial",
+1,
+null
+],
+[
+"equipment",
+"Infiltrator's Toolkit (Commercial)",
+null,
+1,
+null
+]
+],
+"hp": 38
+},
+{
+"name": "Iseph (Level 5)",
+"src": "iseph-level-5.json",
+"level": 5,
+"ancestry": "Android",
+"heritage": "Mod Fanatic Android",
+"background": "Hacker",
+"class": "Operative",
+"ancBoosts": [
+"wis"
+],
+"bgBoosts": [
+"dex",
+"con"
+],
+"lvBoosts": {
+"1": [
+"dex",
+"con",
+"wis",
+"str"
+],
+"5": [
+"str",
+"int",
+"con",
+"dex"
+]
+},
+"feats": [
+[
+"Quickened Processor",
+"ancestry-1"
+],
+[
+"Mobile Aim",
+"class-1"
+],
+[
+"Kill Steal",
+"class-2"
+],
+[
+"Ancestral Paragon",
+"general-3"
+],
+[
+"Cat Fall",
+"skill-2"
+],
+[
+"Hologram Skeptic",
+"skill-3"
+],
+[
+"Advanced Targeting System",
+"ancestry-5"
+],
+[
+"Switch Target",
+"class-4"
+],
+[
+"Phishing Expertise",
+"skill-4"
+]
+],
+"names": [
+"Android",
+"Constructed",
+"Mod Fanatic Android",
+"Hacker",
+"Phreaker",
+"Operative",
+"Sharpshooter",
+"Operative's Specialization",
+"Aim",
+"Skirmisher",
+"Steady Balance",
+"Quickened Processor",
+"Mobile Aim",
+"Infosphere Lore",
+"Comm Unit",
+"Force Field (Commercial)",
+"Incendiary Grenade (Commercial)",
+"Medpatch (Commercial)",
+"Second Skin",
+"Semi-Auto Pistol",
+"Projectile Ammo",
+"Zero Knife",
+"Infiltrator's Toolkit (Commercial)",
+"Credstick",
+"Focused",
+"Specialized Skill Set",
+"Kill Steal",
+"Ancestral Paragon",
+"Nightvision Adaptation",
+"Cat Fall",
+"Hologram Skeptic",
+"Master Gunner",
+"Urban Operator",
+"Advanced Targeting System",
+"Switch Target",
+"Phishing Expertise"
+],
+"skills": {
+"acrobatics": 2,
+"athletics": 1,
+"piloting": 2,
+"stealth": 1,
+"thievery": 1
+},
+"lores": [
+[
+"Infosphere",
+1
+]
+],
+"gear": [
+[
+"equipment",
+"Comm Unit",
+null,
+1,
+null
+],
+[
+"equipment",
+"Force Field (Commercial)",
+null,
+1,
+null
+],
+[
+"weapon",
+"Incendiary Grenade (Commercial)",
+"commercial",
+1,
+null
+],
+[
+"consumable",
+"Medpatch (Commercial)",
+null,
+1,
+null
+],
+[
+"armor",
+"Second Skin",
+"commercial",
+1,
+true
+],
+[
+"weapon",
+"Semi-Auto Pistol",
+"advanced",
+1,
+null
+],
+[
+"weapon",
+"Zero Knife",
+"commercial",
+1,
+null
+],
+[
+"equipment",
+"Infiltrator's Toolkit (Commercial)",
+null,
+1,
+null
+]
+],
+"hp": 63
+},
+{
+"name": "Iseph (Level 7)",
+"src": "iseph-level-7.json",
+"level": 7,
+"ancestry": "Android",
+"heritage": "Mod Fanatic Android",
+"background": "Hacker",
+"class": "Operative",
+"ancBoosts": [
+"wis"
+],
+"bgBoosts": [
+"dex",
+"con"
+],
+"lvBoosts": {
+"1": [
+"dex",
+"con",
+"wis",
+"str"
+],
+"5": [
+"str",
+"int",
+"con",
+"dex"
+]
+},
+"feats": [
+[
+"Quickened Processor",
+"ancestry-1"
+],
+[
+"Mobile Aim",
+"class-1"
+],
+[
+"Kill Steal",
+"class-2"
+],
+[
+"Ancestral Paragon",
+"general-3"
+],
+[
+"Cat Fall",
+"skill-2"
+],
+[
+"Hologram Skeptic",
+"skill-3"
+],
+[
+"Advanced Targeting System",
+"ancestry-5"
+],
+[
+"Switch Target",
+"class-4"
+],
+[
+"Phishing Expertise",
+"skill-4"
+],
+[
+"Hair Trigger",
+"class-6"
+],
+[
+"Dive for Cover",
+"skill-6"
+],
+[
+"Take the Wheel",
+"skill-7"
+]
+],
+"names": [
+"Android",
+"Constructed",
+"Mod Fanatic Android",
+"Hacker",
+"Phreaker",
+"Operative",
+"Sharpshooter",
+"Operative's Specialization",
+"Aim",
+"Skirmisher",
+"Steady Balance",
+"Quickened Processor",
+"Mobile Aim",
+"Infosphere Lore",
+"Comm Unit",
+"Incendiary Grenade (Commercial)",
+"Second Skin",
+"Semi-Auto Pistol",
+"Projectile Ammo",
+"Zero Knife",
+"Infiltrator's Toolkit (Commercial)",
+"Credstick",
+"Focused",
+"Specialized Skill Set",
+"Kill Steal",
+"Ancestral Paragon",
+"Nightvision Adaptation",
+"Cat Fall",
+"Hologram Skeptic",
+"Master Gunner",
+"Urban Operator",
+"Advanced Targeting System",
+"Switch Target",
+"Phishing Expertise",
+"Reflex Mastery",
+"Operative's Edge",
+"Weapon Specialization",
+"Force Field (Tactical)",
+"Medpatch (Tactical)",
+"Hair Trigger",
+"Dive for Cover",
+"Take the Wheel"
+],
+"skills": {
+"acrobatics": 2,
+"athletics": 1,
+"piloting": 3,
+"stealth": 1,
+"thievery": 1
+},
+"lores": [
+[
+"Infosphere",
+1
+]
+],
+"gear": [
+[
+"equipment",
+"Comm Unit",
+null,
+1,
+null
+],
+[
+"weapon",
+"Incendiary Grenade (Commercial)",
+"commercial",
+1,
+null
+],
+[
+"armor",
+"Second Skin",
+"tactical",
+1,
+true
+],
+[
+"weapon",
+"Semi-Auto Pistol",
+"advanced",
+1,
+null
+],
+[
+"weapon",
+"Zero Knife",
+"commercial",
+1,
+null
+],
+[
+"equipment",
+"Infiltrator's Toolkit (Commercial)",
+null,
+1,
+null
+],
+[
+"equipment",
+"Force Field (Tactical)",
+null,
+1,
+null
+],
+[
+"consumable",
+"Medpatch (Tactical)",
+null,
+3,
+null
+]
+],
+"hp": 85
+},
+{
+"name": "Navasi (Level 1)",
+"src": "navasi-level-1.json",
+"level": 1,
+"ancestry": "Human",
+"heritage": "Skilled Human (Diplomacy)",
+"background": "Outlaw",
+"class": "Envoy",
+"ancBoosts": [
+"cha",
+"dex"
+],
+"bgBoosts": [
+"cha",
+"int"
+],
+"lvBoosts": {
+"1": [
+"cha",
+"dex",
+"int",
+"wis"
+]
+},
+"feats": [
+[
+"Natural Ambition",
+"ancestry-1"
+],
+[
+"Size Up",
+"class-1"
+]
+],
+"names": [
+"Human",
+"Skilled Human (Diplomacy)",
+"Outlaw",
+"Intimidating Shot",
+"Envoy",
+"Envoy Directives",
+"Leadership Style",
+"Get 'Em!",
+"Guns Blazing",
+"Ready Arms!",
+"Incredible Initiative",
+"Absalom Lore",
+"Underworld Lore",
+"Comm Unit",
+"Knife",
+"Medkit (Commercial)",
+"Second Skin",
+"Semi-Auto Pistol",
+"Hacking Toolkit (Commercial)",
+"Infiltrator's Toolkit (Commercial)",
+"Projectile Ammo",
+"Natural Ambition",
+"Watch Out",
+"Size Up",
+"Credstick"
+],
+"skills": {
+"computers": 1,
+"deception": 1,
+"diplomacy": 1,
+"medicine": 1,
+"piloting": 1,
+"stealth": 1,
+"thievery": 1
+},
+"lores": [
+[
+"Absalom",
+1
+],
+[
+"Underworld",
+1
+]
+],
+"gear": [
+[
+"equipment",
+"Comm Unit",
+null,
+1,
+null
+],
+[
+"weapon",
+"Knife",
+"commercial",
+1,
+null
+],
+[
+"equipment",
+"Medkit (Commercial)",
+null,
+1,
+null
+],
+[
+"armor",
+"Second Skin",
+"commercial",
+1,
+true
+],
+[
+"weapon",
+"Semi-Auto Pistol",
+"commercial",
+1,
+null
+],
+[
+"equipment",
+"Hacking Toolkit (Commercial)",
+null,
+1,
+null
+],
+[
+"equipment",
+"Infiltrator's Toolkit (Commercial)",
+null,
+1,
+null
+]
+],
+"hp": 16
+},
+{
+"name": "Navasi (Level 3)",
+"src": "navasi-level-3.json",
+"level": 3,
+"ancestry": "Human",
+"heritage": "Skilled Human (Diplomacy)",
+"background": "Outlaw",
+"class": "Envoy",
+"ancBoosts": [
+"cha",
+"dex"
+],
+"bgBoosts": [
+"cha",
+"int"
+],
+"lvBoosts": {
+"1": [
+"cha",
+"dex",
+"int",
+"wis"
+]
+},
+"feats": [
+[
+"Natural Ambition",
+"ancestry-1"
+],
+[
+"Size Up",
+"class-1"
+],
+[
+"Get in There!",
+"class-2"
+],
+[
+"Battle Medicine",
+"skill-2"
+],
+[
+"Fleet",
+"general-3"
+]
+],
+"names": [
+"Human",
+"Skilled Human (Diplomacy)",
+"Outlaw",
+"Intimidating Shot",
+"Envoy",
+"Envoy Directives",
+"Leadership Style",
+"Get 'Em!",
+"Guns Blazing",
+"Ready Arms!",
+"Incredible Initiative",
+"Absalom Lore",
+"Underworld Lore",
+"Comm Unit",
+"Knife",
+"Medkit (Commercial)",
+"Second Skin",
+"Semi-Auto Pistol",
+"Hacking Toolkit (Commercial)",
+"Infiltrator's Toolkit (Commercial)",
+"Projectile Ammo",
+"Natural Ambition",
+"Watch Out",
+"Size Up",
+"Adaptive Talent",
+"Wise to the Game",
+"Laser Pistol",
+"Get in There!",
+"Battle Medicine",
+"Fleet",
+"Lie to Me",
+"Credstick"
+],
+"skills": {
+"computers": 1,
+"deception": 2,
+"diplomacy": 1,
+"medicine": 1,
+"piloting": 2,
+"stealth": 1,
+"thievery": 1
+},
+"lores": [
+[
+"Absalom",
+1
+],
+[
+"Underworld",
+1
+]
+],
+"gear": [
+[
+"equipment",
+"Comm Unit",
+null,
+1,
+null
+],
+[
+"weapon",
+"Knife",
+"commercial",
+1,
+null
+],
+[
+"equipment",
+"Medkit (Commercial)",
+null,
+1,
+null
+],
+[
+"armor",
+"Second Skin",
+"commercial",
+1,
+true
+],
+[
+"weapon",
+"Semi-Auto Pistol",
+"commercial",
+1,
+null
+],
+[
+"equipment",
+"Hacking Toolkit (Commercial)",
+null,
+1,
+null
+],
+[
+"equipment",
+"Infiltrator's Toolkit (Commercial)",
+null,
+1,
+null
+],
+[
+"weapon",
+"Laser Pistol",
+"commercial",
+1,
+null
+]
+],
+"hp": 32
+},
+{
+"name": "Navasi (Level 5)",
+"src": "navasi-level-5.json",
+"level": 5,
+"ancestry": "Human",
+"heritage": "Skilled Human (Diplomacy)",
+"background": "Outlaw",
+"class": "Envoy",
+"ancBoosts": [
+"cha",
+"dex"
+],
+"bgBoosts": [
+"cha",
+"int"
+],
+"lvBoosts": {
+"1": [
+"cha",
+"dex",
+"int",
+"wis"
+],
+"5": [
+"dex",
+"cha",
+"int",
+"wis"
+]
+},
+"feats": [
+[
+"Natural Ambition",
+"ancestry-1"
+],
+[
+"Size Up",
+"class-1"
+],
+[
+"Get in There!",
+"class-2"
+],
+[
+"Battle Medicine",
+"skill-2"
+],
+[
+"Fleet",
+"general-3"
+]
+],
+"names": [
+"Human",
+"Skilled Human (Diplomacy)",
+"Outlaw",
+"Intimidating Shot",
+"Envoy",
+"Envoy Directives",
+"Leadership Style",
+"Get 'Em!",
+"Guns Blazing",
+"Ready Arms!",
+"Incredible Initiative",
+"Absalom Lore",
+"Underworld Lore",
+"Comm Unit",
+"Knife",
+"Medkit (Commercial)",
+"Second Skin",
+"Semi-Auto Pistol",
+"Hacking Toolkit (Commercial)",
+"Infiltrator's Toolkit (Commercial)",
+"Projectile Ammo",
+"Natural Ambition",
+"Watch Out",
+"Size Up",
+"Adaptive Talent",
+"Wise to the Game",
+"Laser Pistol",
+"Get in There!",
+"Battle Medicine",
+"Fleet",
+"Lie to Me",
+"Improvised Mastery",
+"Improvised Mastery",
+"Perception Expertise",
+"Weapon Expertise",
+"Medpatch (Tactical)",
+"Credstick"
+],
+"skills": {
+"athletics": 1,
+"computers": 1,
+"deception": 2,
+"diplomacy": 2,
+"medicine": 1,
+"piloting": 2,
+"stealth": 1,
+"thievery": 1
+},
+"lores": [
+[
+"Absalom",
+1
+],
+[
+"Underworld",
+1
+]
+],
+"gear": [
+[
+"equipment",
+"Comm Unit",
+null,
+1,
+null
+],
+[
+"weapon",
+"Knife",
+"commercial",
+1,
+null
+],
+[
+"equipment",
+"Medkit (Commercial)",
+null,
+1,
+null
+],
+[
+"armor",
+"Second Skin",
+"commercial",
+1,
+true
+],
+[
+"weapon",
+"Semi-Auto Pistol",
+"advanced",
+1,
+null
+],
+[
+"equipment",
+"Hacking Toolkit (Commercial)",
+null,
+1,
+null
+],
+[
+"equipment",
+"Infiltrator's Toolkit (Commercial)",
+null,
+1,
+null
+],
+[
+"weapon",
+"Laser Pistol",
+"advanced",
+1,
+null
+],
+[
+"consumable",
+"Medpatch (Tactical)",
+null,
+1,
+null
+]
+],
+"hp": 48
+},
+{
+"name": "Navasi (Level 7)",
+"src": "navasi-level-7.json",
+"level": 7,
+"ancestry": "Human",
+"heritage": "Skilled Human (Diplomacy)",
+"background": "Outlaw",
+"class": "Envoy",
+"ancBoosts": [
+"cha",
+"dex"
+],
+"bgBoosts": [
+"cha",
+"int"
+],
+"lvBoosts": {
+"1": [
+"cha",
+"dex",
+"int",
+"wis"
+],
+"5": [
+"dex",
+"cha",
+"wis",
+"int"
+]
+},
+"feats": [
+[
+"Natural Ambition",
+"ancestry-1"
+],
+[
+"Size Up",
+"class-1"
+],
+[
+"Get in There!",
+"class-2"
+],
+[
+"Battle Medicine",
+"skill-2"
+],
+[
+"Fleet",
+"general-3"
+],
+[
+"Confident Actualization",
+"ancestry-5"
+],
+[
+"Diverse Schemes",
+"class-4"
+],
+[
+"Hang in There",
+"class-6"
+],
+[
+"Kiss it Better",
+"skill-4"
+],
+[
+"Take the Wheel",
+"skill-6"
+],
+[
+"Power Slide",
+"general-7"
+]
+],
+"names": [
+"Human",
+"Skilled Human (Diplomacy)",
+"Outlaw",
+"Intimidating Shot",
+"Envoy",
+"Envoy Directives",
+"Leadership Style",
+"Get 'Em!",
+"Guns Blazing",
+"Ready Arms!",
+"Incredible Initiative",
+"Absalom Lore",
+"Underworld Lore",
+"Comm Unit",
+"Knife",
+"Medkit (Commercial)",
+"Second Skin",
+"Semi-Auto Pistol",
+"Hacking Toolkit (Commercial)",
+"Infiltrator's Toolkit (Commercial)",
+"Projectile Ammo",
+"Natural Ambition",
+"Watch Out",
+"Size Up",
+"Adaptive Talent",
+"Wise to the Game",
+"Laser Pistol",
+"Get in There!",
+"Battle Medicine",
+"Fleet",
+"Lie to Me",
+"Improvised Mastery",
+"Improvised Mastery",
+"Perception Expertise",
+"Weapon Expertise",
+"Medpatch (Tactical)",
+"Credstick",
+"Leader's Confidence",
+"Steel Yourselves!",
+"Weapon Specialization",
+"Fortitude Expertise",
+"Holoskin (Commercial)",
+"Invisibility Spell Amp",
+"Null Space Chamber (Commercial)",
+"Confident Actualization",
+"Diverse Schemes",
+"Hang in There",
+"Kiss it Better",
+"Take the Wheel",
+"Power Slide"
+],
+"skills": {
+"athletics": 1,
+"computers": 1,
+"deception": 3,
+"diplomacy": 2,
+"intimidation": 2,
+"medicine": 1,
+"piloting": 2,
+"stealth": 2,
+"thievery": 1
+},
+"lores": [
+[
+"Absalom",
+1
+],
+[
+"Underworld",
+1
+]
+],
+"gear": [
+[
+"equipment",
+"Comm Unit",
+null,
+1,
+null
+],
+[
+"weapon",
+"Knife",
+"commercial",
+1,
+null
+],
+[
+"equipment",
+"Medkit (Commercial)",
+null,
+1,
+null
+],
+[
+"armor",
+"Second Skin",
+"tactical",
+1,
+true
+],
+[
+"weapon",
+"Semi-Auto Pistol",
+"advanced",
+1,
+null
+],
+[
+"equipment",
+"Hacking Toolkit (Commercial)",
+null,
+1,
+false
+],
+[
+"equipment",
+"Infiltrator's Toolkit (Commercial)",
+null,
+1,
+false
+],
+[
+"weapon",
+"Laser Pistol",
+"advanced",
+1,
+null
+],
+[
+"consumable",
+"Medpatch (Tactical)",
+null,
+1,
+null
+],
+[
+"equipment",
+"Holoskin (Commercial)",
+null,
+2,
+null
+],
+[
+"consumable",
+"Invisibility Spell Amp",
+null,
+1,
+null
+]
+],
+"hp": 64
+},
+{
+"name": "Obozaya (Level 1)",
+"src": "obozaya-level-1.json",
+"level": 1,
+"ancestry": "Vesk",
+"heritage": "Briskwander Vesk",
+"background": "Trooper",
+"class": "Soldier",
+"ancBoosts": [
+"dex"
+],
+"bgBoosts": [
+"con",
+"wis"
+],
+"lvBoosts": {
+"1": [
+"con",
+"str",
+"dex",
+"int"
+]
+},
+"feats": [
+[
+"Fearless",
+"ancestry-1"
+],
+[
+"Quick Swap",
+"class-1"
+]
+],
+"names": [
+"Vesk",
+"Briskwander Vesk",
+"Trooper",
+"Barricade",
+"Soldier",
+"Soldier Fighting Style",
+"Bombard",
+"Walking Armory",
+"Suppressing Fire",
+"Primary Target",
+"Warfare Lore",
+"Fearless",
+"Quick Swap",
+"Comm Unit",
+"Doshko",
+"Machine Gun",
+"Projectile Ammo",
+"Shotalashu Armor",
+"Credstick"
+],
+"skills": {
+"acrobatics": 1,
+"nature": 1,
+"society": 1,
+"stealth": 1,
+"survival": 1
+},
+"lores": [
+[
+"Warfare",
+1
+]
+],
+"gear": [
+[
+"equipment",
+"Comm Unit",
+null,
+1,
+null
+],
+[
+"weapon",
+"Doshko",
+"commercial",
+1,
+null
+],
+[
+"weapon",
+"Machine Gun",
+"commercial",
+1,
+null
+],
+[
+"armor",
+"Shotalashu Armor",
+"commercial",
+1,
+true
+]
+],
+"hp": 24
+},
+{
+"name": "Obozaya (Level 3)",
+"src": "obozaya-level-3.json",
+"level": 3,
+"ancestry": "Vesk",
+"heritage": "Briskwander Vesk",
+"background": "Trooper",
+"class": "Soldier",
+"ancBoosts": [
+"dex"
+],
+"bgBoosts": [
+"con",
+"wis"
+],
+"lvBoosts": {
+"1": [
+"con",
+"str",
+"dex",
+"int"
+]
+},
+"feats": [
+[
+"Fearless",
+"ancestry-1"
+],
+[
+"Quick Swap",
+"class-1"
+],
+[
+"Menacing Laughter",
+"class-2"
+],
+[
+"Deadlift",
+"skill-2"
+],
+[
+"Toughness",
+"general-3"
+]
+],
+"names": [
+"Vesk",
+"Briskwander Vesk",
+"Trooper",
+"Barricade",
+"Soldier",
+"Soldier Fighting Style",
+"Bombard",
+"Walking Armory",
+"Suppressing Fire",
+"Primary Target",
+"Warfare Lore",
+"Fearless",
+"Quick Swap",
+"Comm Unit",
+"Doshko",
+"Machine Gun",
+"Projectile Ammo",
+"Credstick",
+"Fearsome Bulwark",
+"Reflex Expertise",
+"Hidden Soldier Armor",
+"Menacing Laughter",
+"Deadlift",
+"Toughness"
+],
+"skills": {
+"acrobatics": 1,
+"nature": 1,
+"society": 1,
+"stealth": 1,
+"survival": 1
+},
+"lores": [
+[
+"Warfare",
+1
+]
+],
+"gear": [
+[
+"equipment",
+"Comm Unit",
+null,
+1,
+null
+],
+[
+"weapon",
+"Doshko",
+"commercial",
+1,
+null
+],
+[
+"weapon",
+"Machine Gun",
+"tactical",
+1,
+null
+],
+[
+"armor",
+"Hidden Soldier Armor",
+"commercial",
+1,
+true
+]
+],
+"hp": 55
+},
+{
+"name": "Obozaya (Level 5)",
+"src": "obozaya-level-5.json",
+"level": 5,
+"ancestry": "Vesk",
+"heritage": "Briskwander Vesk",
+"background": "Trooper",
+"class": "Soldier",
+"ancBoosts": [
+"dex"
+],
+"bgBoosts": [
+"con",
+"wis"
+],
+"lvBoosts": {
+"1": [
+"con",
+"str",
+"dex",
+"int"
+],
+"5": [
+"str",
+"dex",
+"cha",
+"wis"
+]
+},
+"feats": [
+[
+"Fearless",
+"ancestry-1"
+],
+[
+"Quick Swap",
+"class-1"
+],
+[
+"Toughness",
+"general-3"
+],
+[
+"Menacing Laughter",
+"class-2"
+],
+[
+"Deadlift",
+"skill-2"
+],
+[
+"Terrifying Bravado",
+"ancestry-5"
+],
+[
+"Widen Area",
+"class-4"
+],
+[
+"Powerful Leap",
+"skill-4"
+]
+],
+"names": [
+"Vesk",
+"Briskwander Vesk",
+"Trooper",
+"Barricade",
+"Soldier",
+"Soldier Fighting Style",
+"Bombard",
+"Walking Armory",
+"Suppressing Fire",
+"Primary Target",
+"Warfare Lore",
+"Fearless",
+"Quick Swap",
+"Comm Unit",
+"Doshko",
+"Machine Gun",
+"Projectile Ammo",
+"Credstick",
+"Fearsome Bulwark",
+"Reflex Expertise",
+"Soldier Weapon Expert",
+"Perception Expertise",
+"Toughness",
+"Menacing Laughter",
+"Deadlift",
+"Terrifying Bravado",
+"Widen Area",
+"Powerful Leap",
+"Frag Grenade (Commercial)",
+"Incendiary Grenade (Commercial)",
+"Grenade Launcher (Commercial)",
+"Hidden Soldier Armor"
+],
+"skills": {
+"acrobatics": 2,
+"nature": 1,
+"society": 1,
+"stealth": 1,
+"survival": 1
+},
+"lores": [
+[
+"Warfare",
+1
+]
+],
+"gear": [
+[
+"equipment",
+"Comm Unit",
+null,
+1,
+null
+],
+[
+"weapon",
+"Doshko",
+"commercial",
+1,
+null
+],
+[
+"weapon",
+"Machine Gun",
+"tactical",
+1,
+null
+],
+[
+"weapon",
+"Frag Grenade (Commercial)",
+"commercial",
+2,
+null
+],
+[
+"weapon",
+"Incendiary Grenade (Commercial)",
+"commercial",
+3,
+null
+],
+[
+"weapon",
+"Grenade Launcher (Commercial)",
+"commercial",
+1,
+null
+],
+[
+"armor",
+"Hidden Soldier Armor",
+"commercial",
+1,
+true
+]
+],
+"hp": 85
+},
+{
+"name": "Obozaya (Level 7)",
+"src": "obozaya-level-7.json",
+"level": 7,
+"ancestry": "Vesk",
+"heritage": "Briskwander Vesk",
+"background": "Trooper",
+"class": "Soldier",
+"ancBoosts": [
+"dex"
+],
+"bgBoosts": [
+"con",
+"wis"
+],
+"lvBoosts": {
+"1": [
+"con",
+"str",
+"dex",
+"int"
+],
+"5": [
+"str",
+"dex",
+"wis",
+"cha"
+]
+},
+"feats": [
+[
+"Fearless",
+"ancestry-1"
+],
+[
+"Quick Swap",
+"class-1"
+],
+[
+"Toughness",
+"general-3"
+],
+[
+"Menacing Laughter",
+"class-2"
+],
+[
+"Deadlift",
+"skill-2"
+],
+[
+"Terrifying Bravado",
+"ancestry-5"
+],
+[
+"Widen Area",
+"class-4"
+],
+[
+"Powerful Leap",
+"skill-4"
+],
+[
+"Intimidating Taunt",
+"class-6"
+],
+[
+"Intimidating Prowess",
+"skill-6"
+],
+[
+"Fleet",
+"general-7"
+]
+],
+"names": [
+"Vesk",
+"Briskwander Vesk",
+"Trooper",
+"Barricade",
+"Soldier",
+"Soldier Fighting Style",
+"Bombard",
+"Walking Armory",
+"Suppressing Fire",
+"Primary Target",
+"Warfare Lore",
+"Fearless",
+"Quick Swap",
+"Comm Unit",
+"Doshko",
+"Machine Gun",
+"Projectile Ammo",
+"Credstick",
+"Fearsome Bulwark",
+"Reflex Expertise",
+"Soldier Weapon Expert",
+"Perception Expertise",
+"Toughness",
+"Menacing Laughter",
+"Deadlift",
+"Terrifying Bravado",
+"Widen Area",
+"Powerful Leap",
+"Tough as Nails",
+"Weapon Specialization",
+"Armor Expertise",
+"Soldier Expertise",
+"Frag Grenade (Commercial)",
+"Grenade Launcher (Commercial)",
+"Incendiary Grenade (Commercial)",
+"Hidden Soldier Armor",
+"Intimidating Taunt",
+"Intimidating Prowess",
+"Fleet"
+],
+"skills": {
+"acrobatics": 2,
+"nature": 1,
+"society": 1,
+"stealth": 1,
+"survival": 1
+},
+"lores": [
+[
+"Warfare",
+1
+]
+],
+"gear": [
+[
+"equipment",
+"Comm Unit",
+null,
+1,
+null
+],
+[
+"weapon",
+"Doshko",
+"advanced",
+1,
+null
+],
+[
+"weapon",
+"Machine Gun",
+"advanced",
+1,
+null
+],
+[
+"weapon",
+"Frag Grenade (Commercial)",
+"commercial",
+2,
+null
+],
+[
+"weapon",
+"Grenade Launcher (Commercial)",
+"commercial",
+1,
+null
+],
+[
+"weapon",
+"Incendiary Grenade (Commercial)",
+"commercial",
+3,
+null
+],
+[
+"armor",
+"Hidden Soldier Armor",
+"tactical",
+1,
+true
+]
+],
+"hp": 115
+},
+{
+"name": "Zemir (Level 1)",
+"src": "zemir-level-1.json",
+"level": 1,
+"ancestry": "Human",
+"heritage": "Versatile Human",
+"background": "Grifter",
+"class": "Witchwarper",
+"ancBoosts": [
+"int",
+"dex"
+],
+"bgBoosts": [
+"int",
+"cha"
+],
+"lvBoosts": {
+"1": [
+"int",
+"dex",
+"cha",
+"con"
+]
+},
+"feats": [
+[
+"Natural Ambition",
+"ancestry-1"
+]
+],
+"names": [
+"Human",
+"Versatile Human",
+"Feather Step",
+"Grifter",
+"Charming Liar",
+"Witchwarper",
+"Paradox",
+"Quantum Field",
+"Anchor",
+"Anomaly",
+"Warp Reality",
+"Quantum Pulse",
+"Tangible Object",
+"Spell Repertoire",
+"Witchwarper Spellcasting",
+"Battleglove",
+"Comm Unit",
+"Hypopen (Commercial)",
+"Medpatch (Commercial)",
+"Container (Ordinary)",
+"Second Skin",
+"Semi-Auto Pistol",
+"Projectile Ammo",
+"Detect Magic",
+"Figment",
+"Injury Echo",
+"Light",
+"Stumble",
+"Arcane Spontaneous Spells",
+"Force Barrage",
+"Shifting Surge",
+"Thunderstrike",
+"Arcane Focus Spells",
+"Warp Terrain",
+"Natural Ambition",
+"Anchoring Strike",
+"Physical Science Lore",
+"Credstick"
+],
+"skills": {
+"acrobatics": 1,
+"arcana": 1,
+"diplomacy": 1,
+"intimidation": 1,
+"nature": 1,
+"occultism": 1,
+"society": 1,
+"stealth": 1
+},
+"lores": [
+[
+"Physical Science",
+1
+]
+],
+"gear": [
+[
+"weapon",
+"Battleglove",
+"commercial",
+1,
+null
+],
+[
+"equipment",
+"Comm Unit",
+null,
+1,
+null
+],
+[
+"consumable",
+"Hypopen (Commercial)",
+null,
+1,
+null
+],
+[
+"consumable",
+"Medpatch (Commercial)",
+null,
+1,
+null
+],
+[
+"armor",
+"Second Skin",
+"commercial",
+1,
+true
+],
+[
+"weapon",
+"Semi-Auto Pistol",
+"commercial",
+1,
+null
+]
+],
+"hp": 17
+},
+{
+"name": "Zemir (Level 3)",
+"src": "zemir-level-3.json",
+"level": 3,
+"ancestry": "Human",
+"heritage": "Versatile Human",
+"background": "Grifter",
+"class": "Witchwarper",
+"ancBoosts": [
+"int",
+"dex"
+],
+"bgBoosts": [
+"int",
+"cha"
+],
+"lvBoosts": {
+"1": [
+"int",
+"dex",
+"cha",
+"con"
+]
+},
+"feats": [
+[
+"Natural Ambition",
+"ancestry-1"
+],
+[
+"Warp Wounds",
+"class-2"
+],
+[
+"Assurance (Arcana)",
+"skill-2"
+],
+[
+"Fleet",
+"general-3"
+]
+],
+"names": [
+"Human",
+"Versatile Human",
+"Feather Step",
+"Grifter",
+"Charming Liar",
+"Witchwarper",
+"Paradox",
+"Quantum Field",
+"Anchor",
+"Anomaly",
+"Warp Reality",
+"Quantum Pulse",
+"Tangible Object",
+"Spell Repertoire",
+"Witchwarper Spellcasting",
+"Battleglove",
+"Comm Unit",
+"Hypopen (Commercial)",
+"Medpatch (Commercial)",
+"Container (Ordinary)",
+"Semi-Auto Pistol",
+"Projectile Ammo",
+"Detect Magic",
+"Figment",
+"Injury Echo",
+"Light",
+"Stumble",
+"Arcane Spontaneous Spells",
+"Force Barrage",
+"Shifting Surge",
+"Thunderstrike",
+"Arcane Focus Spells",
+"Warp Terrain",
+"Natural Ambition",
+"Anchoring Strike",
+"Isolated Spell Matrix",
+"Isolated Spell Matrix",
+"Signature Spells",
+"Warp Wounds",
+"Assurance (Arcana)",
+"Fleet",
+"Tempweave",
+"Credstick",
+"Jump",
+"Caustic Conversion",
+"Dispel Magic",
+"Resist Energy",
+"Physical Science Lore"
+],
+"skills": {
+"acrobatics": 1,
+"arcana": 2,
+"diplomacy": 1,
+"intimidation": 1,
+"nature": 1,
+"occultism": 1,
+"society": 1,
+"stealth": 1
+},
+"lores": [
+[
+"Physical Science",
+1
+]
+],
+"gear": [
+[
+"weapon",
+"Battleglove",
+"commercial",
+1,
+null
+],
+[
+"equipment",
+"Comm Unit",
+null,
+1,
+null
+],
+[
+"consumable",
+"Hypopen (Commercial)",
+null,
+1,
+null
+],
+[
+"consumable",
+"Medpatch (Commercial)",
+null,
+1,
+null
+],
+[
+"weapon",
+"Semi-Auto Pistol",
+"commercial",
+1,
+null
+],
+[
+"armor",
+"Tempweave",
+"commercial",
+1,
+true
+]
+],
+"hp": 35
+},
+{
+"name": "Zemir (Level 5)",
+"src": "zemir-level-5.json",
+"level": 5,
+"ancestry": "Human",
+"heritage": "Versatile Human",
+"background": "Grifter",
+"class": "Witchwarper",
+"ancBoosts": [
+"int",
+"dex"
+],
+"bgBoosts": [
+"int",
+"cha"
+],
+"lvBoosts": {
+"1": [
+"int",
+"dex",
+"cha",
+"con"
+],
+"5": [
+"dex",
+"wis",
+"cha",
+"int"
+]
+},
+"feats": [
+[
+"Natural Ambition",
+"ancestry-1"
+],
+[
+"Warp Wounds",
+"class-2"
+],
+[
+"Assurance (Arcana)",
+"skill-2"
+],
+[
+"Fleet",
+"general-3"
+],
+[
+"Clever Improviser",
+"ancestry-5"
+],
+[
+"Quantum Recycle",
+"class-4"
+],
+[
+"Favored Disguise",
+"skill-4"
+]
+],
+"names": [
+"Human",
+"Versatile Human",
+"Feather Step",
+"Grifter",
+"Charming Liar",
+"Witchwarper",
+"Paradox",
+"Quantum Field",
+"Anchor",
+"Anomaly",
+"Warp Reality",
+"Quantum Pulse",
+"Tangible Object",
+"Spell Repertoire",
+"Witchwarper Spellcasting",
+"Battleglove",
+"Comm Unit",
+"Container (Ordinary)",
+"Semi-Auto Pistol",
+"Projectile Ammo",
+"Detect Magic",
+"Figment",
+"Injury Echo",
+"Light",
+"Stumble",
+"Arcane Spontaneous Spells",
+"Force Barrage",
+"Shifting Surge",
+"Thunderstrike",
+"Arcane Focus Spells",
+"Warp Terrain",
+"Natural Ambition",
+"Anchoring Strike",
+"Isolated Spell Matrix",
+"Isolated Spell Matrix",
+"Signature Spells",
+"Warp Wounds",
+"Assurance (Arcana)",
+"Fleet",
+"Tempweave",
+"Credstick",
+"Reflex Expertise",
+"Hypopen (Tactical)",
+"Medpatch (Tactical)",
+"Spell Gem of Invisibility (Rank 2)",
+"Spell Gem of Personal Gravity (Rank 3)",
+"Spell Gem of Translate (Rank 3)",
+"Jump",
+"Caustic Conversion",
+"Dispel Magic",
+"Resist Energy",
+"Cozy Crashpad",
+"Haste",
+"Lightning Bolt",
+"Clever Improviser",
+"Untrained Improvisation",
+"Quantum Recycle",
+"Favored Disguise",
+"Physical Science Lore"
+],
+"skills": {
+"acrobatics": 1,
+"arcana": 2,
+"diplomacy": 1,
+"intimidation": 1,
+"nature": 1,
+"occultism": 2,
+"society": 1,
+"stealth": 1
+},
+"lores": [
+[
+"Physical Science",
+1
+]
+],
+"gear": [
+[
+"weapon",
+"Battleglove",
+"commercial",
+1,
+null
+],
+[
+"equipment",
+"Comm Unit",
+null,
+1,
+null
+],
+[
+"weapon",
+"Semi-Auto Pistol",
+"advanced",
+1,
+null
+],
+[
+"armor",
+"Tempweave",
+"commercial",
+1,
+true
+],
+[
+"consumable",
+"Hypopen (Tactical)",
+null,
+1,
+null
+],
+[
+"consumable",
+"Medpatch (Tactical)",
+null,
+1,
+null
+],
+[
+"consumable",
+"Spell Gem of Invisibility (Rank 2)",
+null,
+1,
+null
+],
+[
+"consumable",
+"Spell Gem of Personal Gravity (Rank 3)",
+null,
+1,
+null
+],
+[
+"consumable",
+"Spell Gem of Translate (Rank 3)",
+null,
+1,
+null
+]
+],
+"hp": 53
+},
+{
+"name": "Zemir (Level 7)",
+"src": "zemir-level-7.json",
+"level": 7,
+"ancestry": "Human",
+"heritage": "Versatile Human",
+"background": "Grifter",
+"class": "Witchwarper",
+"ancBoosts": [
+"int",
+"dex"
+],
+"bgBoosts": [
+"int",
+"cha"
+],
+"lvBoosts": {
+"1": [
+"int",
+"dex",
+"cha",
+"con"
+],
+"5": [
+"dex",
+"wis",
+"cha",
+"int"
+]
+},
+"feats": [
+[
+"Natural Ambition",
+"ancestry-1"
+],
+[
+"Warp Wounds",
+"class-2"
+],
+[
+"Assurance (Arcana)",
+"skill-2"
+],
+[
+"Fleet",
+"general-3"
+],
+[
+"Clever Improviser",
+"ancestry-5"
+],
+[
+"Quantum Recycle",
+"class-4"
+],
+[
+"Favored Disguise",
+"skill-4"
+],
+[
+"Enlarge Quantum Field",
+"class-6"
+],
+[
+"Additional Lore",
+"skill-6"
+],
+[
+"Trick Magic Item",
+"general-7"
+]
+],
+"names": [
+"Human",
+"Versatile Human",
+"Feather Step",
+"Grifter",
+"Charming Liar",
+"Witchwarper",
+"Paradox",
+"Quantum Field",
+"Anchor",
+"Anomaly",
+"Warp Reality",
+"Quantum Pulse",
+"Tangible Object",
+"Spell Repertoire",
+"Witchwarper Spellcasting",
+"Battleglove",
+"Comm Unit",
+"Container (Ordinary)",
+"Semi-Auto Pistol",
+"Projectile Ammo",
+"Detect Magic",
+"Figment",
+"Injury Echo",
+"Light",
+"Stumble",
+"Arcane Spontaneous Spells",
+"Force Barrage",
+"Shifting Surge",
+"Thunderstrike",
+"Arcane Focus Spells",
+"Warp Terrain",
+"Natural Ambition",
+"Anchoring Strike",
+"Isolated Spell Matrix",
+"Isolated Spell Matrix",
+"Signature Spells",
+"Warp Wounds",
+"Assurance (Arcana)",
+"Fleet",
+"Tempweave",
+"Credstick",
+"Reflex Expertise",
+"Hypopen (Tactical)",
+"Medpatch (Tactical)",
+"Spell Gem of Invisibility (Rank 2)",
+"Spell Gem of Personal Gravity (Rank 3)",
+"Spell Gem of Translate (Rank 3)",
+"Jump",
+"Caustic Conversion",
+"Dispel Magic",
+"Resist Energy",
+"Cozy Crashpad",
+"Haste",
+"Lightning Bolt",
+"Clever Improviser",
+"Untrained Improvisation",
+"Quantum Recycle",
+"Favored Disguise",
+"Expert Spellcaster",
+"Enlarge Quantum Field",
+"Additional Lore",
+"Physical Science Lore",
+"First Ones Lore",
+"Void Whispers",
+"Fly",
+"Translocate",
+"Unfettered Movement",
+"Warp Probability",
+"Trick Magic Item"
+],
+"skills": {
+"acrobatics": 1,
+"arcana": 2,
+"diplomacy": 1,
+"intimidation": 1,
+"nature": 1,
+"occultism": 2,
+"society": 1,
+"stealth": 1
+},
+"lores": [
+[
+"Physical Science",
+1
+],
+[
+"First Ones",
+1
+]
+],
+"gear": [
+[
+"weapon",
+"Battleglove",
+"commercial",
+1,
+null
+],
+[
+"equipment",
+"Comm Unit",
+null,
+1,
+null
+],
+[
+"weapon",
+"Semi-Auto Pistol",
+"advanced",
+1,
+null
+],
+[
+"armor",
+"Tempweave",
+"tactical",
+1,
+true
+],
+[
+"consumable",
+"Hypopen (Tactical)",
+null,
+1,
+null
+],
+[
+"consumable",
+"Medpatch (Tactical)",
+null,
+1,
+null
+],
+[
+"consumable",
+"Spell Gem of Invisibility (Rank 2)",
+null,
+1,
+null
+],
+[
+"consumable",
+"Spell Gem of Personal Gravity (Rank 3)",
+null,
+1,
+null
+],
+[
+"consumable",
+"Spell Gem of Translate (Rank 3)",
+null,
+1,
+null
+]
+],
+"hp": 71
+},
+{
+"name": "Jaedana",
+"src": "jaedana.json",
+"level": 1,
+"ancestry": "Kasatha",
+"heritage": "Shipborn Kasatha",
+"background": "Spacefarer",
+"class": "Operative",
+"ancBoosts": [],
+"bgBoosts": [],
+"lvBoosts": {
+"1": [
+"dex",
+"wis",
+"con",
+"cha"
+]
+},
+"feats": [
+[
+"Natural Grace",
+"ancestry-1"
+],
+[
+"Weakening Shot",
+"class-1"
+]
+],
+"names": [
+"Drift Lore",
+"Electromag Grenade (Commercial)",
+"Medpatch (Commercial)",
+"Microcord Armor",
+"Knife",
+"Zero Knife",
+"Battery (Commercial)",
+"Laser Rifle",
+"Credstick",
+"Kasatha",
+"Four-Armed",
+"Shipborn Kasatha",
+"Spacefarer",
+"Express Driver",
+"Operative",
+"Sharpshooter",
+"Operative's Specialization",
+"Aim",
+"Infiltrator",
+"Sabotage",
+"Natural Grace",
+"Weakening Shot"
+],
+"skills": {
+"acrobatics": 1,
+"athletics": 1,
+"stealth": 1
+},
+"lores": [
+[
+"Drift",
+1
+]
+],
+"gear": [
+[
+"weapon",
+"Electromag Grenade (Commercial)",
+"commercial",
+3,
+null
+],
+[
+"consumable",
+"Medpatch (Commercial)",
+null,
+1,
+null
+],
+[
+"armor",
+"Microcord Armor",
+"commercial",
+1,
+true
+],
+[
+"weapon",
+"Knife",
+"commercial",
+1,
+null
+],
+[
+"weapon",
+"Zero Knife",
+"commercial",
+1,
+null
+],
+[
+"weapon",
+"Laser Rifle",
+"commercial",
+1,
+null
+]
+],
+"hp": 17
+},
+{
+"name": "Lunar-17",
+"src": "lunar-17.json",
+"level": 1,
+"ancestry": "Android",
+"heritage": "Networked Android",
+"background": "Detective",
+"class": "Mystic",
+"ancBoosts": [
+"wis"
+],
+"bgBoosts": [
+"wis",
+"dex"
+],
+"lvBoosts": {
+"1": [
+"dex",
+"con",
+"cha",
+"wis"
+]
+},
+"feats": [
+[
+"Quickened Processor",
+"ancestry-1"
+]
+],
+"names": [
+"Occult Spontaneous Spells",
+"Akashic Download",
+"Heal",
+"Mindlink",
+"Detect Magic",
+"Eldritch Lance",
+"Implant Data",
+"Measure",
+"Scan Environment",
+"Underworld Lore",
+"Zero Knife",
+"Arc Pistol",
+"Semi-Auto Pistol",
+"Arcane Focus Spells",
+"Akashic Fount",
+"Incendiary Grenade (Commercial)",
+"Medpatch (Commercial)",
+"Second Skin",
+"Battery (Commercial)",
+"Credstick",
+"Projectile Ammo",
+"Android",
+"Constructed",
+"Networked Android",
+"Detective",
+"Streetwise",
+"Mystic",
+"Vitality Network",
+"Connection",
+"Transfer Vitality",
+"Akashic",
+"Initial Epiphany",
+"Mystic Spellcasting",
+"Mystic Bond",
+"Spell Repertoire",
+"Quickened Processor"
+],
+"skills": {
+"computers": 1,
+"diplomacy": 1,
+"piloting": 1,
+"stealth": 1
+},
+"lores": [
+[
+"Underworld",
+1
+]
+],
+"gear": [
+[
+"weapon",
+"Zero Knife",
+"commercial",
+1,
+null
+],
+[
+"weapon",
+"Arc Pistol",
+"commercial",
+1,
+null
+],
+[
+"weapon",
+"Semi-Auto Pistol",
+"commercial",
+1,
+null
+],
+[
+"weapon",
+"Incendiary Grenade (Commercial)",
+"commercial",
+1,
+null
+],
+[
+"consumable",
+"Medpatch (Commercial)",
+null,
+1,
+null
+],
+[
+"armor",
+"Second Skin",
+"commercial",
+1,
+true
+]
+],
+"hp": 15
+},
+{
+"name": "\u201cNitpick\u201d Bennit",
+"src": "nitpick-bennit.json",
+"level": 1,
+"ancestry": "Ysoki",
+"heritage": "Tunnel Ysoki",
+"background": "City Slicker",
+"class": "Witchwarper",
+"ancBoosts": [
+"con"
+],
+"bgBoosts": [
+"dex",
+"int"
+],
+"lvBoosts": {
+"1": [
+"dex",
+"int",
+"wis",
+"cha"
+]
+},
+"feats": [
+[
+"Tinkering Fingers",
+"ancestry-1"
+]
+],
+"names": [
+"Arcane Spontaneous Spells",
+"Shifting Surge",
+"Sure Strike",
+"Thunderstrike",
+"Analyze Target",
+"Gouging Claw",
+"Prestidigitation",
+"Ricochet",
+"Telekinetic Hand",
+"Robot Lore",
+"Striving Lore",
+"Arcane Focus Spells",
+"Warp Probability",
+"Second Skin",
+"Hacking Toolkit (Commercial)",
+"Laser Pistol",
+"Semi-Auto Pistol",
+"Frag Grenade (Commercial)",
+"Battery (Commercial)",
+"Projectile Ammo",
+"Credstick",
+"Ysoki",
+"Sharp Teeth",
+"Tunnel Ysoki",
+"Quick Squeeze",
+"City Slicker",
+"Face in the Crowd",
+"Witchwarper",
+"Paradox",
+"Quantum Field",
+"Anchor",
+"Analyst",
+"Warp Reality",
+"Quantum Pulse",
+"Tangible Object",
+"Spell Repertoire",
+"Witchwarper Spellcasting",
+"Tinkering Fingers"
+],
+"skills": {
+"acrobatics": 1,
+"arcana": 1,
+"society": 1,
+"stealth": 1,
+"survival": 1,
+"thievery": 1
+},
+"lores": [
+[
+"Robot",
+1
+],
+[
+"Striving",
+1
+]
+],
+"gear": [
+[
+"armor",
+"Second Skin",
+"commercial",
+1,
+true
+],
+[
+"equipment",
+"Hacking Toolkit (Commercial)",
+null,
+1,
+null
+],
+[
+"weapon",
+"Laser Pistol",
+"commercial",
+1,
+null
+],
+[
+"weapon",
+"Semi-Auto Pistol",
+"commercial",
+1,
+null
+],
+[
+"weapon",
+"Frag Grenade (Commercial)",
+"commercial",
+1,
+null
+]
+],
+"hp": 15
+},
+{
+"name": "Old-Growth Wildfire",
+"src": "old-growth-wildfire.json",
+"level": 1,
+"ancestry": "Khizar",
+"heritage": "Inflorescent",
+"background": "Recluse",
+"class": "Soldier",
+"ancBoosts": [
+"str"
+],
+"bgBoosts": [
+"con",
+"str"
+],
+"lvBoosts": {
+"1": [
+"str",
+"con",
+"dex",
+"wis"
+]
+},
+"feats": [
+[
+"Sturdy Vine",
+"ancestry-1"
+],
+[
+"Burst of Strength",
+"class-1"
+]
+],
+"names": [
+"Aballon Lore",
+"Electromag Grenade (Commercial)",
+"Defrex Hide",
+"Machine Gun",
+"Projectile Ammo",
+"Credstick",
+"Khizar",
+"Limited Telepathy",
+"Verdant",
+"Recluse",
+"Dubious Knowledge",
+"Inflorescent",
+"Soldier",
+"Soldier Fighting Style",
+"Action Hero",
+"Walking Armory",
+"Suppressing Fire",
+"Primary Target",
+"Sturdy Vine",
+"Burst of Strength"
+],
+"skills": {
+"athletics": 1,
+"medicine": 1,
+"nature": 1
+},
+"lores": [
+[
+"Aballon",
+1
+]
+],
+"gear": [
+[
+"weapon",
+"Electromag Grenade (Commercial)",
+"commercial",
+3,
+null
+],
+[
+"armor",
+"Defrex Hide",
+"commercial",
+1,
+true
+],
+[
+"weapon",
+"Machine Gun",
+"commercial",
+1,
+null
+]
+],
+"hp": 22
+},
+{
+"name": "Tapkey",
+"src": "tapkey.json",
+"level": 1,
+"ancestry": "Skittermander",
+"heritage": "Skitter Raised",
+"background": "Grifter",
+"class": "Envoy",
+"ancBoosts": [
+"int"
+],
+"bgBoosts": [
+"cha",
+"dex"
+],
+"lvBoosts": {
+"1": [
+"cha",
+"dex",
+"int",
+"wis"
+]
+},
+"feats": [
+[
+"Hyper",
+"ancestry-1"
+],
+[
+"Go to Ground!",
+"class-1"
+]
+],
+"names": [
+"Vidgame Lore",
+"Gambling Lore",
+"Incendiary Grenade (Commercial)",
+"Medpatch (Commercial)",
+"Second Skin",
+"Boom Pistol",
+"Nano-edge Rapier",
+"Credstick",
+"Skittermander",
+"Six-Armed",
+"Skitter Raised",
+"Group Impression",
+"Grifter",
+"Charming Liar",
+"Envoy",
+"Envoy Directives",
+"Leadership Style",
+"Get 'Em!",
+"From the Shadows",
+"Coordinated Ambush!",
+"Assurance (Stealth)",
+"Hyper",
+"Go to Ground!"
+],
+"skills": {
+"acrobatics": 1,
+"athletics": 1,
+"computers": 1,
+"crafting": 1,
+"diplomacy": 0,
+"performance": 1,
+"society": 1,
+"thievery": 1
+},
+"lores": [
+[
+"Vidgame",
+1
+],
+[
+"Gambling",
+1
+]
+],
+"gear": [
+[
+"weapon",
+"Incendiary Grenade (Commercial)",
+"commercial",
+3,
+null
+],
+[
+"consumable",
+"Medpatch (Commercial)",
+null,
+1,
+null
+],
+[
+"armor",
+"Second Skin",
+"commercial",
+1,
+true
+],
+[
+"weapon",
+"Boom Pistol",
+"commercial",
+1,
+null
+],
+[
+"weapon",
+"Nano-edge Rapier",
+"commercial",
+1,
+null
+]
+],
+"hp": 14
+},
+{
+"name": "Vorza Moonshot",
+"src": "vorza-moonshot.json",
+"level": 1,
+"ancestry": "Vesk",
+"heritage": "Nightstalker Vesk",
+"background": "Outlaw",
+"class": "Solarian",
+"ancBoosts": [
+"dex"
+],
+"bgBoosts": [
+"str",
+"con"
+],
+"lvBoosts": {
+"1": [
+"str",
+"con",
+"wis",
+"dex"
+]
+},
+"feats": [
+[
+"Fearless",
+"ancestry-1"
+],
+[
+"Solar Shield",
+"class-1"
+]
+],
+"names": [
+"Underworld Lore",
+"Electromag Grenade (Commercial)",
+"Medpatch (Commercial)",
+"Freebooter Armor",
+"Zero Pistol",
+"Battery (Commercial)",
+"Credstick",
+"Vesk",
+"Nightstalker Vesk",
+"Outlaw",
+"Intimidating Shot",
+"Solarian",
+"Solar Manifestations",
+"Stellar Attunement",
+"Nimbus Surge",
+"Re-Forge Solar Weapon",
+"Attune",
+"Fearless",
+"Solar Shield",
+"Shield Block"
+],
+"skills": {
+"acrobatics": 1,
+"society": 1,
+"stealth": 1,
+"survival": 1
+},
+"lores": [
+[
+"Underworld",
+1
+]
+],
+"gear": [
+[
+"weapon",
+"Electromag Grenade (Commercial)",
+"commercial",
+3,
+null
+],
+[
+"consumable",
+"Medpatch (Commercial)",
+null,
+1,
+null
+],
+[
+"armor",
+"Freebooter Armor",
+"commercial",
+1,
+true
+],
+[
+"weapon",
+"Zero Pistol",
+"commercial",
+1,
+null
+]
+],
+"hp": 23
+},
+{
+"name": "Kahalara",
+"src": "kahalara.json",
+"level": 3,
+"ancestry": "Elf",
+"heritage": "Ivairan Elf",
+"background": "Diplomat",
+"class": "Envoy",
+"ancBoosts": [
+"cha"
+],
+"bgBoosts": [
+"cha",
+"dex"
+],
+"lvBoosts": {
+"1": [
+"con",
+"str",
+"cha",
+"dex"
+]
+},
+"feats": [
+[
+"Ancestral Skills",
+"ancestry-1"
+],
+[
+"Size Up",
+"class-1"
+],
+[
+"Change of Plans",
+"class-2"
+],
+[
+"Intimidating Shot",
+"skill-2"
+],
+[
+"Incredible Initiative",
+"general-3"
+]
+],
+"names": [
+"Elf",
+"Ivairan Elf",
+"Diplomat",
+"Group Impression",
+"Envoy",
+"Envoy Directives",
+"Leadership Style",
+"Get 'Em!",
+"In the Spotlight",
+"Dance Partner!",
+"Impressive Performance",
+"Adaptive Talent",
+"Wise to the Game",
+"Ancestral Skills",
+"Additional Lore",
+"Size Up",
+"Change of Plans",
+"Intimidating Shot",
+"Incredible Initiative",
+"Multilingual",
+"Castrovel Lore",
+"Elf Lore",
+"Celebrity Serum",
+"Flashlight (Tactical)",
+"Hypopen (Commercial)",
+"Machine Gun",
+"Projectile Ammo",
+"Medpatch (Commercial)",
+"Microcord Armor",
+"Microphone",
+"Portable Amp",
+"Pulsecaster Pistol",
+"Sharpshooter Serum (Commercial)",
+"Shooting Starknife",
+"Credstick",
+"Wildwise Graft"
+],
+"skills": {
+"acrobatics": 1,
+"athletics": 1,
+"computers": 1,
+"intimidation": 1,
+"performance": 2,
+"society": 1,
+"stealth": 1
+},
+"lores": [
+[
+"Castrovel",
+1
+],
+[
+"Elf",
+1
+]
+],
+"gear": [
+[
+"consumable",
+"Celebrity Serum",
+null,
+1,
+null
+],
+[
+"equipment",
+"Flashlight (Tactical)",
+null,
+1,
+null
+],
+[
+"consumable",
+"Hypopen (Commercial)",
+null,
+1,
+null
+],
+[
+"weapon",
+"Machine Gun",
+"tactical",
+1,
+null
+],
+[
+"consumable",
+"Medpatch (Commercial)",
+null,
+1,
+null
+],
+[
+"armor",
+"Microcord Armor",
+"commercial",
+1,
+true
+],
+[
+"equipment",
+"Microphone",
+null,
+1,
+null
+],
+[
+"equipment",
+"Portable Amp",
+null,
+1,
+null
+],
+[
+"weapon",
+"Pulsecaster Pistol",
+"commercial",
+1,
+null
+],
+[
+"consumable",
+"Sharpshooter Serum (Commercial)",
+null,
+1,
+null
+],
+[
+"weapon",
+"Shooting Starknife",
+"commercial",
+1,
+null
+],
+[
+"equipment",
+"Wildwise Graft",
+null,
+1,
+null
+]
+],
+"hp": 33,
+"ancAlt": [
+"dex",
+"cha"
+]
+},
+{
+"name": "Raluraz",
+"src": "raluraz.json",
+"level": 3,
+"ancestry": "Skittermander",
+"heritage": "Scrabbler Skittermander",
+"background": "Hacker",
+"class": "Witchwarper",
+"ancBoosts": [
+"int"
+],
+"bgBoosts": [
+"int",
+"dex"
+],
+"lvBoosts": {
+"1": [
+"int",
+"cha",
+"dex",
+"con"
+]
+},
+"feats": [
+[
+"Hyper",
+"ancestry-1"
+],
+[
+"Nonlethal Spell",
+"class-2"
+],
+[
+"Feather Step",
+"general-3"
+],
+[
+"Digital Diversion",
+"skill-2"
+]
+],
+"names": [
+"Skittermander",
+"Six-Armed",
+"Scrabbler Skittermander",
+"Hacker",
+"Phreaker",
+"Witchwarper",
+"Paradox",
+"Quantum Field",
+"Anchor",
+"Isolated Spell Matrix",
+"Analyst",
+"Warp Reality",
+"Quantum Pulse",
+"Core Memories",
+"Isolated Spell Matrix",
+"Spell Repertoire",
+"Witchwarper Spellcasting",
+"Signature Spells",
+"Arcane Spontaneous Spells",
+"Analyze Target",
+"Electric Arc",
+"Implant Data",
+"Recharge Weapon",
+"Telekinetic Projectile",
+"Cellular Stimulant",
+"Dizzying Colors",
+"Force Barrage",
+"Sure Strike",
+"Caustic Conversion",
+"Sift the Sphere",
+"Effect: Paizo Adjustment",
+"Verdant Code",
+"Hyper",
+"Nonlethal Spell",
+"Feather Step",
+"Digital Diversion",
+"Arcane Focus Spells",
+"Warp Probability",
+"Carbon Skin",
+"Infiltrator's Toolkit (Commercial)",
+"Datapad",
+"Hacking Toolkit (Commercial)",
+"Knife",
+"Programmer's Plushie (Commercial) (named Rally)",
+"Prosthetic Limb",
+"Pulsecaster Pistol",
+"Repair Toolkit (Commercial)",
+"Shimmerstone Serum",
+"Spell Gem of Illusory Disguise (Rank 1)",
+"Datajack (Commercial)",
+"Hideaway Limb (Commercial)",
+"Credstick",
+"Infosphere Lore"
+],
+"skills": {
+"acrobatics": 1,
+"arcana": 1,
+"computers": 2,
+"crafting": 1,
+"piloting": 1,
+"society": 1,
+"stealth": 1,
+"thievery": 1
+},
+"lores": [
+[
+"Infosphere",
+1
+]
+],
+"gear": [
+[
+"armor",
+"Carbon Skin",
+"commercial",
+1,
+true
+],
+[
+"equipment",
+"Infiltrator's Toolkit (Commercial)",
+null,
+1,
+null
+],
+[
+"equipment",
+"Datapad",
+null,
+1,
+null
+],
+[
+"equipment",
+"Hacking Toolkit (Commercial)",
+null,
+1,
+null
+],
+[
+"weapon",
+"Knife",
+"commercial",
+4,
+null
+],
+[
+"equipment",
+"Programmer's Plushie (Commercial) (named Rally)",
+null,
+1,
+null
+],
+[
+"equipment",
+"Prosthetic Limb",
+null,
+2,
+null
+],
+[
+"weapon",
+"Pulsecaster Pistol",
+"commercial",
+1,
+null
+],
+[
+"equipment",
+"Repair Toolkit (Commercial)",
+null,
+1,
+null
+],
+[
+"consumable",
+"Shimmerstone Serum",
+null,
+1,
+null
+],
+[
+"consumable",
+"Spell Gem of Illusory Disguise (Rank 1)",
+null,
+1,
+null
+],
+[
+"equipment",
+"Datajack (Commercial)",
+null,
+1,
+null
+],
+[
+"equipment",
+"Hideaway Limb (Commercial)",
+null,
+1,
+null
+]
+],
+"hp": 33
+},
+{
+"name": "Stitchvine RS",
+"src": "stitchvine-rs.json",
+"level": 3,
+"ancestry": "Raxilite",
+"heritage": "Next-Gen Raxilite",
+"background": "Scientist",
+"class": "Mystic",
+"ancBoosts": [
+"wis"
+],
+"bgBoosts": [
+"wis",
+"cha"
+],
+"lvBoosts": {
+"1": [
+"wis",
+"dex",
+"cha",
+"con"
+]
+},
+"feats": [
+[
+"Instinctive Collaborator",
+"ancestry-1"
+],
+[
+"Bond Boost",
+"class-2"
+],
+[
+"Toughness",
+"general-3"
+],
+[
+"Battle Medicine",
+"skill-2"
+]
+],
+"names": [
+"Raxilite",
+"LFAN",
+"Next-Gen Raxilite",
+"Scientist",
+"Assurance",
+"Life Science Lore",
+"Mystic",
+"Vitality Network",
+"Connection",
+"Transfer Vitality",
+"Healing",
+"Initial Epiphany",
+"Mystic Bond",
+"Mystic Spellcasting",
+"Spell Repertoire",
+"Group Chat",
+"Network Spell",
+"Signature Spells",
+"Reflex Expertise",
+"Divine Spontaneous Spells",
+"Daze",
+"Detect Magic",
+"Guidance",
+"Ricochet",
+"Stabilize",
+"Command",
+"Heal",
+"Mind Skewer",
+"Wisp Ally",
+"False Vitality",
+"Noise Blast",
+"Sound Body",
+"Mystic Epiphany Spells",
+"Infusion",
+"Instinctive Collaborator",
+"Bond Boost",
+"Toughness",
+"Battle Medicine",
+"Baton",
+"Infinity Deck",
+"Field Scientist's Toolkit (Commercial)",
+"Flashlight (Tactical)",
+"Medkit (Commercial)",
+"Second Skin",
+"Spell Gem of Enhance Weapon (Rank 1)",
+"Zero Pistol",
+"UPB",
+"Wildwise Graft",
+"Container (Ordinary)",
+"Camping Kit",
+"Emergency Beacon",
+"Explorer's Canteen",
+"Hygiene Kit",
+"Repair Toolkit (Commercial)"
+],
+"skills": {
+"diplomacy": 1,
+"nature": 2,
+"piloting": 0,
+"religion": 1,
+"survival": 1
+},
+"lores": [
+[
+"Life Science",
+1
+]
+],
+"gear": [
+[
+"weapon",
+"Baton",
+"commercial",
+1,
+null
+],
+[
+"equipment",
+"Infinity Deck",
+null,
+1,
+null
+],
+[
+"equipment",
+"Field Scientist's Toolkit (Commercial)",
+null,
+1,
+null
+],
+[
+"equipment",
+"Flashlight (Tactical)",
+null,
+1,
+null
+],
+[
+"equipment",
+"Medkit (Commercial)",
+null,
+1,
+null
+],
+[
+"armor",
+"Second Skin",
+"commercial",
+1,
+true
+],
+[
+"consumable",
+"Spell Gem of Enhance Weapon (Rank 1)",
+null,
+1,
+null
+],
+[
+"weapon",
+"Zero Pistol",
+"commercial",
+1,
+null
+],
+[
+"equipment",
+"Wildwise Graft",
+null,
+1,
+null
+],
+[
+"equipment",
+"Camping Kit",
+null,
+1,
+null
+],
+[
+"equipment",
+"Emergency Beacon",
+null,
+1,
+null
+],
+[
+"equipment",
+"Explorer's Canteen",
+null,
+4,
+null
+],
+[
+"equipment",
+"Hygiene Kit",
+null,
+4,
+null
+],
+[
+"equipment",
+"Repair Toolkit (Commercial)",
+null,
+1,
+null
+]
+],
+"hp": 30
+},
+{
+"name": "Takkar",
+"src": "takkar.json",
+"level": 3,
+"ancestry": "Ryphorian",
+"heritage": "Winterborn Ryphorian",
+"background": "Spacefarer",
+"class": "Operative",
+"ancBoosts": [
+"dex"
+],
+"bgBoosts": [
+"dex",
+"wis"
+],
+"lvBoosts": {
+"1": [
+"dex",
+"str",
+"wis",
+"con"
+]
+},
+"feats": [
+[
+"Sympathetic Bond",
+"ancestry-1"
+],
+[
+"Weakening Shot",
+"class-1"
+],
+[
+"Kill Steal",
+"class-2"
+],
+[
+"Canny Acumen (Fortitude)",
+"general-3"
+],
+[
+"Dive for Cover",
+"skill-2"
+],
+[
+"Terrain Stalker (Underbrush)",
+"skill-3"
+]
+],
+"names": [
+"Ryphorian",
+"Notched Ears",
+"Winterborn Ryphorian",
+"Spacefarer",
+"Express Driver",
+"Operative",
+"Sharpshooter",
+"Operative's Specialization",
+"Aim",
+"Skirmisher",
+"Steady Balance",
+"Focused",
+"Specialized Skill Set",
+"Drift Lore",
+"Carbon Skin",
+"Infiltrator's Toolkit (Tactical)",
+"Infiltrator Serum",
+"Medkit (Commercial)",
+"Nano-edge Rapier",
+"Pulsecaster Pistol",
+"Shimmerstone Serum",
+"Skyfire Sword",
+"Zero Pistol",
+"Credstick",
+"Sympathetic Bond",
+"Weakening Shot",
+"Kill Steal",
+"Canny Acumen (Fortitude)",
+"Dive for Cover",
+"Terrain Stalker (Underbrush)"
+],
+"skills": {
+"acrobatics": 2,
+"medicine": 1,
+"nature": 1,
+"stealth": 1,
+"thievery": 1
+},
+"lores": [
+[
+"Drift",
+1
+]
+],
+"gear": [
+[
+"armor",
+"Carbon Skin",
+"commercial",
+1,
+true
+],
+[
+"equipment",
+"Infiltrator's Toolkit (Tactical)",
+null,
+1,
+null
+],
+[
+"consumable",
+"Infiltrator Serum",
+null,
+1,
+null
+],
+[
+"equipment",
+"Medkit (Commercial)",
+null,
+1,
+null
+],
+[
+"weapon",
+"Nano-edge Rapier",
+"commercial",
+1,
+null
+],
+[
+"weapon",
+"Pulsecaster Pistol",
+"commercial",
+1,
+null
+],
+[
+"consumable",
+"Shimmerstone Serum",
+null,
+1,
+null
+],
+[
+"weapon",
+"Skyfire Sword",
+"commercial",
+1,
+null
+],
+[
+"weapon",
+"Zero Pistol",
+"commercial",
+1,
+null
+]
+],
+"hp": 38
+},
+{
+"name": "Xyzexius",
+"src": "xyzexius.json",
+"level": 3,
+"ancestry": "Dragonkin",
+"heritage": "Flameheart Dragonkin",
+"background": "Athlete",
+"class": "Solarian",
+"ancBoosts": [
+"str",
+"con"
+],
+"bgBoosts": [
+"str",
+"cha"
+],
+"lvBoosts": {
+"1": [
+"str",
+"dex",
+"con",
+"cha"
+]
+},
+"feats": [
+[
+"Dragonkin Weapon Familiarity",
+"ancestry-1"
+],
+[
+"Solar Shield",
+"class-1"
+],
+[
+"Toughness",
+"general-3"
+],
+[
+"Impressive Performance",
+"skill-2"
+],
+[
+"Stellar Rush",
+"class-2"
+]
+],
+"names": [
+"Dragonkin",
+"Partner Bond",
+"Flameheart Dragonkin",
+"Athlete",
+"Deadlift",
+"Solarian",
+"Solar Manifestations",
+"Stellar Attunement",
+"Nimbus Surge",
+"Re-Forge Solar Weapon",
+"Attune",
+"Stellar Resilience",
+"Battle Ribbon",
+"Commando Serum",
+"Duo-Enhancers",
+"Freebooter Armor",
+"Medkit (Commercial)",
+"Medpatch (Commercial)",
+"Skyfire Sword",
+"Zero Pistol",
+"Credstick",
+"Sports Lore",
+"Effect: Paizo Adjustment",
+"Dragonkin Weapon Familiarity",
+"Solar Shield",
+"Shield Block",
+"Toughness",
+"Impressive Performance",
+"Stellar Rush"
+],
+"skills": {
+"athletics": 2,
+"computers": 1,
+"intimidation": 1,
+"performance": 1
+},
+"lores": [
+[
+"Sports",
+1
+]
+],
+"gear": [
+[
+"weapon",
+"Battle Ribbon",
+"commercial",
+1,
+null
+],
+[
+"consumable",
+"Commando Serum",
+null,
+1,
+null
+],
+[
+"equipment",
+"Duo-Enhancers",
+null,
+1,
+true
+],
+[
+"armor",
+"Freebooter Armor",
+"commercial",
+1,
+true
+],
+[
+"equipment",
+"Medkit (Commercial)",
+null,
+1,
+null
+],
+[
+"consumable",
+"Medpatch (Commercial)",
+null,
+1,
+null
+],
+[
+"weapon",
+"Skyfire Sword",
+"tactical",
+1,
+null
+],
+[
+"weapon",
+"Zero Pistol",
+"commercial",
+1,
+null
+]
+],
+"hp": 49
+}
+]

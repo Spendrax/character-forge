@@ -1,9 +1,10 @@
-// Pathfinder 2e screens: the rules browser, the rules book for the Books shelf, and the home page.
+// Pathfinder 2e and Starfinder 2e screens: the rules browser, the rules book for the Books shelf, and the home page.
 // Part of pf2-ui.js: it runs inside PF2UI; K holds the names the files share.
 (function (root) {
   'use strict';
   (root.PF2UIParts = root.PF2UIParts || {}).rules = function (K) {
     var PF2 = K.PF2,
+      G = K.G,
       U = K.U,
       btn = K.btn,
       esc = K.esc,
@@ -33,7 +34,13 @@
         X = PF2.index(),
         q = (R.q || '').toLowerCase();
       var h =
-        '<main class="pf-main"><h2>Pathfinder 2e rules</h2><p class="small muted">The pre-Remaster rules (Core Rulebook, Advanced Player’s Guide, Secrets of Magic, Guns &amp; Gears, Dark Archive, Rage of Elements and the Lost Omens books), searchable.</p>' +
+        '<main class="pf-main"><h2>' +
+        G.name +
+        ' rules</h2><p class="small muted">' +
+        (G.remaster
+          ? 'The Starfinder Second Edition rules (Player Core, Tech Core, Galactic Ancestries, Galaxy Guide, Alien Core and more), searchable.'
+          : 'The pre-Remaster rules (Core Rulebook, Advanced Player’s Guide, Secrets of Magic, Guns &amp; Gears, Dark Archive, Rage of Elements and the Lost Omens books), searchable.') +
+        '</p>' +
         '<nav class="mm-tabs pf-tabs">' +
         RCATS.map(function (c) {
           return btn('pfRCat', c[1], { v: c[0] }, 'mm-tab' + (R.cat === c[0] ? ' on' : ''));
@@ -149,6 +156,22 @@
       'This app uses trademarks and/or copyrights owned by Paizo Inc., used under Paizo’s Community Use Policy (paizo.com/licenses/communityuse). We are expressly prohibited from charging you to use or access this content. This app is not published, endorsed, or specifically approved by Paizo. For more information about Paizo Inc. and Paizo products, visit paizo.com.\n\n' +
       '**Open Game License v1.0a** © 2000, Wizards of the Coast, Inc. Pathfinder Core Rulebook (Second Edition) © 2019, Paizo Inc. Pathfinder Advanced Player’s Guide © 2020, Paizo Inc. Pathfinder Secrets of Magic © 2021, Paizo Inc. Pathfinder Guns & Gears © 2021, Paizo Inc. Pathfinder Dark Archive © 2022, Paizo Inc. Pathfinder Bestiary, Bestiary 2, Bestiary 3 © 2019–2021, Paizo Inc. Pathfinder Lost Omens books © Paizo Inc.';
 
+    // Starfinder 2e: the Remaster's attribute modifiers, credits, and its own license notice
+    var BASICS_SF2 = BASICS.replace(
+      /\*\*Ability scores\.\*\*[^\n]*/,
+      '**Attribute modifiers.** Each boost adds 1 to a modifier, or a partial boost once it is +4 or more (two partial boosts make +1). At 1st level no modifier goes above +4.\n\n**Credits.** Starfinder’s money: prices are in credits (cr).'
+    );
+    var LICENSE_SF2 =
+      '# Sources and license\n\nRules text comes from the Foundry VTT Starfinder Second Edition system (sf2e), from the books published under the **ORC License**. No artwork is included.\n\n' +
+      'This product is licensed under the ORC License held in the Library of Congress at TX 9-307-067 and available online at various locations including paizo.com/orclicense, azoralaw.com/orclicense, and others. All warranties are disclaimed as set forth therein.\n\n' +
+      '**Attribution:** This product is based on the following Licensed Material: Starfinder Player Core, Starfinder Tech Core, Starfinder Galactic Ancestries, Starfinder Galaxy Guide, Starfinder Alien Core and Starfinder GM Core © 2025 Paizo Inc., and Pathfinder Player Core © 2023 Paizo Inc. (the conditions). If you use our Licensed Material in your own published works, please credit us as follows: Character Forge, by Spendrax.\n\n' +
+      '**Reserved Material:** Reserved Material elements in this product include all elements designated as Reserved Material under the ORC License (trade dress, art, logos and the like); none are reproduced here.\n\n' +
+      'This app uses trademarks and/or copyrights owned by Paizo Inc., used under Paizo’s Community Use Policy (paizo.com/licenses/communityuse). We are expressly prohibited from charging you to use or access this content. This app is not published, endorsed, or specifically approved by Paizo. For more information about Paizo Inc. and Paizo products, visit paizo.com.';
+    if (G.remaster) {
+      BASICS = BASICS_SF2;
+      LICENSE = LICENSE_SF2;
+    }
+
     // ---------- a readable rules book for the Books shelf ----------
     var bookCache = null;
     function book() {
@@ -186,8 +209,8 @@
           });
       };
       bookCache = {
-        id: 'pf2',
-        title: 'Pathfinder 2e rules',
+        id: G.key,
+        title: G.name + ' rules',
         chapters: [
           { t: 'The basics', parts: [{ t: 'The basics', md: BASICS }] },
           {
@@ -249,12 +272,16 @@
     // ---------- home ----------
     function homeHtml() {
       return (
-        '<main class="home"><h1>Pathfinder 2e</h1><p class="muted">Your table companion (pre-Remaster rules). Tap the d20 to roll.</p>' +
+        '<main class="home"><h1>' +
+        G.name +
+        '</h1><p class="muted">Your table companion (' +
+        (G.remaster ? 'Starfinder Second Edition' : 'pre-Remaster rules') +
+        '). Tap the d20 to roll.</p>' +
         root.homeHub([
-          ['pf2-chars', 'sword', 'Characters'],
+          [G.sec + 'chars', 'sword', 'Characters'],
           ['dm', 'eye', 'GM'],
           ['books', 'tome', 'Books'],
-          ['pf2-rules', 'book', 'Rules'],
+          [G.sec + 'rules', 'book', 'Rules'],
           ['audio', 'lute', 'Audio'],
           ['rules', 'scroll', 'House rules']
         ]) +

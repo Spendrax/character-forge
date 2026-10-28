@@ -19,14 +19,14 @@
     'Something in your pack feels heavier than before.',
     'You feel a surge of courage.'
   ];
-  var GAME = { dnd: 'D&D', pf2: 'Pathfinder', mm: 'M&M', sd: 'Shadowdark' };
+  var GAME = { dnd: 'D&D', pf2: 'Pathfinder', sf2: 'Starfinder', mm: 'M&M', sd: 'Shadowdark' };
   root.PartyTable = function (api) {
     var esc = api.esc,
       btn = api.btn,
       store = api.store,
       W = (api.ui.partyTable = api.ui.partyTable || { to: '', text: '', sent: [] });
     function list(game) {
-      if (game === 'pf2') return ((store.pf2 = store.pf2 || {}).chars = store.pf2.chars || []);
+      if (game === 'pf2' || game === 'sf2') return ((store[game] = store[game] || {}).chars = store[game].chars || []);
       if (game === 'mm') return ((store.mm = store.mm || {}).heroes = store.mm.heroes || []);
       if (game === 'sd') return ((store.sd = store.sd || {}).chars = store.sd.chars || []);
       return (store.chars = store.chars || []);

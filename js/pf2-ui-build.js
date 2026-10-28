@@ -3,7 +3,8 @@
 (function (root) {
   'use strict';
   (root.PF2UIParts = root.PF2UIParts || {}).build = function (K) {
-    var GLY = K.GLY,
+    var G = K.G,
+      GLY = K.GLY,
       PF2 = K.PF2,
       S = K.S,
       SIZE = K.SIZE,
@@ -60,12 +61,14 @@
       return (
         '<main class="home roster"><div class="toolbar"><h2 style="margin:0">Characters</h2><span class="spacer"></span>' +
         btn('pfNew', '+ New character', {}, 'btn primary') +
-        btn('pfImp', 'Import from Pathbuilder', {}, 'btn') +
+        (G.remaster ? '' : btn('pfImp', 'Import from Pathbuilder', {}, 'btn')) +
         '</div>' +
         imp +
         (cards
           ? '<div class="roster-grid">' + cards + '</div>'
-          : '<p class="muted">No characters yet. Make one, or bring one over from Pathbuilder.</p>') +
+          : '<p class="muted">No characters yet. Make one' +
+            (G.remaster ? '.' : ', or bring one over from Pathbuilder.') +
+            '</p>') +
         '</main>'
       );
     }
@@ -299,9 +302,11 @@
         h =
           '<details class="panel pf-boosts"' +
           (U.boostsOpen !== false && d.boostNeed.length ? ' open' : '') +
-          '><summary><b>Ability scores</b> <span class="small muted">' +
+          '><summary><b>' +
+          (G.remaster ? 'Attributes' : 'Ability scores') +
+          '</b> <span class="small muted">' +
           ABS.map(function (a) {
-            return a.toUpperCase() + ' ' + d.scores[a];
+            return a.toUpperCase() + ' ' + (G.remaster ? fmt(d.mods[a]) : d.scores[a]);
           }).join(' · ') +
           '</span></summary>';
       if (d.anc) {
@@ -368,8 +373,9 @@
             );
         });
       }
-      h +=
-        '<p class="small muted">Level 1, 5, 10, 15 and 20 each give four boosts to different scores (shown at those levels below). A boost adds 2, or 1 once a score is 18 or more.</p>';
+      h += G.remaster
+        ? '<p class="small muted">Level 1, 5, 10, 15 and 20 each give four boosts to different attributes (shown at those levels below). A boost adds 1 to the modifier, or a partial boost once it is +4 or more (two partial boosts make +1).</p>'
+        : '<p class="small muted">Level 1, 5, 10, 15 and 20 each give four boosts to different scores (shown at those levels below). A boost adds 2, or 1 once a score is 18 or more.</p>';
       h +=
         '<div class="pf-abgrid">' +
         ABS.map(function (a) {
@@ -377,9 +383,9 @@
             '<div><small>' +
             a.toUpperCase() +
             '</small><b>' +
-            d.scores[a] +
+            (G.remaster ? fmt(d.mods[a]) : d.scores[a]) +
             '</b><span>' +
-            fmt(d.mods[a]) +
+            (G.remaster ? '' : fmt(d.mods[a])) +
             '</span></div>'
           );
         }).join('') +
@@ -526,7 +532,9 @@
       if (PF2.BOOST_LEVELS.indexOf(L) >= 0) {
         var picks = ((ch.boosts || {}).lv || {})[L] || [];
         rows.push(
-          '<div class="pf-row"><div class="small"><b>Ability boosts</b> <span class="muted">(' +
+          '<div class="pf-row"><div class="small"><b>' +
+            (G.remaster ? 'Attribute boosts' : 'Ability boosts') +
+            '</b> <span class="muted">(' +
             picks.length +
             ' of 4)</span></div>' +
             pills('lv' + L, picks.length < 4 ? ABS : picks, picks) +
@@ -711,7 +719,14 @@
           return x.key === P.key;
         })[0];
         list = o ? choiceEntries(o) : [];
-      } else if (P.k === 'rune')
+      } else if (P.k === 'rune' && G.remaster)
+        // Starfinder upgrades: installed in a weapon, or in armor
+        list = X.items.filter(function (i) {
+          return P.which === 'a'
+            ? /^installed-in-armor/.test(i.use || '')
+            : /weapon/.test(i.use || '') && /^installed/.test(i.use || '');
+        });
+      else if (P.k === 'rune')
         list = X.items.filter(function (i) {
           return P.which === 'a'
             ? /^etched-onto-(armor|heavy|med|light|metal|medium|lm)/.test(i.use || '') &&
@@ -961,6 +976,7 @@
     function price(cp) {
       cp = +cp || 0;
       if (!cp) return '—';
+      if (G.credits) return (cp / 10).toLocaleString('en') + ' cr'; // Starfinder: credits (the data keeps silver)
       if (cp % 100 === 0) return cp / 100 + ' gp';
       if (cp % 10 === 0) return cp / 10 + ' sp';
       return cp + ' cp';

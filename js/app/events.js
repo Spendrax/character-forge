@@ -196,8 +196,8 @@ document.addEventListener('input', function (e) {
     if (bk === 'render') render();
     if (bk) return;
   }
-  if (/^pf2-/.test(ui.section)) {
-    var pi = PFV ? PFV.onInput(t) : null;
+  if (paizoV()) {
+    var pi = paizoV().onInput(t);
     if (pi === 'render') render();
     else if (pi) save();
     if (pi) return;
@@ -367,8 +367,8 @@ document.addEventListener('change', function (e) {
       return;
     }
   }
-  if (/^pf2-/.test(ui.section)) {
-    var pc = PFV ? PFV.onChange(t) : null;
+  if (paizoV()) {
+    var pc = paizoV().onChange(t);
     if (pc) {
       requestRender();
       return;

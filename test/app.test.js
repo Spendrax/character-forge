@@ -285,6 +285,66 @@ function fakeGoogle(ctx, drive) {
       await p.ctx.close();
     });
 
+    await test('Starfinder 2e: build a vesk soldier, every tab, rules, treasures in credits; Pathfinder untouched', async function () {
+      var p = await page();
+      await p.click('[data-act=game][data-v=sf2]');
+      await p.waitForSelector('.hub-item[data-v=sf2-chars]');
+      await p.click('.hub-item[data-v=sf2-chars]');
+      await p.waitForSelector('[data-act=pfNew]');
+      await p.click('[data-act=pfNew]');
+      await wait(1500);
+      var pick = async function (k, name) {
+        await p.click('[data-act=pfPick][data-k=' + k + ']');
+        await p.waitForSelector('.pf-plist [data-act]');
+        var rows = p.locator('.pf-plist [data-act]'),
+          all = await rows.allInnerTexts(),
+          i = all.findIndex(function (t) {
+            return t.toLowerCase().indexOf(name.toLowerCase()) >= 0;
+          });
+        assert.ok(i >= 0, k + ': ' + name);
+        await rows.nth(i).click();
+        await wait(300);
+        if (await p.locator('.pf-picker [data-act=pfChoose]').count()) await p.locator('.pf-picker [data-act=pfChoose]').first().click();
+        await wait(300);
+        if (await p.locator('.pf-picker').count()) await p.click('[data-act=pfPickClose]');
+        await wait(200);
+      };
+      await pick('ancestry', 'Vesk');
+      await pick('background', 'Bounty Hunter');
+      await pick('class', 'Soldier');
+      var t = await text(p, 'main');
+      assert.ok(/Vesk · Soldier 1/.test(t) && /Attributes/.test(t) && !/Ability scores/.test(t), t.slice(0, 300));
+      for (var tab of ['sheet', 'defense', 'offense', 'skills', 'spells', 'gear', 'feats', 'actions', 'notes', 'play']) {
+        await p.click('[data-act=pfTab][data-v=' + tab + ']');
+        await wait(300);
+      }
+      await p.click('[data-act=pfTab][data-v=skills]');
+      t = await text(p, 'main');
+      assert.ok(/Computers/.test(t) && /Piloting/.test(t), 'Starfinder skills');
+      await p.click('[data-act=pfTab][data-v=gear]');
+      assert.ok(/Credits/.test(await text(p, 'main')), 'credits');
+      await p.click('[data-act=section][data-v=sf2-rules]');
+      await p.waitForSelector('[data-act=pfRCat]');
+      await p.click('[data-act=pfRCat][data-v=classes]');
+      await wait(800);
+      t = await text(p, 'main');
+      assert.ok(/Solarian/.test(t) && /Witchwarper/.test(t), 'classes in the rules');
+      await p.evaluate(function () {
+        Forge.ui.section = 'sf2-loot';
+        Forge.render();
+      });
+      await wait(1500);
+      assert.ok(/credits/.test(await text(p, 'main')), 'treasure in credits');
+      // the same pages for Pathfinder still show Pathfinder
+      await p.click('[data-act=game][data-v=pf2]');
+      await p.waitForSelector('.hub-item[data-v=pf2-chars]');
+      await p.click('.hub-item[data-v=pf2-chars]');
+      await wait(1500);
+      t = await text(p, 'main');
+      assert.ok(/Pathbuilder/.test(t) && !/Vesk/.test(t), 'Pathfinder characters are separate');
+      await p.ctx.close();
+    });
+
     await test('Monsters: the list draws in parts, more on scroll, search starts over', async function () {
       var p = await page();
       await p.evaluate(function () {

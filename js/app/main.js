@@ -24,8 +24,8 @@ var PT = window.PartyTable({
   }
 });
 function openSheet(game, id) {
-  if (game === 'pf2') {
-    ui.section = 'pf2-chars';
+  if (game === 'pf2' || game === 'sf2') {
+    ui.section = game + '-chars';
     actions.pfOpen(id);
     actions.pfTab('sheet');
   } else if (game === 'mm') {
@@ -83,6 +83,9 @@ var BOOKS = window.BooksUI({
   render: render,
   pf2Book: function () {
     return PFV.book();
+  },
+  sf2Book: function () {
+    return SFV.book();
   }
 });
 Object.keys(BOOKS.actions).forEach(function (k) {
@@ -124,6 +127,7 @@ AIHelper.setContext(aiContext);
 // ---------- the other games, loaded when you switch to them (most players use one game) ----------
 // Their files are still in the offline copy (sw.js); they just aren't read until needed, so the app starts faster.
 var PFV = null,
+  SFV = null, // Starfinder 2e: the Pathfinder pages with Starfinder's engine and data (js/pf2-ui.js, PF2UI.SF2)
   MMV = null,
   MME = null,
   SDV = null;
@@ -163,27 +167,45 @@ var LAZY = {
   ],
   sd: ['js/sd.js']
 };
+LAZY.sf2 = LAZY.pf2; // the same files (each is read once); Starfinder's data loads with its pages
 function merge(o) {
   Object.keys(o.actions).forEach(function (k) {
     actions[k] = o.actions[k];
   });
 }
+// Pathfinder and Starfinder pages share their action names: each tap goes to the game on screen
+function mergePaizo(o) {
+  Object.keys(o.actions).forEach(function (k) {
+    actions[k] = function (v, el) {
+      var V = gameOf() === 'sf2' ? SFV : PFV;
+      return V && V.actions[k] ? V.actions[k](v, el) : false;
+    };
+  });
+}
+function paizoUI(game) {
+  return window.PF2UI({
+    pt: PT,
+    esc: esc,
+    btn: btn,
+    ui: ui,
+    store: store,
+    tp: TP,
+    ts: TS,
+    game: game,
+    render: function () {
+      render();
+    }
+  });
+}
 var START = {
   text: function () {},
   pf2: function () {
-    PFV = window.PF2UI({
-      pt: PT,
-      esc: esc,
-      btn: btn,
-      ui: ui,
-      store: store,
-      tp: TP,
-      ts: TS,
-      render: function () {
-        render();
-      }
-    });
-    merge(PFV);
+    PFV = paizoUI(window.PF2UI.PF2);
+    mergePaizo(PFV);
+  },
+  sf2: function () {
+    SFV = paizoUI(window.PF2UI.SF2);
+    mergePaizo(SFV);
   },
   mm: function () {
     MMV = window.MMUI({ esc: esc, btn: btn, ui: ui, store: store, tp: TP });
@@ -221,16 +243,19 @@ var START = {
 };
 var lazy = {}; // part → 'loading', 'ready' or 'error'
 var lazyThen = {};
+var loadedScripts = {};
 function loadScriptOnce(src) {
-  return new Promise(function (ok, no) {
+  if (loadedScripts[src]) return loadedScripts[src];
+  return (loadedScripts[src] = new Promise(function (ok, no) {
     var s = document.createElement('script');
     s.src = src;
     s.onload = ok;
     s.onerror = function () {
+      delete loadedScripts[src];
       no(new Error('Couldn’t load ' + src));
     };
     document.head.appendChild(s);
-  });
+  }));
 }
 function gameReady(g) {
   return g === 'dnd' || lazy[g] === 'ready';
@@ -330,7 +355,7 @@ Object.keys(BKP.actions).forEach(function (k) {
 });
 if (store.game === 'mm' && ui.section === 'home') ui.section = 'mm-home';
 if (store.game === 'sd' && ui.section === 'home') ui.section = 'sd-home';
-if (store.game === 'pf2' && ui.section === 'home') ui.section = 'pf2-home';
+if ((store.game === 'pf2' || store.game === 'sf2') && ui.section === 'home') ui.section = store.game + '-home';
 applyTheme(themeNow()); // reopen in the game you were using
 render();
 needGame('text'); // the longer texts, now that the page shows
@@ -339,7 +364,7 @@ loadDb(function (changed) {
   if (!changed) return;
   if (store.game === 'mm' && ui.section === 'home') ui.section = 'mm-home';
   if (store.game === 'sd' && ui.section === 'home') ui.section = 'sd-home';
-  if (store.game === 'pf2' && ui.section === 'home') ui.section = 'pf2-home';
+  if ((store.game === 'pf2' || store.game === 'sf2') && ui.section === 'home') ui.section = store.game + '-home';
   render();
 });
 // this page is the small Google sign-in window coming back: the page that opened it carries on

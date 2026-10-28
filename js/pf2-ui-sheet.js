@@ -3,7 +3,8 @@
 (function (root) {
   'use strict';
   (root.PF2UIParts = root.PF2UIParts || {}).sheet = function (K) {
-    var COND_VAL = K.COND_VAL,
+    var G = K.G,
+      COND_VAL = K.COND_VAL,
       PF2 = K.PF2,
       SIZE = K.SIZE,
       U = K.U,
@@ -121,7 +122,9 @@
           var m = (ch.money = ch.money || {});
           ['pp', 'gp', 'sp', 'cp'].forEach(function (k) {
             var n = Math.max(0, Math.min(1e7, Math.floor(+(g.coins || {})[k] || 0)));
-            if (n) m[k] = (+m[k] || 0) + n;
+            // Starfinder keeps credits as silver: gold from the GM becomes 10 credits each
+            if (n && G.credits) m.sp = (+m.sp || 0) + Math.floor(n * { pp: 100, gp: 10, sp: 1, cp: 0.1 }[k]);
+            else if (n) m[k] = (+m[k] || 0) + n;
           });
           (g.items || []).slice(0, 20).forEach(function (i) {
             if (!i || !i.n) return;
@@ -210,7 +213,7 @@
         sheet: function () {
           var c = JSON.parse(JSON.stringify(ch));
           delete c.notes;
-          return { game: 'pf2', data: c };
+          return { game: G.key, data: c };
         }
       };
     }
@@ -314,7 +317,7 @@
             '</small><b>' +
             fmt(d.mods[a]) +
             '</b><span>' +
-            d.scores[a] +
+            (G.remaster ? '' : d.scores[a]) +
             '</span></div>'
           );
         }).join('') +

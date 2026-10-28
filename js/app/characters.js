@@ -130,6 +130,7 @@ function xferBundle(withPics) {
       return out;
     }, []);
   if (X.pf2 !== false && store.pf2 && (store.pf2.chars || []).length) b.pf2 = store.pf2.chars.map(strip);
+  if (X.sf2 !== false && store.sf2 && (store.sf2.chars || []).length) b.sf2 = store.sf2.chars.map(strip);
   if (X.mm !== false && store.mm && (store.mm.heroes || []).length) b.mm = store.mm.heroes.map(strip);
   if (X.sd !== false && store.sd && (store.sd.chars || []).length) b.sd = store.sd.chars.map(strip);
   return b;
@@ -142,6 +143,7 @@ function xferHtml() {
       return c.name || (c.classes || []).length;
     }).length,
     pf2: ((store.pf2 || {}).chars || []).length,
+    sf2: ((store.sf2 || {}).chars || []).length,
     mm: ((store.mm || {}).heroes || []).length,
     sd: ((store.sd || {}).chars || []).length
   };
@@ -165,6 +167,7 @@ function xferHtml() {
     '<div class="pills">' +
     chk('dnd', 'D&D') +
     chk('pf2', 'PF2') +
+    chk('sf2', 'SF2') +
     chk('mm', 'M&M') +
     chk('sd', 'Shadowdark') +
     '</div>' +
@@ -212,6 +215,7 @@ function xferInHtml() {
     '<div class="panel import5e noprint"><h3>Characters from another device</h3><ul>' +
     (b.chars && b.chars.length ? '<li><b>D&amp;D:</b> ' + esc(names(b.chars)) + '</li>' : '') +
     (b.pf2 && b.pf2.length ? '<li><b>PF2:</b> ' + esc(names(b.pf2)) + '</li>' : '') +
+    (b.sf2 && b.sf2.length ? '<li><b>SF2:</b> ' + esc(names(b.sf2)) + '</li>' : '') +
     (b.mm && b.mm.length ? '<li><b>M&amp;M:</b> ' + esc(names(b.mm)) + '</li>' : '') +
     (b.sd && b.sd.length ? '<li><b>Shadowdark:</b> ' + esc(names(b.sd)) + '</li>' : '') +
     '</ul><p class="small muted">Characters you sent before are updated (their pictures here are kept); new ones are added. Nothing else on this device changes.</p><div class="toolbar">' +
@@ -252,6 +256,11 @@ function xferTake(b) {
     store.pf2 = store.pf2 || { chars: [] };
     store.pf2.chars = store.pf2.chars || [];
     merge(store.pf2.chars, b.pf2);
+  }
+  if (b.sf2) {
+    store.sf2 = store.sf2 || { chars: [] };
+    store.sf2.chars = store.sf2.chars || [];
+    merge(store.sf2.chars, b.sf2);
   }
   if (b.mm) {
     store.mm = store.mm || { heroes: [] };

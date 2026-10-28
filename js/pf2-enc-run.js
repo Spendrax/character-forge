@@ -3,7 +3,8 @@
 (function (root) {
   'use strict';
   (root.PF2EncParts = root.PF2EncParts || {}).enc = function (K) {
-    var E = K.E,
+    var G = K.G,
+      E = K.E,
       adjLv = K.adjLv,
       api = K.api,
       btn = K.btn,
@@ -163,7 +164,7 @@
         '<div class="toolbar">' +
         btn('pfeClear', 'Clear', {}, 'btn small') +
         '</div></div>' +
-        (root.SavedEnc ? root.SavedEnc.html('pf2') : '') +
+        (root.SavedEnc ? root.SavedEnc.html(G.key) : '') +
         '</div></div>' +
         (E.view
           ? '<div class="enc-modal" role="dialog"><div class="toolbar">' +
@@ -180,7 +181,7 @@
       );
     }
     function pickerHtml(lvl) {
-      var B = (root.PF2DATA || {}).bestiary || [],
+      var B = (root[G.data] || {}).bestiary || [],
         q = (E.q || '').toLowerCase(),
         lo = E.lo === '' ? -1 : +E.lo,
         hi = E.hi === '' ? 99 : +E.hi;
@@ -332,7 +333,7 @@
     }
     function runHtml() {
       var run = enc().run;
-      phones(run, { cond: '' }, 'pf2enc');
+      phones(run, { cond: '' }, G.key + 'enc');
       return (
         '<div class="panel enc-run"><div class="toolbar" style="margin:0"><h3 style="margin:0">Round ' +
         run.round +

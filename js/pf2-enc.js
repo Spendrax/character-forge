@@ -41,6 +41,7 @@
   }
 
   root.PF2Enc = function (api) {
+    var G = api.game || root.PF2UI.PF2; // Pathfinder or Starfinder (js/pf2-ui.js)
     var esc = api.esc,
       btn = api.btn,
       ui = api.ui,
@@ -49,9 +50,17 @@
       fmt = api.fmt,
       gl = api.gl,
       traits = api.traits;
-    var E = (ui.pf2e = ui.pf2e || { q: '', lo: '', hi: '', trait: '', open: '', delParty: false, team: '' });
+    var E = (ui[G.key + 'e'] = ui[G.key + 'e'] || {
+      q: '',
+      lo: '',
+      hi: '',
+      trait: '',
+      open: '',
+      delParty: false,
+      team: ''
+    });
     function parties() {
-      return (store.pf2Parties = store.pf2Parties || []);
+      return (store[G.key + 'Parties'] = store[G.key + 'Parties'] || []);
     }
     function partyById(id) {
       return parties().filter(function (p) {
@@ -62,13 +71,13 @@
       return partyById(E.team) || parties()[0] || null;
     }
     function enc() {
-      return (store.pf2Enc = store.pf2Enc || { party: '', lvl: 1, n: 4, mons: [], run: null });
+      return (store[G.key + 'Enc'] = store[G.key + 'Enc'] || { party: '', lvl: 1, n: 4, mons: [], run: null });
     }
     function uid() {
       return 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     }
     function mon(id) {
-      var B = (root.PF2DATA || {}).bestiary || [];
+      var B = (root[G.data] || {}).bestiary || [];
       if (!B._by) {
         B._by = {};
         B.forEach(function (m) {
@@ -121,14 +130,14 @@
     }
     // planned encounters: saved with a name and notes, opened or run later (js/saved-enc.js)
     if (root.SavedEnc)
-      root.SavedEnc.register('pf2', {
+      root.SavedEnc.register(G.key, {
         list: function () {
-          return (store.pf2Encounters = store.pf2Encounters || []);
+          return (store[G.key + 'Encounters'] = store[G.key + 'Encounters'] || []);
         },
         cur: enc,
         load: function (e) {
           e.run = null;
-          store.pf2Enc = e;
+          store[G.key + 'Enc'] = e;
         },
         fresh: function () {
           var e = enc();
@@ -156,12 +165,13 @@
         },
         run: function () {
           K.actions.pfeRun();
-          ui.section = 'pf2-enc';
+          ui.section = G.sec + 'enc';
         },
         save: function () {}
       });
     // the parts (pf2-enc-party.js, pf2-enc-run.js, pf2-enc-monsters.js, pf2-enc-loot.js, pf2-enc-actions.js) share these names through K
     var K = {
+      G: G,
       E: E,
       adjLv: adjLv,
       api: api,

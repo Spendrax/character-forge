@@ -1,9 +1,11 @@
-// Pathfinder 2e screens: runes, defense, offense, gear, feats, actions and notes.
+// Pathfinder 2e and Starfinder 2e screens: runes (Starfinder: grades and upgrades), defense, offense, gear, feats,
+// actions and notes.
 // Part of pf2-ui.js: it runs inside PF2UI; K holds the names the files share.
 (function (root) {
   'use strict';
   (root.PF2UIParts = root.PF2UIParts || {}).gear = function (K) {
     var ALIGN = K.ALIGN,
+      G = K.G,
       PF2 = K.PF2,
       U = K.U,
       btn = K.btn,
@@ -17,10 +19,58 @@
       traits = K.traits;
 
     // ----- runes: fundamental runes as selects, property runes as slots (one per potency rank) that open the rune picker -----
+    // Starfinder: a grade (like fundamental runes) and the upgrades installed in it (like property runes)
+    var GRADES = [
+      ['commercial', 'Commercial'],
+      ['tactical', 'Tactical'],
+      ['advanced', 'Advanced'],
+      ['superior', 'Superior'],
+      ['elite', 'Elite'],
+      ['ultimate', 'Ultimate'],
+      ['paragon', 'Paragon']
+    ];
+    function gradeEditor(g, i, e, isW) {
+      var gr = g.grade || e.grade || 'commercial',
+        up = (g.runes || {}).prop || [];
+      var h =
+        '<div class="pf-runes"><label class="field"><span>Grade</span><select data-pfrune="' +
+        i +
+        '" data-f="grade">' +
+        GRADES.map(function (x) {
+          return '<option value="' + x[0] + '"' + (gr === x[0] ? ' selected' : '') + '>' + x[1] + '</option>';
+        }).join('') +
+        '</select></label></div><div class="small muted">' +
+        (isW
+          ? 'Grade sets the tracking bonus to attack and the damage dice.'
+          : 'Grade sets the armor’s bonus to AC and to saves.') +
+        ' Upgrades: as many as the item has upgrade slots (see its description).</div><div class="pf-runeslots">';
+      for (var s = 0; s <= up.length && s < 4; s++) {
+        var nm = up[s],
+          re = nm && PF2.byName('items', nm);
+        h +=
+          '<span class="pf-runeslot"><button type="button" class="pf-pickcard' +
+          rar(re) +
+          '" data-act="pfPick" data-k="rune" data-gi="' +
+          i +
+          '" data-slot="' +
+          s +
+          '" data-which="' +
+          (isW ? 'w' : 'a') +
+          '"><small>Upgrade ' +
+          (s + 1) +
+          '</small><b>' +
+          (nm ? esc(nm) : 'Install…') +
+          '</b></button>' +
+          (nm ? btn('pfRuneRm', '✕', { v: i, s: s }, 'btn small') : '') +
+          '</span>';
+      }
+      return h + '</div>';
+    }
     function runeEditor(ch, g, i, e) {
       var R = g.runes || {},
         isW = e.k === 'weapon',
         isArmor = e.k === 'armor' && e.cat !== 'shield';
+      if (G.remaster) return isW || isArmor ? gradeEditor(g, i, e, isW) : '';
       if (!isW && !isArmor && (e.t || []).indexOf('invested') < 0) return '';
       var h =
         '<div class="pf-runes"><label class="field"><span>Potency</span><select data-pfrune="' +
@@ -317,6 +367,10 @@
     }
     function runeTitle(g) {
       var R = g.runes || {};
+      if (G.remaster) {
+        var gr = g.grade && g.grade !== 'commercial' ? g.grade.charAt(0).toUpperCase() + g.grade.slice(1) + ' ' : '';
+        return gr + ((R.prop || []).length ? R.prop.join(', ') + ' · ' : '');
+      }
       return (
         (R.pot ? '+' + R.pot + ' ' : '') +
         (R.str
@@ -448,7 +502,12 @@
               '</div>' +
               (gi >= 0
                 ? '<div class="toolbar">' +
-                  btn('pfOpenRow', open ? 'Close' : 'Runes and details', { v: k }, 'btn small') +
+                  btn(
+                    'pfOpenRow',
+                    open ? 'Close' : G.remaster ? 'Grade and details' : 'Runes and details',
+                    { v: k },
+                    'btn small'
+                  ) +
                   btn('pfUnequip', 'Stow', { v: gi }, 'btn small') +
                   '</div>' +
                   (open
@@ -483,13 +542,13 @@
         max = 10 + str;
       var h =
         '<div class="panel"><div class="pf-coins">' +
-        ['pp', 'gp', 'sp', 'cp']
+        (G.credits ? ['sp'] : ['pp', 'gp', 'sp', 'cp'])
           .map(function (c) {
             return (
               '<label class="pf-coin pf-' +
               c +
               '"><span>' +
-              c.toUpperCase() +
+              (G.credits ? 'Credits' : c.toUpperCase()) +
               '</span><input type="number" min="0" inputmode="numeric" id="pf-m-' +
               c +
               '" data-pfmoney="' +
@@ -717,11 +776,14 @@
         '</div>' +
         (U.picErr ? '<p class="small bad">' + esc(U.picErr) + '</p>' : '') +
         '</div>' +
-        '<div class="panel"><div class="row"><label class="field"><span>Alignment</span><select data-pff="alignment"><option value="">—</option>' +
-        ALIGN.map(function (a) {
-          return '<option' + (ch.alignment === a ? ' selected' : '') + '>' + a + '</option>';
-        }).join('') +
-        '</select></label>' +
+        '<div class="panel"><div class="row">' +
+        (G.remaster
+          ? '' // the Remaster has no alignment
+          : '<label class="field"><span>Alignment</span><select data-pff="alignment"><option value="">—</option>' +
+            ALIGN.map(function (a) {
+              return '<option' + (ch.alignment === a ? ' selected' : '') + '>' + a + '</option>';
+            }).join('') +
+            '</select></label>') +
         '<label class="field"><span>Deity</span><input type="text" id="pf-deity" data-pff="deity" value="' +
         esc(ch.deity || '') +
         '" list="pf-deities"></label><datalist id="pf-deities">' +

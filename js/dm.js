@@ -18,6 +18,12 @@
       ['pf2-mon', 'dragon', 'Monsters'],
       ['pf2-loot', 'coins', 'Treasures']
     ],
+    sf2: [
+      ['sf2-party', 'campfire', 'Party'],
+      ['sf2-enc', 'swords', 'Encounters'],
+      ['sf2-mon', 'dragon', 'Aliens'],
+      ['sf2-loot', 'coins', 'Treasures']
+    ],
     mm: [
       ['mm-party', 'campfire', 'Party'],
       ['mm-enc', 'swords', 'Encounters'],
@@ -115,6 +121,44 @@
       'Unconscious',
       'Dying'
     ],
+    // Starfinder 2e: the Remaster's conditions, plus its own
+    sf2: [
+      'Blinded',
+      'Clumsy',
+      'Concealed',
+      'Confused',
+      'Controlled',
+      'Dazzled',
+      'Deafened',
+      'Doomed',
+      'Drained',
+      'Encumbered',
+      'Enfeebled',
+      'Fascinated',
+      'Fatigued',
+      'Fleeing',
+      'Frightened',
+      'Glitching',
+      'Grabbed',
+      'Hidden',
+      'Immobilized',
+      'Invisible',
+      'Off-Guard',
+      'Paralyzed',
+      'Persistent Damage',
+      'Petrified',
+      'Prone',
+      'Quickened',
+      'Restrained',
+      'Sickened',
+      'Slowed',
+      'Stunned',
+      'Stupefied',
+      'Suppressed',
+      'Unconscious',
+      'Untethered',
+      'Wounded'
+    ],
     mm: [
       'Asleep',
       'Blind',
@@ -163,7 +207,7 @@
   ];
   // what the DM can ask for, per game: [group, [[value, label]]]
   function kinds(game, dndSkills) {
-    if (game === 'pf2')
+    if (game === 'pf2' || game === 'sf2')
       return [
         [
           'Saving throws',
@@ -174,7 +218,7 @@
         ['Perception', [['perception:', 'Perception']]],
         [
           'Skills',
-          PF_SK.map(function (x) {
+          (game === 'sf2' ? PF_SK.concat(['Computers', 'Piloting']).sort() : PF_SK).map(function (x) {
             return ['skill:' + x, x];
           })
         ],
@@ -267,6 +311,7 @@
       'Reroll (under 11 counts as 10 + the roll), edit a scene, recover, an instant counter · the GM awards one when a complication causes trouble'
     ]
   ];
+  REFS.sf2 = REFS.pf2;
   var REF = [
     ['Difficulty', 'Very easy 5 · Easy 10 · Medium 15 · Hard 20 · Very hard 25 · Nearly impossible 30'],
     ['Cover', 'Half: +2 AC and Dex saves · Three-quarters: +5 · Total: can’t be targeted directly'],
@@ -772,7 +817,7 @@
         (g === 'dnd'
           ? btn('dmFx', '☾ Short rest', { v: 'rest:short' }, 'btn small') +
             btn('dmFx', '☀ Long rest', { v: 'rest:long' }, 'btn small')
-          : g === 'pf2' || g === 'sd'
+          : g === 'pf2' || g === 'sf2' || g === 'sd'
             ? btn('dmFx', g === 'sd' ? '☾ Rest' : '☾ Rest for the night', { v: 'rest:long' }, 'btn small')
             : '') +
         '</div><div class="toolbar"><input type="number" min="0" id="dm-xp" data-dm="xp" value="' +
