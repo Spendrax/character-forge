@@ -529,7 +529,7 @@
         h +
         '<p class="small muted">' +
         (G.credits
-          ? 'Amounts follow Pathfinder’s Party Treasure by Level table, in credits (1 gp = 10 credits): check them against your Starfinder GM Core. Items are picked at random from the common'
+          ? 'Amounts from the Starfinder GM Core’s Party Treasure by Level table (in credits). Items are picked at random from the common'
           : 'Amounts from the Core Rulebook’s Party Treasure by Level table. Items are picked at random from the common') +
         (L.unc ? ' and uncommon' : '') +
         (G.credits

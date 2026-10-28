@@ -237,7 +237,7 @@ Only your question and a summary of the page you are on are sent to the AI you p
 Tap **SF2** at the top. Starfinder Second Edition (2025) is built on the Pathfinder 2e Remaster rules, so it uses the same pages as Pathfinder with Starfinder's own engine and data: attribute modifiers instead of scores, no alignment, the Computers and Piloting skills, credits, weapon and armor **grades** and **upgrades** instead of runes, and its classes (envoy, mechanic, mystic, operative, solarian, soldier, technomancer, witchwarper).
 
 - **Characters**: built level by level like Pathfinder (60 ancestries, 340+ heritages, 160+ backgrounds, 2,400+ feats, the choices inside class features), with the sheet, Session page, spells, gear and the GM's table.
-- **GM**: Party, Encounters (XP budget, creatures with full stat blocks), **Aliens** (264 creatures from Alien Core and Absalom Station) and **Treasures** in credits (Pathfinder's treasure-by-level budget converted at 1 gp = 10 credits: check it against your GM Core).
+- **GM**: Party, Encounters (XP budget, creatures with full stat blocks), **Aliens** (264 creatures from Alien Core and Absalom Station) and **Treasures** in credits (the Starfinder GM Core's Party Treasure by Level, which is Pathfinder's table with 1 gp = 10 credits: checked level by level against the table on Archives of Nethys).
 - **Books and Rules**: a readable Starfinder rules book and everything searchable.
 - **Checked**: the tests rebuild the 35 iconic and pregenerated characters of the Foundry sf2e system and check their hit points and every skill rank (`test/sf2.test.js`).
 
