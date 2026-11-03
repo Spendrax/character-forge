@@ -273,6 +273,27 @@ function fakeGoogle(ctx, drive) {
       await p.ctx.close();
     });
 
+    await test('Books: a PDF you add reads as chapters and sections, searchable, with its page', async function () {
+      var p = await page();
+      await p.click('[data-act=game][data-v=sd]');
+      await p.click('[data-act=section][data-v=books]');
+      await p.waitForSelector('#bookFile', { state: 'attached' });
+      await p.setInputFiles('#bookFile', path.join(__dirname, 'fixtures', 'sections-sample.pdf'));
+      await p.waitForSelector('.bk-toc', { timeout: 20000 });
+      var toc = await text(p, '.bk-toc');
+      assert.ok(/Character Creation/.test(toc) && /Playing the Game/.test(toc) && /Spells/.test(toc), toc);
+      await p.locator('.bk-toc summary', { hasText: 'Character Creation' }).click();
+      await p.locator('[data-act=bkPart]', { hasText: 'Ancestries' }).click();
+      var t = await text(p, '.bk-page');
+      assert.ok(/Ancestries/.test(t) && /Option One/.test(t), t.slice(0, 200));
+      assert.ok(!/TORCHLIGHT RPG/.test(t), 'running footer left out');
+      await p.click('[data-act=bkToPage]');
+      await p.waitForSelector('#bk-canvas');
+      await p.click('[data-act=bkView][data-v=sections]');
+      await p.waitForSelector('.bk-page');
+      await p.ctx.close();
+    });
+
     await test('Generators: NPCs come with a physical description', async function () {
       var p = await page();
       await p.evaluate(function () {

@@ -1090,8 +1090,60 @@
             : btn('bkRemoveAsk', 'Remove this book', { v: meta.id }, 'btn small')) +
           '</div>'
         : '';
-      if (meta.kind === 'pdf') {
+      // the PDF as sections, or page by page
+      var viewBar =
+        meta.kind === 'pdf'
+          ? '<div class="pills bk-view">' +
+            btn('bkView', '📖 Sections', { v: 'sections' }, 'pill small' + (asSections(meta) ? ' on' : '')) +
+            btn('bkView', '📄 Pages', { v: 'pages' }, 'pill small' + (asSections(meta) ? '' : ' on')) +
+            '</div>'
+          : '';
+      if (asSections(meta)) {
+        var sb = sectionsFor(meta),
+          sid = meta.id + ':s';
+        if (!sb)
+          return (
+            h +
+            viewBar +
+            '<div class="panel">' +
+            (B.secErr
+              ? '<p class="rest-msg">' + esc(B.secErr) + '</p><p class="small">You can still read it page by page.</p>'
+              : '<p>Finding the chapters and sections of <b>' +
+                esc(meta.name) +
+                '</b>… ' +
+                esc(B.secProgress || '') +
+                '</p><p class="small muted">Only the first time: the result is kept on this device.</p>') +
+            '</div></main>'
+          );
+        var at = B.part || pos()[sid] || '0.0',
+          ix = String(at).split('.').map(Number),
+          cur = (sb.chapters[ix[0]] || sb.chapters[0]).parts[ix[1]] || sb.chapters[0].parts[0];
+        if (!B.part) B.part = pos()[sid] || null;
         h +=
+          viewBar +
+          '<div class="bk-layout"><aside class="bk-side' +
+          (B.toc ? '' : ' closed') +
+          '">' +
+          search +
+          (B.q ? searchHtml(sb, sid) : tocHtml(sb, sid)) +
+          '<div class="toolbar">' +
+          btn('bkResec', 'Find the sections again', { v: meta.id }, 'btn small') +
+          '</div>' +
+          tools +
+          '</aside><section class="bk-read">' +
+          '<div class="toolbar"><button type="button" class="btn small bk-tocbtn" data-act="bkToc">' +
+          (B.toc ? 'Hide contents' : '☰ Contents') +
+          '</button>' +
+          (cur && cur.pg ? btn('bkToPage', '📄 Page ' + cur.pg + ' in the PDF', { v: cur.pg }, 'btn small') : '') +
+          '</div>' +
+          readerHtml(sb, sid) +
+          '</section></div>' +
+          '<p class="small muted">Sections found ' +
+          (sb.by === 'bookmarks' ? 'from the book’s bookmarks' : 'from the book’s headings') +
+          ', on this device. Tables and pictures read best in 📄 Pages.</p>';
+      } else if (meta.kind === 'pdf') {
+        h +=
+          viewBar +
           '<div class="bk-layout bk-layout-pdf"><aside class="bk-side">' +
           search +
           (B.q
@@ -1175,9 +1227,67 @@
       }
       if (pdf.doc && document.getElementById('bk-canvas')) drawPdf();
     }
+    // ---------- a PDF read as sections (js/pdf-sections.js): built once on this device, kept with the book ----------
+    var SEC_V = 1;
+    function views() {
+      return (store.bookView = store.bookView || {});
+    }
+    function asSections(meta) {
+      return meta && meta.kind === 'pdf' && views()[meta.id] !== 'pages';
+    }
+    function sectionsFor(meta) {
+      var sid = meta.id + ':s';
+      if (texts[sid]) return texts[sid];
+      if (B.secBusy === meta.id) return null;
+      B.secBusy = meta.id;
+      B.secErr = '';
+      B.secProgress = '';
+      get('booksec:' + meta.id)
+        .then(function (saved) {
+          if (saved && saved.v === SEC_V && saved.book) return saved.book;
+          // not built yet: open the PDF and find its sections
+          openPdf(meta.id);
+          return Promise.all([
+            loadScript('js/pdf-sections.js'),
+            new Promise(function (ok, no) {
+              (function wait() {
+                if (pdf.id !== meta.id) return no(new Error('closed'));
+                if (pdf.doc) return ok(pdf.doc);
+                if (pdf.err) return no(new Error(pdf.err));
+                setTimeout(wait, 150);
+              })();
+            })
+          ]).then(function (r) {
+            return root.PdfSections.build(r[1], meta.name, function (i, n) {
+              B.secProgress = i + ' / ' + n;
+              render();
+            }).then(function (book) {
+              put('booksec:' + meta.id, { v: SEC_V, book: book });
+              return book;
+            });
+          });
+        })
+        .then(
+          function (book) {
+            B.secBusy = null;
+            book.title = meta.name;
+            texts[sid] = book;
+            render();
+          },
+          function (e) {
+            B.secBusy = null;
+            B.secErr = (e && e.message) || 'Couldn’t find the sections.';
+            if (B.secErr !== 'closed') render();
+          }
+        );
+      return null;
+    }
     function goPart(k) {
       B.part = k;
-      pos()[B.open] = k;
+      var meta = (mine || []).filter(function (b) {
+        return b.id === B.open;
+      })[0];
+      pos()[B.open + (asSections(meta) ? ':s' : '')] = k;
       B.top = true;
       if (root.innerWidth < 800) B.toc = false;
     }
@@ -1210,6 +1320,24 @@
         pos()[B.open] = n;
         B.top = true;
       },
+      bkView: function (v) {
+        views()[B.open] = v === 'pages' ? 'pages' : 'sections';
+        B.part = null;
+        B.q = '';
+      },
+      // from a section to its page in the PDF
+      bkToPage: function (v) {
+        views()[B.open] = 'pages';
+        pdf.page = Math.max(1, +v || 1);
+        pos()[B.open] = pdf.page;
+        B.top = true;
+      },
+      bkResec: function (v) {
+        delete texts[v + ':s'];
+        delete lower[v + ':s'];
+        put('booksec:' + v, undefined);
+        B.part = null;
+      },
       bkRemoveAsk: function (v) {
         B.confirmRm = v;
       },
@@ -1228,6 +1356,8 @@
         }
         put('books', mine);
         put('book:' + v, undefined);
+        put('booksec:' + v, undefined);
+        delete texts[v + ':s'];
         B.open = built()[0].id;
         B.confirmRm = null;
         B.msg = 'Book removed from this device.';

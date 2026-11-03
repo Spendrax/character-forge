@@ -119,6 +119,8 @@ The free official rules, the System Reference Document 5.1, are built in: races,
 
 **+ Add a book** adds your own PDF, Markdown or text file. It is kept in this browser's storage on this device, never uploaded or put in the app's files, so each person adds their own copies. PDFs are shown page by page (with [pdf.js](https://mozilla.github.io/pdf.js/), Apache 2.0) and can be searched when they contain text; scanned PDFs can be read but not searched.
 
+**PDFs as sections**: a PDF you add opens as **📖 Sections**: its chapters and sections in a contents list that folds and unfolds, each section as clean text with its smaller headings, searchable, with a button to its page in the PDF (**📄 Pages** shows the pages themselves). The sections come from the book's bookmarks when it has them, otherwise from its headings (bigger letters), with page numbers and running headers left out (`js/pdf-sections.js`). It runs once on this device, the first time you open the book, and the result is kept with the book; **Find the sections again** redoes it.
+
 ### House rules
 
 A **House rules** section (next to Characters and Monsters) holds your table's own rules as short titled notes you can search and read quickly during a game.
