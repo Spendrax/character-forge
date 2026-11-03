@@ -4990,3 +4990,16 @@ html.dice3d-lock body {
   display: block;
   margin: 0.5rem auto;
 }
+
+.bk-bar {
+  height: 0.5rem;
+  border-radius: 0.25rem;
+  background: var(--line);
+  overflow: hidden;
+}
+.bk-bar span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.3s;
+}

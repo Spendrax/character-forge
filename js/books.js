@@ -1111,8 +1111,10 @@
               : '<p>Finding the chapters and sections of <b>' +
                 esc(meta.name) +
                 '</b>… ' +
-                esc(B.secProgress || '') +
-                '</p><p class="small muted">Only the first time: the result is kept on this device.</p>') +
+                esc(B.secProgress ? 'page ' + B.secProgress : '') +
+                '</p><div class="bk-bar"><span style="width:' +
+                (B.secPct || 0) +
+                '%"></span></div><p class="small muted">Only the first time (about a minute for a big book on a phone): the result is kept on this device. You can read 📄 Pages meanwhile.</p>') +
             '</div></main>'
           );
         var at = B.part || pos()[sid] || '0.0',
@@ -1235,13 +1237,15 @@
     function asSections(meta) {
       return meta && meta.kind === 'pdf' && views()[meta.id] !== 'pages';
     }
+    var building = {}; // book id → the one build running for it (never two at once)
     function sectionsFor(meta) {
       var sid = meta.id + ':s';
       if (texts[sid]) return texts[sid];
-      if (B.secBusy === meta.id) return null;
-      B.secBusy = meta.id;
+      if (building[meta.id] || (B.secErr && B.secErrFor === meta.id)) return null;
+      var token = (building[meta.id] = {});
       B.secErr = '';
       B.secProgress = '';
+      B.secPct = 0;
       get('booksec:' + meta.id)
         .then(function (saved) {
           if (saved && saved.v === SEC_V && saved.book) return saved.book;
@@ -1251,15 +1255,17 @@
             loadScript('js/pdf-sections.js'),
             new Promise(function (ok, no) {
               (function wait() {
-                if (pdf.id !== meta.id) return no(new Error('closed'));
-                if (pdf.doc) return ok(pdf.doc);
-                if (pdf.err) return no(new Error(pdf.err));
+                if (pdf.doc && pdf.id === meta.id) return ok(pdf.doc);
+                if (pdf.err && pdf.id === meta.id) return no(new Error(pdf.err));
+                if (pdf.id !== meta.id) openPdf(meta.id);
                 setTimeout(wait, 150);
               })();
             })
           ]).then(function (r) {
             return root.PdfSections.build(r[1], meta.name, function (i, n) {
+              if (building[meta.id] !== token) return;
               B.secProgress = i + ' / ' + n;
+              B.secPct = Math.round((i / n) * 100);
               render();
             }).then(function (book) {
               put('booksec:' + meta.id, { v: SEC_V, book: book });
@@ -1269,15 +1275,16 @@
         })
         .then(
           function (book) {
-            B.secBusy = null;
+            delete building[meta.id];
             book.title = meta.name;
             texts[sid] = book;
             render();
           },
           function (e) {
-            B.secBusy = null;
+            delete building[meta.id];
             B.secErr = (e && e.message) || 'Couldn’t find the sections.';
-            if (B.secErr !== 'closed') render();
+            B.secErrFor = meta.id;
+            render();
           }
         );
       return null;
@@ -1322,6 +1329,7 @@
       },
       bkView: function (v) {
         views()[B.open] = v === 'pages' ? 'pages' : 'sections';
+        if (v !== 'pages') B.secErr = '';
         B.part = null;
         B.q = '';
       },
@@ -1333,6 +1341,7 @@
         B.top = true;
       },
       bkResec: function (v) {
+        B.secErr = '';
         delete texts[v + ':s'];
         delete lower[v + ':s'];
         put('booksec:' + v, undefined);
