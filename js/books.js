@@ -1025,8 +1025,48 @@
     }
 
     // ---------- the page ----------
+    // each book you add belongs to the game you added it in (you can show it in others); books added before
+    // that are placed by their name ("Shadowdark…" → Shadowdark), or shown everywhere when the name says nothing
+    var GAMES = [
+      ['dnd', 'D&D'],
+      ['pf2', 'PF2'],
+      ['sf2', 'SF2'],
+      ['mm', 'M&M'],
+      ['sd', 'Shadowdark']
+    ];
+    function gameNow() {
+      return /^(pf2|sf2|mm|sd)$/.test(store.game || '') ? store.game : 'dnd';
+    }
+    function bookGames(b) {
+      if (Array.isArray(b.games) && b.games.length) return b.games;
+      var n = String(b.name || '');
+      if (/shadow\s*dark/i.test(n)) return ['sd'];
+      if (/starfinder/i.test(n)) return ['sf2'];
+      if (/pathfinder/i.test(n)) return ['pf2'];
+      if (/mutants|masterminds|m&m|hero.?s handbook/i.test(n)) return ['mm'];
+      if (/d&d|dnd|dungeons|5e|player.?s handbook|monster manual|dungeon master/i.test(n)) return ['dnd'];
+      return GAMES.map(function (g) {
+        return g[0];
+      });
+    }
+    function mineHere() {
+      var g = gameNow();
+      return (mine || []).filter(function (b) {
+        return bookGames(b).indexOf(g) >= 0;
+      });
+    }
+    function gamesHtml(meta) {
+      var on = bookGames(meta);
+      return (
+        '<div class="small bk-games">Show this book in: ' +
+        GAMES.map(function (g) {
+          return btn('bkGame', g[1], { v: g[0] }, 'pill small' + (on.indexOf(g[0]) >= 0 ? ' on' : ''));
+        }).join('') +
+        '</div>'
+      );
+    }
     function shelfHtml() {
-      var list = built().concat(mine || []);
+      var list = built().concat(mineHere());
       return (
         '<div class="bk-shelf">' +
         list
@@ -1050,12 +1090,12 @@
     function html() {
       ensure();
       var meta = built()
-        .concat(mine || [])
+        .concat(mineHere())
         .filter(function (b) {
           return b.id === B.open;
         })[0];
       if (!meta) {
-        meta = built()[0] || (mine || [])[0];
+        meta = built()[0] || mineHere()[0];
         if (!meta)
           return (
             '<main class="mon-main bk-main"><h2>Books</h2>' +
@@ -1088,7 +1128,8 @@
               btn('bkRemove', 'Remove', { v: meta.id }, 'btn danger') +
               btn('bkRemoveCancel', 'Keep', {}, 'btn')
             : btn('bkRemoveAsk', 'Remove this book', { v: meta.id }, 'btn small')) +
-          '</div>'
+          '</div>' +
+          gamesHtml(meta)
         : '';
       // the PDF as sections, or page by page
       var viewBar =
@@ -1347,6 +1388,34 @@
         put('booksec:' + v, undefined);
         B.part = null;
       },
+      // which games show this book (at least one)
+      bkGame: function (v) {
+        var b = (mine || []).filter(function (x) {
+          return x.id === B.open;
+        })[0];
+        if (!b) return;
+        var on = bookGames(b).slice(),
+          i = on.indexOf(v);
+        if (i >= 0) {
+          if (on.length === 1) return false;
+          on.splice(i, 1);
+        } else on.push(v);
+        b.games = on;
+        put('books', mine);
+        if (on.indexOf(gameNow()) < 0) {
+          B.msg =
+            '“' +
+            b.name +
+            '” now shows in ' +
+            GAMES.reduce(function (a, g) {
+              if (on.indexOf(g[0]) >= 0) a.push(g[1]);
+              return a;
+            }, []).join(', ') +
+            '.';
+          B.open = (built()[0] || mineHere()[0] || {}).id || '';
+          B.part = null;
+        }
+      },
       bkRemoveAsk: function (v) {
         B.confirmRm = v;
       },
@@ -1367,7 +1436,7 @@
         put('book:' + v, undefined);
         put('booksec:' + v, undefined);
         delete texts[v + ':s'];
-        B.open = built()[0].id;
+        B.open = (built()[0] || mineHere()[0] || {}).id || '';
         B.confirmRm = null;
         B.msg = 'Book removed from this device.';
       }
@@ -1410,7 +1479,9 @@
       (isPdf ? f.arrayBuffer() : f.text())
         .then(function (data) {
           return put('book:' + id, data).then(function () {
-            mine = (mine || []).concat([{ id: id, name: name, kind: isPdf ? 'pdf' : 'text', size: f.size }]);
+            mine = (mine || []).concat([
+              { id: id, name: name, kind: isPdf ? 'pdf' : 'text', size: f.size, games: [gameNow()] }
+            ]);
             return put('books', mine);
           });
         })

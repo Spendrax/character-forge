@@ -291,6 +291,19 @@ function fakeGoogle(ctx, drive) {
       await p.waitForSelector('#bk-canvas');
       await p.click('[data-act=bkView][data-v=sections]');
       await p.waitForSelector('.bk-page');
+      // a book belongs to the game it was added in; "Show this book in" adds others
+      var shelf = async function (g) {
+        await p.click('[data-act=game][data-v=' + g + ']');
+        await wait(1500);
+        await p.click('[data-act=section][data-v=' + (g === 'mm' ? 'mm-rules' : 'books') + ']');
+        await wait(800);
+        return text(p, '.bk-shelf');
+      };
+      assert.ok(!/sections sample/i.test(await shelf('mm')), 'not on the M&M shelf');
+      assert.ok(/sections sample/i.test(await shelf('sd')), 'on the Shadowdark shelf');
+      await p.locator('[data-act=bkOpen]', { hasText: 'sections sample' }).click();
+      await p.click('[data-act=bkGame][data-v=mm]');
+      assert.ok(/sections sample/i.test(await shelf('mm')), 'shown in M&M too');
       await p.ctx.close();
     });
 

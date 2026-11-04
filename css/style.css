@@ -5025,3 +5025,10 @@ button.pf-trait {
 .pf-traitpop p {
   margin: 0.3rem 0 0;
 }
+
+.bk-games {
+  margin: 0.4rem 0;
+}
+.bk-games .pill {
+  margin: 0.15rem;
+}
