@@ -388,5 +388,8 @@ for k, v in LANG.items():
     m = re.match(r'^PF2E\.TraitDescription([A-Za-z0-9]+)$', k)
     if m and isinstance(v, str) and v.strip():
         TRAITS[m.group(1).lower()] = text(v)
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import traits_extra
+print('traits without an official description, filled:', len(traits_extra.fill(TRAITS, 'pf2', core, feats + spells + items, best)))
 write('traits.js', 'traits', TRAITS)
 print('restored originals:', len(RESTORED), ', '.join(sorted(RESTORED)[:60]))

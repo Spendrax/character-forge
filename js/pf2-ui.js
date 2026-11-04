@@ -117,18 +117,22 @@
             '</div>'
         : '';
     }
-    // what a trait means: "deadly-d10" is looked up as deadly d10, then deadly (data/…/traits.js, loaded on the first tap)
+    // what a trait means: "deadly-d10" is looked up as deadly d10, then deadly; "additive2" as additive
+    // (data/…/traits.js, loaded on the first tap; tools/traits_extra.py does the same lookup)
     function traitText(v) {
       var T = (root[G.data] || {}).traits || {},
         s = String(v).toLowerCase(),
         tries = [s];
-      for (var i = 0; i < 3; i++) {
-        s = s.replace(/-[^-]+$/, '');
-        if (s && s !== tries[tries.length - 1]) tries.push(s);
-      }
-      for (i = 0; i < tries.length; i++) {
+      while (s.indexOf('-') >= 0) tries.push((s = s.replace(/-[^-]*$/, '')));
+      tries = tries.concat(
+        tries.reduce(function (a, x) {
+          a.push(x.replace(/\d+$/, ''));
+          return a;
+        }, [])
+      );
+      for (var i = 0; i < tries.length; i++) {
         var k = tries[i].replace(/[^a-z0-9]/g, '');
-        if (T[k]) return T[k];
+        if (k && T[k]) return T[k];
       }
       return '';
     }
