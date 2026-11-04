@@ -102,16 +102,69 @@
             x
               .map(function (s) {
                 return (
-                  '<span class="pf-trait' +
+                  '<button type="button" class="pf-trait' +
                   (/^(uncommon|rare|unique)$/.test(s) ? ' pf-' + s.slice(0, 4) : '') +
-                  '">' +
+                  '" data-act="pfTrait" data-v="' +
+                  esc(s) +
+                  '" title="What is ' +
                   esc(s.replace(/-/g, ' ')) +
-                  '</span>'
+                  '?">' +
+                  esc(s.replace(/-/g, ' ')) +
+                  '</button>'
                 );
               })
               .join('') +
             '</div>'
         : '';
+    }
+    // what a trait means: "deadly-d10" is looked up as deadly d10, then deadly (data/…/traits.js, loaded on the first tap)
+    function traitText(v) {
+      var T = (root[G.data] || {}).traits || {},
+        s = String(v).toLowerCase(),
+        tries = [s];
+      for (var i = 0; i < 3; i++) {
+        s = s.replace(/-[^-]+$/, '');
+        if (s && s !== tries[tries.length - 1]) tries.push(s);
+      }
+      for (i = 0; i < tries.length; i++) {
+        var k = tries[i].replace(/[^a-z0-9]/g, '');
+        if (T[k]) return T[k];
+      }
+      return '';
+    }
+    // a tap on a red trait: what it means, just under the traits (a second tap closes it)
+    function traitPop(v, el) {
+      var box = el.closest('.pf-traits');
+      if (!box) return false;
+      var next = box.nextElementSibling,
+        had = next && next.classList.contains('pf-traitpop') ? next : null;
+      Array.prototype.forEach.call(box.querySelectorAll('.pf-trait.on'), function (b) {
+        b.classList.remove('on');
+      });
+      if (had) had.parentNode.removeChild(had);
+      if (had && had.getAttribute('data-t') === v) return false;
+      el.classList.add('on');
+      var pop = document.createElement('div');
+      pop.className = 'pf-traitpop';
+      pop.setAttribute('data-t', v);
+      box.parentNode.insertBefore(pop, box.nextSibling);
+      var name = String(v).replace(/-/g, ' '),
+        show = function () {
+          var t = traitText(v);
+          pop.innerHTML =
+            '<b>' +
+            esc(name.charAt(0).toUpperCase() + name.slice(1)) +
+            '</b> ' +
+            (t ? md(t) : '<span class="muted">No description for this trait in the rules data.</span>');
+        };
+      if ((root[G.data] || {}).traits) show();
+      else {
+        pop.textContent = '…';
+        loadScript(G.dir + 'traits.js').then(show, function () {
+          pop.textContent = 'Couldn’t load the trait descriptions. Check your connection.';
+        });
+      }
+      return false;
     }
 
     // ---------- the character's picture: shrunk to 640 px so it fits in the browser's storage ----------
@@ -493,7 +546,8 @@
       rar: rar,
       render: render,
       teml: teml,
-      traits: traits
+      traits: traits,
+      traitPop: traitPop
     };
     ['build', 'sheet', 'gear', 'rules', 'actions'].forEach(function (p) {
       root.PF2UIParts[p](K);

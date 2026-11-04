@@ -21,6 +21,9 @@
       return U.pick;
     }
     var actions = {
+      pfTrait: function (v, el) {
+        return K.traitPop(v, el);
+      },
       pfSpK: function (v) {
         U.spK = U.spK === v ? '' : v;
       },

@@ -350,6 +350,22 @@ function fakeGoogle(ctx, drive) {
       await wait(800);
       t = await text(p, 'main');
       assert.ok(/Solarian/.test(t) && /Witchwarper/.test(t), 'classes in the rules');
+      // a red trait says what it means when tapped
+      await p.click('[data-act=pfRCat][data-v=items]');
+      await wait(800);
+      var rows = p.locator('[data-act=pfROpen]');
+      for (var r = 0; r < 12 && !(await p.locator('.pf-trait').count()); r++) {
+        await rows.nth(r).click();
+        await wait(250);
+      }
+      var tr = p.locator('.pf-trait').first();
+      var trName = (await tr.innerText()).toLowerCase();
+      await tr.click();
+      await p.waitForSelector('.pf-traitpop b');
+      var pop = await text(p, '.pf-traitpop');
+      assert.ok(pop.length > 20 && pop.toLowerCase().indexOf(trName.split(' ')[0]) >= 0, 'trait meaning: ' + pop);
+      await tr.click();
+      assert.equal(await p.locator('.pf-traitpop').count(), 0, 'second tap closes it');
       await p.evaluate(function () {
         Forge.ui.section = 'sf2-loot';
         Forge.render();

@@ -213,6 +213,7 @@ A third game next to D&D 5e and M&M 3e: tap **PF2** at the top. The rules are th
 - **Treasures**: the Core Rulebook's Party Treasure by Level: a whole level's worth or one fight's share, with real permanent items, consumables, gems and money (the Treasure button in a running fight rolls one for that party).
 - **Books**: a readable Pathfinder rules book (basics, conditions, actions, ancestries, heritages, backgrounds, classes with all their features, deities), next to your own books.
 - **Rules**: everything searchable, plus a short page of basics.
+- **Traits**: tap a red trait (agile, bulwark, deadly d10…) anywhere (pickers, sheet, gear, stat blocks, rules) to see what it means, from the system's own trait descriptions (`data/pf2/traits.js`, `data/sf2/traits.js`, loaded on the first tap). Starfinder too.
 
 Data: `python3 tools/pf2-build.py <foundry-pf2e 5.8.0> <foundry-pf2e 4.12.0>` builds `data/pf2/` from the Foundry VTT pf2e system (rules are Open Game Content, OGL 1.0a; Rage of Elements under the ORC license). Only pre-Remaster entries are kept; a few spells that 5.8.0 had already replaced with Remaster versions come from 4.12.0. This app uses trademarks and/or copyrights owned by Paizo Inc., used under Paizo's Community Use Policy (paizo.com/licenses/communityuse); it is not published, endorsed, or specifically approved by Paizo, and is free to use.
 

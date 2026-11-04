@@ -5003,3 +5003,25 @@ html.dice3d-lock body {
   background: var(--accent);
   transition: width 0.3s;
 }
+
+/* a trait's meaning, under the red tags (js/pf2-ui.js, traitPop) */
+button.pf-trait {
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+}
+.pf-trait.on {
+  outline: 2px solid var(--ink, #fff);
+  outline-offset: 1px;
+}
+.pf-traitpop {
+  margin: 0.3rem 0 0.6rem;
+  padding: 0.5rem 0.7rem;
+  border-left: 3px solid var(--accent);
+  background: var(--soft, rgba(127, 127, 127, 0.1));
+  border-radius: 0.3rem;
+  font-size: 0.92rem;
+}
+.pf-traitpop p {
+  margin: 0.3rem 0 0;
+}

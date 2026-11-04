@@ -407,3 +407,12 @@ write('spells.js', 'spells', spells)
 write('items.js', 'items', items)
 write('bestiary.js', 'bestiary', best)
 
+# what each trait means (the red tags: bulwark, agile, deadly d10…), from the system's own trait descriptions;
+# keys are the trait's letters only, lower case ("two-hand-d8" is looked up as "twohandd8", then "twohand")
+TRAITS = {}
+for k, v in LANG.items():
+    m = re.match(r'^PF2E\.TraitDescription([A-Za-z0-9]+)$', k)
+    if m and isinstance(v, str) and v.strip():
+        TRAITS[m.group(1).lower()] = text(v)
+write('traits.js', 'traits', TRAITS)
+
