@@ -5093,3 +5093,245 @@ button.pf-trait {
   padding: 0.45rem 0;
   border-top: 1px solid var(--line);
 }
+
+/* ---------- each game has its own colour (js/app/frame.js sets data-game on <html>) ---------- */
+:root[data-game='pf2'] {
+  --accent: #1d6b62;
+}
+:root[data-game='sf2'] {
+  --accent: #4046b0;
+}
+:root[data-game='mm'] {
+  --accent: #1a62ad;
+}
+:root[data-game='sd'] {
+  --accent: #2b2a2e;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-game='pf2']:not([data-theme='light']) {
+    --accent: #5cc5b6;
+    --accent-ink: #0c1a18;
+  }
+  :root[data-game='sf2']:not([data-theme='light']) {
+    --accent: #a3a8ff;
+    --accent-ink: #12132b;
+  }
+  :root[data-game='mm']:not([data-theme='light']) {
+    --accent: #72b4f2;
+    --accent-ink: #0b1826;
+  }
+  :root[data-game='sd']:not([data-theme='light']) {
+    --accent: #e9e3d5;
+    --accent-ink: #1a191c;
+  }
+}
+:root[data-game='pf2'][data-theme='dark'] {
+  --accent: #5cc5b6;
+  --accent-ink: #0c1a18;
+}
+:root[data-game='sf2'][data-theme='dark'] {
+  --accent: #a3a8ff;
+  --accent-ink: #12132b;
+}
+:root[data-game='mm'][data-theme='dark'] {
+  --accent: #72b4f2;
+  --accent-ink: #0b1826;
+}
+:root[data-game='sd'][data-theme='dark'] {
+  --accent: #e9e3d5;
+  --accent-ink: #1a191c;
+}
+.game-switch button.on {
+  color: var(--accent-ink);
+}
+
+/* ---------- the top bar and the sections ---------- */
+.sec {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.sec-ico {
+  display: none;
+}
+.sec-sheet {
+  display: contents;
+}
+.sec-more {
+  display: none;
+}
+.top-search.on {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+}
+:root {
+  --navh: 0px;
+}
+/* phones: a short top bar (the app's name, search, theme, undo; the games under it), the sections at the bottom */
+@media (max-width: 700px) {
+  :root {
+    --navh: calc(3.5rem + env(safe-area-inset-bottom, 0px));
+  }
+  .top {
+    gap: 0.35rem 0.4rem;
+    padding: 0.4rem 0.6rem;
+  }
+  .top .brand {
+    font-size: 1.05rem;
+    margin-right: 0;
+  }
+  .top .game-switch {
+    order: 10;
+    flex: 1 0 100%;
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .top .game-switch button {
+    flex: 1 0 auto;
+    padding: 0.3rem 0.55rem;
+  }
+  .top .top-lbl {
+    display: none;
+  }
+  .top .top-search {
+    margin-left: auto;
+  }
+  .top .top-undo,
+  .top .theme-btn,
+  .top .top-search,
+  .top .top-install {
+    padding: 0.35rem 0.6rem;
+    min-height: 2.25rem;
+  }
+  .top select[data-ui='current'] {
+    flex: 1 1 8rem;
+    min-width: 0;
+    order: 11;
+  }
+  .sections {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 18;
+    flex-wrap: nowrap;
+    gap: 0;
+    background: var(--panel);
+    border-top: 1px solid var(--line);
+    padding: 0.2rem 0.25rem calc(0.2rem + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -3px 12px rgba(0, 0, 0, 0.08);
+  }
+  .sec {
+    flex: 1 1 0;
+    min-width: 0;
+    flex-direction: column;
+    gap: 0.1rem;
+    padding: 0.3rem 0.1rem;
+    border-radius: 0.6rem;
+    font-size: 0.7rem;
+    line-height: 1.1;
+    color: var(--muted);
+  }
+  .sec span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .sec-ico {
+    display: block;
+    width: 1.45rem;
+    height: 1.45rem;
+  }
+  .sec.on {
+    background: none;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .sec-more {
+    display: inline-flex;
+  }
+  .sec-sheet {
+    display: none;
+    position: absolute;
+    right: 0.4rem;
+    bottom: calc(100% + 0.4rem);
+    flex-direction: column;
+    min-width: 11rem;
+    padding: 0.3rem;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 0.8rem;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25);
+  }
+  .sections.more .sec-sheet {
+    display: flex;
+  }
+  .sec-sheet .sec {
+    flex: none;
+    flex-direction: row;
+    gap: 0.6rem;
+    padding: 0.6rem 0.7rem;
+    font-size: 0.95rem;
+    color: var(--ink);
+  }
+  .sec-sheet .sec.on {
+    color: var(--accent);
+  }
+  #app {
+    padding-bottom: var(--navh);
+  }
+  /* what floats at the bottom of the screen sits above the sections bar */
+  .mini-bar,
+  .audio-dock,
+  .audio-fab-wrap,
+  .dice3d-fab,
+  .ai-fab,
+  .roll-toast {
+    margin-bottom: var(--navh);
+  }
+}
+@media print {
+  .sections {
+    display: none;
+  }
+}
+
+/* ---------- the search page (js/app/search.js) ---------- */
+.gs-box input {
+  flex: 1;
+  font-size: 1.05rem;
+  padding: 0.6rem 0.8rem;
+}
+.gs-group h3 {
+  margin: 0 0 0.3rem;
+}
+.gs-row {
+  border-top: 1px solid var(--line);
+}
+.gs-hit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.1rem 0.6rem;
+  width: 100%;
+  padding: 0.55rem 0.2rem;
+  background: none;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.gs-hit:hover b,
+.gs-row.open .gs-hit b {
+  color: var(--accent);
+}
+.gs-detail {
+  padding: 0 0.2rem 0.7rem;
+}
+.gs-books {
+  margin-top: 0.8rem;
+}

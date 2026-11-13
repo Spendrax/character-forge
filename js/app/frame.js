@@ -195,6 +195,9 @@ function render() {
       })
       .join('') +
     '</select>' +
+    '<button type="button" class="btn icon-btn top-search" data-act="section" data-v="search" title="Search everything" aria-label="Search everything">' +
+    Icon('search') +
+    '</button>' +
     '<button type="button" class="btn icon-btn" data-act="undo" title="Undo (Ctrl+Z)" aria-label="Undo"' +
     (undoStack.length ? '' : ' disabled') +
     '>↶</button>' +
@@ -444,7 +447,9 @@ function applyTheme(t) {
   var dark =
     t === 'dark' || (t === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
   var m = document.querySelector('meta[name="theme-color"]');
-  if (m) m.setAttribute('content', dark ? '#17161a' : '#8b2e23');
+  // the phone's status bar: the game's colour in the light theme
+  if (m)
+    m.setAttribute('content', dark ? '#17161a' : getComputedStyle(el).getPropertyValue('--accent').trim() || '#8b2e23');
 }
 function themeBtn() {
   var t = themeNow(),
@@ -493,71 +498,103 @@ function gameSwitch() {
     '</div>'
   );
 }
+// The sections of the current game. On a computer: a row of pills in the top bar. On a phone: a bar at the bottom
+// of the screen, within thumb reach: the first four, then "More" for the rest (css: .sections).
 function sectionNav() {
   var g = gameOf();
   var list =
     g === 'pf2' || g === 'sf2'
       ? [
-          [g + '-home', '⌂ Home'],
-          [g + '-chars', 'Characters'],
-          ['dm', 'GM'],
-          ['books', 'Books'],
-          [g + '-rules', 'Rules'],
-          ['audio', 'Audio'],
-          ['rules', 'House rules']
+          [g + '-home', 'Home', 'house'],
+          [g + '-chars', 'Characters', 'sword'],
+          ['dm', 'GM', 'eye'],
+          ['books', 'Books', 'book'],
+          [g + '-rules', 'Rules', 'tome'],
+          ['audio', 'Audio', 'lute'],
+          ['rules', 'House rules', 'scroll']
         ]
-      : gameOf() === 'sd'
+      : g === 'sd'
         ? [
-            ['sd-home', '⌂ Home'],
-            ['sd-chars', 'Characters'],
-            ['dm', 'GM'],
-            ['books', 'Books'],
-            ['audio', 'Audio'],
-            ['rules', 'House rules']
+            ['sd-home', 'Home', 'house'],
+            ['sd-chars', 'Characters', 'sword'],
+            ['dm', 'GM', 'eye'],
+            ['books', 'Books', 'book'],
+            ['audio', 'Audio', 'lute'],
+            ['rules', 'House rules', 'scroll']
           ]
-        : gameOf() === 'mm'
+        : g === 'mm'
           ? [
-              ['mm-home', '⌂ Home'],
-              ['mm-heroes', 'Heroes'],
-              ['dm', 'GM'],
-              ['mm-rules', 'Rules'],
-              ['audio', 'Audio'],
-              ['rules', 'House rules']
+              ['mm-home', 'Home', 'house'],
+              ['mm-heroes', 'Heroes', 'mask'],
+              ['dm', 'GM', 'eye'],
+              ['mm-rules', 'Rules', 'tome'],
+              ['audio', 'Audio', 'lute'],
+              ['rules', 'House rules', 'scroll']
             ]
           : [
-              ['home', '⌂ Home'],
-              ['roster', 'Characters'],
-              ['dm', 'DM'],
-              ['items', 'Magic items'],
-              ['books', 'Books'],
-              ['audio', 'Audio'],
-              ['rules', 'House rules']
+              ['home', 'Home', 'house'],
+              ['roster', 'Characters', 'sword'],
+              ['dm', 'DM', 'eye'],
+              ['books', 'Books', 'book'],
+              ['items', 'Magic items', 'potion'],
+              ['audio', 'Audio', 'lute'],
+              ['rules', 'House rules', 'scroll']
             ];
+  var isOn = function (x) {
+    return (
+      ui.section === x[0] ||
+      (x[0] === 'roster' && ui.section === 'chars') ||
+      (x[0] === 'dm' &&
+        /^(party|encounters|monsters|treasure|gen|[ps]f2-(party|enc|mon|loot)|mm-(party|enc|foes|loot))$/.test(
+          ui.section
+        ))
+    );
+  };
+  var one = function (x) {
+    var on = isOn(x);
+    return (
+      '<button type="button" class="sec' +
+      (on ? ' on' : '') +
+      '" data-act="section" data-v="' +
+      x[0] +
+      '"' +
+      (on ? ' aria-current="page"' : '') +
+      '>' +
+      Icon(x[2], 'sec-ico') +
+      '<span>' +
+      x[1] +
+      '</span></button>'
+    );
+  };
+  var rest = list.slice(4),
+    open = ui.navMore === ui.section;
   return (
-    '<nav class="sections" aria-label="Sections">' +
-    list
-      .map(function (x) {
-        var on =
-          ui.section === x[0] ||
-          (x[0] === 'roster' && ui.section === 'chars') ||
-          (x[0] === 'dm' &&
-            /^(party|encounters|monsters|treasure|gen|[ps]f2-(party|enc|mon|loot)|mm-(party|enc|foes|loot))$/.test(
-              ui.section
-            ));
-        return (
-          '<button type="button" class="sec' +
-          (on ? ' on' : '') +
-          '" data-act="section" data-v="' +
-          x[0] +
-          '"' +
-          (on ? ' aria-current="page"' : '') +
-          '>' +
-          x[1] +
-          '</button>'
-        );
-      })
-      .join('') +
+    '<nav class="sections' +
+    (open ? ' more' : '') +
+    '" aria-label="Sections">' +
+    list.slice(0, 4).map(one).join('') +
+    '<div class="sec-sheet">' +
+    rest.map(one).join('') +
+    '</div>' +
+    '<button type="button" class="sec sec-more' +
+    (rest.some(isOn) ? ' on' : '') +
+    '" data-act="navMore" aria-expanded="' +
+    open +
+    '">' +
+    Icon('more', 'sec-ico') +
+    '<span>More</span></button>' +
     '</nav>'
+  );
+}
+// the top bar's small buttons: search everything, the theme, undo
+function topTools() {
+  return (
+    '<button type="button" class="btn icon-btn top-search' +
+    (ui.section === 'search' ? ' on' : '') +
+    '" data-act="section" data-v="search" title="Search everything" aria-label="Search everything">' +
+    Icon('search') +
+    '</button>' +
+    themeBtn()
   );
 }
 function homeHtml() {
@@ -644,10 +681,22 @@ function pageIn(app) {
   app.classList.remove('page-in');
   void app.offsetWidth; // start the animation again
   app.classList.add('page-in');
+  // the search page: ready to type
+  if (ui.section === 'search')
+    setTimeout(function () {
+      var i = document.getElementById('q-gs');
+      if (i) i.focus();
+    }, 0);
 }
 function setApp(html) {
   var app = document.getElementById('app'),
-    keep = document.activeElement;
+    keep = document.activeElement,
+    root = document.documentElement;
+  // each game has its own colour (css: :root[data-game=…])
+  if (root.getAttribute('data-game') !== gameOf()) {
+    root.setAttribute('data-game', gameOf());
+    applyTheme(themeNow());
+  }
   pageIn(app);
   var typing =
     keep &&
@@ -724,11 +773,18 @@ function renderSection(fid, pos) {
     gameSwitch() +
     sectionNav() +
     '<span class="spacer"></span>' +
-    themeBtn() +
-    '<button type="button" class="btn" data-act="undo" title="Undo (Ctrl+Z)"' +
+    topTools() +
+    '<button type="button" class="btn top-undo" data-act="undo" title="Undo (Ctrl+Z)" aria-label="Undo"' +
     (undoStack.length ? '' : ' disabled') +
-    '>↶ Undo</button>' +
-    (isInstalledApp() ? '' : btn('install', 'Install app', {}, installPrompt ? 'btn primary' : 'btn')) +
+    '>↶<span class="top-lbl"> Undo</span></button>' +
+    (isInstalledApp()
+      ? ''
+      : btn(
+          'install',
+          'Install<span class="top-lbl"> app</span>',
+          {},
+          (installPrompt ? 'btn primary' : 'btn') + ' top-install'
+        )) +
     '</header>';
   var body = /^sd-/.test(ui.section)
     ? SDV.html(ui.section)
@@ -768,9 +824,11 @@ function renderSection(fid, pos) {
                                       ? AUD.html()
                                       : ui.section === 'rules'
                                         ? rulesHtml()
-                                        : ui.section === 'backup'
-                                          ? BKP.html()
-                                          : homeHtml();
+                                        : ui.section === 'search'
+                                          ? searchPage()
+                                          : ui.section === 'backup'
+                                            ? BKP.html()
+                                            : homeHtml();
   setApp(
     top +
       installHelpHtml() +
@@ -856,8 +914,10 @@ function renderSection(fid, pos) {
                                         ? 'Audio'
                                         : ui.section === 'rules'
                                           ? 'House rules'
-                                          : ui.section === 'backup'
-                                            ? 'Backup'
-                                            : 'Home') + ' — Character Forge';
+                                          : ui.section === 'search'
+                                            ? 'Search'
+                                            : ui.section === 'backup'
+                                              ? 'Backup'
+                                              : 'Home') + ' — Character Forge';
   saveNow();
 }

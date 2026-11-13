@@ -67,6 +67,8 @@
     // missing text shows as loading
     var md = function (t) {
       if (t === undefined && textWait()) return textWait();
+      // a Foundry formula left in a text: keep its label ("@actor.abilities.str.mod[bludgeoning]{bludgeoning damage}")
+      t = String(t || '').replace(/@[\w.]+\[[^\]]*\]\{([^}]*)\}/g, '$1');
       return root.BooksUI && root.BooksUI.md ? root.BooksUI.md(t || '') : esc(t || '');
     };
     var fmt = function (n) {
@@ -599,6 +601,12 @@
     });
     return {
       html: html,
+      // for the app's search page (js/app/search.js)
+      need: need,
+      md: md,
+      data: function () {
+        return root[G.data];
+      },
       book: K.book,
       actions: K.actions,
       onInput: K.onInput,

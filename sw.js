@@ -3,7 +3,7 @@
 // page then offers "Update now" (js/boot.js), which switches to it and reloads. Until then the old copy keeps
 // serving, so the page never mixes files from two versions.
 // Bump VERSION whenever any file changes, or the change never reaches installed apps.
-var VERSION = 'cf-144';
+var VERSION = 'cf-145';
 // The big Pathfinder and Starfinder rules files (data/pf2, data/sf2: about 20 MB) are kept in their own copy, so an
 // app update doesn't download them again. Bump DATA only when those files change (tools/pf2-build.py, sf2-build.py).
 var DATA = 'cf-data-1';
@@ -222,6 +222,7 @@ var FILES = [
   'js/app/items.js',
   'js/app/characters.js',
   'js/app/sheet.js',
+  'js/app/search.js',
   'js/app/frame.js',
   'js/app/helper-bridge.js',
   'js/app/actions.js',

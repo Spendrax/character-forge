@@ -162,6 +162,11 @@ function requestRender() {
 }
 document.addEventListener('click', function (e) {
   var el = e.target.closest ? e.target.closest('[data-act]') : null;
+  // the phone's "More" sheet closes on a tap anywhere else
+  if (ui.navMore && !(el && el.getAttribute('data-act') === 'navMore')) {
+    ui.navMore = '';
+    if (!el || el.disabled) return render();
+  }
   if (!el || el.disabled) return;
   var fn = actions[el.getAttribute('data-act')];
   if (pending) d = R.derive(ch, store.filters); // a field edit is waiting to be drawn: act on fresh numbers

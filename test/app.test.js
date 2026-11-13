@@ -357,6 +357,7 @@ function fakeGoogle(ctx, drive) {
       assert.ok(/Computers/.test(t) && /Piloting/.test(t), 'Starfinder skills');
       await p.click('[data-act=pfTab][data-v=gear]');
       assert.ok(/Credits/.test(await text(p, 'main')), 'credits');
+      await p.click('[data-act=navMore]'); // a phone: Rules is under More
       await p.click('[data-act=section][data-v=sf2-rules]');
       await p.waitForSelector('[data-act=pfRCat]');
       await p.click('[data-act=pfRCat][data-v=classes]');
@@ -448,6 +449,45 @@ function fakeGoogle(ctx, drive) {
           return Forge.store.chars[0].name;
         }),
         'After'
+      );
+      await p.ctx.close();
+    });
+
+    await test('Search everything: a spell opens in place, the words carry to the books; phone bar and More', async function () {
+      var p = await page();
+      await p.setViewportSize({ width: 390, height: 800 });
+      assert.equal(
+        await p.evaluate(function () {
+          return getComputedStyle(document.querySelector('.sections')).position;
+        }),
+        'fixed',
+        'the sections sit at the bottom on a phone'
+      );
+      await p.click('[data-act=navMore]');
+      await p.click('.sec-sheet [data-v=rules]');
+      assert.equal(
+        await p.evaluate(function () {
+          return Forge.ui.section;
+        }),
+        'rules'
+      );
+      await p.click('.top-search');
+      await p.fill('#q-gs', 'fireb');
+      await p.locator('.gs-hit', { hasText: 'Fireball' }).first().click();
+      assert.ok(/8d6/.test(await text(p, '.gs-detail')), 'the spell text shows');
+      await p.click('[data-act=gsBooks]');
+      await p.waitForFunction(function () {
+        return Forge.ui.section === 'books' && /fireb/i.test(document.querySelector('main').innerText);
+      });
+      await p.click('[data-act=game][data-v=pf2]');
+      await p.click('.top-search');
+      await p.fill('#q-gs', 'grapple');
+      await p.waitForSelector('.gs-group');
+      assert.equal(
+        await p.evaluate(function () {
+          return document.documentElement.getAttribute('data-game');
+        }),
+        'pf2'
       );
       await p.ctx.close();
     });

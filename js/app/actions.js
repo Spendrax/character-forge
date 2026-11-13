@@ -4,7 +4,11 @@
 
 // ---------- actions ----------
 var actions = {
+  navMore: function () {
+    ui.navMore = ui.navMore === ui.section ? '' : ui.section;
+  },
   section: function (v) {
+    ui.navMore = '';
     ui.section = v;
     window.scrollTo(0, 0);
   },
