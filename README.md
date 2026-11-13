@@ -75,6 +75,20 @@ On the GitHub Pages site, use **Install app** in the top bar (Chrome, Edge, Andr
 The installed app opens in its own window, works offline, and picks up new versions as described below. It opens from its saved copy, so it starts at once even on weak Wi-Fi or offline. While it is open, it looks for a new version every 15 minutes and whenever you come back to it, and downloads it in the background; then a bar at the top offers **Update now** (your work is saved, then the page reloads on the new version) or **Later** (the new version starts the next time the app is closed and opened).
 If you changed which files the page loads, add them to the list in `sw.js` and bump `VERSION` there (the test checks the list).
 
+**Earlier versions on this device.** The Backup page also lists up to 10 copies of everything that the app keeps by itself (IndexedDB): one when it opens, one for each hour of use, one just before a backup or an earlier version is brought back. **Bring back** restores one (with an Undo right after). The page shows how full the device's storage is and warns when it is nearly full; the app also asks the browser not to clear its storage.
+
+### Search, phone layout, colours
+
+- **Search** (🔎 at the top) finds a spell, feat, magic item, monster, condition, one of your characters or a page of the app, in the game you are in (Pathfinder and Starfinder: feats, spells, items, creatures, actions, conditions). A result opens in place; **Search the rule books** carries the words to the Books page, which searches the full texts. Code: `js/app/search.js`.
+- **On a phone** the top bar is short (search, theme, undo, the games) and the sections sit in a bar at the bottom of the screen: the first four, the rest under **More**. On a computer they stay in the top bar.
+- **Each game has its own colour** (D&D red, Pathfinder teal, Starfinder indigo, M&M blue, Shadowdark black and white), in the light and dark themes: `:root[data-game=…]` in `css/style.css`.
+- A new page fades in and buttons answer a press; with the device's **reduce motion** setting on, nothing moves.
+
+### Speed and network
+
+- The Pathfinder and Starfinder rules load in two parts: the lists first (names, levels, traits: `data/pf2/feats.js`…), their long texts right after in the background (`feats-text.js`…, made by `tools/split_text.py`, which the build scripts run). They are kept in their own offline copy (`DATA` in `sw.js`), so an app update doesn't download them again.
+- The app may only connect to itself and the services it uses (Google Drive, the AI you chose, Spotify, D&D Beyond, Pathbuilder, PeerJS for the table, your own Ollama address): the list is in `js/boot.js`. The helper's settings have **Forget my keys**.
+
 ## Sections
 
 The app opens on a **home page** with its sections: **Characters** (the builder below, with your characters listed for one-tap opening) and **Monsters**.

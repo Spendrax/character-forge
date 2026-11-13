@@ -5335,3 +5335,83 @@ button.pf-trait {
 .gs-books {
   margin-top: 0.8rem;
 }
+
+/* tabs inside a page (DM, Audio, Pathfinder and Starfinder sheets and rules): the same look as the builder's steps */
+.mm-tab {
+  border: 0;
+  background: none;
+  padding: 0.5rem 0.8rem;
+  border-radius: 6px;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
+}
+.mm-tab:hover {
+  background: var(--soft);
+}
+.mm-tab.on {
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+/* while a page loads: grey lines where the content will be */
+.skel {
+  display: grid;
+  gap: 0.7rem;
+  margin-top: 1.2rem;
+}
+.skel span {
+  height: 3.2rem;
+  border-radius: var(--radius);
+  background: linear-gradient(90deg, var(--soft) 25%, var(--panel) 50%, var(--soft) 75%);
+  background-size: 200% 100%;
+  animation: skel 1.3s linear infinite;
+}
+.skel span:last-child {
+  width: 60%;
+}
+@keyframes skel {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+/* a computer screen of middle width: shorter labels, so the top bar stays on one line longer */
+@media (min-width: 701px) and (max-width: 1500px) {
+  .top .top-lbl {
+    display: none;
+  }
+  .top .sec {
+    padding: 0.3rem 0.6rem;
+  }
+}
+
+/* easier to tap and to read */
+.linkbtn.enc-name {
+  padding: 0.3rem 0;
+}
+.fold {
+  min-width: 1.75rem;
+  min-height: 1.75rem;
+}
+/* the count badges: dark text on the lighter orange of the dark theme */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .badge {
+    color: #1a1210;
+  }
+}
+:root[data-theme='dark'] .badge {
+  color: #1a1210;
+}
+.badge.done {
+  color: var(--ok) !important;
+}
+.step.on .badge.done {
+  color: inherit !important;
+}

@@ -25,7 +25,7 @@ function stepLineage() {
     '<p class="muted">Your character\'s people: size, speed, ability bonuses and inborn traits.</p>' +
     '<div class="toolbar">' +
     search('lineage', 'Search lineages…') +
-    '<select data-ui="group"><option value="">All groups</option>' +
+    '<select data-ui="group" aria-label="Group"><option value="">All groups</option>' +
     groups
       .map(function (g) {
         return '<option' + (ui.group === g ? ' selected' : '') + '>' + esc(g) + '</option>';

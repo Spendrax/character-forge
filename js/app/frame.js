@@ -131,7 +131,8 @@ function render() {
           ' or ' +
           btn('game', 'go back to D&amp;D', { v: 'dnd' }, 'btn small') +
           '</p>'
-        : '<p class="muted">Loading…</p>') +
+        : '<p class="muted" role="status">Loading…</p>' +
+          '<div class="skel" aria-hidden="true"><span></span><span></span><span></span><span></span></div>') +
       '</main>';
     return;
   }

@@ -303,7 +303,11 @@
         esc(what) +
         '</h2><p class="muted">' +
         (failed ? esc(failed) : 'Loading the ' + G.name + ' rules (the first time only, then they work offline)…') +
-        '</p><div class="pf-load"><span></span></div></main>'
+        '</p><div class="pf-load"><span></span></div>' +
+        (failed
+          ? ''
+          : '<div class="skel" aria-hidden="true"><span></span><span></span><span></span><span></span></div>') +
+        '</main>'
       );
     }
     var CHAR_DATA = ['core', 'feats', 'spells', 'items'];
