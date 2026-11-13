@@ -104,12 +104,71 @@ function kvPut(k, v) {
     });
   });
 }
+// Earlier versions: up to 10 copies of everything, kept on this device (IndexedDB, 'hist'). One is kept when the app
+// opens, one for each hour of use, and one just before a backup or an earlier version is brought back; a copy equal
+// to the last one isn't kept twice. The Backup page lists them (js/backup-ui.js).
+var HIST_MAX = 10,
+  histAt = 0;
+function histList() {
+  return kvGet('hist').then(
+    function (h) {
+      return Array.isArray(h) ? h : [];
+    },
+    function () {
+      return [];
+    }
+  );
+}
+function histKeep(why) {
+  var json = JSON.stringify(store),
+    at = Date.now();
+  histAt = at;
+  return histList()
+    .then(function (h) {
+      if (h.length && h[h.length - 1].json === json) return;
+      h.push({ at: at, why: why, json: json });
+      // too big to keep ten (pictures): keep fewer rather than none
+      var put = function () {
+        return kvPut('hist', h.slice(-HIST_MAX)).catch(function () {
+          if (h.length <= 1) return;
+          h.shift();
+          return put();
+        });
+      };
+      return put();
+    })
+    .catch(function () {
+      /* no storage: nothing kept */
+    });
+}
+// ask the browser not to clear the app's storage when the device runs low (granted quietly, or not at all)
+function keepStorage() {
+  try {
+    if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () {});
+  } catch (e) {
+    /* not supported */
+  }
+}
+// how full the browser's storage for this app is: { used, max, part } in bytes, or null when the browser won't say
+function storageUse() {
+  if (!navigator.storage || !navigator.storage.estimate) return Promise.resolve(null);
+  return navigator.storage.estimate().then(
+    function (e) {
+      return e && e.quota ? { used: e.usage || 0, max: e.quota, part: (e.usage || 0) / e.quota } : null;
+    },
+    function () {
+      return null;
+    }
+  );
+}
 // after the first drawing: the IndexedDB copy, if newer; done(true) when it replaced what is on screen
 function loadDb(done) {
   var finish = function (changed) {
     dbReady = true;
     if (dbPending) saveNow();
     done(changed);
+    histKeep('open');
+    keepStorage();
   };
   kvGet('store').then(
     function (v) {
@@ -185,7 +244,14 @@ var undoStack = [],
   lastSnap = null,
   UNDO_MAX = 40;
 function snapshot() {
-  return JSON.stringify({ chars: store.chars, current: store.current, mm: store.mm || null, pf2: store.pf2 || null });
+  return JSON.stringify({
+    chars: store.chars,
+    current: store.current,
+    mm: store.mm || null,
+    pf2: store.pf2 || null,
+    sf2: store.sf2 || null,
+    sd: store.sd || null
+  });
 }
 function remember() {
   var now = snapshot();
@@ -202,6 +268,8 @@ function restore(snap) {
   store.current = byId(o.current) ? o.current : store.chars[0].id;
   if (o.mm) store.mm = o.mm;
   if (o.pf2) store.pf2 = o.pf2;
+  if (o.sf2) store.sf2 = o.sf2;
+  if (o.sd) store.sd = o.sd;
   lastSnap = snapshot();
   ui.confirmDelete = false;
   ui.import5e = null;
@@ -256,10 +324,12 @@ function saveNow() {
   kvPut('store', { at: at, json: json }).catch(function () {
     if (!lsOk) saveFailed();
   });
+  if (at - histAt > 3600000) histKeep('hour');
   if (typeof BKP !== 'undefined') BKP.changed(); // Google Drive backup, a little later (js/backup-ui.js)
 }
 // Replace everything with a backup (js/backup-ui.js): the same store object, so every part of the app sees it
 function applyBackup(s) {
+  histKeep('before');
   useStore(s);
   ui.mode = '';
   saveNow();

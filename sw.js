@@ -3,7 +3,13 @@
 // page then offers "Update now" (js/boot.js), which switches to it and reloads. Until then the old copy keeps
 // serving, so the page never mixes files from two versions.
 // Bump VERSION whenever any file changes, or the change never reaches installed apps.
-var VERSION = 'cf-143';
+var VERSION = 'cf-144';
+// The big Pathfinder and Starfinder rules files (data/pf2, data/sf2: about 20 MB) are kept in their own copy, so an
+// app update doesn't download them again. Bump DATA only when those files change (tools/pf2-build.py, sf2-build.py).
+var DATA = 'cf-data-1';
+function isData(url) {
+  return /\/data\/(pf2|sf2)\//.test(new URL(url).pathname);
+}
 var FILES = [
   './',
   'index.html',
@@ -251,7 +257,7 @@ self.addEventListener('activate', function (e) {
         return Promise.all(
           keys
             .filter(function (k) {
-              return k !== VERSION && k !== 'cf-share';
+              return k !== VERSION && k !== DATA && k !== 'cf-share';
             })
             .map(function (k) {
               return caches.delete(k);
@@ -302,7 +308,7 @@ self.addEventListener('fetch', function (e) {
   // the copy first (the page itself for any address of the app); what isn't there yet is fetched and kept
   var key = req.mode === 'navigate' ? 'index.html' : req;
   e.respondWith(
-    caches.open(VERSION).then(function (c) {
+    caches.open(isData(req.url) ? DATA : VERSION).then(function (c) {
       return c.match(key, { ignoreSearch: true }).then(function (hit) {
         if (hit) return hit;
         return fetch(req).then(

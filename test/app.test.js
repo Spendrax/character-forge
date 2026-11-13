@@ -395,6 +395,63 @@ function fakeGoogle(ctx, drive) {
       await p.ctx.close();
     });
 
+    await test('Pathfinder: the lists load first, the long texts right after', async function () {
+      var p = await page();
+      await p.click('[data-act=game][data-v=pf2]');
+      await p.waitForSelector('.hub-item[data-v=pf2-chars]');
+      await p.evaluate(function () {
+        Forge.ui.section = 'pf2-mon';
+        Forge.render();
+      });
+      await p.waitForFunction(function () {
+        return window.PF2DATA && PF2DATA.bestiaryText && PF2DATA.coreText;
+      });
+      var got = await p.evaluate(function () {
+        var g = PF2DATA.bestiary.filter(function (m) {
+          return m.n === 'Goblin Warrior';
+        })[0];
+        return { abil: (g.abil || []).length, d: !!PF2DATA.core.backgrounds[0].d, wait: document.querySelectorAll('.pf-textwait').length };
+      });
+      assert.ok(got.abil > 0 && got.d && !got.wait, 'texts merged: ' + JSON.stringify(got));
+      await p.ctx.close();
+    });
+
+    await test('Backup: earlier versions are kept on the device and come back', async function () {
+      var p = await page();
+      await p.evaluate(function () {
+        Forge.store.chars[0].name = 'Before';
+        Forge.save();
+      });
+      await p.waitForTimeout(600);
+      await p.reload();
+      await p.waitForSelector('.hub');
+      await p.waitForTimeout(500); // the copy kept when the app opens
+      await p.evaluate(function () {
+        Forge.store.chars[0].name = 'After';
+        Forge.save();
+        Forge.ui.section = 'backup';
+        Forge.render();
+      });
+      await p.click('[data-act=buHist]');
+      await p.waitForSelector('.bu-hist li');
+      await p.locator('[data-act=buHistPick]').first().click();
+      await p.click('[data-act=buRestoreOk]');
+      assert.equal(
+        await p.evaluate(function () {
+          return Forge.store.chars[0].name;
+        }),
+        'Before'
+      );
+      await p.click('[data-act=buUndo]');
+      assert.equal(
+        await p.evaluate(function () {
+          return Forge.store.chars[0].name;
+        }),
+        'After'
+      );
+      await p.ctx.close();
+    });
+
     await test('Monsters: the list draws in parts, more on scroll, search starts over', async function () {
       var p = await page();
       await p.evaluate(function () {

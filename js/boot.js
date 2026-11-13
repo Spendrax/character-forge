@@ -5,6 +5,28 @@ try {
 } catch (e) {
   /* storage blocked */
 }
+// Network: the app may only talk to itself and the services it uses: Google Drive (backup), the AI you chose,
+// Spotify, D&D Beyond and Pathbuilder (imports), and PeerJS (the table). Your own Ollama address is added when one
+// is set (Settings of the helper; the app reloads once after you change it). index.html holds the rest of the policy.
+(function () {
+  var ollama = '';
+  try {
+    var u = new URL(JSON.parse(localStorage.getItem('cf-ai') || '{}').ollama || '');
+    if (/^https?:$/.test(u.protocol)) ollama = u.origin;
+  } catch (e) {
+    /* none set */
+  }
+  window.CF_OLLAMA = ollama;
+  var m = document.createElement('meta');
+  m.httpEquiv = 'Content-Security-Policy';
+  m.content =
+    "connect-src 'self' blob: data: https://www.googleapis.com https://oauth2.googleapis.com" +
+    ' https://generativelanguage.googleapis.com https://api.anthropic.com https://accounts.spotify.com' +
+    ' https://api.spotify.com https://character-service.dndbeyond.com https://pathbuilder2e.com' +
+    ' https://0.peerjs.com wss://0.peerjs.com http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*' +
+    (ollama ? ' ' + ollama : '');
+  document.head.appendChild(m);
+})();
 // Offline support and updates (only when served over http/https, e.g. GitHub Pages). The app opens from its saved
 // copy (sw.js). While it is open, it looks for a new version every 15 minutes and each time you come back to it;
 // when one has been downloaded, a bar offers "Update now" (your work is saved first, then the page reloads on it).

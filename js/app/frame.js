@@ -633,9 +633,22 @@ function rulesHtml() {
 }
 // Redraw the page, but keep the box being typed in as the very same element: replacing it on every key
 // made phone keyboards lose letters (their word-in-progress is tied to that element).
+// a new page fades in (css: #app.page-in); a redraw of the same page doesn't
+var pageKey = '';
+function pageIn(app) {
+  var key = gameOf() + ' ' + ui.section + ' ' + (ui.section === 'chars' ? ui.step : '');
+  if (key === pageKey) return;
+  var first = !pageKey;
+  pageKey = key;
+  if (first) return;
+  app.classList.remove('page-in');
+  void app.offsetWidth; // start the animation again
+  app.classList.add('page-in');
+}
 function setApp(html) {
   var app = document.getElementById('app'),
     keep = document.activeElement;
+  pageIn(app);
   var typing =
     keep &&
     keep.id &&

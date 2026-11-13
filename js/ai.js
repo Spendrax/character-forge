@@ -482,7 +482,12 @@
       (cfg.mode === 'ollama'
         ? f('ollama', 'Ollama address', 'http://192.168.1.20:11434') + f('omodel', 'Model', 'llama3.1')
         : '') +
-      '<div class="toolbar"><button type="button" class="btn primary" data-ai="view" data-v="chat">Done</button></div>' +
+      '<div class="toolbar"><button type="button" class="btn primary" data-ai="view" data-v="chat">Done</button>' +
+      (cfg.key || cfg.gkey || cfg.code
+        ? '<button type="button" class="btn danger" data-ai="forget">Forget my keys</button>'
+        : '') +
+      '</div>' +
+      '<p class="small muted">Keys are kept only in this browser, on this device: they are never sent to this app’s site and are not in backups. “Forget my keys” erases them here.</p>' +
       '<p class="small muted">What you ask, plus a summary of the page you are on (your character’s name, choices and stats), is sent to the AI you pick. Nothing else leaves your device.</p></div>'
     );
   }
@@ -530,8 +535,20 @@
     var a = b.getAttribute('data-ai'),
       v = b.getAttribute('data-v');
     if (a === 'close') return close();
+    if (a === 'forget') {
+      // the keys and the access code leave this browser (the chat and the other settings stay)
+      cfg.key = cfg.gkey = cfg.code = cfg.gmodel = '';
+      gList = null;
+      lastG = '';
+      saveCfg();
+      return draw();
+    }
     if (a === 'view') {
       readCfg();
+      // a new Ollama address: the app's network rules (js/boot.js) take it in on a reload
+      var oo = cfg.mode === 'ollama' ? ollamaOrigin() : '';
+      if (oo && oo !== root.CF_OLLAMA && !/^https?:\/\/(localhost|127\.0\.0\.1)(:|$)/.test(oo))
+        return root.location.reload();
       view = v;
       forced = false;
       return draw();
@@ -543,6 +560,13 @@
       return draw();
     }
     if (a === 'apply') return applyCmds(+b.getAttribute('data-m'), v);
+  }
+  function ollamaOrigin() {
+    try {
+      return new URL(cfg.ollama).origin;
+    } catch (e) {
+      return '';
+    }
   }
   function readCfg() {
     el.querySelectorAll('[data-aicfg]').forEach(function (i) {

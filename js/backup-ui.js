@@ -127,6 +127,71 @@
       B.pick = { src: src, data: o, when: o.saved || '' };
       ui.section = 'backup';
     }
+    // Earlier versions kept on this device (js/app/core.js: histKeep), and how full the device's storage is
+    var WHY = {
+      open: 'when the app opened',
+      hour: 'while you played',
+      before: 'just before a backup was brought back'
+    };
+    function histLoad() {
+      B.hist = B.hist || [];
+      return Promise.all([api.hist(), api.storage()]).then(function (r) {
+        B.hist = r[0]
+          .reduce(function (a, v) {
+            try {
+              a.push({ at: v.at, why: v.why, c: counts(JSON.parse(v.json)), kb: Math.round(v.json.length / 1024) });
+            } catch (e) {
+              /* damaged copy: not listed */
+            }
+            return a;
+          }, [])
+          .reverse();
+        B.use = r[1];
+        api.render();
+      });
+    }
+    function mb(n) {
+      return n > 1e9 ? (n / 1e9).toFixed(1) + ' GB' : Math.max(1, Math.round(n / 1e6)) + ' MB';
+    }
+    function histHtml() {
+      var u = B.use,
+        h =
+          '<div class="panel bk-hist"><h3>Earlier versions on this device</h3><p class="small">The app keeps up to 10 copies of everything by itself: when it opens, each hour you play, and before a backup is brought back. A wrong tap or a bad import can be taken back from here.</p>';
+      if (!B.hist) h += '<div class="toolbar">' + btn('buHist', 'Show earlier versions', {}, 'btn') + '</div>';
+      else if (!B.hist.length)
+        h += '<p class="small muted">None yet: the first one is kept the next time the app opens.</p>';
+      else
+        h +=
+          '<ul class="bu-hist">' +
+          B.hist
+            .map(function (v) {
+              return (
+                '<li><span><b>' +
+                esc(when(new Date(v.at).toISOString())) +
+                '</b> <span class="small muted">' +
+                esc((WHY[v.why] || '') + ' · ' + (countText(v.c) || 'no characters') + ' · ' + v.kb + ' KB') +
+                '</span></span>' +
+                btn('buHistPick', 'Bring back', { v: v.at }, 'btn small') +
+                '</li>'
+              );
+            })
+            .join('') +
+          '</ul>';
+      if (u)
+        h +=
+          '<p class="small' +
+          (u.part > 0.8 ? ' notice' : ' muted') +
+          '">Storage on this device: ' +
+          mb(u.used) +
+          ' used of ' +
+          mb(u.max) +
+          '.' +
+          (u.part > 0.8
+            ? ' <b>Nearly full</b>: remove books you no longer need (Books page), or the browser may stop saving.'
+            : '') +
+          '</p>';
+      return h + '</div>';
+    }
     function restorePanel() {
       var P = B.pick;
       if (!P) return '';
@@ -230,6 +295,7 @@
         btn('buFile', '⇩ Download backup file', {}, 'btn') +
         btn('buOpen', '⇧ Restore from a file', {}, 'btn') +
         '</div><input type="file" id="buFile" accept=".json,application/json" hidden></div>' +
+        histHtml() +
         '<p class="small muted">Imported books, monsters and item texts are not in the backup (they are big): import them again if needed.</p></main>';
       return h;
     }
@@ -300,8 +366,23 @@
         if (G.linked()) G.set('restored', 1);
         B.pick = null;
         B.files = null;
+        B.hist = null;
         B.msg = '';
         window.scrollTo(0, 0);
+      },
+      buHist: function () {
+        histLoad();
+      },
+      buHistPick: function (v) {
+        api.hist().then(function (h) {
+          var x = h.filter(function (e) {
+            return String(e.at) === String(v);
+          })[0];
+          if (!x) return;
+          offer({ store: JSON.parse(x.json), saved: new Date(x.at).toISOString() }, 'The earlier version');
+          window.scrollTo(0, 0);
+          api.render();
+        });
       },
       buRestoreNo: function () {
         B.pick = null;

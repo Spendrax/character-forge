@@ -63,7 +63,10 @@
         })[0] || null
       );
     }
+    // the long texts (descriptions, monster abilities) arrive after the lists (data/…/feats-text.js…): until then a
+    // missing text shows as loading
     var md = function (t) {
+      if (t === undefined && textWait()) return textWait();
       return root.BooksUI && root.BooksUI.md ? root.BooksUI.md(t || '') : esc(t || '');
     };
     var fmt = function (n) {
@@ -233,18 +236,54 @@
         document.head.appendChild(s);
       });
     }
+    // the lists come first (names, levels, traits: small), their long texts right after, in the background
+    var TEXTED = { core: 1, feats: 1, spells: 1, items: 1, bestiary: 1 };
+    function needText(p) {
+      var P = root[G.data] || {},
+        t = p + 'Text';
+      if (!TEXTED[p] || !P[p] || P[t] || loading[t]) return;
+      loading[t] = 1;
+      loadScript(G.dir + p + '-text.js').then(
+        function () {
+          loading[t] = 0;
+          render();
+        },
+        function () {
+          loading[t] = -1; // offline before the texts were saved: asked again when the app reopens
+          render();
+        }
+      );
+    }
+    // '' when every loaded list has its texts; else a short notice to show in their place
+    function textWait(p) {
+      var P = root[G.data] || {},
+        st = (p ? [p] : Object.keys(TEXTED)).reduce(function (a, k) {
+          if (P[k] && !P[k + 'Text']) a.push(loading[k + 'Text']);
+          return a;
+        }, []);
+      if (!st.length) return '';
+      return (
+        '<p class="small muted pf-textwait">' +
+        (st.indexOf(-1) >= 0
+          ? 'The full text couldn’t load. Check your connection and reopen the app.'
+          : 'Loading the full text…') +
+        '</p>'
+      );
+    }
     function need(parts) {
       var P = root[G.data] || {},
         miss = parts.filter(function (p) {
           return !P[p];
         });
       if (!miss.length) return true;
+      parts.forEach(needText);
       miss.forEach(function (p) {
         if (loading[p]) return;
         loading[p] = 1;
         loadScript(G.dir + p + '.js').then(
           function () {
             loading[p] = 0;
+            needText(p);
             render();
           },
           function () {
@@ -274,7 +313,7 @@
     function html(section) {
       section = part(section);
       if (section === 'home') return K.homeHtml();
-      if (section === 'rules') return need(CHAR_DATA) ? K.rulesHtml() : waitHtml('Rules');
+      if (section === 'rules') return need(CHAR_DATA) && !textWait() ? K.rulesHtml() : waitHtml('Rules');
       if (section === 'chars') {
         if (!need(CHAR_DATA)) return waitHtml('Characters');
         var ch = U.view === 'char' && cur();
@@ -297,6 +336,7 @@
           pt: api.pt,
           game: G,
           need: need,
+          textWait: textWait,
           waitHtml: waitHtml,
           md: md,
           fmt: fmt,
@@ -546,6 +586,7 @@
       loadPic: loadPic,
       md: md,
       need: need,
+      textWait: textWait,
       picHtml: picHtml,
       rar: rar,
       render: render,

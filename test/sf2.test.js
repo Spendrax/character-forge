@@ -4,7 +4,7 @@ var assert = require('assert'),
   fs = require('fs'),
   path = require('path');
 global.window = global;
-['core', 'feats', 'spells', 'items'].forEach(function (f) {
+['core', 'core-text', 'feats', 'feats-text', 'spells', 'spells-text', 'items', 'items-text'].forEach(function (f) {
   require('../data/sf2/' + f + '.js');
 });
 require('../js/pf2.js');

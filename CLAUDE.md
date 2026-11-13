@@ -2,5 +2,5 @@
 
 - Code style: Prettier (`.prettierrc.json`). Never chain `.filter(…).map(…)`: use one `.reduce(…)` that pushes what it keeps (see README, "How the code is organized").
 - Plain scripts, no build step; `js/app/*.js` share one scope and load in the order listed in `index.html`.
-- Bump `VERSION` in `sw.js` when files change. Tests: `node test/rules.test.js`, and `npm run test:app` (browser) after changes to pages.
+- Bump `VERSION` in `sw.js` when files change, and `DATA` there when `data/pf2` or `data/sf2` change (they have their own offline copy). Tests: `node test/rules.test.js`, and `npm run test:app` (browser) after changes to pages.
 - Never put an API key in this repository.

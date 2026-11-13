@@ -237,6 +237,7 @@
           })
           .join('') +
         (m.d ? '<div class="small muted">' + md(m.d) + '</div>' : '') +
+        (api.textWait ? api.textWait('bestiary') : '') +
         '</div>'
       );
     }

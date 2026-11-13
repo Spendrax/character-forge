@@ -419,3 +419,7 @@ import traits_extra
 print('traits without an official description, filled:', len(traits_extra.fill(TRAITS, 'sf2', core, feats + spells + items, best)))
 write('traits.js', 'traits', TRAITS)
 
+
+# the lists load first, their long texts after (tools/split_text.py)
+import split_text
+split_text.run(OUT, 'SF2DATA')

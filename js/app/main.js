@@ -344,6 +344,8 @@ var BKP = window.BackupUI({
     render();
   },
   apply: applyBackup,
+  hist: histList,
+  storage: storageUse,
   // a character with something in it (not the empty one a new device starts with)
   hasContent: function (c) {
     return !!(c.name || c.lineage || c.classes.length);
@@ -382,6 +384,7 @@ window.Forge = {
   store: store,
   ui: ui,
   render: render,
+  save: saveNow,
   derived: function () {
     return d;
   }

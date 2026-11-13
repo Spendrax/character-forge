@@ -5032,3 +5032,64 @@ button.pf-trait {
 .bk-games .pill {
   margin: 0.15rem;
 }
+
+/* ---------- motion: a new page fades in, buttons answer a press, long lists skip what's off screen ---------- */
+#app.page-in main {
+  animation: page-in 0.2s ease-out both;
+}
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.btn,
+.sec,
+.linkbtn,
+.pf-trait,
+.game-switch button,
+.step {
+  transition:
+    background-color 0.15s,
+    border-color 0.15s,
+    color 0.15s,
+    transform 0.08s;
+}
+.btn:active:not([disabled]),
+.sec:active,
+.game-switch button:active {
+  transform: scale(0.96);
+}
+.mon-row,
+.enc-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 3.2rem;
+}
+.pf-textwait {
+  font-style: italic;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Backup page: earlier versions kept on this device */
+.bu-hist {
+  list-style: none;
+  margin: 0.4rem 0;
+  padding: 0;
+}
+.bu-hist li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.45rem 0;
+  border-top: 1px solid var(--line);
+}

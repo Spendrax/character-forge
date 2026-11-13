@@ -1,7 +1,7 @@
 // Pathfinder 2e engine: two real Pathbuilder exports must come out with Pathbuilder's numbers.
 var assert = require('assert'), fs = require('fs'), path = require('path');
 global.window = global;
-['core', 'feats', 'spells', 'items'].forEach(function (f) { require('../data/pf2/' + f + '.js'); });
+['core', 'core-text', 'feats', 'feats-text', 'spells', 'spells-text', 'items', 'items-text'].forEach(function (f) { require('../data/pf2/' + f + '.js'); });
 require('../js/pf2.js'); require('../js/pf2-import.js');
 var PF2 = global.PF2, IMP = global.PF2Import;
 function load(n) { return JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'pathbuilder-' + n + '.json'))); }
