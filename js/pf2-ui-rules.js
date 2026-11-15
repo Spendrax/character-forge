@@ -280,6 +280,7 @@
         root.homeHub([
           [G.sec + 'chars', 'sword', 'Characters'],
           ['dm', 'eye', 'GM'],
+          [G.sec + 'spells', 'wand', 'Spells'],
           ['books', 'tome', 'Books'],
           [G.sec + 'rules', 'book', 'Rules'],
           ['audio', 'lute', 'Audio'],

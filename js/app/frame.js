@@ -605,6 +605,7 @@ function homeHtml() {
   var hub = window.homeHub([
     ['roster', 'sword', 'Characters'],
     ['dm', 'eye', 'DM'],
+    ['spells', 'wand', 'Spells'],
     ['items', 'potion', 'Magic items'],
     ['books', 'book', 'Books'],
     ['audio', 'lute', 'Audio'],

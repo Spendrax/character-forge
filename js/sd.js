@@ -436,6 +436,7 @@
         root.homeHub([
           ['sd-chars', 'sword', 'Characters'],
           ['dm', 'eye', 'GM'],
+          ['sd-spells', 'wand', 'Spells'],
           ['books', 'book', 'Books'],
           ['audio', 'lute', 'Audio'],
           ['rules', 'scroll', 'House rules']
