@@ -65,26 +65,29 @@ function restBarHtml() {
     '</div>'
   );
 }
-// the maneuvers that go with a superiority die: the Battle Master's own (class) or Martial Adept's (feat)
+// the maneuvers that go with a superiority die: the Battle Master's own (class) or Martial Adept's (feat).
+// { list: [[name, what it does]…], step: the builder step where they are chosen } or null for other trackers
 function maneuversFor(x) {
-  if (!/superiority di/i.test(x.name || '') || !d || !d.choices) return [];
-  var feat = /martial adept/i.test(x.name);
-  return d.choices.reduce(function (out, c) {
-    if (c.group !== 'Maneuver' || (c.step === 'class') === feat) return out;
+  if (!/superiority di/i.test(x.name || '') || !d || !d.choices) return null;
+  var feat = /martial adept/i.test(x.name),
+    res = { list: [], step: feat ? 'abilities' : 'class' };
+  d.choices.forEach(function (c) {
+    if (c.group !== 'Maneuver' || /martial adept/i.test(c.label || '') !== feat) return;
+    res.step = c.step || res.step;
     (c.picked || []).forEach(function (n) {
       var m = (D.maneuvers || []).filter(function (r) {
         return r[0] === n;
       })[0];
       if (
         m &&
-        !out.some(function (o) {
+        !res.list.some(function (o) {
           return o[0] === n;
         })
       )
-        out.push(m);
+        res.list.push(m);
     });
-    return out;
-  }, []);
+  });
+  return res;
 }
 function trackRow(x) {
   var man = maneuversFor(x);
@@ -100,15 +103,19 @@ function trackRow(x) {
     'back on ' +
     restLabel(x.rest) +
     '</span>' +
-    (man.length
-      ? '<ul class="trk-man">' +
-        man
-          .map(function (m) {
-            return '<li><b>' + esc(m[0]) + '</b><span>' + esc(m[1]) + '</span></li>';
-          })
-          .join('') +
-        '</ul>'
-      : '') +
+    (!man
+      ? ''
+      : man.list.length
+        ? '<ul class="trk-man">' +
+          man.list
+            .map(function (m) {
+              return '<li><b>' + esc(m[0]) + '</b><span>' + esc(m[1]) + '</span></li>';
+            })
+            .join('') +
+          '</ul>'
+        : '<p class="trk-man small muted">No maneuvers chosen yet: ' +
+          btn('step', 'choose them', { v: man.step }, 'linkbtn') +
+          '.</p>') +
     '</div>'
   );
 }

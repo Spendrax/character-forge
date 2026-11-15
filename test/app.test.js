@@ -521,6 +521,38 @@ function fakeGoogle(ctx, drive) {
       await p.ctx.close();
     });
 
+    await test('Session: maneuvers show under their superiority die (Battle Master and Martial Adept)', async function () {
+      var p = await page();
+      await p.click('.hub-item[data-v=roster]');
+      await p.locator('.roster-card').first().click();
+      var got = await p.evaluate(function () {
+        var c = Forge.store.chars[0];
+        c.lineage = 'dwarf';
+        c.classes = [{ cls: 'fighter', level: 4, subclass: 'fighter:battle-master' }];
+        c.asi = { 'asi.fighter.4': 'feat' };
+        c.picks = { 'asi.fighter.4.feat': ['Martial Adept'] };
+        Forge.ui.mode = 'play';
+        Forge.ui.step = 'play';
+        Forge.render();
+        var empty = document.querySelectorAll('p.trk-man').length;
+        c.picks['asi.fighter.4.man'] = ['Riposte', 'Parry'];
+        var cm = Forge.derived().choices.filter(function (x) {
+          return x.group === 'Maneuver' && x.step === 'class';
+        })[0];
+        c.picks[cm.key] = ['Trip Attack', 'Rally', 'Precision Attack'];
+        Forge.render();
+        var rows = [].slice.call(document.querySelectorAll('.trk-row')).reduce(function (a, r) {
+          if (r.querySelector('ul.trk-man')) a.push(r.innerText);
+          return a;
+        }, []);
+        return { empty: empty, rows: rows };
+      });
+      assert.equal(got.empty, 2, 'both dice say none are chosen yet');
+      assert.ok(/^Superiority Dice[\s\S]*Trip Attack/.test(got.rows[0]) && !/Riposte/.test(got.rows[0]), got.rows[0]);
+      assert.ok(/Martial Adept[\s\S]*Riposte[\s\S]*Reaction/.test(got.rows[1]) && !/Trip Attack/.test(got.rows[1]), got.rows[1]);
+      await p.ctx.close();
+    });
+
     await test('Monsters: the list draws in parts, more on scroll, search starts over', async function () {
       var p = await page();
       await p.evaluate(function () {

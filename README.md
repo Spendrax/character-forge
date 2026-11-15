@@ -77,6 +77,8 @@ If you changed which files the page loads, add them to the list in `sw.js` and b
 
 **Earlier versions on this device.** The Backup page also lists up to 10 copies of everything that the app keeps by itself (IndexedDB): one when it opens, one for each hour of use, one just before a backup or an earlier version is brought back. **Bring back** restores one (with an Undo right after). The page shows how full the device's storage is and warns when it is nearly full; the app also asks the browser not to clear its storage.
 
+**Maneuvers on the Session page.** Under each superiority die, the maneuvers chosen for it are listed with what they do: the Battle Master's under *Superiority Dice*, Martial Adept's under its own die. With none chosen yet, a link goes to the step where they are picked.
+
 ### Spells
 
 Each game with spells has a **Spells** section:
