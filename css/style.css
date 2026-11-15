@@ -5429,3 +5429,23 @@ button.pf-trait {
 .sd-spells .lines .toolbar {
   margin-top: 0.3rem;
 }
+
+/* the maneuvers under a superiority die (session page) */
+.trk-man {
+  flex: 1 0 100%;
+  list-style: none;
+  margin: 0 0 0.2rem;
+  padding: 0 0 0 0.7rem;
+  border-left: 2px solid var(--accent);
+}
+.trk-man li {
+  margin: 0.35rem 0;
+  line-height: 1.35;
+}
+.trk-man li b {
+  display: block;
+}
+.trk-man li span {
+  font-size: 0.92rem;
+  color: var(--muted);
+}

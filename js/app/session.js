@@ -65,7 +65,29 @@ function restBarHtml() {
     '</div>'
   );
 }
+// the maneuvers that go with a superiority die: the Battle Master's own (class) or Martial Adept's (feat)
+function maneuversFor(x) {
+  if (!/superiority di/i.test(x.name || '') || !d || !d.choices) return [];
+  var feat = /martial adept/i.test(x.name);
+  return d.choices.reduce(function (out, c) {
+    if (c.group !== 'Maneuver' || (c.step === 'class') === feat) return out;
+    (c.picked || []).forEach(function (n) {
+      var m = (D.maneuvers || []).filter(function (r) {
+        return r[0] === n;
+      })[0];
+      if (
+        m &&
+        !out.some(function (o) {
+          return o[0] === n;
+        })
+      )
+        out.push(m);
+    });
+    return out;
+  }, []);
+}
 function trackRow(x) {
+  var man = maneuversFor(x);
   return (
     '<div class="trk-row"><div class="trk-name"><b>' +
     esc(x.name) +
@@ -77,7 +99,17 @@ function trackRow(x) {
     (x.max > 20 ? '' : x.left + '/' + x.max + ' · ') +
     'back on ' +
     restLabel(x.rest) +
-    '</span></div>'
+    '</span>' +
+    (man.length
+      ? '<ul class="trk-man">' +
+        man
+          .map(function (m) {
+            return '<li><b>' + esc(m[0]) + '</b><span>' + esc(m[1]) + '</span></li>';
+          })
+          .join('') +
+        '</ul>'
+      : '') +
+    '</div>'
   );
 }
 // ---------- the DM's table, from this phone (the panel itself is js/table-ui.js, shared by the three games) ----------
