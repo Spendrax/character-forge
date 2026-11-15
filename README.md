@@ -77,6 +77,14 @@ If you changed which files the page loads, add them to the list in `sw.js` and b
 
 **Earlier versions on this device.** The Backup page also lists up to 10 copies of everything that the app keeps by itself (IndexedDB): one when it opens, one for each hour of use, one just before a backup or an earlier version is brought back. **Bring back** restores one (with an Undo right after). The page shows how full the device's storage is and warns when it is nearly full; the app also asks the browser not to clear its storage.
 
+### Spells
+
+Each game with spells has a **Spells** section:
+- **D&D 5e**: all 566 spells, filtered by level, class, school, concentration and ritual. A spell opens in place with its text; **Add as another spell** puts it in a character's *Other spells* (Spells step). Code: `js/app/spell-book.js`.
+- **Pathfinder 2e and Starfinder 2e**: every spell, cantrip, focus spell and ritual, filtered by tradition, kind and level (rank in Starfinder). Code: `spellsHtml` in `js/pf2-ui-rules.js`.
+- **Shadowdark**: the spells your casters know, by tier: cast, lost / get it back, rest, and **Find in your books** (the spell texts are in your Shadowdark book, not in the app).
+- M&M has powers rather than spells: they stay on the hero sheet.
+
 ### Search, phone layout, colours
 
 - **Search** (🔎 at the top) finds a spell, feat, magic item, monster, condition, one of your characters or a page of the app, in the game you are in (Pathfinder and Starfinder: feats, spells, items, creatures, actions, conditions). A result opens in place; **Search the rule books** carries the words to the Books page, which searches the full texts. Code: `js/app/search.js`.

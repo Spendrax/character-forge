@@ -5415,3 +5415,17 @@ button.pf-trait {
 .step.on .badge.done {
   color: inherit !important;
 }
+
+/* the Spells pages: a heading for each level or rank */
+.sb-lvl {
+  margin: 1.1rem 0 0.2rem;
+  font-size: 1rem;
+  color: var(--accent);
+}
+.sd-spells .lines li {
+  display: block;
+  padding: 0.5rem 0;
+}
+.sd-spells .lines .toolbar {
+  margin-top: 0.3rem;
+}

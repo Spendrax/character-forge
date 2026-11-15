@@ -276,7 +276,9 @@ function fakeGoogle(ctx, drive) {
     await test('Books: a PDF you add reads as chapters and sections, searchable, with its page', async function () {
       var p = await page();
       await p.click('[data-act=game][data-v=sd]');
-      await p.click('[data-act=section][data-v=books]');
+      await p.waitForSelector('[data-v=sd-spells]', { state: 'attached' });
+      await p.click('[data-act=navMore]'); // a phone: Books is under More
+      await p.click('.sec-sheet [data-v=books]');
       await p.waitForSelector('#bookFile', { state: 'attached' });
       await p.setInputFiles('#bookFile', path.join(__dirname, 'fixtures', 'sections-sample.pdf'));
       await p.waitForSelector('.bk-toc', { timeout: 20000 });
@@ -295,7 +297,9 @@ function fakeGoogle(ctx, drive) {
       var shelf = async function (g) {
         await p.click('[data-act=game][data-v=' + g + ']');
         await wait(1500);
-        await p.click('[data-act=section][data-v=' + (g === 'mm' ? 'mm-rules' : 'books') + ']');
+        var sec = '.sections [data-v=' + (g === 'mm' ? 'mm-rules' : 'books') + ']';
+        if (!(await p.isVisible(sec))) await p.click('[data-act=navMore]'); // a phone: under More
+        await p.click(sec);
         await wait(800);
         return text(p, '.bk-shelf');
       };
@@ -489,6 +493,31 @@ function fakeGoogle(ctx, drive) {
         }),
         'pf2'
       );
+      await p.ctx.close();
+    });
+
+    await test('Spells pages: D&D filters and gives a spell, Pathfinder filters by tradition', async function () {
+      var p = await page();
+      await p.click('.sections [data-v=spells]');
+      await p.selectOption('[data-sb=cls]', 'wizard');
+      await p.selectOption('[data-sb=lvl]', '3');
+      await p.locator('.gs-hit', { hasText: 'Fireball' }).click();
+      assert.ok(/8d6/.test(await text(p, '.gs-detail')), 'the spell text shows');
+      await p.click('[data-act=sbGive]');
+      assert.equal(
+        await p.evaluate(function () {
+          return (Forge.store.chars[0].extraSpells || [])[0].n;
+        }),
+        'Fireball'
+      );
+      await p.click('[data-act=game][data-v=pf2]');
+      await p.click('.sections [data-v=pf2-spells]');
+      await p.waitForSelector('[data-pfsp=trad]');
+      await p.selectOption('[data-pfsp=trad]', 'divine');
+      await p.selectOption('[data-pfsp=rank]', '0');
+      assert.ok(/^\d+ found/.test(await text(p, '.pf-count')));
+      await p.locator('.pf-pname').first().click();
+      assert.ok(/divine/i.test(await text(p, '.pf-desc')));
       await p.ctx.close();
     });
 

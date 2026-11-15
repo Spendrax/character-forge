@@ -509,6 +509,7 @@ function sectionNav() {
           [g + '-home', 'Home', 'house'],
           [g + '-chars', 'Characters', 'sword'],
           ['dm', 'GM', 'eye'],
+          [g + '-spells', 'Spells', 'wand'],
           ['books', 'Books', 'book'],
           [g + '-rules', 'Rules', 'tome'],
           ['audio', 'Audio', 'lute'],
@@ -519,6 +520,7 @@ function sectionNav() {
             ['sd-home', 'Home', 'house'],
             ['sd-chars', 'Characters', 'sword'],
             ['dm', 'GM', 'eye'],
+            ['sd-spells', 'Spells', 'wand'],
             ['books', 'Books', 'book'],
             ['audio', 'Audio', 'lute'],
             ['rules', 'House rules', 'scroll']
@@ -536,6 +538,7 @@ function sectionNav() {
               ['home', 'Home', 'house'],
               ['roster', 'Characters', 'sword'],
               ['dm', 'DM', 'eye'],
+              ['spells', 'Spells', 'wand'],
               ['books', 'Books', 'book'],
               ['items', 'Magic items', 'potion'],
               ['audio', 'Audio', 'lute'],
@@ -682,6 +685,11 @@ function pageIn(app) {
   app.classList.remove('page-in');
   void app.offsetWidth; // start the animation again
   app.classList.add('page-in');
+  // only this page change fades: a redraw of the page afterwards (a tap, a filter) must not fade again
+  clearTimeout(pageIn.t);
+  pageIn.t = setTimeout(function () {
+    app.classList.remove('page-in');
+  }, 260);
   // the search page: ready to type
   if (ui.section === 'search')
     setTimeout(function () {
@@ -827,9 +835,11 @@ function renderSection(fid, pos) {
                                         ? rulesHtml()
                                         : ui.section === 'search'
                                           ? searchPage()
-                                          : ui.section === 'backup'
-                                            ? BKP.html()
-                                            : homeHtml();
+                                          : ui.section === 'spells'
+                                            ? spellBookPage()
+                                            : ui.section === 'backup'
+                                              ? BKP.html()
+                                              : homeHtml();
   setApp(
     top +
       installHelpHtml() +
@@ -917,8 +927,10 @@ function renderSection(fid, pos) {
                                           ? 'House rules'
                                           : ui.section === 'search'
                                             ? 'Search'
-                                            : ui.section === 'backup'
-                                              ? 'Backup'
-                                              : 'Home') + ' — Character Forge';
+                                            : ui.section === 'spells'
+                                              ? 'Spells'
+                                              : ui.section === 'backup'
+                                                ? 'Backup'
+                                                : 'Home') + ' — Character Forge';
   saveNow();
 }

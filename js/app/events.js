@@ -346,6 +346,7 @@ document.addEventListener('change', function (e) {
   if (t.id === 'bookFile') return BOOKS.importFile(t);
   if (t.getAttribute && t.getAttribute('data-lvl')) return lvlInput(t, true);
   if (t.id === 'buFile') return BKP.readFile(t);
+  if (t.getAttribute && sbChange(t)) return render(); // the Spells page's filters (js/app/spell-book.js)
   if (BKP.onInput(t)) return render();
   if (t.getAttribute && t.getAttribute('data-tp')) return;
   if (TS.onChange(t)) {

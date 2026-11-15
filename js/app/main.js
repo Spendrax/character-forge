@@ -353,6 +353,7 @@ var BKP = window.BackupUI({
 });
 window.BKP = BKP;
 merge({ actions: gsActions }); // the search page (js/app/search.js)
+merge({ actions: sbActions }); // the Spells page (js/app/spell-book.js)
 Object.keys(BKP.actions).forEach(function (k) {
   actions[k] = BKP.actions[k];
 });

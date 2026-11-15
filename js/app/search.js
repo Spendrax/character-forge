@@ -28,6 +28,7 @@ function gsPages() {
         [g + '-enc', 'Encounters'],
         [g + '-mon', 'Monsters'],
         [g + '-loot', 'Treasure'],
+        [g + '-spells', 'Spells'],
         [g + '-rules', 'Rules'],
         ['books', 'Books'],
         ['audio', 'Audio: music and sounds'],
@@ -49,6 +50,7 @@ function gsPages() {
       : g === 'sd'
         ? [
             ['sd-chars', 'Characters'],
+            ['sd-spells', 'Spells: what your casters know'],
             ['dm', 'GM tools: the table, the light, generators'],
             ['books', 'Books'],
             ['audio', 'Audio: music and sounds'],
@@ -57,6 +59,7 @@ function gsPages() {
           ]
         : [
             ['roster', 'Characters'],
+            ['spells', 'Spells'],
             ['party', 'Party'],
             ['encounters', 'Encounters'],
             ['monsters', 'Monsters'],

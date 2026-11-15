@@ -290,6 +290,135 @@
       );
     }
     K.book = book;
+    // ---------- Spells: every spell, with filters (tradition, kind, rank) ----------
+    var SP_PAGE = 150;
+    function spellsHtml() {
+      var S = (U.sp = U.sp || { q: '', trad: '', kind: '', rank: '', open: '', more: SP_PAGE }),
+        all = PF2.index().spells,
+        q = S.q.toLowerCase();
+      var list = all
+        .reduce(function (out, e) {
+          if (
+            (!q || (e.n + ' ' + (e.t || []).join(' ')).toLowerCase().indexOf(q) >= 0) &&
+            (!S.trad || (e.trad || []).indexOf(S.trad) >= 0) &&
+            (!S.kind || e.cat === S.kind) &&
+            (S.rank === '' || (e.cat === 'cantrip' ? 0 : e.lv) === +S.rank)
+          )
+            out.push(e);
+          return out;
+        }, [])
+        .sort(function (a, b) {
+          var ra = a.cat === 'cantrip' ? 0 : a.lv,
+            rb = b.cat === 'cantrip' ? 0 : b.lv;
+          return ra - rb || (a.n < b.n ? -1 : 1);
+        });
+      var sel = function (k, label, opts) {
+        return (
+          '<select data-pfsp="' +
+          k +
+          '" aria-label="' +
+          label +
+          '"><option value="">' +
+          label +
+          '</option>' +
+          opts
+            .map(function (o) {
+              return (
+                '<option value="' +
+                o[0] +
+                '"' +
+                (String(S[k]) === String(o[0]) ? ' selected' : '') +
+                '>' +
+                o[1] +
+                '</option>'
+              );
+            })
+            .join('') +
+          '</select>'
+        );
+      };
+      var ranks = [['0', 'Cantrips']];
+      for (var r = 1; r <= 10; r++) ranks.push([String(r), (G.remaster ? 'Rank ' : 'Level ') + r]);
+      var shown = list.slice(0, S.more),
+        last = -1;
+      var h =
+        '<main class="pf-main"><h2>' +
+        G.short +
+        ' spells</h2><p class="small muted">' +
+        all.length +
+        ' spells, cantrips, focus spells and rituals. Tap one to read it; add spells to a character from its Spells tab.</p>' +
+        '<div class="toolbar"><input type="search" id="pf-spq" data-pfspq="1" placeholder="Search spells or traits…" value="' +
+        esc(S.q) +
+        '">' +
+        sel('trad', 'Any tradition', [
+          ['arcane', 'Arcane'],
+          ['divine', 'Divine'],
+          ['occult', 'Occult'],
+          ['primal', 'Primal']
+        ]) +
+        sel('kind', 'Any kind', [
+          ['spell', 'Spells'],
+          ['cantrip', 'Cantrips'],
+          ['focus', 'Focus spells'],
+          ['ritual', 'Rituals']
+        ]) +
+        sel('rank', G.remaster ? 'Any rank' : 'Any level', ranks) +
+        '</div><div class="small muted pf-count">' +
+        list.length +
+        ' found</div>';
+      h += shown
+        .map(function (e) {
+          var k = 'sp:' + e.id,
+            open = S.open === k,
+            rk = e.cat === 'cantrip' ? 0 : e.lv,
+            head = '';
+          if (rk !== last) {
+            last = rk;
+            head = '<h3 class="sb-lvl">' + (rk ? (G.remaster ? 'Rank ' : 'Level ') + rk : 'Cantrips') + '</h3>';
+          }
+          return (
+            head +
+            '<div class="pf-spell' +
+            rar(e) +
+            '"><button type="button" class="pf-pname" data-act="pfSpOpen" data-v="' +
+            esc(k) +
+            '" aria-expanded="' +
+            open +
+            '"><b>' +
+            esc(e.n) +
+            '</b> ' +
+            gl(/^[123rf]$/.test(e.time || '') ? e.time : '') +
+            '<span class="spacer"></span><small class="muted">' +
+            esc(
+              (e.cat === 'focus'
+                ? 'Focus'
+                : e.cat === 'ritual'
+                  ? 'Ritual'
+                  : e.cat === 'cantrip'
+                    ? 'Cantrip'
+                    : 'Spell') +
+                ((e.trad || []).length ? ' · ' + e.trad.join(', ') : '') +
+                (e.src ? ' · ' + e.src : '')
+            ) +
+            '</small></button>' +
+            (open ? '<div class="pf-desc">' + K.entryDetail(e, 'spell', null, null) + '</div>' : '') +
+            '</div>'
+          );
+        })
+        .join('');
+      if (list.length > shown.length)
+        h +=
+          '<div class="toolbar"><span class="small muted">Showing ' +
+          shown.length +
+          ' of ' +
+          list.length +
+          '.</span>' +
+          btn('pfSpMore', 'Show ' + SP_PAGE + ' more', {}, 'btn') +
+          '</div>';
+      if (!list.length) h += '<p class="muted">No spell matches.</p>';
+      return h + '</main>';
+    }
+    K.spellsHtml = spellsHtml;
     K.homeHtml = homeHtml;
     K.rulesHtml = rulesHtml;
   };

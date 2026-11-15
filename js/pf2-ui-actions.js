@@ -509,6 +509,13 @@
       },
       pfROpen: function (v) {
         U.rules.open = U.rules.open === v ? '' : v;
+      },
+      // the Spells page (pf2-ui-rules.js: spellsHtml)
+      pfSpOpen: function (v) {
+        U.sp.open = U.sp.open === v ? '' : v;
+      },
+      pfSpMore: function () {
+        U.sp.more += 150;
       }
     };
     Object.keys(ENC.actions || {}).forEach(function (k) {
@@ -525,6 +532,11 @@
       }
       if (a('data-pfrq')) {
         U.rules.q = t.value;
+        return 'render';
+      }
+      if (a('data-pfspq')) {
+        U.sp.q = t.value;
+        U.sp.more = 150;
         return 'render';
       }
       if (a('data-pfactq')) {
@@ -573,6 +585,11 @@
           return t.getAttribute(n);
         },
         ch = cur();
+      if (a('data-pfsp')) {
+        U.sp[a('data-pfsp')] = t.value;
+        U.sp.more = 150;
+        return 'render';
+      }
       if (t.id === 'pf-imp-file') {
         var f = t.files && t.files[0];
         if (f)

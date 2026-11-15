@@ -320,6 +320,7 @@
       section = part(section);
       if (section === 'home') return K.homeHtml();
       if (section === 'rules') return need(CHAR_DATA) && !textWait() ? K.rulesHtml() : waitHtml('Rules');
+      if (section === 'spells') return need(CHAR_DATA) ? K.spellsHtml() : waitHtml('Spells');
       if (section === 'chars') {
         if (!need(CHAR_DATA)) return waitHtml('Characters');
         var ch = U.view === 'char' && cur();
@@ -359,6 +360,7 @@
             home: G.name,
             chars: G.short + ' characters',
             rules: G.short + ' rules',
+            spells: G.short + ' spells',
             party: G.short + ' party',
             mon: G.short + ' monsters',
             loot: G.short + ' treasures',

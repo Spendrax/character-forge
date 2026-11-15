@@ -341,6 +341,95 @@
     var LINKS_P =
       '<p class="small">Make characters on <a href="https://shadowdarklings.net" target="_blank" rel="noopener">Shadowdarklings.net</a> (free account), export them as JSON and import them here. The free <a href="https://www.thearcanelibrary.com/products/shadowdark-rpg-quickstart-set-pdf" target="_blank" rel="noopener">Shadowdark Quickstart</a> has the rules; add it, or your own rulebook PDF, in <b>Books</b> to look things up during play (it stays on this device).</p>';
 
+    // ---------- Spells: what each of your casters knows, ready or lost ----------
+    // The spell texts are in your Shadowdark book (not in the app): "Find in your books" searches the ones you added.
+    function spellsPage() {
+      var casters = S().chars.reduce(function (a, c) {
+        if ((c.spells || []).length || c.spellStat) a.push(c);
+        return a;
+      }, []);
+      var h =
+        '<main class="home sd-spells"><h2>Spells</h2><p class="muted">The spells your Shadowdark characters know, by tier. A lost spell comes back when its caster rests. The spell texts are in your Shadowdark book: add it on the Books page, then tap a spell’s 📖 to find it there.</p>' +
+        (U.spMsg ? '<p class="rest-msg">' + esc(U.spMsg) + '</p>' : '');
+      if (!casters.length)
+        return (
+          h +
+          '<div class="panel"><p>None of your characters casts spells yet. Wizards and priests add theirs on the character’s Talents &amp; spells tab.</p><div class="toolbar">' +
+          btn('section', 'Go to Characters', { v: 'sd-chars' }, 'btn primary') +
+          '</div></div></main>'
+        );
+      return (
+        h +
+        casters
+          .map(function (c) {
+            var d = derive(c),
+              list = (c.spells || [])
+                .map(function (s, i) {
+                  return { s: s, i: i };
+                })
+                .sort(function (a, b) {
+                  return (+a.s.tier || 1) - (+b.s.tier || 1) || String(a.s.n).localeCompare(String(b.s.n));
+                }),
+              lost = list.reduce(function (n, x) {
+                return n + (x.s.lost ? 1 : 0);
+              }, 0);
+            return (
+              '<section class="panel"><h3>' +
+              esc(c.name || 'Unnamed') +
+              ' <small class="muted">' +
+              esc([c.cls, 'level ' + (c.level || 1)].filter(Boolean).join(', ')) +
+              (d.spell != null ? ' · spellcasting ' + fmt(d.spell) : '') +
+              '</small></h3>' +
+              (list.length
+                ? '<ul class="lines">' +
+                  list
+                    .map(function (x) {
+                      var s = x.s,
+                        dc = 10 + (+s.tier || 1);
+                      return (
+                        '<li class="' +
+                        (s.lost ? 'sd-lost' : '') +
+                        '"><b>' +
+                        esc(s.n || 'Spell') +
+                        '</b> <span class="small muted">tier ' +
+                        (+s.tier || 1) +
+                        ', DC ' +
+                        dc +
+                        (s.lost ? ', lost' : '') +
+                        '</span>' +
+                        (s.note ? '<div class="small">' + esc(s.note) + '</div>' : '') +
+                        '<div class="toolbar">' +
+                        (d.spell != null && !s.lost
+                          ? btn(
+                              'sdRoll',
+                              '🎲 Cast ' + fmt(d.spell),
+                              { v: d.spell, l: s.n + ' (DC ' + dc + ')' },
+                              'btn small'
+                            )
+                          : '') +
+                        btn(
+                          'sdSpLost',
+                          s.lost ? 'Get it back' : 'Lost it',
+                          { v: c.id, i: x.i },
+                          'btn small' + (s.lost ? ' danger' : '')
+                        ) +
+                        (s.n ? btn('sdSpFind', '📖 Find in your books', { v: s.n }, 'btn small') : '') +
+                        '</div></li>'
+                      );
+                    })
+                    .join('') +
+                  '</ul>'
+                : '<p class="small muted">No spells listed yet.</p>') +
+              '<div class="toolbar">' +
+              (lost ? btn('sdSpRest', 'Rest: get the ' + lost + ' lost back', { v: c.id }, 'btn small') : '') +
+              btn('sdSpEdit', 'Add or change spells', { v: c.id }, 'btn small') +
+              '</div></section>'
+            );
+          })
+          .join('') +
+        '</main>'
+      );
+    }
     function home() {
       return (
         '<main class="home"><h1>Shadowdark</h1><p class="muted">Your table companion: the sheet, the light, luck and the GM’s table. Tap the d20 to roll.</p>' +
@@ -1243,6 +1332,33 @@
         var c = cur();
         c.luck = Math.max(0, (+c.luck || 0) + +v);
       },
+      // the Spells page: any character, not only the open one
+      sdSpLost: function (v, el) {
+        var c = byIdSd(v),
+          s = c && c.spells[+el.getAttribute('data-i')];
+        if (s) s.lost = !s.lost;
+        U.spMsg = '';
+      },
+      sdSpRest: function (v) {
+        var c = byIdSd(v);
+        if (!c) return;
+        (c.spells || []).forEach(function (s) {
+          s.lost = false;
+        });
+        U.spMsg = (c.name || 'Your character') + ' has all spells back.';
+      },
+      sdSpEdit: function (v) {
+        S().cur = v;
+        U.tab = 'talents';
+        ui.section = 'sd-chars';
+        root.scrollTo(0, 0);
+      },
+      sdSpFind: function (v) {
+        ui.books = ui.books || { open: 'rules', part: null, q: '', toc: true };
+        ui.books.q = v;
+        ui.section = 'books';
+        root.scrollTo(0, 0);
+      },
       sdLost: function (v) {
         var s = cur().spells[+v];
         if (s) s.lost = !s.lost;
@@ -1333,11 +1449,20 @@
       if (t.getAttribute('data-sdlvl') != null) return 'none';
       return null;
     }
+    function byIdSd(id) {
+      return S().chars.filter(function (c) {
+        return c.id === id;
+      })[0];
+    }
     function html(section) {
-      return section === 'sd-home' ? home() : chars();
+      return section === 'sd-home' ? home() : section === 'sd-spells' ? spellsPage() : chars();
     }
     function title(section) {
-      return section === 'sd-home' ? 'Shadowdark' : (cur().name || 'Characters') + ' — Shadowdark';
+      return section === 'sd-home'
+        ? 'Shadowdark'
+        : section === 'sd-spells'
+          ? 'Shadowdark spells'
+          : (cur().name || 'Characters') + ' — Shadowdark';
     }
     // open a character (a player's sheet from the table)
     function open(id) {
