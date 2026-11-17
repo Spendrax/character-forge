@@ -292,10 +292,7 @@
       'Dying',
       'At 0 HP: dying 1 (+ wounded value; dying 2 from a critical hit) · recovery check: flat DC 10 + dying value · dying 4: dead'
     ],
-    [
-      'Falling',
-      'Bludgeoning damage equal to half the distance fallen in feet: 5 damage per 10 ft (3 m) · you land prone'
-    ]
+    ['Falling', 'Bludgeoning damage equal to half the distance fallen in feet: 5 damage per 10 ft · you land prone']
   ];
   REFS.mm = [
     ['Difficulty', 'Easy 5 · Average 10 · Tough 15 · Challenging 20 · Formidable 25 · Heroic 30 · Superheroic 35'],
@@ -315,8 +312,8 @@
     ]
   ];
   REFS.sf2 = REFS.pf2;
-  // D&D 5e (2014 rules, like the rest of the app). Distances: the game's feet with metres beside them (5 ft = 1.5 m,
-  // as in the metric editions); travel in kilometres. A line with one text is a heading.
+  // D&D 5e (2014 rules, like the rest of the app). Distances in feet, as the game measures them; travel in kilometres,
+  // not miles. A line with one text is a heading.
   var REF = [
     ['Checks and combat'],
     ['Difficulty', 'Very easy 5 · Easy 10 · Medium 15 · Hard 20 · Very hard 25 · Nearly impossible 30'],
@@ -335,17 +332,14 @@
     ['Concentration', 'Damaged: Con save DC 10 or half the damage, whichever is higher · ends if incapacitated'],
     ['Movement and senses'],
     ['Light', 'Dim light: disadvantage on Perception by sight · Darkness: effectively blinded'],
-    ['Darkvision', 'Usually 60 ft (18 m): dim light counts as bright, darkness as dim (no colours)'],
-    ['Difficult terrain', 'Each foot costs 2 · 30 ft (9 m) of speed covers 15 ft (4.5 m)'],
+    ['Darkvision', 'Usually 60 ft: dim light counts as bright, darkness as dim (no colours)'],
+    ['Difficult terrain', 'Each foot costs 2 · 30 ft of speed covers 15 ft'],
     [
       'Jumping',
-      'Long: your Strength score in ft (×0.3 m) with a 10 ft (3 m) run-up, half standing · High: 3 + Str mod ft, half standing'
+      'Long: your Strength score in ft with a 10 ft run-up, half standing · High: 3 + Str mod ft, half standing'
     ],
     ['Climbing and swimming', 'Each foot costs 2 (unless you have a climb or swim speed)'],
-    [
-      'Space',
-      'Tiny 2.5 ft (0.75 m) · Small and Medium 5 ft (1.5 m) · Large 10 ft (3 m) · Huge 15 ft (4.5 m) · Gargantuan 20 ft (6 m) or more'
-    ],
+    ['Space', 'Tiny 2.5 ft · Small and Medium 5 ft · Large 10 ft · Huge 15 ft · Gargantuan 20 ft or more'],
     [
       'Travel',
       'Fast about 6.5 km/h, 50 km a day (−5 passive Perception) · Normal about 5 km/h, 40 km a day · Slow about 3 km/h, 30 km a day (can sneak) · a day is 8 hours'
@@ -353,7 +347,7 @@
     ['Hazards'],
     [
       'Falling',
-      '1d6 bludgeoning per 10 ft (3 m) fallen, up to 20d6 at 200 ft (60 m); you land prone · speed (optional rule, Xanathar’s): 500 ft (150 m) at once, then 500 ft at the end of each turn'
+      '1d6 bludgeoning per 10 ft fallen, up to 20d6 at 200 ft; you land prone · speed (optional rule, Xanathar’s): 500 ft at once, then 500 ft at the end of each turn'
     ],
     ['Suffocating', 'Hold breath 1 + Con mod minutes (at least 30 s), then Con mod rounds (at least 1), then 0 HP'],
     [
@@ -375,7 +369,7 @@
       'Death saves',
       'DC 10 · 3 successes: stable · 3 failures: dead · 1: two failures · 20: back with 1 HP · damage at 0 HP: a failure (a crit: two)'
     ],
-    ['Carrying', 'Strength × 15 lb (about × 7 kg) · push, drag or lift twice that, at 1.5 m (5 ft) of speed']
+    ['Carrying', 'Strength × 15 lb (about × 7 kg) · push, drag or lift twice that, at 5 ft of speed']
   ];
 
   root.DMUI = function (api) {
