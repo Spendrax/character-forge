@@ -5507,3 +5507,14 @@ button.pf-trait {
   order: 10;
   flex: 1 0 100%;
 }
+
+.dm-ref h4 {
+  margin: 1rem 0 0;
+  padding-bottom: 0.15rem;
+  border-bottom: 1px solid var(--line);
+  color: var(--accent);
+  font-size: 0.95rem;
+}
+.dm-ref h4:first-child {
+  margin-top: 0.4rem;
+}
