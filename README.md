@@ -79,6 +79,8 @@ If you changed which files the page loads, add them to the list in `sw.js` and b
 
 **Maneuvers on the Session page.** Under each superiority die, the maneuvers chosen for it are listed with what they do: the Battle Master's under *Superiority Dice*, Martial Adept's under its own die. With none chosen yet, a link goes to the step where they are picked.
 
+**Tags on your playlists (Audio).** Each playlist you add can have tags ("creepy, tavern, rain"): when adding it, or later with 🏷 Tags. Your tags show above the list; tap one to see every playlist of yours that has it, wherever you put it. The Find box matches your playlists' names and tags too. Code: `js/audio-tags.js`.
+
 ### Spells
 
 Each game with spells has a **Spells** section:

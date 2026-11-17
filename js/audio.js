@@ -362,6 +362,10 @@
       msg: '',
       fab: false
     });
+    // tags on your own playlists (js/audio-tags.js): the one being edited ('item:place'), and the one filtered on
+    S.tagEdit = S.tagEdit || '';
+    S.tagF = S.tagF || '';
+    var Tags = root.AudioTags;
     function modern() {
       return !!gameFn && gameFn() === 'mm';
     }
@@ -613,7 +617,9 @@
         (key ? '<span class="tag">' + service(x.u) + '</span>' : '') +
         '<b>' +
         esc(x.t || x.u) +
-        '</b><span class="spacer"></span>' +
+        '</b>' +
+        (key ? tagChips(x.tags) : '') +
+        '<span class="spacer"></span>' +
         (sp
           ? btn(
               'audPlay',
@@ -627,7 +633,97 @@
         '" target="_blank" rel="noopener">' +
         (sp ? 'Spotify ↗' : 'Open ↗') +
         '</a>' +
+        (key ? btn('audTagEdit', '🏷 Tags', { v: i, k: key }, 'btn small') : '') +
         (key ? btn('audRm', '✕', { v: i, k: key }, 'btn small') : '') +
+        '</div>' +
+        (key && S.tagEdit === key + ':' + i ? tagEditor(x, i, key) : '')
+      );
+    }
+    // a playlist's tags, each one a button that shows every playlist with that tag
+    function tagChips(tags) {
+      if (!(tags || []).length) return '';
+      return (
+        '<span class="audio-tags">' +
+        tags
+          .map(function (t) {
+            return btn('audTagF', '#' + esc(t), { v: t }, 'audio-tagchip' + (S.tagF === t ? ' on' : ''));
+          })
+          .join('') +
+        '</span>'
+      );
+    }
+    function tagEditor(x, i, key) {
+      var known = Tags.all(A().lists).reduce(function (out, t) {
+        if ((x.tags || []).indexOf(t[0]) < 0) out.push(t[0]);
+        return out;
+      }, []);
+      return (
+        '<div class="audio-tagedit"><label class="field"><span>Tags, separated by commas</span><input type="text" id="aud-tags" data-aud="tags" value="' +
+        esc(S.tags == null ? (x.tags || []).join(', ') : S.tags) +
+        '" placeholder="creepy, tavern, rain"></label>' +
+        (known.length
+          ? '<div class="small muted">Your tags: ' +
+            known
+              .slice(0, 16)
+              .map(function (t) {
+                return btn('audTagAdd', '+ ' + esc(t), { v: t }, 'audio-tagchip');
+              })
+              .join('') +
+            '</div>'
+          : '') +
+        '<div class="toolbar">' +
+        btn('audTagSave', 'Save tags', { v: i, k: key }, 'btn small primary') +
+        btn('audTagEdit', 'Cancel', { v: i, k: key }, 'btn small') +
+        '</div></div>'
+      );
+    }
+    // the item a playlist of yours is under, by its key in lists ('*:tough' is the fight button's)
+    function keyName(k) {
+      var f = /^\*:(\w+)$/.exec(k);
+      if (f)
+        return (
+          (FIGHTS.filter(function (x) {
+            return x[0] === f[1];
+          })[0] || ['', f[1]])[1] + ' fight'
+        );
+      var x = byId(k);
+      return x ? x.name : '';
+    }
+    // the tags you use, as buttons above the list; with one picked, the list shows your playlists that have it
+    function tagBar() {
+      var all = Tags.all(A().lists);
+      if (!all.length) return '';
+      return (
+        '<div class="audio-tagbar"><span class="small muted">Your tags:</span>' +
+        all
+          .map(function (t) {
+            return btn(
+              'audTagF',
+              '#' + esc(t[0]) + ' <small>' + t[1] + '</small>',
+              { v: t[0] },
+              'audio-tagchip' + (S.tagF === t[0] ? ' on' : '')
+            );
+          })
+          .join('') +
+        (S.tagF ? btn('audTagF', '✕ Clear', { v: '' }, 'btn small') : '') +
+        '</div>'
+      );
+    }
+    function taggedHtml() {
+      var list = Tags.tagged(A().lists, S.tagF);
+      if (!list.length) return '<p class="muted">No playlist has #' + esc(S.tagF) + ' any more.</p>';
+      return (
+        '<h3 class="audio-taghead">Your playlists tagged #' +
+        esc(S.tagF) +
+        '</h3><div class="audio-more">' +
+        list
+          .map(function (r) {
+            var name = keyName(r.key);
+            return (
+              (name ? '<div class="small muted audio-under">' + esc(name) + '</div>' : '') + row(r.p, r.i, r.key, name)
+            );
+          })
+          .join('') +
         '</div>'
       );
     }
@@ -651,7 +747,9 @@
         esc(S.add) +
         '" placeholder="https://open.spotify.com/playlist/…"></label><label class="field"><span>Name <small class="muted">(optional)</small></span><input type="text" id="aud-name" data-aud="name" value="' +
         esc(S.name || '') +
-        '"></label></div><div class="toolbar">' +
+        '"></label><label class="field"><span>Tags <small class="muted">(optional, separated by commas)</small></span><input type="text" id="aud-newtags" data-aud="newTags" value="' +
+        esc(S.newTags || '') +
+        '" placeholder="creepy, tavern"></label></div><div class="toolbar">' +
         btn('audAdd', '+ Add to ' + esc(x.name), { v: x.id }, 'btn small') +
         '<a class="small" href="' +
         esc(sr.spotify) +
@@ -692,11 +790,26 @@
         '</button></div>'
       );
     }
+    // a search finds an item by your playlists under it too: their names and tags
+    function ownMatch(x, q) {
+      q = q.replace(/^#/, '');
+      return (A().lists[x.id] || []).some(function (p) {
+        return (
+          String(p.t || '')
+            .toLowerCase()
+            .indexOf(q) >= 0 ||
+          (p.tags || []).some(function (t) {
+            return t.indexOf(q) >= 0;
+          })
+        );
+      });
+    }
     function html() {
       var tab = (modern() ? S.tabMM : S.tab) || 'all',
         q = String(S.q || '').toLowerCase(),
         list = items().reduce(function (out, x) {
-          if ((tab === 'all' || x.tab === tab) && (!q || x.name.toLowerCase().indexOf(q) >= 0)) out.push(x);
+          if ((tab === 'all' || x.tab === tab) && (!q || x.name.toLowerCase().indexOf(q) >= 0 || ownMatch(x, q)))
+            out.push(x);
           return out;
         }, []);
       if (tab === 'all')
@@ -716,8 +829,11 @@
             return btn('audTab', esc(t[1]), { v: t[0] }, 'mm-tab' + (tab === t[0] ? ' on' : ''));
           })
           .join('') +
-        '</nav><div class="audio-rows">' +
-        list
+        '</nav>' +
+        tagBar() +
+        (S.tagF ? taggedHtml() : '') +
+        '<div class="audio-rows">' +
+        (S.tagF ? [] : list)
           .map(function (x) {
             var on = playing && S.current === x.id && playing.what === x.name,
               open = S.open === x.id,
@@ -740,7 +856,7 @@
             );
           })
           .join('') +
-        (list.length ? '' : '<p class="muted">Nothing found.</p>') +
+        (list.length || S.tagF ? '' : '<p class="muted">Nothing found.</p>') +
         '</div><p class="small muted">Tap a name to play it, tap it again to stop. ⋯ shows its playlists and lets you add your own. The ⚔ button starts fight music anytime: Tough, Standard or Boss (tap the same one again for another playlist). ' +
         (remote()
           ? 'Plays on your Spotify app, whole songs.'
@@ -803,10 +919,43 @@
           S.msg = 'Already there.';
           return;
         }
-        L.unshift({ u: u, t: String(S.name || '').trim() });
+        var tags = Tags.parse(S.newTags);
+        L.unshift(
+          tags.length ? { u: u, t: String(S.name || '').trim(), tags: tags } : { u: u, t: String(S.name || '').trim() }
+        );
         S.add = '';
         S.name = '';
+        S.newTags = '';
         S.msg = '';
+      },
+      // tags: open or close the editor under a playlist of yours, add a known tag, save, filter on one
+      audTagEdit: function (v, el) {
+        var k = el.getAttribute('data-k') + ':' + v;
+        S.tagEdit = S.tagEdit === k ? '' : k;
+        S.tags = null;
+      },
+      audTagAdd: function (v) {
+        var L = A().lists,
+          e = S.tagEdit.split(':'),
+          x = (L[e.slice(0, -1).join(':')] || [])[+e[e.length - 1]];
+        var now = Tags.parse(S.tags == null ? ((x && x.tags) || []).join(',') : S.tags);
+        if (now.indexOf(v) < 0) now.push(v);
+        S.tags = now.join(', ');
+      },
+      audTagSave: function (v, el) {
+        var x = (A().lists[el.getAttribute('data-k')] || [])[+v];
+        if (!x) return;
+        var tags = Tags.parse(S.tags == null ? (x.tags || []).join(',') : S.tags);
+        if (tags.length) x.tags = tags;
+        else delete x.tags;
+        S.tagEdit = '';
+        S.tags = null;
+        if (S.tagF && tags.indexOf(S.tagF) < 0 && !Tags.tagged(A().lists, S.tagF).length) S.tagF = '';
+      },
+      audTagF: function (v) {
+        S.tagF = S.tagF === v ? '' : v;
+        S.tagEdit = '';
+        root.scrollTo(0, 0);
       },
       audRm: function (v, el) {
         var L = A().lists[el.getAttribute('data-k')] || [],

@@ -553,6 +553,33 @@ function fakeGoogle(ctx, drive) {
       await p.ctx.close();
     });
 
+    await test('Audio: tags on your own playlists, a tag shows the playlists that have it', async function () {
+      var p = await page();
+      await p.evaluate(function () {
+        Forge.ui.section = 'audio';
+        Forge.render();
+      });
+      await p.locator('.audio-more-btn').first().click();
+      await p.fill('#aud-add', 'https://open.spotify.com/playlist/37i9dQZF1DX8NTLI2TtZa6');
+      await p.fill('#aud-name', 'Spooky crypt');
+      await p.fill('#aud-newtags', 'Creepy, #dungeon');
+      await p.click('[data-act=audAdd]');
+      await p.click('[data-act=audTagEdit]');
+      await p.fill('#aud-tags', 'creepy, dungeon, rain');
+      await p.click('[data-act=audTagSave]');
+      var saved = await p.evaluate(function () {
+        var L = Forge.store.audio.lists;
+        return Object.keys(L).reduce(function (a, k) {
+          return a.concat(L[k]);
+        }, [])[0].tags;
+      });
+      assert.deepEqual(saved, ['creepy', 'dungeon', 'rain']);
+      await p.locator('.audio-tagbar [data-act=audTagF]', { hasText: '#rain' }).click();
+      assert.ok(/tagged #rain[\s\S]*Spooky crypt/.test(await text(p, 'main')));
+      assert.equal(await p.locator('.audio-row').count(), 0, 'only the tagged playlists show');
+      await p.ctx.close();
+    });
+
     await test('Monsters: the list draws in parts, more on scroll, search starts over', async function () {
       var p = await page();
       await p.evaluate(function () {
